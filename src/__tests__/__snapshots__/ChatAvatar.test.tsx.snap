@@ -1,0 +1,24 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render <ChatAvatar /> and compare with snapshot 1`] = `
+<View
+  accessibilityRole="image"
+  style={
+    [
+      {
+        "alignItems": "center",
+        "justifyContent": "center",
+      },
+      {
+        "borderRadius": 20,
+        "height": 40,
+        "width": 40,
+      },
+      {
+        "backgroundColor": "transparent",
+      },
+      undefined,
+    ]
+  }
+/>
+`;

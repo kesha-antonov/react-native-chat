@@ -1,0 +1,25 @@
+import { createContext, useContext } from 'react'
+import {
+  ActionSheetOptions,
+} from '@expo/react-native-action-sheet'
+
+export interface IChatContext {
+  actionSheet(): {
+    showActionSheetWithOptions: (
+      options: ActionSheetOptions,
+      callback: (buttonIndex?: number) => void | Promise<void>
+    ) => void
+  }
+  getLocale(): string
+  getColorScheme(): 'light' | 'dark' | null | undefined
+}
+
+export const ChatContext = createContext<IChatContext>({
+  getLocale: () => 'en',
+  actionSheet: () => ({
+    showActionSheetWithOptions: () => {},
+  }),
+  getColorScheme: () => undefined,
+})
+
+export const useChatContext = () => useContext(ChatContext)

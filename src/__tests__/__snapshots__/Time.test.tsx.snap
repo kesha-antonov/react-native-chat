@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Time should not render <Time /> and compare with snapshot 1`] = `null`;
+
+exports[`Time should render <Time /> and compare with snapshot 1`] = `
+<View>
+  <Text
+    style={
+      [
+        {
+          "color": "#aaa",
+          "fontSize": 10,
+          "textAlign": "right",
+        },
+        undefined,
+      ]
+    }
+  >
+    10:05 AM
+  </Text>
+</View>
+`;

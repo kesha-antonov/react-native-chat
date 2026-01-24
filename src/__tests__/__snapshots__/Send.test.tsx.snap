@@ -1,0 +1,148 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Send should always render <Send /> and compare with snapshot 1`] = `
+<View
+  pointerEvents="auto"
+  style={
+    [
+      {
+        "justifyContent": "flex-end",
+      },
+      undefined,
+      {
+        "opacity": 0,
+      },
+    ]
+  }
+>
+  <View
+    accessibilityLabel="send"
+    accessibilityRole="button"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": false,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    focusable={true}
+    onClick={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    testID="GC_SEND_TOUCHABLE"
+  />
+</View>
+`;
+
+exports[`Send should not render <Send /> and compare with snapshot 1`] = `
+<View
+  pointerEvents="none"
+  style={
+    [
+      {
+        "justifyContent": "flex-end",
+      },
+      undefined,
+      {
+        "opacity": 0,
+      },
+    ]
+  }
+>
+  <View
+    accessibilityLabel="send"
+    accessibilityRole="button"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": false,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    focusable={true}
+    onClick={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    testID="GC_SEND_TOUCHABLE"
+  />
+</View>
+`;
+
+exports[`Send should render <Send /> where there is input and compare with snapshot 1`] = `
+<View
+  pointerEvents="auto"
+  style={
+    [
+      {
+        "justifyContent": "flex-end",
+      },
+      undefined,
+      {
+        "opacity": 0,
+      },
+    ]
+  }
+>
+  <View
+    accessibilityLabel="send"
+    accessibilityRole="button"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": false,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    focusable={true}
+    onClick={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    testID="GC_SEND_TOUCHABLE"
+  />
+</View>
+`;

@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should compare Constant with snapshot 1`] = `
+{
+  "DATE_FORMAT": "D MMMM",
+  "TEST_ID": {
+    "LOADING_WRAPPER": "GC_LOADING_CONTAINER",
+    "SEND_TOUCHABLE": "GC_SEND_TOUCHABLE",
+    "WRAPPER": "GC_WRAPPER",
+  },
+  "TIME_FORMAT": "LT",
+}
+`;

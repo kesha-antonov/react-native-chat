@@ -1,0 +1,184 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render <Chat/> and compare with snapshot 1`] = `
+<View
+  style={
+    {
+      "flex": 1,
+    }
+  }
+>
+  <KeyboardProvider
+    navigationBarTranslucent={true}
+    statusBarTranslucent={true}
+  >
+    <View
+      style={
+        {
+          "flex": 1,
+        }
+      }
+    >
+      <View
+        onLayout={[Function]}
+        style={
+          [
+            {
+              "flex": 1,
+            },
+            {
+              "overflow": "hidden",
+            },
+          ]
+        }
+        testID="GC_WRAPPER"
+      >
+        <View
+          behavior="translate-with-padding"
+          keyboardVerticalOffset={0}
+          style={
+            {
+              "flex": 1,
+            }
+          }
+        >
+          <View
+            style={
+              [
+                {
+                  "flex": 1,
+                },
+                {
+                  "opacity": 0,
+                },
+              ]
+            }
+          />
+        </View>
+      </View>
+    </View>
+  </KeyboardProvider>
+</View>
+`;
+
+exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1`] = `
+<View
+  style={
+    {
+      "flex": 1,
+    }
+  }
+>
+  <KeyboardProvider
+    navigationBarTranslucent={true}
+    statusBarTranslucent={true}
+  >
+    <View
+      style={
+        {
+          "flex": 1,
+        }
+      }
+    >
+      <View
+        onLayout={[Function]}
+        style={
+          [
+            {
+              "flex": 1,
+            },
+            {
+              "overflow": "hidden",
+            },
+          ]
+        }
+        testID="GC_WRAPPER"
+      >
+        <View
+          behavior="translate-with-padding"
+          keyboardVerticalOffset={0}
+          style={
+            {
+              "flex": 1,
+            }
+          }
+        >
+          <View
+            style={
+              [
+                {
+                  "flex": 1,
+                },
+                {
+                  "opacity": 0,
+                },
+              ]
+            }
+          />
+        </View>
+      </View>
+    </View>
+  </KeyboardProvider>
+</View>
+`;
+
+exports[`should render <Chat/> with light colorScheme and compare with snapshot 1`] = `
+<View
+  style={
+    {
+      "flex": 1,
+    }
+  }
+>
+  <KeyboardProvider
+    navigationBarTranslucent={true}
+    statusBarTranslucent={true}
+  >
+    <View
+      style={
+        {
+          "flex": 1,
+        }
+      }
+    >
+      <View
+        onLayout={[Function]}
+        style={
+          [
+            {
+              "flex": 1,
+            },
+            {
+              "overflow": "hidden",
+            },
+          ]
+        }
+        testID="GC_WRAPPER"
+      >
+        <View
+          behavior="translate-with-padding"
+          keyboardVerticalOffset={0}
+          style={
+            {
+              "flex": 1,
+            }
+          }
+        >
+          <View
+            style={
+              [
+                {
+                  "flex": 1,
+                },
+                {
+                  "opacity": 0,
+                },
+              ]
+            }
+          />
+        </View>
+      </View>
+    </View>
+  </KeyboardProvider>
+</View>
+`;

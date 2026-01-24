@@ -1,0 +1,27 @@
+.DS_Store
+node_modules/
+.expo/
+npm-debug.log
+lib/
+TODO.md
+.idea
+.vscode
+Exponent-*.app
+*.log
+coverage/
+web-build/
+.eslintcache
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+yarn-error.log
+
+example_bare/vendor
+example_bare/**/build
+example_bare/ios/Pods
+example_bare/android/.gradle

@@ -1,0 +1,51 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render <Composer /> and compare with snapshot 1`] = `
+<View
+  style={
+    {
+      "flex": 1,
+    }
+  }
+>
+  <TextInput
+    accessibilityLabel="Type a message..."
+    accessible={true}
+    collapsable={false}
+    enablesReturnKeyAutomatically={true}
+    handlerTag={-1}
+    handlerType="NativeViewGestureHandler"
+    keyboardAppearance="default"
+    multiline={true}
+    onChange={[Function]}
+    onGestureHandlerEvent={[Function]}
+    onGestureHandlerStateChange={[Function]}
+    placeholder="Type a message..."
+    placeholderTextColor="#b2b2b2"
+    style={
+      [
+        [
+          {
+            "fontSize": 16,
+            "lineHeight": 22,
+            "paddingBottom": 10,
+            "paddingHorizontal": 8,
+            "paddingTop": 8,
+          },
+          undefined,
+        ],
+        {
+          "outlineStyle": "none",
+        },
+        {
+          "height": undefined,
+        },
+        undefined,
+      ]
+    }
+    testID="Type a message..."
+    underlineColorAndroid="transparent"
+    value=""
+  />
+</View>
+`;
