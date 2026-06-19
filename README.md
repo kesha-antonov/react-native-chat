@@ -70,6 +70,7 @@
 - [Features](#-features)
 - [Requirements](#-requirements)
 - [Installation](#-installation)
+- [Migrating from react-native-gifted-chat](#-migrating-from-react-native-gifted-chat)
 - [Usage](#-usage)
 - [Props Reference](#-props-reference)
 - [Data Structure](#-data-structure)
@@ -125,6 +126,27 @@ npx pod-install
 **Step 3:** Configure react-native-reanimated
 
 Follow the [react-native-reanimated installation guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/#step-2-add-reanimateds-babel-plugin) to add the Babel plugin.
+
+---
+
+## 🔄 Migrating from react-native-gifted-chat
+
+This library is a rebranded continuation of [`react-native-gifted-chat`](https://github.com/FaridSafi/react-native-gifted-chat), built from its latest `master`. **The API, props, and `IMessage` model are unchanged** - migrating is a package swap plus renaming the `GiftedChat*` identifiers.
+
+```bash
+yarn remove react-native-gifted-chat
+yarn add @kesha-antonov/react-native-chat
+```
+
+| react-native-gifted-chat | @kesha-antonov/react-native-chat |
+| --- | --- |
+| `'react-native-gifted-chat'` | `'@kesha-antonov/react-native-chat'` |
+| `GiftedChat` | `Chat` |
+| `GiftedAvatar` | `ChatAvatar` |
+| `GiftedChatContext` | `ChatContext` |
+| `IMessage`, `User`, `useChatContext`, … | unchanged |
+
+See the full guide (codemod included) in **[docs/MIGRATION.md](docs/MIGRATION.md)**.
 
 ---
 
