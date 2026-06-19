@@ -1,5 +1,32 @@
 # Changelog
 
+## [4.1.0] - 2026-06-19
+
+### ✨ Features
+- **Streaming (AI) messages**: token-by-token streamed replies for AI/chatbot UIs
+  - `useStreamingMessages` hook — owns the message list and coalesces token pushes with `requestAnimationFrame` (one render per frame; only the streaming bubble re-renders), with `AbortController`-based stop
+  - `IMessage.streaming` flag renders an inline blinking `StreamingCursor`
+  - `Chat.updateMessage(messages, id, patch)` — immutable per-message helper for token updates
+  - See `docs/STREAMING.md` for a real Claude streaming adapter (backend proxy)
+- **Emoji Reactions**: long-press a message to react; selected reactions render as toggleable pills below the bubble
+  - `reactions` prop on `<Chat>` with the `MessageReactions` display and a lightweight `ReactionPicker`
+  - `MessageReaction` model + `IMessage.reactions`
+  - Core ships only the quick picker (no new dependencies); a full emoji browser is demonstrated in the example via the `renderReactionPicker` override
+
+### 🔧 Improvements
+- Library is now published as compiled output (`lib/`) with type declarations and declaration maps
+- Synced the library with the latest upstream sources (animated day header helpers, fixes)
+
+### 📝 Documentation
+- Documented Streaming, Emoji Reactions, and the full `IMessage` shape in the README; linked every feature to its section
+- Added example screens: **AI Bot (Streaming)** and **Reactions**
+
+## [4.0.0] - 2026-06-19
+
+### 🔧 Changes
+- Renamed and rebranded to `@kesha-antonov/react-native-chat` (`GiftedChat` → `Chat`, `GiftedChatContext` → `ChatContext`, `GiftedAvatar` → `ChatAvatar`)
+- Continues development from `react-native-gifted-chat` (MIT)
+
 ## [3.3.2] - 2026-01-22
 
 ### 🐛 Bug Fixes
