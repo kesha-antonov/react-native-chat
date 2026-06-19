@@ -37,6 +37,10 @@ jobs:
         run: |
           yarn typecheck
 
+      - name: Build
+        run: |
+          yarn build
+
       - name: Test
         run: |
           yarn test
