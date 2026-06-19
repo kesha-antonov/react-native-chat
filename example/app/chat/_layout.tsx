@@ -44,6 +44,10 @@ export default function ChatLayout () {
         name='ai-bot'
         options={{ title: 'AI Bot (Streaming)' }}
       />
+      <Stack.Screen
+        name='reactions'
+        options={{ title: 'Reactions' }}
+      />
     </Stack>
   )
 }

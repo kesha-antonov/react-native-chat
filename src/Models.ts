@@ -29,6 +29,13 @@ export interface QuickReplies {
 
 export interface ReplyMessage extends Pick<IMessage, '_id' | 'text' | 'user' | 'audio' | 'image'> {}
 
+export interface MessageReaction {
+  /** The emoji character (e.g. '👍') */
+  emoji: string
+  /** IDs of the users who reacted with this emoji */
+  userIds: (string | number)[]
+}
+
 export interface IMessage {
   _id: string | number
   text: string
@@ -45,6 +52,7 @@ export interface IMessage {
   streaming?: boolean
   quickReplies?: QuickReplies
   replyMessage?: ReplyMessage
+  reactions?: MessageReaction[]
   location?: {
     latitude: number
     longitude: number
