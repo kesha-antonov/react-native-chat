@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, StyleSheet } from 'react-native'
+import { TouchableOpacity, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Stack, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -11,11 +11,11 @@ export default function ChatLayout () {
     <Stack
       screenOptions={{
         headerShown: true,
+        headerTitleAlign: 'center',
         contentStyle: { paddingBottom: insets.bottom, backgroundColor: '#fff' },
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name='chevron-back' size={24} color='#007AFF' />
-            <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
         ),
       }}
@@ -60,10 +60,6 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: -8,
-  },
-  backText: {
-    color: '#007AFF',
-    fontSize: 17,
+    paddingHorizontal: 4,
   },
 })
