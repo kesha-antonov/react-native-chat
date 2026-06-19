@@ -1068,7 +1068,7 @@ yarn prepublishOnly
 
 ## 👥 Authors
 
-Based on [FaridSafi/react-native-chat](https://github.com/FaridSafi/react-native-chat), which is no longer actively maintained.
+Based on [FaridSafi/react-native-gifted-chat](https://github.com/FaridSafi/react-native-gifted-chat), which is no longer actively maintained.
 
 **Maintainer:** [Kesha Antonov](https://github.com/kesha-antonov)
 
