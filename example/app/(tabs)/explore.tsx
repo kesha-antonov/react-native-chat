@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 import { useThemeColor } from '@/hooks/use-theme-color'
 
-type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions'
+type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions' | 'day-animated'
 
 const examples: Array<{ id: ChatExample, title: string, description: string }> = [
   { id: 'ai-bot', title: 'AI Bot (Streaming)', description: 'Streamed assistant replies with a typing cursor and Stop button' },
@@ -18,6 +18,7 @@ const examples: Array<{ id: ChatExample, title: string, description: string }> =
   { id: 'customized-rendering', title: 'Customized Rendering', description: 'Customized chat with all rendering options' },
   { id: 'slack', title: 'Slack Style', description: 'Slack-like message styling' },
   { id: 'reply', title: 'Reply Example', description: 'Example demonstrating reply functionality' },
+  { id: 'day-animated', title: 'Day Animated', description: 'Multi-day chat with Load earlier for testing the animated day header' },
 ]
 
 export default function ExploreScreen () {
