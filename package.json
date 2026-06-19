@@ -1,5 +1,5 @@
 {
-  "name": "react-native-chat",
+  "name": "@kesha-antonov/react-native-chat",
   "version": "4.0.0",
   "description": "The most complete chat UI for React Native",
   "keywords": [
@@ -25,6 +25,9 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "src"
   ],

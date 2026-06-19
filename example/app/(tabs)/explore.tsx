@@ -8,9 +8,10 @@ import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 import { useThemeColor } from '@/hooks/use-theme-color'
 
-type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply'
+type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot'
 
 const examples: Array<{ id: ChatExample, title: string, description: string }> = [
+  { id: 'ai-bot', title: 'AI Bot (Streaming)', description: 'Streamed assistant replies with a typing cursor and Stop button' },
   { id: 'basic', title: 'Basic Example', description: 'Basic chat with keyboard logging for testing' },
   { id: 'links', title: 'Links & Patterns', description: 'Phone numbers, emails, URLs, hashtags, and mentions' },
   { id: 'customized-rendering', title: 'Customized Rendering', description: 'Customized chat with all rendering options' },

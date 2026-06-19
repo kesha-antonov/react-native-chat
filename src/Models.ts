@@ -41,6 +41,8 @@ export interface IMessage {
   sent?: boolean
   received?: boolean
   pending?: boolean
+  /** True while this message's text is still being streamed in (shows a typing cursor) */
+  streaming?: boolean
   quickReplies?: QuickReplies
   replyMessage?: ReplyMessage
   location?: {

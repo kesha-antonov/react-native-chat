@@ -1,5 +1,6 @@
 export * from './Models'
 
+export type { ChatProps, ChatProps as GiftedChatProps } from './Chat/types'
 export type { ActionsProps } from './Actions'
 export type { AvatarProps } from './Avatar'
 export type {

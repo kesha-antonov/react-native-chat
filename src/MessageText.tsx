@@ -8,6 +8,7 @@ import {
 } from 'react-native'
 
 import { Text } from 'react-native-gesture-handler'
+import { StreamingCursor } from './components/StreamingCursor'
 import { LinkParser, LinkMatcher, LinkType } from './linkParser'
 import { LeftRightStyle, IMessage } from './Models'
 
@@ -68,24 +69,39 @@ export function MessageText<TMessage extends IMessage>({
     onPressProp?.(currentMessage, url, type)
   }, [onPressProp, currentMessage])
 
+  const isStreaming = !!currentMessage?.streaming
+
+  const parsed = (
+    <LinkParser
+      text={currentMessage!.text}
+      matchers={matchers}
+      email={email}
+      phone={phone}
+      url={url}
+      hashtag={hashtag}
+      mention={mention}
+      hashtagUrl={hashtagUrl}
+      mentionUrl={mentionUrl}
+      stripPrefix={stripPrefix}
+      linkStyle={linkStyle}
+      textStyle={style}
+      onPress={onPressProp ? handlePress : undefined}
+      TextComponent={Text}
+    />
+  )
+
   return (
     <View style={[styles.container, containerStyle?.[position]]}>
-      <LinkParser
-        text={currentMessage!.text}
-        matchers={matchers}
-        email={email}
-        phone={phone}
-        url={url}
-        hashtag={hashtag}
-        mention={mention}
-        hashtagUrl={hashtagUrl}
-        mentionUrl={mentionUrl}
-        stripPrefix={stripPrefix}
-        linkStyle={linkStyle}
-        textStyle={style}
-        onPress={onPressProp ? handlePress : undefined}
-        TextComponent={Text}
-      />
+      {isStreaming
+        ? (
+          // Wrap in a Text so the caret flows inline after the last word and
+          // inherits the bubble text color.
+          <Text style={style}>
+            {parsed}
+            <StreamingCursor />
+          </Text>
+        )
+        : parsed}
     </View>
   )
 }

@@ -40,6 +40,10 @@ export default function ChatLayout () {
         name='slack'
         options={{ title: 'Slack Style' }}
       />
+      <Stack.Screen
+        name='ai-bot'
+        options={{ title: 'AI Bot (Streaming)' }}
+      />
     </Stack>
   )
 }

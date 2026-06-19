@@ -26,4 +26,11 @@ export { MessageAudio } from './MessageAudio'
 export { MessageVideo } from './MessageVideo'
 export { MessageReply } from './components/MessageReply'
 export { ReplyPreview } from './components/ReplyPreview'
+export { StreamingCursor } from './components/StreamingCursor'
 export { useColorScheme } from './hooks/useColorScheme'
+export { useStreamingMessages } from './hooks/useStreamingMessages'
+export type {
+  UseStreamingMessagesOptions,
+  UseStreamingMessagesResult,
+  StreamHandle
+} from './hooks/useStreamingMessages'
