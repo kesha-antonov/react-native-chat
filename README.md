@@ -1,7 +1,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@kesha-antonov/react-native-chat"><img alt="npm version" src="https://badge.fury.io/js/@kesha-antonov%2Freact-native-chat.svg"/></a>
   <a href="https://www.npmjs.com/package/@kesha-antonov/react-native-chat"><img alt="npm downloads" src="https://img.shields.io/npm/dm/@kesha-antonov%2Freact-native-chat.svg"/></a>
-  <a href="https://circleci.com/gh/kesha-antonov/react-native-chat"><img src="https://circleci.com/gh/kesha-antonov/react-native-chat.svg?style=shield" alt="build"></a>
+  <a href="https://github.com/kesha-antonov/react-native-chat/actions/workflows/main.yml"><img src="https://github.com/kesha-antonov/react-native-chat/actions/workflows/main.yml/badge.svg" alt="build"></a>
   <img src="https://img.shields.io/badge/platforms-iOS%20%7C%20Android%20%7C%20Web-lightgrey.svg" alt="platforms">
   <img src="https://img.shields.io/badge/TypeScript-supported-blue.svg" alt="TypeScript">
   <img src="https://img.shields.io/badge/Expo-compatible-000020.svg" alt="Expo compatible">
@@ -202,7 +202,15 @@ interface IMessage {
   sent?: boolean
   received?: boolean
   pending?: boolean
+  /** True while the text is still streaming in (shows a typing cursor) */
+  streaming?: boolean
   quickReplies?: QuickReplies
+  reactions?: MessageReaction[]
+}
+
+interface MessageReaction {
+  emoji: string
+  userIds: (string | number)[]
 }
 
 interface User {
