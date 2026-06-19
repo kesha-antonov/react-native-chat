@@ -30,7 +30,7 @@ Peer dependencies are the same as RNGC, so nothing else to install:
 
 | react-native-gifted-chat | @kesha-antonov/react-native-chat |
 | --- | --- |
-| `'react-native-gifted-chat'` (package) | `'@kesha-antonov/react-native-chat'` |
+| `react-native-gifted-chat` (package) | `@kesha-antonov/react-native-chat` |
 | `GiftedChat` (component + `.append` / `.prepend`) | `Chat` |
 | `GiftedAvatar` | `ChatAvatar` |
 | `GiftedChatContext` | `ChatContext` |

@@ -140,7 +140,7 @@ yarn add @kesha-antonov/react-native-chat
 
 | react-native-gifted-chat | @kesha-antonov/react-native-chat |
 | --- | --- |
-| `'react-native-gifted-chat'` | `'@kesha-antonov/react-native-chat'` |
+| `react-native-gifted-chat` | `@kesha-antonov/react-native-chat` |
 | `GiftedChat` | `Chat` |
 | `GiftedAvatar` | `ChatAvatar` |
 | `GiftedChatContext` | `ChatContext` |
