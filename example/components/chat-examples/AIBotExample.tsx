@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react'
-import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native'
-import { Chat, IMessage, useStreamingMessages } from '@kesha-antonov/react-native-chat'
+import { Pressable, StyleSheet, View, useColorScheme } from 'react-native'
+import { Chat, IMessage, Send, useStreamingMessages } from '@kesha-antonov/react-native-chat'
 
 import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
@@ -33,6 +33,24 @@ function buildReply (prompt: string): string {
     'coalesces them into one render per frame so it stays smooth even on a ' +
     'fast stream. Replace buildReply with a call to your LLM and feed tokens ' +
     'to push() - that is the whole integration.'
+  )
+}
+
+// Stop button shown in the composer (replacing Send) while a reply streams -
+// same place the send button lives, like the Claude app.
+function StopButton ({ onPress }: { onPress: () => void }) {
+  return (
+    <View style={styles.sendWrap}>
+      <Pressable
+        onPress={onPress}
+        hitSlop={8}
+        accessibilityRole='button'
+        accessibilityLabel='Stop generating'
+        style={({ pressed }) => [styles.stopButton, pressed && styles.stopButtonPressed]}
+      >
+        <View style={styles.stopSquare} />
+      </Pressable>
+    </View>
   )
 }
 
@@ -76,24 +94,24 @@ export default function AIBotExample () {
     })()
   }, [append, startStream])
 
+  // While streaming, the composer's Send button becomes a Stop button.
+  const renderSend = useCallback(
+    (sendProps: React.ComponentProps<typeof Send>) =>
+      isStreaming ? <StopButton onPress={stop} /> : <Send {...sendProps} />,
+    [isStreaming, stop]
+  )
+
   return (
     <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
       <Chat<IMessage>
         messages={messages}
         onSend={onSend}
         user={USER}
+        renderSend={renderSend}
         messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
         textInputProps={{ style: getColorSchemeStyle(styles, 'composer', colorScheme) }}
         keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
       />
-
-      {isStreaming && (
-        <View pointerEvents='box-none' style={styles.stopWrap}>
-          <Pressable style={styles.stopButton} onPress={stop}>
-            <Text style={styles.stopText}>{'■ Stop'}</Text>
-          </Pressable>
-        </View>
-      )}
     </View>
   )
 }
@@ -113,24 +131,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
     color: '#fff',
   },
-  stopWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 72,
+  sendWrap: {
+    height: 44,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: 8,
   },
   stopButton: {
-    flexDirection: 'row',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#000',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
   },
-  stopText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+  stopButtonPressed: {
+    opacity: 0.7,
+  },
+  stopSquare: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    backgroundColor: '#fff',
   },
 })
