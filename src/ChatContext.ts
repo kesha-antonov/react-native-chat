@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import { ColorSchemeName } from 'react-native'
 import {
   ActionSheetOptions,
 } from '@expo/react-native-action-sheet'
@@ -11,7 +12,7 @@ export interface IChatContext {
     ) => void
   }
   getLocale(): string
-  getColorScheme(): 'light' | 'dark' | null | undefined
+  getColorScheme(): ColorSchemeName | null | undefined
 }
 
 export const ChatContext = createContext<IChatContext>({
@@ -19,7 +20,7 @@ export const ChatContext = createContext<IChatContext>({
   actionSheet: () => ({
     showActionSheetWithOptions: () => {},
   }),
-  getColorScheme: () => undefined,
+  getColorScheme: () => null,
 })
 
 export const useChatContext = () => useContext(ChatContext)

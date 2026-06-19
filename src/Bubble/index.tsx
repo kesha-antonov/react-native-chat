@@ -2,8 +2,8 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   View,
   Pressable,
-} from 'react-native'
-import { Gesture, GestureDetector, Text } from 'react-native-gesture-handler'
+  Text } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   ReduceMotion,

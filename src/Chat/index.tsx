@@ -326,7 +326,6 @@ function Chat<TMessage extends IMessage = IMessage> (
           style={[stylesCommon.fill, styles.contentContainer]}
           onLayout={onInitialLayoutViewLayout}
         >
-          {/* @ts-expect-error */}
           <KeyboardAvoidingView
             behavior='translate-with-padding'
             keyboardVerticalOffset={insets.top}
@@ -348,19 +347,26 @@ function Chat<TMessage extends IMessage = IMessage> (
 function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMessage>) {
   const {
     keyboardProviderProps,
+    disableKeyboardProvider = false,
     ...rest
   } = props
+
+  const chat = <Chat<TMessage> {...rest} />
 
   return (
     <GestureHandlerRootView style={styles.fill}>
       <SafeAreaProvider>
-        <KeyboardProvider
-          statusBarTranslucent
-          navigationBarTranslucent
-          {...keyboardProviderProps}
-        >
-          <Chat<TMessage> {...rest} />
-        </KeyboardProvider>
+        {disableKeyboardProvider
+          ? chat
+          : (
+            <KeyboardProvider
+              statusBarTranslucent
+              navigationBarTranslucent
+              {...keyboardProviderProps}
+            >
+              {chat}
+            </KeyboardProvider>
+          )}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
@@ -392,24 +398,6 @@ ChatWrapper.prepend = <TMessage extends IMessage>(
     : messages.concat(currentMessages)
 }
 
-/**
- * Immutably update a single message by `_id`. `patch` can be a partial object
- * or an updater function. Returns a new array (only the matched message is
- * replaced), which makes it cheap for streaming token updates.
- */
-ChatWrapper.updateMessage = <TMessage extends IMessage>(
-  currentMessages: TMessage[] = [],
-  id: string | number,
-  patch: Partial<TMessage> | ((message: TMessage) => Partial<TMessage>)
-) =>
-  currentMessages.map(message =>
-    message._id === id
-      ? { ...message, ...(typeof patch === 'function' ? patch(message) : patch) }
-      : message
-  )
-
 export {
-  ChatWrapper as Chat,
-  // Backwards-compatible alias for projects migrating from react-native-gifted-chat
-  ChatWrapper as GiftedChat
+  ChatWrapper as Chat
 }

@@ -52,7 +52,7 @@ const initialMessages: IMessage[] = [
     },
   },
   {
-    text: 'This is a quick reply. Do you love Gifted Chat? (checkbox)',
+    text: 'This is a quick reply. Do you love Chat? (checkbox)',
     createdAt: date3.toDate(),
     quickReplies: {
       type: 'checkbox',
@@ -77,7 +77,7 @@ const initialMessages: IMessage[] = [
     },
   },
   {
-    text: 'This is a quick reply. Do you love Gifted Chat? (radio) KEEP IT',
+    text: 'This is a quick reply. Do you love Chat? (radio) KEEP IT',
     createdAt: date3.toDate(),
     quickReplies: {
       type: 'radio',
