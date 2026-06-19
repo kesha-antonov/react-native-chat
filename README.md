@@ -205,7 +205,20 @@ interface IMessage {
   /** True while the text is still streaming in (shows a typing cursor) */
   streaming?: boolean
   quickReplies?: QuickReplies
+  replyMessage?: ReplyMessage
   reactions?: MessageReaction[]
+  location?: {
+    latitude: number
+    longitude: number
+  }
+}
+
+interface ReplyMessage {
+  _id: string | number
+  text: string
+  user: User
+  image?: string
+  audio?: string
 }
 
 interface MessageReaction {
