@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://www.npmjs.com/package/kesha-antonov/react-native-chat"><img alt="npm version" src="https://badge.fury.io/js/kesha-antonov/react-native-chat.svg"/></a>
-  <a href="https://www.npmjs.com/package/kesha-antonov/react-native-chat"><img alt="npm downloads" src="https://img.shields.io/npm/dm/kesha-antonov/react-native-chat.svg"/></a>
+  <a href="https://www.npmjs.com/package/@kesha-antonov/react-native-chat"><img alt="npm version" src="https://badge.fury.io/js/@kesha-antonov%2Freact-native-chat.svg"/></a>
+  <a href="https://www.npmjs.com/package/@kesha-antonov/react-native-chat"><img alt="npm downloads" src="https://img.shields.io/npm/dm/@kesha-antonov%2Freact-native-chat.svg"/></a>
   <a href="https://circleci.com/gh/kesha-antonov/react-native-chat"><img src="https://circleci.com/gh/kesha-antonov/react-native-chat.svg?style=shield" alt="build"></a>
   <img src="https://img.shields.io/badge/platforms-iOS%20%7C%20Android%20%7C%20Web-lightgrey.svg" alt="platforms">
   <img src="https://img.shields.io/badge/TypeScript-supported-blue.svg" alt="TypeScript">
@@ -23,23 +23,25 @@
 
 ## ✨ Features
 
-- 🎨 **Fully Customizable** - Override any component with your own implementation
-- 📎 **Composer Actions** - Attach photos, files, or trigger custom actions
-- ↩️ **Reply to Messages** - Swipe-to-reply with reply preview and message threading
-- ⏮️ **Load Earlier Messages** - Infinite scroll with pagination support
-- 📋 **Copy to Clipboard** - Long-press messages to copy text
-- 🔗 **Smart Link Parsing** - Auto-detect URLs, emails, phone numbers, hashtags, mentions
-- 👤 **Avatars** - User initials or custom avatar images
-- 🌍 **Localized Dates** - Full i18n support via Day.js
-- ⌨️ **Keyboard Handling** - Smart keyboard avoidance for all platforms
-- 💬 **System Messages** - Display system notifications in chat
-- ⚡ **Quick Replies** - Bot-style quick reply buttons
-- ✍️ **Typing Indicator** - Show when users are typing
-- ✅ **Message Status** - Tick indicators for sent/delivered/read states
-- ⬇️ **Scroll to Bottom** - Quick navigation button
-- 🌐 **Web Support** - Works with react-native-web
-- 📱 **Expo Support** - Easy integration with Expo projects
-- 📝 **TypeScript** - Complete TypeScript definitions included
+- 🤖 **[Streaming (AI) Messages](#streaming-ai-messages)** - Token-by-token streamed replies with a typing cursor and stop control
+- 🎨 **[Fully Customizable](#-props-reference)** - Override any component with your own implementation
+- 📎 **[Composer Actions](#actions--action-sheet)** - Attach photos, files, or trigger custom actions
+- ↩️ **[Reply to Messages](#reply-to-messages)** - Swipe-to-reply with reply preview and message threading
+- ⏮️ **[Load Earlier Messages](#load-earlier-messages)** - Infinite scroll with pagination support
+- 📋 **[Copy to Clipboard](#copy-to-clipboard)** - Long-press messages to copy text
+- 🔗 **[Smart Link Parsing](#smart-link-parsing)** - Auto-detect URLs, emails, phone numbers, hashtags, mentions
+- 👤 **[Avatars](#avatars)** - User initials or custom avatar images
+- 🌍 **[Localized Dates](#date--time)** - Full i18n support via Day.js
+- ⌨️ **[Keyboard Handling](#keyboard--layout)** - Smart keyboard avoidance for all platforms
+- 💬 **[System Messages](#system-messages)** - Display system notifications in chat
+- ⚡ **[Quick Replies](#quick-replies)** - Bot-style quick reply buttons
+- 😀 **[Emoji Reactions](#emoji-reactions)** - Long-press to react, with reaction pills and an optional full emoji browser
+- ✍️ **[Typing Indicator](#typing-indicator)** - Show when users are typing
+- ✅ **[Message Status](#message-status)** - Tick indicators for sent/delivered/read states
+- ⬇️ **[Scroll to Bottom](#scroll-to-bottom)** - Quick navigation button
+- 🌐 **[Web Support](#web-react-native-web)** - Works with react-native-web
+- 📱 **[Expo Support](#expo-projects)** - Easy integration with Expo projects
+- 📝 **[TypeScript](#typescript)** - Complete TypeScript definitions included
 
 <p align="center">
   <img width="200" src="https://github.com/user-attachments/assets/c9da88f5-0b20-471c-8cd7-373bdb767517" />
@@ -614,6 +616,202 @@ const [isScrolledUp, setIsScrolledUp] = useState(false)
   }}
 />
 ```
+
+### Streaming (AI) Messages
+
+Render AI assistant replies token-by-token. The library batches incoming chunks with `requestAnimationFrame` (one render per frame, only the streaming bubble re-renders) and shows a blinking caret while a message is still streaming.
+
+- **`IMessage.streaming`** - flag a message as streaming (shows the caret)
+- **`Chat.updateMessage(messages, id, patch)`** - immutable per-message update, cheap enough for per-token appends
+- **`useStreamingMessages(...)`** - owns the message list, rAF-batches `push()`, and supports stop via `AbortController`
+
+```tsx
+import { useCallback } from 'react'
+import { Chat, IMessage, useStreamingMessages } from '@kesha-antonov/react-native-chat'
+
+function Bot () {
+  const { messages, append, startStream, isStreaming, stop } = useStreamingMessages<IMessage>()
+
+  const onSend = useCallback((newMessages: IMessage[] = []) => {
+    append(newMessages[0])                      // show the user's message
+    const stream = startStream({ user: { _id: 2, name: 'Assistant' } }) // empty streaming bubble
+
+    runMyModel(newMessages[0].text, {
+      signal: stream.signal,                    // aborts when stop() is called
+      onToken: token => stream.push(token),     // batched, one render per frame
+      onDone: () => stream.done(),              // clears the streaming flag
+    })
+  }, [append, startStream])
+
+  return <Chat messages={messages} onSend={onSend} user={{ _id: 1 }} />
+}
+```
+
+See **[docs/STREAMING.md](./docs/STREAMING.md)** for the full hook API and a real Claude streaming adapter (via a backend proxy). A runnable demo lives in `example/components/chat-examples/AIBotExample.tsx`.
+
+### Emoji Reactions
+
+Long-press a message to open a quick emoji picker; selected reactions render as pills below the bubble and toggle on tap. The core ships a lightweight quick picker (built on `react-native-gesture-handler` and `react-native-reanimated`, no extra dependencies). A full emoji browser is optional and demonstrated in the example app via the `renderReactionPicker` override.
+
+<p align="center">
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/master/media/reactions-picker.png" />
+  &nbsp;&nbsp;
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/master/media/reactions-pills.png" />
+  &nbsp;&nbsp;
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/master/media/reactions-emoji-browser.png" />
+</p>
+
+Store reactions on each message as a `reactions` array, then enable the feature and handle the toggle. Reaction state is owned by you, so it works with any backend:
+
+```tsx
+interface IChatMessage extends IMessage {
+  reactions?: MessageReaction[] // { emoji: string, userIds: (string | number)[] }[]
+}
+
+const CURRENT_USER_ID = 1
+
+const handleReactionPress = useCallback((message: IChatMessage, emoji: string) => {
+  setMessages(prev =>
+    prev.map(m => {
+      if (m._id !== message._id)
+        return m
+
+      const existing = (m.reactions ?? []).find(r => r.emoji === emoji)
+      if (!existing)
+        return { ...m, reactions: [...(m.reactions ?? []), { emoji, userIds: [CURRENT_USER_ID] }] }
+
+      const userIds = existing.userIds.includes(CURRENT_USER_ID)
+        ? existing.userIds.filter(id => id !== CURRENT_USER_ID)
+        : [...existing.userIds, CURRENT_USER_ID]
+
+      return {
+        ...m,
+        reactions: userIds.length === 0
+          ? (m.reactions ?? []).filter(r => r.emoji !== emoji)
+          : (m.reactions ?? []).map(r => (r.emoji === emoji ? { ...r, userIds } : r)),
+      }
+    })
+  )
+}, [])
+
+<Chat
+  messages={messages}
+  onSend={onSend}
+  user={{ _id: CURRENT_USER_ID }}
+  reactions={{
+    isEnabled: true,
+    onReactionPress: handleReactionPress,
+    // Optional: provide a richer picker (e.g. a full emoji browser).
+    // See example/components/chat-examples/ReactionsExample.tsx
+    // renderReactionPicker: props => <MyEmojiPicker {...props} />,
+  }}
+/>
+```
+
+#### Reactions Props (Grouped)
+
+The `reactions` prop accepts:
+
+- **`isEnabled`** _(Bool)_ - Enable emoji reactions (default `false`)
+- **`emojis`** _(String[])_ - Emojis shown in the quick picker (default `['👍', '❤️', '😂', '😮', '😢', '👎']`)
+- **`onReactionPress`** _(Function)_ - `(message, emoji) => void` called when an emoji is selected or a pill is tapped. Toggle logic is left to you
+- **`renderReactions`** _(Function)_ - Override the reactions-display component rendered below the bubble
+- **`renderReactionPicker`** _(Function)_ - Override the picker shown on long-press (use for a full emoji browser)
+- **`containerStyle`**, **`reactionStyle`**, **`reactionActiveStyle`**, **`reactionTextStyle`**, **`reactionCountStyle`** - Styles for the reaction pills
+- **`pickerContainerStyle`**, **`pickerEmojiStyle`** - Styles for the quick picker
+
+### Smart Link Parsing
+
+Message text is automatically scanned for URLs, emails, and phone numbers; hashtags and mentions are opt-in. Configure it via `messageTextProps`:
+
+```tsx
+<Chat
+  messageTextProps={{
+    url: true,        // default true
+    email: true,      // default true
+    phone: true,      // default true
+    hashtag: true,    // default false
+    mention: true,    // default false
+    hashtagUrl: 'https://example.com/hashtag',
+    mentionUrl: 'https://example.com',
+    linkStyle: { left: { color: '#1d9bf0' }, right: { color: '#fff' } },
+    onPress: (message, url, type) => {
+      // type: 'url' | 'email' | 'phone' | 'mention' | 'hashtag'
+      Linking.openURL(url)
+    },
+  }}
+/>
+```
+
+For full control, pass custom `matchers` (`{ type, pattern, getLinkUrl?, getLinkText?, renderLink?, onPress? }[]`) to add or override patterns. See the Links example in the [example app](#-example-app).
+
+### Copy to Clipboard
+
+Long-press handling is exposed via `onLongPressMessage`. Chat wraps [`@expo/react-native-action-sheet`](https://github.com/expo/react-native-action-sheet), so you can show a "Copy Text" action sheet and copy with the clipboard library of your choice:
+
+```tsx
+import { useActionSheet } from '@expo/react-native-action-sheet'
+import { setStringAsync } from 'expo-clipboard'
+
+const { showActionSheetWithOptions } = useActionSheet()
+
+<Chat
+  onLongPressMessage={(_context, message) => {
+    showActionSheetWithOptions(
+      { options: ['Copy Text', 'Cancel'], cancelButtonIndex: 1 },
+      buttonIndex => {
+        if (buttonIndex === 0)
+          setStringAsync(message.text)
+      }
+    )
+  }}
+/>
+```
+
+### Message Status
+
+Set `sent`, `received`, or `pending` on a message to show its delivery status. By default these render as tick indicators next to the timestamp (`✓` sent, `✓✓` received, `🕓` pending):
+
+```tsx
+const message: IMessage = {
+  _id: 1,
+  text: 'Delivered!',
+  createdAt: new Date(),
+  user: { _id: 1 },
+  sent: true,
+  received: true,
+}
+```
+
+Customize the indicators with `renderTicks` (full override) or `tickStyle` (style only):
+
+```tsx
+<Chat
+  renderTicks={message => (message.received ? <MyReadIcon /> : null)}
+  tickStyle={{ color: '#1d9bf0' }}
+/>
+```
+
+### TypeScript
+
+Chat ships complete type definitions and is generic over your message type. Extend `IMessage` to add custom fields and everything stays typed end to end:
+
+```tsx
+import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+
+interface MyMessage extends IMessage {
+  reactions?: { emoji: string, userIds: (string | number)[] }[]
+}
+
+<Chat<MyMessage>
+  messages={messages}
+  onSend={msgs => {/* msgs is typed as MyMessage[] */}}
+  user={{ _id: 1 }}
+/>
+```
+
+---
+
 
 ---
 
