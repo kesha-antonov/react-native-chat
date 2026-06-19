@@ -654,11 +654,11 @@ See **[docs/STREAMING.md](./docs/STREAMING.md)** for the full hook API and a rea
 Long-press a message to open a quick emoji picker; selected reactions render as pills below the bubble and toggle on tap. The core ships a lightweight quick picker (built on `react-native-gesture-handler` and `react-native-reanimated`, no extra dependencies). A full emoji browser is optional and demonstrated in the example app via the `renderReactionPicker` override.
 
 <p align="center">
-  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/master/media/reactions-picker.png" />
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-picker.png" />
   &nbsp;&nbsp;
-  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/master/media/reactions-pills.png" />
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-pills.png" />
   &nbsp;&nbsp;
-  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/master/media/reactions-emoji-browser.png" />
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-emoji-browser.png" />
 </p>
 
 Store reactions on each message as a `reactions` array, then enable the feature and handle the toggle. Reaction state is owned by you, so it works with any backend:
