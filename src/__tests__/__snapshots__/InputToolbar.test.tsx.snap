@@ -5,11 +5,13 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
   style={
     [
       {
-        "backgroundColor": "#fff",
-        "borderTopColor": "#b2b2b2",
+        "backgroundColor": "#FFFFFF",
+        "borderTopColor": "rgba(0, 0, 0, 0.08)",
         "borderTopWidth": 0.5,
       },
-      false,
+      {
+        "paddingBottom": 0,
+      },
       undefined,
     ]
   }
@@ -20,6 +22,10 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
         {
           "alignItems": "flex-end",
           "flexDirection": "row",
+          "gap": 8,
+          "paddingHorizontal": 8,
+          "paddingVertical": 8,
+          "position": "relative",
         },
         undefined,
       ]
@@ -28,61 +34,77 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
     <View
       style={
         {
+          "alignItems": "flex-end",
+          "backgroundColor": "#F2F2F7",
+          "borderColor": "transparent",
+          "borderRadius": 18,
+          "borderWidth": 0.5,
           "flex": 1,
+          "flexDirection": "row",
+          "gap": 6,
+          "minHeight": 44,
+          "paddingHorizontal": 12,
         }
       }
     >
-      <TextInput
-        accessibilityLabel="Type a message..."
-        accessible={true}
-        collapsable={false}
-        enablesReturnKeyAutomatically={true}
-        handlerTag={-1}
-        handlerType="NativeViewGestureHandler"
-        keyboardAppearance="default"
-        multiline={true}
-        onChange={[Function]}
-        onGestureHandlerEvent={[Function]}
-        onGestureHandlerStateChange={[Function]}
-        placeholder="Type a message..."
-        placeholderTextColor="#b2b2b2"
+      <View
         style={
-          [
+          {
+            "flex": 1,
+            "justifyContent": "center",
+            "minHeight": 44,
+          }
+        }
+      >
+        <TextInput
+          accessibilityLabel="Type a message..."
+          accessible={true}
+          collapsable={false}
+          enablesReturnKeyAutomatically={true}
+          handlerTag={-1}
+          handlerType="NativeViewGestureHandler"
+          keyboardAppearance="default"
+          multiline={true}
+          onContentSizeChange={[Function]}
+          onGestureHandlerEvent={[Function]}
+          onGestureHandlerStateChange={[Function]}
+          placeholder="Type a message..."
+          placeholderTextColor="#8E8E93"
+          scrollEnabled={false}
+          style={
             [
               {
+                "color": "#000000",
                 "fontSize": 16,
-                "lineHeight": 22,
-                "paddingBottom": 10,
-                "paddingHorizontal": 8,
-                "paddingTop": 8,
+                "lineHeight": 21,
+                "paddingBottom": 11.5,
+                "paddingHorizontal": 0,
+                "paddingTop": 11.5,
+              },
+              {
+                "outlineStyle": "none",
+              },
+              {
+                "height": 44,
               },
               undefined,
-            ],
-            {
-              "outlineStyle": "none",
-            },
-            {
-              "height": undefined,
-            },
-            undefined,
-          ]
-        }
-        testID="Type a message..."
-        underlineColorAndroid="transparent"
-        value=""
-      />
+            ]
+          }
+          testID="Type a message..."
+          underlineColorAndroid="transparent"
+          value=""
+        />
+      </View>
     </View>
     <View
-      pointerEvents="none"
       style={
         [
           {
-            "justifyContent": "flex-end",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "minHeight": 44,
           },
           undefined,
-          {
-            "opacity": 0,
-          },
         ]
       }
     >
@@ -93,7 +115,7 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
           {
             "busy": undefined,
             "checked": undefined,
-            "disabled": false,
+            "disabled": true,
             "expanded": undefined,
             "selected": undefined,
           }
@@ -107,7 +129,7 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
           }
         }
         accessible={true}
-        focusable={true}
+        focusable={false}
         onClick={[Function]}
         onResponderGrant={[Function]}
         onResponderMove={[Function]}

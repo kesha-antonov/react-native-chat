@@ -2,16 +2,14 @@
 
 exports[`Send should always render <Send /> and compare with snapshot 1`] = `
 <View
-  pointerEvents="auto"
   style={
     [
       {
-        "justifyContent": "flex-end",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "minHeight": 44,
       },
       undefined,
-      {
-        "opacity": 0,
-      },
     ]
   }
 >
@@ -22,7 +20,7 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
       {
         "busy": undefined,
         "checked": undefined,
-        "disabled": false,
+        "disabled": true,
         "expanded": undefined,
         "selected": undefined,
       }
@@ -36,7 +34,7 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
       }
     }
     accessible={true}
-    focusable={true}
+    focusable={false}
     onClick={[Function]}
     onResponderGrant={[Function]}
     onResponderMove={[Function]}
@@ -51,16 +49,14 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
 
 exports[`Send should not render <Send /> and compare with snapshot 1`] = `
 <View
-  pointerEvents="none"
   style={
     [
       {
-        "justifyContent": "flex-end",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "minHeight": 44,
       },
       undefined,
-      {
-        "opacity": 0,
-      },
     ]
   }
 >
@@ -71,7 +67,7 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
       {
         "busy": undefined,
         "checked": undefined,
-        "disabled": false,
+        "disabled": true,
         "expanded": undefined,
         "selected": undefined,
       }
@@ -85,7 +81,7 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
       }
     }
     accessible={true}
-    focusable={true}
+    focusable={false}
     onClick={[Function]}
     onResponderGrant={[Function]}
     onResponderMove={[Function]}
@@ -100,16 +96,14 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
 
 exports[`Send should render <Send /> where there is input and compare with snapshot 1`] = `
 <View
-  pointerEvents="auto"
   style={
     [
       {
-        "justifyContent": "flex-end",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "minHeight": 44,
       },
       undefined,
-      {
-        "opacity": 0,
-      },
     ]
   }
 >

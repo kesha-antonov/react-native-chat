@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View, useColorScheme } from 'react-native'
+import { ActionSheetProvider } from '@expo/react-native-action-sheet'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 import messagesData from '../../example-expo/data/messages'
 import SlackMessage from '../../example-slack-message/src/SlackMessage'
@@ -28,19 +29,21 @@ export default function SlackExample () {
   }, [user])
 
   return (
-    <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
-      <Chat
-        messages={messages}
-        onSend={onSend}
-        user={user}
-        renderMessage={props => <SlackMessage {...props} />}
-        messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
-        textInputProps={{
-          style: getColorSchemeStyle(styles, 'composer', colorScheme),
-        }}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
-      />
-    </View>
+    <ActionSheetProvider>
+      <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
+        <Chat
+          messages={messages}
+          onSend={onSend}
+          user={user}
+          renderMessage={props => <SlackMessage {...props} />}
+          messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
+          textInputProps={{
+            style: getColorSchemeStyle(styles, 'composer', colorScheme),
+          }}
+          keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
+        />
+      </View>
+    </ActionSheetProvider>
   )
 }
 

@@ -7,9 +7,11 @@ export type {
   RenderMessageImageProps,
   RenderMessageVideoProps,
   RenderMessageAudioProps,
+  RenderMessageLocationProps,
   RenderMessageTextProps
 } from './Bubble'
 export type { ComposerProps } from './Composer'
+export type { AttachmentAction, AttachmentSheetProps } from './components/AttachmentSheet'
 export type { DayProps } from './Day'
 export type { ChatAvatarProps } from './ChatAvatar'
 export type { InputToolbarProps, ReplyPreviewProps } from './InputToolbar'

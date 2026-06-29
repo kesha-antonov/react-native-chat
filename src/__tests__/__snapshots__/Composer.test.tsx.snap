@@ -5,6 +5,8 @@ exports[`should render <Composer /> and compare with snapshot 1`] = `
   style={
     {
       "flex": 1,
+      "justifyContent": "center",
+      "minHeight": 44,
     }
   }
 >
@@ -17,28 +19,27 @@ exports[`should render <Composer /> and compare with snapshot 1`] = `
     handlerType="NativeViewGestureHandler"
     keyboardAppearance="default"
     multiline={true}
-    onChange={[Function]}
+    onContentSizeChange={[Function]}
     onGestureHandlerEvent={[Function]}
     onGestureHandlerStateChange={[Function]}
     placeholder="Type a message..."
-    placeholderTextColor="#b2b2b2"
+    placeholderTextColor="#8E8E93"
+    scrollEnabled={false}
     style={
       [
-        [
-          {
-            "fontSize": 16,
-            "lineHeight": 22,
-            "paddingBottom": 10,
-            "paddingHorizontal": 8,
-            "paddingTop": 8,
-          },
-          undefined,
-        ],
+        {
+          "color": "#000000",
+          "fontSize": 16,
+          "lineHeight": 21,
+          "paddingBottom": 11.5,
+          "paddingHorizontal": 0,
+          "paddingTop": 11.5,
+        },
         {
           "outlineStyle": "none",
         },
         {
-          "height": undefined,
+          "height": 44,
         },
         undefined,
       ]

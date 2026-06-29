@@ -25,14 +25,21 @@ const delay = (ms: number, signal: AbortSignal) =>
   })
 
 // Canned reply, streamed word by word. Swap this for a real provider (see
-// docs/STREAMING.md) - the streaming plumbing stays identical.
+// docs/STREAMING.md) - the streaming plumbing stays identical. The reply is
+// markdown, rendered via messageTextProps.markdown below: the built-in
+// dependency-free renderer handles it out of the box, and the optional
+// react-native-streamdown peer is used automatically when installed.
 function buildReply (prompt: string): string {
   return (
-    `You said: "${prompt.trim()}".\n\n` +
-    'Here is a streamed answer. Each word arrives separately, and the chat ' +
-    'coalesces them into one render per frame so it stays smooth even on a ' +
-    'fast stream. Replace buildReply with a call to your LLM and feed tokens ' +
-    'to push() - that is the whole integration.'
+    `You said: **"${prompt.trim()}"**.\n\n` +
+    'Here is a *streamed* answer rendered as **markdown**:\n\n' +
+    '- tokens arrive one at a time\n' +
+    '- the chat coalesces them into one render per frame\n' +
+    '- partial markdown renders gracefully while streaming\n\n' +
+    'Replace `buildReply` with a call to your LLM and feed tokens to `push()`:\n\n' +
+    '```ts\n' +
+    'onToken: token => stream.push(token)\n' +
+    '```\n'
   )
 }
 
@@ -108,6 +115,9 @@ export default function AIBotExample () {
         onSend={onSend}
         user={USER}
         renderSend={renderSend}
+        // Render replies as markdown via the optional react-native-streamdown
+        // peer. No-op (plain text) until that package is installed.
+        messageTextProps={{ markdown: true }}
         messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
         textInputProps={{ style: getColorSchemeStyle(styles, 'composer', colorScheme) }}
         keyboardAvoidingViewProps={{ keyboardVerticalOffset }}

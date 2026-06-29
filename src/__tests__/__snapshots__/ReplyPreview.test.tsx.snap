@@ -10,11 +10,6 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
       {
         "height": undefined,
         "opacity": undefined,
-        "transform": [
-          {
-            "translateY": undefined,
-          },
-        ],
       },
     ]
   }
@@ -24,14 +19,13 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
     style={
       [
         {
-          "borderRadius": 8,
+          "alignItems": "center",
+          "backgroundColor": "#FFFFFF",
+          "borderBottomColor": "rgba(0, 0, 0, 0.08)",
+          "borderBottomWidth": 0.5,
           "flexDirection": "row",
-          "marginBottom": 8,
-          "marginHorizontal": 10,
           "overflow": "hidden",
-        },
-        {
-          "backgroundColor": "#e9e9eb",
+          "paddingHorizontal": 8,
         },
         undefined,
       ]
@@ -40,10 +34,61 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
     <View
       style={
         {
-          "backgroundColor": "#0084ff",
-          "borderTopLeftRadius": 4,
-          "height": "100%",
-          "width": 4,
+          "marginRight": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "height": 18,
+            "justifyContent": "center",
+            "width": 18,
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "borderBottomWidth": 2,
+              "borderColor": "#3390EC",
+              "borderLeftWidth": 2,
+              "height": 6.12,
+              "left": 0,
+              "position": "absolute",
+              "top": 5.040000000000001,
+              "transform": [
+                {
+                  "rotate": "45deg",
+                },
+              ],
+              "width": 6.12,
+            }
+          }
+        />
+        <View
+          style={
+            {
+              "backgroundColor": "#3390EC",
+              "borderRadius": 1,
+              "height": 2,
+              "left": 2.16,
+              "position": "absolute",
+              "top": 8.280000000000001,
+              "width": 12.6,
+            }
+          }
+        />
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "alignSelf": "stretch",
+          "backgroundColor": "#3390EC",
+          "borderRadius": 2,
+          "marginVertical": 8,
+          "width": 3,
         }
       }
     />
@@ -51,7 +96,7 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
       style={
         {
           "flex": 1,
-          "paddingHorizontal": 10,
+          "paddingHorizontal": 8,
           "paddingVertical": 8,
         }
       }
@@ -75,25 +120,22 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
             numberOfLines={1}
             style={
               {
-                "color": "#0084ff",
+                "color": "#3390EC",
                 "fontSize": 13,
                 "fontWeight": "600",
                 "marginBottom": 2,
               }
             }
           >
-            Replying to 
-            John Doe
+            Replying to John Doe
           </Text>
           <Text
             numberOfLines={2}
             style={
               [
                 {
+                  "color": "#000000",
                   "fontSize": 14,
-                },
-                {
-                  "color": "#333",
                 },
                 undefined,
               ]
@@ -145,21 +187,49 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
         }
       }
     >
-      <Text
+      <View
         style={
-          [
-            {
-              "fontSize": 18,
-              "fontWeight": "600",
-            },
-            {
-              "color": "#333",
-            },
-          ]
+          {
+            "alignItems": "center",
+            "height": 16,
+            "justifyContent": "center",
+            "width": 16,
+          }
         }
       >
-        ×
-      </Text>
+        <View
+          style={
+            {
+              "backgroundColor": "#8E8E93",
+              "borderRadius": 1,
+              "height": 2,
+              "position": "absolute",
+              "transform": [
+                {
+                  "rotate": "45deg",
+                },
+              ],
+              "width": 16,
+            }
+          }
+        />
+        <View
+          style={
+            {
+              "backgroundColor": "#8E8E93",
+              "borderRadius": 1,
+              "height": 2,
+              "position": "absolute",
+              "transform": [
+                {
+                  "rotate": "-45deg",
+                },
+              ],
+              "width": 16,
+            }
+          }
+        />
+      </View>
     </View>
   </View>
 </View>
@@ -175,11 +245,6 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
       {
         "height": undefined,
         "opacity": undefined,
-        "transform": [
-          {
-            "translateY": undefined,
-          },
-        ],
       },
     ]
   }
@@ -189,14 +254,13 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
     style={
       [
         {
-          "borderRadius": 8,
+          "alignItems": "center",
+          "backgroundColor": "#FFFFFF",
+          "borderBottomColor": "rgba(0, 0, 0, 0.08)",
+          "borderBottomWidth": 0.5,
           "flexDirection": "row",
-          "marginBottom": 8,
-          "marginHorizontal": 10,
           "overflow": "hidden",
-        },
-        {
-          "backgroundColor": "#e9e9eb",
+          "paddingHorizontal": 8,
         },
         undefined,
       ]
@@ -205,10 +269,61 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
     <View
       style={
         {
-          "backgroundColor": "#0084ff",
-          "borderTopLeftRadius": 4,
-          "height": "100%",
-          "width": 4,
+          "marginRight": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "height": 18,
+            "justifyContent": "center",
+            "width": 18,
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "borderBottomWidth": 2,
+              "borderColor": "#3390EC",
+              "borderLeftWidth": 2,
+              "height": 6.12,
+              "left": 0,
+              "position": "absolute",
+              "top": 5.040000000000001,
+              "transform": [
+                {
+                  "rotate": "45deg",
+                },
+              ],
+              "width": 6.12,
+            }
+          }
+        />
+        <View
+          style={
+            {
+              "backgroundColor": "#3390EC",
+              "borderRadius": 1,
+              "height": 2,
+              "left": 2.16,
+              "position": "absolute",
+              "top": 8.280000000000001,
+              "width": 12.6,
+            }
+          }
+        />
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "alignSelf": "stretch",
+          "backgroundColor": "#3390EC",
+          "borderRadius": 2,
+          "marginVertical": 8,
+          "width": 3,
         }
       }
     />
@@ -216,7 +331,7 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
       style={
         {
           "flex": 1,
-          "paddingHorizontal": 10,
+          "paddingHorizontal": 8,
           "paddingVertical": 8,
         }
       }
@@ -258,25 +373,22 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
             numberOfLines={1}
             style={
               {
-                "color": "#0084ff",
+                "color": "#3390EC",
                 "fontSize": 13,
                 "fontWeight": "600",
                 "marginBottom": 2,
               }
             }
           >
-            Replying to 
-            John Doe
+            Replying to John Doe
           </Text>
           <Text
             numberOfLines={2}
             style={
               [
                 {
+                  "color": "#000000",
                   "fontSize": 14,
-                },
-                {
-                  "color": "#333",
                 },
                 undefined,
               ]
@@ -328,21 +440,49 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
         }
       }
     >
-      <Text
+      <View
         style={
-          [
-            {
-              "fontSize": 18,
-              "fontWeight": "600",
-            },
-            {
-              "color": "#333",
-            },
-          ]
+          {
+            "alignItems": "center",
+            "height": 16,
+            "justifyContent": "center",
+            "width": 16,
+          }
         }
       >
-        ×
-      </Text>
+        <View
+          style={
+            {
+              "backgroundColor": "#8E8E93",
+              "borderRadius": 1,
+              "height": 2,
+              "position": "absolute",
+              "transform": [
+                {
+                  "rotate": "45deg",
+                },
+              ],
+              "width": 16,
+            }
+          }
+        />
+        <View
+          style={
+            {
+              "backgroundColor": "#8E8E93",
+              "borderRadius": 1,
+              "height": 2,
+              "position": "absolute",
+              "transform": [
+                {
+                  "rotate": "-45deg",
+                },
+              ],
+              "width": 16,
+            }
+          }
+        />
+      </View>
     </View>
   </View>
 </View>

@@ -6,13 +6,15 @@ import {
   ViewStyle,
   TextStyle,
   Text } from 'react-native'
-import { Color } from './Color'
 import { TouchableOpacity } from './components/TouchableOpacity'
+import { useLabels } from './hooks/useLabels'
+import { useTheme, useThemedStyles } from './hooks/useTheme'
 import { warning } from './logging'
 import { IMessage, Reply } from './Models'
 import stylesCommon from './styles'
+import { ChatTheme } from './Theme'
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -34,7 +36,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   sendLinkText: {
-    color: Color.defaultBlue,
+    color: theme.colors.accent,
     fontWeight: '600',
     fontSize: 17,
   },
@@ -61,14 +63,20 @@ const diffReply = (currentReply: Reply) => (reply: Reply) =>
 export function QuickReplies ({
   currentMessage,
   nextMessage,
-  color = Color.peterRiver,
+  color: colorProp,
   quickReplyStyle,
   quickReplyTextStyle,
   quickReplyContainerStyle,
   onQuickReply,
-  sendText = 'Send',
+  sendText,
   renderQuickReplySend,
 }: QuickRepliesProps<IMessage>) {
+  const theme = useTheme()
+  const labels = useLabels()
+  const styles = useThemedStyles(createStyles)
+  const color = colorProp ?? theme.colors.accent
+  const sendLabel = sendText ?? labels.send
+
   const { type } = currentMessage!.quickReplies!
   const [replies, setReplies] = useState<Reply[]>([])
 
@@ -131,11 +139,11 @@ export function QuickReplies ({
         onPress={handleSend(replies)}
       >
         {renderQuickReplySend?.() || (
-          <Text style={styles.sendLinkText}>{sendText}</Text>
+          <Text style={styles.sendLinkText}>{sendLabel}</Text>
         )}
       </TouchableOpacity>
     )
-  }, [replies, handleSend, renderQuickReplySend, sendText])
+  }, [replies, handleSend, renderQuickReplySend, sendLabel, styles])
 
   if (!shouldComponentDisplay)
     return null
@@ -164,7 +172,7 @@ export function QuickReplies ({
                 ellipsizeMode='tail'
                 style={[
                   styles.quickReplyText,
-                  { color: selected ? Color.white : color },
+                  { color: selected ? '#fff' : color },
                   quickReplyTextStyle,
                 ]}
               >

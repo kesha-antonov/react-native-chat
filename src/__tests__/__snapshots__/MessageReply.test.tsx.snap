@@ -43,7 +43,7 @@ exports[`should render <MessageReply /> and compare with snapshot 1`] = `
         },
         {
           "backgroundColor": "rgba(0, 0, 0, 0.06)",
-          "borderLeftColor": "#0084ff",
+          "borderLeftColor": "#3390EC",
           "borderLeftWidth": 3,
         },
         undefined,
@@ -60,7 +60,7 @@ exports[`should render <MessageReply /> and compare with snapshot 1`] = `
             "marginBottom": 2,
           },
           {
-            "color": "#0084ff",
+            "color": "#3390EC",
           },
           undefined,
           undefined,
@@ -77,7 +77,7 @@ exports[`should render <MessageReply /> and compare with snapshot 1`] = `
             "fontSize": 13,
           },
           {
-            "color": "#333",
+            "color": "#000000",
           },
           undefined,
           undefined,
@@ -133,7 +133,7 @@ exports[`should render <MessageReply /> on right position and compare with snaps
         },
         {
           "backgroundColor": "rgba(255, 255, 255, 0.15)",
-          "borderLeftColor": "rgba(255, 255, 255, 0.6)",
+          "borderLeftColor": "rgba(255, 255, 255, 0.7)",
           "borderLeftWidth": 3,
         },
         undefined,
@@ -150,7 +150,7 @@ exports[`should render <MessageReply /> on right position and compare with snaps
             "marginBottom": 2,
           },
           {
-            "color": "rgba(255, 255, 255, 0.9)",
+            "color": "#FFFFFF",
           },
           undefined,
           undefined,
@@ -167,7 +167,7 @@ exports[`should render <MessageReply /> on right position and compare with snaps
             "fontSize": 13,
           },
           {
-            "color": "rgba(255, 255, 255, 0.9)",
+            "color": "#FFFFFF",
           },
           undefined,
           undefined,

@@ -5,11 +5,12 @@ import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated
 
 import { Avatar } from '../Avatar'
 import { Bubble } from '../Bubble'
-import { Color } from '../Color'
+import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { IMessage } from '../Models'
 import { SwipeToReplyProps } from '../Reply'
 import { getStyleWithPosition } from '../styles'
 import { SystemMessage } from '../SystemMessage'
+import { ChatTheme } from '../Theme'
 import { isSameUser, renderComponentOrElement } from '../utils'
 import styles from './styles'
 import { MessageProps } from './types'
@@ -25,6 +26,8 @@ interface ReplyIconProps {
 }
 
 const ReplyIcon = ({ progress, direction, position, style }: ReplyIconProps) => {
+  const localStyles = useThemedStyles(createLocalStyles)
+
   const animatedStyle = useAnimatedStyle(() => {
     'worklet'
 
@@ -74,6 +77,8 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
   const onSwipeToReply = swipeToReply?.onSwipe
   const renderSwipeToReplyActionProp = swipeToReply?.renderAction
   const swipeToReplyActionContainerStyle = swipeToReply?.actionContainerStyle
+
+  const theme = useTheme()
 
   const swipeableRef = useRef<SwipeableMethods>(null)
 
@@ -177,8 +182,7 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
       <View
         style={[
           getStyleWithPosition(styles, 'container', position),
-          { marginBottom: sameUser ? 2 : 10 },
-          !props.isInverted && { marginBottom: 2 },
+          { marginBottom: sameUser ? theme.spacing.withinGroup : theme.spacing.betweenGroups },
           containerStyle?.[position],
         ]}
       >
@@ -192,7 +196,7 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
     renderSystemMessage,
     position,
     sameUser,
-    props.isInverted,
+    theme,
     containerStyle,
     renderAvatar,
     renderBubble,
@@ -226,7 +230,7 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
   )
 }
 
-const localStyles = StyleSheet.create({
+const createLocalStyles = (theme: ChatTheme) => StyleSheet.create({
   swipeActionContainer: {
     width: 40,
     justifyContent: 'center',
@@ -236,7 +240,7 @@ const localStyles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: Color.defaultBlue,
+    backgroundColor: theme.colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -256,7 +260,7 @@ const localStyles = StyleSheet.create({
     borderBottomWidth: 5,
     borderBottomColor: 'transparent',
     borderRightWidth: 6,
-    borderRightColor: Color.white,
+    borderRightColor: '#fff',
   },
   replyIconLine: {
     position: 'absolute',
@@ -266,8 +270,8 @@ const localStyles = StyleSheet.create({
     height: 4,
     borderTopWidth: 2,
     borderRightWidth: 2,
-    borderTopColor: Color.white,
-    borderRightColor: Color.white,
+    borderTopColor: '#fff',
+    borderRightColor: '#fff',
     borderTopRightRadius: 4,
   },
 })

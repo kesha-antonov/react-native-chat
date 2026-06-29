@@ -9,7 +9,10 @@ import {
   Text } from 'react-native'
 import { Color } from './Color'
 import { TouchableOpacity } from './components/TouchableOpacity'
+import { useLabels } from './hooks/useLabels'
+import { useThemedStyles } from './hooks/useTheme'
 import stylesCommon from './styles'
+import { ChatTheme } from './Theme'
 
 export interface LoadEarlierMessagesProps {
   isAvailable: boolean
@@ -28,7 +31,7 @@ export interface LoadEarlierMessagesProps {
 export const LoadEarlierMessages: React.FC<LoadEarlierMessagesProps> = ({
   isLoading = false,
   onPress,
-  label = 'Load earlier messages',
+  label,
   containerStyle,
   wrapperStyle,
   textStyle,
@@ -36,6 +39,10 @@ export const LoadEarlierMessages: React.FC<LoadEarlierMessagesProps> = ({
   activityIndicatorSize = 'small',
   activityIndicatorStyle,
 }) => {
+  const styles = useThemedStyles(createStyles)
+  const labels = useLabels()
+  const resolvedLabel = label ?? labels.loadEarlier
+
   return (
     <TouchableOpacity
       style={[styles.container, containerStyle]}
@@ -56,7 +63,7 @@ export const LoadEarlierMessages: React.FC<LoadEarlierMessagesProps> = ({
             : (
               <View style={styles.textContainer}>
                 <Text style={[styles.text, textStyle]}>
-                  {label}
+                  {resolvedLabel}
                 </Text>
               </View>
             )
@@ -66,15 +73,15 @@ export const LoadEarlierMessages: React.FC<LoadEarlierMessagesProps> = ({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   container: {
     alignItems: 'center',
     marginVertical: 10,
   },
   wrapper: {
-    backgroundColor: Color.defaultColor,
-    borderRadius: 15,
-    paddingHorizontal: 10,
+    backgroundColor: theme.colors.dayPillBackground,
+    borderRadius: theme.radii.dayPill,
+    paddingHorizontal: 12,
     paddingVertical: 5,
   },
   textContainer: {
@@ -83,7 +90,7 @@ const styles = StyleSheet.create({
   },
   text: {
     backgroundColor: Color.backgroundTransparent,
-    color: Color.white,
+    color: theme.colors.dayPillText,
     fontSize: 12,
     lineHeight: 13,
   },

@@ -1,12 +1,12 @@
 import { StyleSheet } from 'react-native'
-import { Color } from '../Color'
+import { ChatTheme } from '../Theme'
 
-export default StyleSheet.create({
+export const createTypingIndicatorStyles = (theme: ChatTheme) => StyleSheet.create({
   container: {
     marginLeft: 8,
     width: 45,
-    borderRadius: 15,
-    backgroundColor: Color.leftBubbleBackground,
+    borderRadius: theme.radii.bubble,
+    backgroundColor: theme.colors.incomingBubble,
   },
   dots: {
     flexDirection: 'row',
@@ -17,6 +17,6 @@ export default StyleSheet.create({
     borderRadius: 4,
     width: 8,
     height: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.38)',
+    backgroundColor: theme.colors.incomingMeta,
   },
 })

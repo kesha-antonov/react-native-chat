@@ -8,8 +8,9 @@ exports[`Time should render <Time /> and compare with snapshot 1`] = `
     style={
       [
         {
-          "color": "#aaa",
-          "fontSize": 10,
+          "color": "#8E8E93",
+          "fontSize": 12,
+          "fontWeight": "400",
           "textAlign": "right",
         },
         undefined,

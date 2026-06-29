@@ -9,20 +9,12 @@ import {
   Text } from 'react-native'
 import { Color } from './Color'
 import { TouchableOpacity } from './components/TouchableOpacity'
+import { useTheme, useThemedStyles } from './hooks/useTheme'
 import { User } from './Models'
 import stylesCommon from './styles'
+import { ChatTheme } from './Theme'
 
-const {
-  carrot,
-  emerald,
-  peterRiver,
-  wisteria,
-  alizarin,
-  turquoise,
-  midnightBlue,
-} = Color
-
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   avatarStyle: {
     width: 40,
     height: 40,
@@ -32,7 +24,7 @@ const styles = StyleSheet.create({
     backgroundColor: Color.backgroundTransparent,
   },
   textStyle: {
-    color: Color.white,
+    color: theme.avatar.textColor,
     fontSize: 16,
     backgroundColor: Color.backgroundTransparent,
     fontWeight: '100',
@@ -57,6 +49,9 @@ export function ChatAvatar (
     onPress,
   } = props
 
+  const theme = useTheme()
+  const styles = useThemedStyles(createStyles)
+
   const avatarName = useMemo(() => {
     const userName = user?.name || ''
     const name = userName.toUpperCase().split(' ')
@@ -76,19 +71,11 @@ export function ChatAvatar (
         sumChars += user.name.charCodeAt(i)
 
     // inspired by https://github.com/wbinnssmith/react-user-avatar
-    // colors from https://flatuicolors.com/
-    const colors = [
-      carrot,
-      emerald,
-      peterRiver,
-      wisteria,
-      alizarin,
-      turquoise,
-      midnightBlue,
-    ]
+    // palette is themeable via theme.avatar.palette
+    const colors = theme.avatar.palette
 
     return colors[sumChars % colors.length]
-  }, [user?.name])
+  }, [user?.name, theme])
 
   const renderAvatar = useCallback(() => {
     switch (typeof user?.avatar) {
@@ -111,7 +98,7 @@ export function ChatAvatar (
       default:
         return null
     }
-  }, [user, avatarStyle])
+  }, [user, avatarStyle, styles])
 
   const renderInitials = useCallback(() => {
     return (
@@ -119,7 +106,7 @@ export function ChatAvatar (
         {avatarName}
       </Text>
     )
-  }, [textStyle, avatarName])
+  }, [textStyle, avatarName, styles])
 
   const handleOnPress = useCallback(() => {
     const {
@@ -150,7 +137,7 @@ export function ChatAvatar (
       ]}
       accessibilityRole='image'
     />
-  ), [avatarStyle])
+  ), [avatarStyle, styles])
 
   if (!user || (!user.name && !user.avatar))
     return placeholderView

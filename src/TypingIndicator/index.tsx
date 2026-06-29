@@ -9,13 +9,15 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
+import { useThemedStyles } from '../hooks/useTheme'
 import stylesCommon from '../styles'
-import styles from './styles'
+import { createTypingIndicatorStyles } from './styles'
 import { TypingIndicatorProps } from './types'
 
 export * from './types'
 
 const DotsAnimation = () => {
+  const styles = useThemedStyles(createTypingIndicatorStyles)
   const dot1 = useSharedValue(0)
   const dot2 = useSharedValue(0)
   const dot3 = useSharedValue(0)
@@ -89,6 +91,7 @@ const DotsAnimation = () => {
 }
 
 export const TypingIndicator = ({ isTyping, style }: TypingIndicatorProps) => {
+  const styles = useThemedStyles(createTypingIndicatorStyles)
   const yCoords = useSharedValue(200)
   const heightScale = useSharedValue(0)
   const marginScale = useSharedValue(0)

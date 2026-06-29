@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { View } from 'react-native'
+import isEqual from 'lodash.isequal'
 import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated'
 import { Day } from '../../../Day'
 import { Message, MessageProps } from '../../../Message'
@@ -90,7 +91,7 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
   )
 }
 
-export const Item = <TMessage extends IMessage>(props: ItemProps<TMessage>) => {
+const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) => {
   const {
     renderMessage: renderMessageProp,
     isDayAnimationEnabled,
@@ -130,3 +131,30 @@ export const Item = <TMessage extends IMessage>(props: ItemProps<TMessage>) => {
     </View>
   )
 }
+
+// Message data is deep-compared (so any content change - text, status, reactions
+// - re-renders), and every other prop is compared by reference. So the only time
+// a row is skipped is a genuine no-op: identical message data AND all other props
+// (render functions, config, styles, shared values) referentially unchanged. Any
+// new prop reference, added/removed prop, or content change forces a re-render -
+// there's no path where new props leave stale content on screen.
+const MESSAGE_KEYS: Array<keyof ItemProps<IMessage>> = ['currentMessage', 'previousMessage', 'nextMessage']
+
+function arePropsEqual (prev: ItemProps<IMessage>, next: ItemProps<IMessage>): boolean {
+  for (const key of MESSAGE_KEYS)
+    if (!isEqual(prev[key], next[key]))
+      return false
+
+  const keys = new Set<string>([...Object.keys(prev), ...Object.keys(next)])
+  for (const key of keys) {
+    if ((MESSAGE_KEYS as string[]).includes(key))
+      continue
+
+    if (!Object.is((prev as unknown as Record<string, unknown>)[key], (next as unknown as Record<string, unknown>)[key]))
+      return false
+  }
+
+  return true
+}
+
+export const Item = React.memo(ItemComponent, arePropsEqual) as typeof ItemComponent

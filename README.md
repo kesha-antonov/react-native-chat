@@ -23,7 +23,13 @@
 
 ## ✨ Features
 
+> Actively maintained, New Architecture ready, and built for the latest Reanimated/Gesture Handler. A modern, themeable, drop-in successor to `react-native-gifted-chat`. **[See what is new ▸](#-whats-new-vs-react-native-gifted-chat)**
+
+- 🌗 **[Modern UI, Dark Mode & Theming](#-whats-new-vs-react-native-gifted-chat)** - A clean, modern default look with a full light/dark theme system, runtime theme switching, and every token overridable
 - 🤖 **[Streaming (AI) Messages](#streaming-ai-messages)** - Token-by-token streamed replies with a typing cursor and stop control
+- 🎥 **[Video & Audio Messages](#-whats-new-vs-react-native-gifted-chat)** - Real inline playback (optional `expo-video` / `expo-audio`) with a graceful tappable fallback - no more "implement it yourself"
+- 🎙️ **[Voice & Video Recording](#-whats-new-vs-react-native-gifted-chat)** - Telegram-style hold-to-record voice notes and camera video messages (optional, opt-in)
+- 📍 **[Location Messages](#-whats-new-vs-react-native-gifted-chat)** - Map card that opens the system maps app on tap
 - 🎨 **[Fully Customizable](#-props-reference)** - Override any component with your own implementation
 - 📎 **[Composer Actions](#actions--action-sheet)** - Attach photos, files, or trigger custom actions
 - ↩️ **[Reply to Messages](#reply-to-messages)** - Swipe-to-reply with reply preview and message threading
@@ -53,6 +59,75 @@
 
 ---
 
+## 🆕 What's new vs react-native-gifted-chat
+
+This library is kept in sync with upstream [`react-native-gifted-chat`](https://github.com/FaridSafi/react-native-gifted-chat)'s latest `master`, so you **keep everything it already has** - New Architecture support, the animated sticky day header, Reanimated 3/4, Gesture Handler, TypeScript - and the same `IMessage` model and prop names. **Moving over is a package swap plus a rename** (see [Migrating](#-migrating-from-react-native-gifted-chat)).
+
+On top of that, this fork adds the features people kept asking upstream for, plus a modern look out of the box:
+
+| Added in this fork | react-native-gifted-chat | @kesha-antonov/react-native-chat |
+| --- | :---: | :---: |
+| Active maintenance | 💤 sporadic | ✅ active |
+| Modern default UI (Telegram-inspired) | dated 2020 look | ✅ modern, fully overridable |
+| Light/Dark **theme system** | per-component color props | ✅ `theme` / `darkTheme` tokens, runtime switch |
+| Streaming (AI) messages | ❌ | ✅ token-by-token + typing cursor |
+| Emoji reactions | ❌ | ✅ long-press picker + reaction pills |
+| Swipe-to-reply + reply preview | ❌ | ✅ built in |
+| **Video / audio messages** | "not implemented, render your own" | ✅ inline players + tappable fallback |
+| **Voice notes** (hold-to-record + waveform) | ❌ | ✅ optional, Telegram-style |
+| **Video messages** (round camera notes) | ❌ | ✅ optional, Telegram-style |
+| **Location messages** | ❌ ignored | ✅ map card → opens system maps |
+| Bubble tails + tighter message grouping | flat bubbles | ✅ |
+
+Everything new is **non-breaking and opt-in**: keep passing the same props you do today and you simply get the modern look and the extra features for free. The media/recording features only activate when you install their optional peer deps and enable them - nobody is forced to add a single dependency.
+
+### Theming in one line
+
+```jsx
+// Modern defaults out of the box, or override any token (light + dark):
+<Chat
+  theme={{ colors: { accent: '#3390EC', outgoingBubble: '#EFFEDE' } }}
+  darkTheme={{ colors: { background: '#0E1621' } }}
+  {...props}
+/>
+```
+
+### Voice, video and location
+
+```jsx
+<Chat
+  audioRecording={{ isEnabled: true }}   // hold the mic to record a voice note (needs expo-audio)
+  videoRecording={{ isEnabled: true }}   // record a video message (needs expo-image-picker)
+  // location messages render automatically for any IMessage with a `location`
+  {...props}
+/>
+```
+
+```bash
+# Optional inline media playback + recording:
+npx expo install expo-video expo-audio expo-image-picker
+```
+
+### Custom icons (e.g. Lucide)
+
+Built-in icons are the official [Lucide](https://lucide.dev) glyphs, rendered via the optional `react-native-svg` peer when it is installed, or drawn with `View`s (no dependency) otherwise. Override any of them via the `icons` prop - for example with [`lucide-react-native`](https://lucide.dev/) - and the built-in icon is used for anything you don't override:
+
+```tsx
+import { Send, Mic } from 'lucide-react-native'
+
+<Chat
+  icons={{
+    send: ({ color, size }) => <Send color={color} size={size} />,
+    mic:  ({ color, size }) => <Mic color={color} size={size} />,
+  }}
+  {...props}
+/>
+```
+
+Overridable names: `send`, `mic`, `camera`, `play`, `pause`, `check`, `checkAll`, `clock`, `pin`, `plus`, `close`, `chevronLeft`, `chevronDown`, `emoji`, `paperclip`, `reply`, `pencil`, `lock`, `trash`.
+
+---
+
 <h3 align="center">Support This Project</h3>
 
 <p align="center">
@@ -68,6 +143,7 @@
 ## 📖 Table of Contents
 
 - [Features](#-features)
+- [What's new vs react-native-gifted-chat](#-whats-new-vs-react-native-gifted-chat)
 - [Requirements](#-requirements)
 - [Installation](#-installation)
 - [Migrating from react-native-gifted-chat](#-migrating-from-react-native-gifted-chat)
@@ -75,6 +151,7 @@
 - [Props Reference](#-props-reference)
 - [Data Structure](#-data-structure)
 - [Platform Notes](#-platform-notes)
+- [Performance](#-performance)
 - [Example App](#-example-app)
 - [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
@@ -269,6 +346,10 @@ interface User {
 - **`messageIdGenerator`** _(Function)_ - Generate an id for new messages. Defaults to a simple random string generator.
 - **`locale`** _(String)_ - Locale to localize the dates. You need first to import the locale you need (ie. `require('dayjs/locale/de')` or `import 'dayjs/locale/fr'`)
 - **`colorScheme`** _('light' | 'dark')_ - Force color scheme (light/dark mode). When set to `'light'` or `'dark'`, it overrides the system color scheme. When `undefined`, it uses the system color scheme. Default is `undefined`.
+- **`theme`** _(Object)_ - Override the default light theme tokens (`colors` / `radii` / `spacing` / `typography` / `avatar` / `sendButton` / `composer` / `voice`). Deep-merged over `defaultLightTheme`; any subset is allowed. See [Theming & Dark Mode](#theming--dark-mode).
+- **`darkTheme`** _(Object)_ - Same as `theme`, applied when the resolved color scheme is dark (deep-merged over `defaultDarkTheme`).
+- **`icons`** _(Object)_ - Icon override registry. Supply a render function for any built-in icon to replace it (e.g. with `lucide-react-native`). See [Custom icons](#custom-icons-eg-lucide).
+- **`labels`** _(Object)_ - Override any UI string. See [Localization (i18n)](#localization-i18n).
 
 ### Refs
 
@@ -330,14 +411,17 @@ function ChatScreen() {
 - **`renderSend`** _(Component | Function)_ - Custom send button; you can pass children to the original `Send` component quite easily, for example, to use a custom icon ([example](https://github.com/kesha-antonov/react-native-chat/pull/487))
 - **`renderActions`** _(Component | Function)_ - Custom action button on the left of the message composer
 - **`renderAccessory`** _(Component | Function)_ - Custom second line of actions below the message composer
+- **`onPressEmoji`** _(Function)_ - Callback for the optional emoji button on the left of the composer field. When omitted, the emoji button is hidden.
+- **`audioRecording`** _(Object)_ - Enable Telegram-style hold-to-record voice notes. `{ isEnabled, minDurationMs?, onError? }`. Requires the optional `expo-audio` peer (and `react-native-audio-api` for the playback waveform); the mic button is hidden when it is absent.
+- **`videoRecording`** _(Object)_ - Enable record-and-send video messages. `{ isEnabled, maxDuration?, onError? }`. Uses `react-native-vision-camera` for round camera notes, falling back to `expo-image-picker`'s system camera.
 - **`textInputProps`** _(Object)_ - props to be passed to the [`<TextInput>`](https://reactnative.dev/docs/textinput).
 
 ### Actions & Action Sheet
 
-- **`onPressActionButton`** _(Function)_ - Callback when the Action button is pressed (if set, the default `actionSheet` will not be used)
-- **`actionSheet`** _(Function)_ - Custom action sheet interface for showing action options
-- **`actions`** _(Array)_ - Custom action options for the input toolbar action button; array of objects with `title` (string) and `action` (function) properties
-- **`actionSheetOptionTintColor`** _(String)_ - Tint color for action sheet options
+- **`actions`** _(Array)_ - Action options for the composer "+" button. Array of `{ title, action }`; add `icon` (and optional `color`) to an action to render a Telegram-style attachment **grid** (tiles) instead of a list. Opens the built-in themed `AttachmentSheet` - no extra dependency.
+- **`onPressActionButton`** _(Function)_ - Callback when the "+" button is pressed (if set, the built-in `AttachmentSheet` is not shown)
+- **`actionSheet`** _(Function)_ - Escape hatch for a custom system action sheet. **The bundled `@expo/react-native-action-sheet` dependency was removed**, so `context.actionSheet()` defaults to a no-op; pass your own implementation (with `ActionSheetProvider` in your tree) if you relied on it.
+- **`actionSheetOptionTintColor`** _(String)_ - Tint color for action labels in the attachment sheet
 
 ### Messages & Message Container
 
@@ -355,6 +439,8 @@ function ChatScreen() {
 - **`renderMessageImage`** _(Component | Function)_ - Custom message image
 - **`renderMessageVideo`** _(Component | Function)_ - Custom message video
 - **`renderMessageAudio`** _(Component | Function)_ - Custom message audio
+- **`renderMessageLocation`** _(Component | Function)_ - Custom renderer for `IMessage.location`; defaults to a map card that opens the system maps app on tap
+- **`messageActions`** _(Array | Function(`message`))_ - Telegram-style long-press context menu. Each item is `{ label, icon?, onPress, destructive? }`. See [Message actions](#message-actions-long-press-context-menu).
 - **`renderCustomView`** _(Component | Function)_ - Custom view inside the bubble
 - **`isCustomViewBottom`** _(Bool)_ - Determine whether renderCustomView is displayed before or after the text, image and video views; default is `false`
 - **`onPressMessage`** _(Function(`context`, `message`))_ - Callback when a message bubble is pressed
@@ -664,6 +750,12 @@ const [isScrolledUp, setIsScrolledUp] = useState(false)
 
 Render AI assistant replies token-by-token. The library batches incoming chunks with `requestAnimationFrame` (one render per frame, only the streaming bubble re-renders) and shows a blinking caret while a message is still streaming.
 
+<p align="center">
+  <img width="250" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/ai-streaming-markdown.png" alt="AI reply streaming token-by-token and rendering as markdown, with a blinking caret and a Stop button in the composer" />
+</p>
+
+> The reply above streams in token-by-token (note the caret `▋`) and renders as **markdown** - bold, italics, lists, inline and fenced code - while the composer's send button turns into a **Stop** control mid-stream. See [Markdown rendering for AI replies](#markdown-rendering-for-ai-replies) to enable markdown.
+
 - **`IMessage.streaming`** - flag a message as streaming (shows the caret)
 - **`Chat.updateMessage(messages, id, patch)`** - immutable per-message update, cheap enough for per-token appends
 - **`useStreamingMessages(...)`** - owns the message list, rAF-batches `push()`, and supports stop via `AbortController`
@@ -691,6 +783,33 @@ function Bot () {
 ```
 
 See **[docs/STREAMING.md](./docs/STREAMING.md)** for the full hook API and a real Claude streaming adapter (via a backend proxy). A runnable demo lives in `example/components/chat-examples/AIBotExample.tsx`.
+
+#### Markdown rendering for AI replies
+
+AI/LLM replies are usually markdown (bold, lists, fenced code). Enable markdown with `messageTextProps={{ markdown: true }}` (streamed messages auto-render as markdown unless you pass `markdown={false}`):
+
+```tsx
+// Force markdown for every message:
+<Chat messageTextProps={{ markdown: true }} {...props} />
+
+// Streamed messages auto-render as markdown; disable with markdown: false.
+```
+
+There are two renderers and you get the best available one automatically:
+
+- **Built-in, zero-dependency renderer** (default). Covers headings, bullet/ordered lists, blockquotes, fenced + inline code, bold/italic/strikethrough, and links. It handles streaming-incomplete markdown gracefully (a half-written `**bold` or an unclosed code fence renders as plain text until complete), so it's safe to feed token-by-token. Nothing to install. Exposed as `BasicMarkdown` if you want to use it directly.
+
+- **[`react-native-streamdown`](https://github.com/software-mansion-labs/react-native-streamdown)** (optional upgrade). When installed it's used instead, for richer streaming-safe markdown (tables, partial-table handling, etc.). It is a native module with its own peers - install the full set:
+
+  ```bash
+  npx expo install react-native-streamdown react-native-enriched-markdown remend katex
+  ```
+
+  It also requires `react-native-worklets >= 0.8.3` (i.e. `react-native-reanimated >= 4.3`), and `react-native-enriched-markdown` is a native module, so a dev build / prebuild is required (it does not work in Expo Go). Pass through Streamdown's own theming/rules via `markdownProps`:
+
+  ```tsx
+  <Chat messageTextProps={{ markdown: true, markdownProps: { /* ... */ } }} {...props} />
+  ```
 
 ### Emoji Reactions
 
@@ -788,28 +907,70 @@ Message text is automatically scanned for URLs, emails, and phone numbers; hasht
 
 For full control, pass custom `matchers` (`{ type, pattern, getLinkUrl?, getLinkText?, renderLink?, onPress? }[]`) to add or override patterns. See the Links example in the [example app](#-example-app).
 
-### Copy to Clipboard
+### Message actions (long-press context menu)
 
-Long-press handling is exposed via `onLongPressMessage`. Chat wraps [`@expo/react-native-action-sheet`](https://github.com/expo/react-native-action-sheet), so you can show a "Copy Text" action sheet and copy with the clipboard library of your choice:
+Long-press a message to open a floating, themed **context menu** (Telegram style) anchored to the bubble. Provide the actions via `messageActions` - an array, or a function of the message - each `{ label, icon?, onPress, destructive? }`. When reactions are enabled, a reactions row is shown on top of the menu automatically.
 
 ```tsx
-import { useActionSheet } from '@expo/react-native-action-sheet'
 import { setStringAsync } from 'expo-clipboard'
-
-const { showActionSheetWithOptions } = useActionSheet()
+import { Copy, Trash2 } from 'lucide-react-native' // optional icons
 
 <Chat
-  onLongPressMessage={(_context, message) => {
-    showActionSheetWithOptions(
-      { options: ['Copy Text', 'Cancel'], cancelButtonIndex: 1 },
-      buttonIndex => {
-        if (buttonIndex === 0)
-          setStringAsync(message.text)
-      }
-    )
-  }}
+  messageActions={message => [
+    { label: 'Copy', icon: ({ color, size }) => <Copy color={color} size={size} />, onPress: () => setStringAsync(message.text) },
+    { label: 'Delete', destructive: true, onPress: () => deleteMessage(message) },
+  ]}
 />
 ```
+
+> **Note:** This library no longer depends on `@expo/react-native-action-sheet`. Prefer `messageActions` above. If you specifically want a native action sheet, install it yourself, wrap your tree in `ActionSheetProvider`, and either call `useActionSheet()` in your own `onLongPressMessage` or pass an `actionSheet` prop - the `actionSheet` prop / `context.actionSheet()` escape hatch still works when you provide an implementation. The composer "+" actions use the built-in themed `AttachmentSheet` and need no setup.
+
+### Theming & Dark Mode
+
+The chat ships with a modern default look and a full token-based theme. Override any subset of tokens via `theme` (light) and `darkTheme` (dark); your overrides are deep-merged over `defaultLightTheme` / `defaultDarkTheme`, and the resolved theme switches at runtime with the color scheme (system, or forced via `colorScheme`). Explicit per-component style props still win over the theme.
+
+```tsx
+<Chat
+  theme={{
+    colors: { accent: '#3390EC', outgoingBubble: '#EFFEDE' },
+    radii: { bubble: 18 },
+  }}
+  darkTheme={{ colors: { background: '#0E1621', incomingBubble: '#182533' } }}
+  // colorScheme="dark"   // optional: force a scheme instead of following the system
+  {...props}
+/>
+```
+
+Token groups: `colors`, `radii`, `spacing`, `typography`, `avatar`, `sendButton`, `composer`, `voice`. Build your own theme-aware components with the exported hooks:
+
+```tsx
+import { useTheme, useThemedStyles } from '@kesha-antonov/react-native-chat'
+import { StyleSheet } from 'react-native'
+
+const MyBadge = () => {
+  const theme = useTheme()
+  const styles = useThemedStyles(t => StyleSheet.create({
+    badge: { backgroundColor: t.colors.accent, borderRadius: t.radii.bubble },
+  }))
+  return <View style={styles.badge} />
+}
+```
+
+Also exported: `defaultLightTheme`, `defaultDarkTheme`, and the `ChatTheme` / `PartialChatTheme` types.
+
+### Localization (i18n)
+
+All built-in UI strings (composer placeholder, send/cancel, load earlier, today, voice/video/location labels, slide-to-cancel, reply/edit banner, camera-permission text) route through a label table. Built-in translations ship for `en`, `es`, `fr`, `de`, and `ru`, selected by the existing `locale` prop. Override any individual string with `labels`:
+
+```tsx
+<Chat
+  locale="fr"                       // pick a built-in translation
+  labels={{ placeholder: 'Votre message...' }}  // override any string
+  {...props}
+/>
+```
+
+Exported helpers: `ChatLabels` (type), `defaultLabels`, `translations`, `resolveLabels`, and the `useLabels` hook for reading the resolved labels in custom components.
 
 ### Message Status
 
@@ -919,6 +1080,38 @@ module.exports = function override(config, env) {
 ```
 
 </details>
+
+---
+
+## ⚡ Performance
+
+The chat is built for long lists, but a few habits on your side unlock the most:
+
+**Memoize your render props and config.** Each message row is wrapped in `React.memo` with a comparator that deep-compares the message and reference-compares every other prop. So an unchanged row only skips a re-render when the props you pass it are referentially stable. If you pass inline functions or objects, that row re-renders on every parent render:
+
+```jsx
+// ❌ New reference every render - the row can't skip
+<Chat renderBubble={props => <MyBubble {...props} />} reactions={{ isEnabled: true, onReactionPress }} />
+
+// ✅ Stable references - unchanged rows skip re-renders
+const renderBubble = useCallback(props => <MyBubble {...props} />, [])
+const reactions = useMemo(() => ({ isEnabled: true, onReactionPress }), [onReactionPress])
+const messageActions = useCallback(message => [{ label: 'Copy', onPress: () => copy(message.text) }], [copy])
+
+<Chat renderBubble={renderBubble} reactions={reactions} messageActions={messageActions} />
+```
+
+This applies to all render props (`renderBubble`, `renderMessageText`, `renderAvatar`, ...), the `reactions` / `audioRecording` / `videoRecording` / `messageActions` config objects, and any style objects.
+
+**Keep messages immutable.** Update messages by creating new arrays/objects (e.g. `Chat.append(...)`), never by mutating an existing message in place - the row comparator relies on value changes to detect updates.
+
+**Theme, icons and labels don't need drilling.** `theme` / `darkTheme`, `icons`, and `labels` are read from context (`useTheme`, `useIcons`, `useLabels`), so passing them once on `<Chat>` is enough; they don't cause per-row churn.
+
+**Tune virtualization if needed.** Sensible `FlatList` defaults ship out of the box (`removeClippedSubviews` on Android, `initialNumToRender`, `maxToRenderPerBatch`, `windowSize`, `updateCellsBatchingPeriod`). `windowSize` is measured in screen-heights (not messages); the default keeps a few screens of content mounted around the viewport. Override any of them via `listProps`:
+
+```jsx
+<Chat listProps={{ windowSize: 7, removeClippedSubviews: true }} {...props} />
+```
 
 ---
 

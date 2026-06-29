@@ -1,18 +1,18 @@
-import React, { useMemo, useCallback, useEffect } from 'react'
+import React, { useMemo, useCallback } from 'react'
 import {
   StyleSheet,
   StyleProp,
   ViewStyle,
   TextStyle,
-  Text } from 'react-native'
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated'
+  View } from 'react-native'
 
-import { Color } from './Color'
+import { Icon } from './components/Icon'
+import { SendIcon } from './components/SendIcon'
 import { TouchableOpacity, TouchableOpacityProps } from './components/TouchableOpacity'
 import { TEST_ID } from './Constant'
-import { useColorScheme } from './hooks/useColorScheme'
+import { useTheme, useThemedStyles } from './hooks/useTheme'
 import { IMessage } from './Models'
-import { getColorSchemeStyle } from './styles'
+import { ChatTheme } from './Theme'
 
 export interface SendProps<TMessage extends IMessage> {
   text?: string
@@ -20,7 +20,7 @@ export interface SendProps<TMessage extends IMessage> {
   containerStyle?: StyleProp<ViewStyle>
   textStyle?: StyleProp<TextStyle>
   children?: React.ReactNode
-  /** Always show send button, even when text is empty */
+  /** Kept for API compatibility; the send button is always visible now. */
   isSendButtonAlwaysVisible?: boolean
   /** Text is optional, allow sending empty messages (useful for media-only messages) */
   isTextOptional?: boolean
@@ -35,15 +35,20 @@ export const Send = <TMessage extends IMessage = IMessage>({
   text,
   containerStyle,
   children,
-  textStyle,
-  label = 'Send',
-  isSendButtonAlwaysVisible = false,
   isTextOptional = false,
   sendButtonProps,
   onSend,
 }: SendProps<TMessage>) => {
-  const colorScheme = useColorScheme()
-  const opacity = useSharedValue(0)
+  const theme = useTheme()
+  const styles = useThemedStyles(createStyles)
+
+  // The button is always visible. It's "active" (accent) when there's something
+  // to send, and "inactive" (gray, non-functional) otherwise - so the right
+  // slot is never empty when no voice/video/stop control takes its place.
+  const canSend = useMemo(
+    () => !!text?.trim().length || isTextOptional,
+    [text, isTextOptional]
+  )
 
   const handleOnPress = useCallback(() => {
     const trimmedText = text?.trim() ?? ''
@@ -53,62 +58,54 @@ export const Send = <TMessage extends IMessage = IMessage>({
       onSend(message, true)
   }, [text, onSend, isTextOptional])
 
-  const isVisible = useMemo(
-    () => isSendButtonAlwaysVisible || !!text?.trim().length,
-    [isSendButtonAlwaysVisible, text]
-  )
-
-  useEffect(() => {
-    opacity.value = withTiming(isVisible ? 1 : 0, { duration: 200 })
-  }, [isVisible, opacity])
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }), [opacity])
+  const { size } = theme.sendButton
 
   return (
-    <Animated.View style={[styles.container, containerStyle, animatedStyle]} pointerEvents={isVisible ? 'auto' : 'none'}>
+    <View style={[styles.container, containerStyle]}>
       <TouchableOpacity
         testID={TEST_ID.SEND_TOUCHABLE}
         style={styles.touchable}
         onPress={handleOnPress}
+        enabled={canSend}
         accessible
         accessibilityLabel='send'
         accessibilityRole='button'
+        accessibilityState={{ disabled: !canSend }}
         {...sendButtonProps}
       >
         {
           children ||
-          <Text
-            style={[
-              getColorSchemeStyle(styles, 'text', colorScheme),
-              textStyle,
-            ]}
-          >
-            {label}
-          </Text>
+          <View style={[styles.circle, !canSend && styles.circleInactive]}>
+            <Icon name='send' color='#fff' size={size * 0.5} fallback={<SendIcon color='#fff' size={size * 0.5} />} />
+          </View>
         }
       </TouchableOpacity>
-    </Animated.View>
+    </View>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
+  // Center the button against the single-line field height. The toolbar row is
+  // bottom-aligned, so giving the button the field's min-height keeps it centered
+  // when the field is one line and aligned with the last line when it grows.
   container: {
-    justifyContent: 'flex-end',
+    minHeight: theme.composer.minHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   touchable: {
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
-  text: {
-    color: Color.defaultBlue,
-    fontWeight: '600',
-    fontSize: 17,
-    backgroundColor: Color.backgroundTransparent,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+  circle: {
+    width: theme.sendButton.size,
+    height: theme.sendButton.size,
+    borderRadius: theme.radii.sendButton,
+    backgroundColor: theme.colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  text_dark: {
-    color: '#4da6ff',
+  // Muted, non-functional state shown when there's nothing to send.
+  circleInactive: {
+    backgroundColor: theme.colors.incomingMeta,
   },
 })

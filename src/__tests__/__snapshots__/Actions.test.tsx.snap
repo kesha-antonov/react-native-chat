@@ -4,7 +4,8 @@ exports[`should render <Actions /> and compare with snapshot 1`] = `
 <View
   style={
     {
-      "alignItems": "flex-end",
+      "alignItems": "center",
+      "justifyContent": "center",
     }
   }
 >
@@ -28,6 +29,7 @@ exports[`should render <Actions /> and compare with snapshot 1`] = `
     }
     accessible={true}
     focusable={true}
+    hitSlop={8}
     onClick={[Function]}
     onResponderGrant={[Function]}
     onResponderMove={[Function]}

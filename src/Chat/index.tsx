@@ -2,7 +2,6 @@ import React, {
   createRef,
   useEffect,
   useMemo,
-  useRef,
   useState,
   useCallback,
   RefObject,
@@ -12,10 +11,6 @@ import {
   LayoutChangeEvent,
   useColorScheme,
 } from 'react-native'
-import {
-  ActionSheetProvider,
-  ActionSheetProviderRef,
-} from '@expo/react-native-action-sheet'
 import dayjs from 'dayjs'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
@@ -23,10 +18,12 @@ import { KeyboardAvoidingView, KeyboardProvider } from 'react-native-keyboard-co
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { TEST_ID } from '../Constant'
+import { resolveLabels } from '../i18n'
 import { InputToolbar } from '../InputToolbar'
 import { MessagesContainer, AnimatedList } from '../MessagesContainer'
 import { IMessage, ReplyMessage } from '../Models'
 import stylesCommon from '../styles'
+import { resolveTheme } from '../Theme'
 import { renderComponentOrElement } from '../utils'
 import styles from './styles'
 import { ChatProps } from './types'
@@ -50,6 +47,10 @@ function Chat<TMessage extends IMessage = IMessage> (
     onSend,
     locale = 'en',
     colorScheme: colorSchemeProp,
+    theme,
+    darkTheme,
+    icons,
+    labels,
     renderLoading,
     actionSheet,
     textInputProps,
@@ -72,7 +73,18 @@ function Chat<TMessage extends IMessage = IMessage> (
   const systemColorScheme = useColorScheme()
   const colorScheme = colorSchemeProp !== undefined ? colorSchemeProp : systemColorScheme
 
-  const actionSheetRef = useRef<ActionSheetProviderRef>(null)
+  // Resolve the theme once per change so its identity is stable; this is what
+  // makes on-the-fly theme / color-scheme switching propagate to every memoized
+  // StyleSheet without rebuilding styles on unrelated renders.
+  const resolvedTheme = useMemo(
+    () => resolveTheme(colorScheme, theme, darkTheme),
+    [colorScheme, theme, darkTheme]
+  )
+
+  const resolvedLabels = useMemo(
+    () => resolveLabels(locale, labels),
+    [locale, labels]
+  )
 
   const insets = useSafeAreaInsets()
 
@@ -301,16 +313,21 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   const contextValues = useMemo(
     () => ({
+      // The built-in UI no longer uses an action sheet; this stays as an
+      // escape hatch for consumers who pass their own `actionSheet` (e.g.
+      // @expo/react-native-action-sheet). Defaults to a no-op.
       actionSheet:
         actionSheet ||
         (() => ({
-          showActionSheetWithOptions:
-            actionSheetRef.current!.showActionSheetWithOptions,
+          showActionSheetWithOptions: () => {},
         })),
       getLocale: () => locale,
       getColorScheme: () => colorScheme,
+      getTheme: () => resolvedTheme,
+      getIcons: () => icons,
+      getLabels: () => resolvedLabels,
     }),
-    [actionSheet, locale, colorScheme]
+    [actionSheet, locale, colorScheme, resolvedTheme, icons, resolvedLabels]
   )
 
   useEffect(() => {
@@ -320,26 +337,24 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   return (
     <ChatContext.Provider value={contextValues}>
-      <ActionSheetProvider ref={actionSheetRef}>
-        <View
-          testID={TEST_ID.WRAPPER}
-          style={[stylesCommon.fill, styles.contentContainer]}
-          onLayout={onInitialLayoutViewLayout}
+      <View
+        testID={TEST_ID.WRAPPER}
+        style={[stylesCommon.fill, styles.contentContainer]}
+        onLayout={onInitialLayoutViewLayout}
+      >
+        <KeyboardAvoidingView
+          behavior='translate-with-padding'
+          keyboardVerticalOffset={insets.top}
+          style={stylesCommon.fill}
+          {...props.keyboardAvoidingViewProps}
         >
-          <KeyboardAvoidingView
-            behavior='translate-with-padding'
-            keyboardVerticalOffset={insets.top}
-            style={stylesCommon.fill}
-            {...props.keyboardAvoidingViewProps}
-          >
-            <View style={[stylesCommon.fill, !isInitialized && styles.hidden]}>
-              {renderMessages}
-              {inputToolbarFragment}
-            </View>
-            {!isInitialized && renderComponentOrElement(renderLoading, {})}
-          </KeyboardAvoidingView>
-        </View>
-      </ActionSheetProvider>
+          <View style={[stylesCommon.fill, !isInitialized && styles.hidden]}>
+            {renderMessages}
+            {inputToolbarFragment}
+          </View>
+          {!isInitialized && renderComponentOrElement(renderLoading, {})}
+        </KeyboardAvoidingView>
+      </View>
     </ChatContext.Provider>
   )
 }

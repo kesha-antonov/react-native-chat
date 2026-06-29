@@ -7,9 +7,13 @@ import {
   View,
   Text } from 'react-native'
 
+import { BasicMarkdown } from './components/BasicMarkdown'
+import { MarkdownMessageText, isMarkdownAvailable } from './components/MarkdownMessageText'
 import { StreamingCursor } from './components/StreamingCursor'
+import { useThemedStyles } from './hooks/useTheme'
 import { LinkParser, LinkMatcher, LinkType } from './linkParser'
 import { LeftRightStyle, IMessage } from './Models'
+import { ChatTheme } from './Theme'
 
 export type MessageTextProps<TMessage extends IMessage> = {
   position?: 'left' | 'right'
@@ -33,6 +37,17 @@ export type MessageTextProps<TMessage extends IMessage> = {
   hashtagUrl?: string
   mentionUrl?: string
   stripPrefix?: boolean
+  /**
+   * Render the message body as markdown (great for AI/streamed replies). `true`
+   * forces markdown for every message, `false` disables it; when left unset,
+   * streamed messages render as markdown automatically. Uses the optional
+   * `react-native-streamdown` peer when installed (best handling of
+   * streaming-incomplete markdown), otherwise a built-in dependency-free renderer
+   * covering headings, lists, blockquotes, code, bold/italic/strikethrough and links.
+   */
+  markdown?: boolean
+  /** Extra props forwarded to the Streamdown component (its own theming/rules API); only used when streamdown is installed. */
+  markdownProps?: Record<string, unknown>
 }
 
 export function MessageText<TMessage extends IMessage>({
@@ -52,23 +67,63 @@ export function MessageText<TMessage extends IMessage>({
   hashtagUrl,
   mentionUrl,
   stripPrefix = false,
+  markdown,
+  markdownProps,
 }: MessageTextProps<TMessage>) {
+  const styles = useThemedStyles(createStyles)
+
   const linkStyle = useMemo(() => StyleSheet.flatten([
     styles.link,
+    position === 'left' && styles.link_left,
     linkStyleProp?.[position],
-  ]), [position, linkStyleProp])
+  ]), [styles, position, linkStyleProp])
 
   const style = useMemo(() => [
+    styles.text,
     styles[`text_${position}`],
     textStyle?.[position],
     customTextStyle,
-  ], [position, textStyle, customTextStyle])
+  ], [styles, position, textStyle, customTextStyle])
 
   const handlePress = useCallback((url: string, type: LinkType) => {
     onPressProp?.(currentMessage, url, type)
   }, [onPressProp, currentMessage])
 
   const isStreaming = !!currentMessage?.streaming
+
+  // Render markdown when explicitly enabled, or when the message is being
+  // streamed (AI replies) and it wasn't explicitly disabled. Prefer
+  // react-native-streamdown when installed (best streaming-incomplete handling),
+  // otherwise fall back to the built-in dependency-free renderer.
+  const wantMarkdown = markdown !== false && (markdown === true || isStreaming)
+
+  if (wantMarkdown && isMarkdownAvailable)
+    return (
+      <MarkdownMessageText
+        text={currentMessage!.text}
+        isStreaming={isStreaming}
+        textStyle={style}
+        containerStyle={[styles.container, containerStyle?.[position]]}
+        componentProps={markdownProps}
+      />
+    )
+
+  if (wantMarkdown)
+    return (
+      <View style={[styles.container, containerStyle?.[position]]}>
+        <BasicMarkdown
+          text={currentMessage!.text}
+          textStyle={style}
+          linkStyle={linkStyle}
+          onLinkPress={onPressProp ? (link: string) => handlePress(link, 'url') : undefined}
+        />
+        {isStreaming && (
+          <Text style={style}>
+            <StreamingCursor />
+          </Text>
+        )}
+      </View>
+    )
 
   const parsed = (
     <LinkParser
@@ -90,7 +145,12 @@ export function MessageText<TMessage extends IMessage>({
   )
 
   return (
-    <View style={[styles.container, containerStyle?.[position]]}>
+    <View
+      style={[
+        styles.container,
+        containerStyle?.[position],
+      ]}
+    >
       {isStreaming
         ? (
           // Wrap in a Text so the caret flows inline after the last word and
@@ -105,22 +165,26 @@ export function MessageText<TMessage extends IMessage>({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   container: {
-    marginVertical: 5,
-    marginHorizontal: 10,
+    marginVertical: theme.spacing.bubblePaddingV,
+    marginHorizontal: theme.spacing.bubblePaddingH,
   },
   text: {
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: theme.typography.message.fontSize,
+    lineHeight: theme.typography.message.lineHeight,
+    fontWeight: theme.typography.message.fontWeight,
   },
   text_left: {
-    color: 'black',
+    color: theme.colors.incomingText,
   },
   text_right: {
-    color: 'white',
+    color: theme.colors.outgoingText,
   },
   link: {
     textDecorationLine: 'underline',
+  },
+  link_left: {
+    color: theme.colors.accent,
   },
 })

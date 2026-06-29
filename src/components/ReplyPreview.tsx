@@ -19,8 +19,13 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated'
 
-import { useColorScheme } from '../hooks/useColorScheme'
+import { useLabels } from '../hooks/useLabels'
+import { useThemedStyles } from '../hooks/useTheme'
+import { formatLabel } from '../i18n'
 import { ReplyMessage } from '../Models'
+import { ChatTheme } from '../Theme'
+import { Icon } from './Icon'
+import { CloseIcon, PencilIcon, ReplyArrowIcon } from './MediaControls'
 
 const ANIMATION_DURATION = 200
 const ANIMATION_EASING = Easing.bezier(0.25, 0.1, 0.25, 1)
@@ -31,6 +36,8 @@ export interface ReplyPreviewProps {
   replyMessage: ReplyMessage
   /** Callback to clear the reply */
   onClearReply?: () => void
+  /** Banner mode: replying to a message, or editing one. Default 'reply'. */
+  mode?: 'reply' | 'edit'
   /** Container style */
   containerStyle?: StyleProp<ViewStyle>
   /** Text style */
@@ -39,12 +46,13 @@ export interface ReplyPreviewProps {
   imageStyle?: StyleProp<ImageStyle>
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   borderIndicator: {
-    backgroundColor: '#0084ff',
-    borderTopLeftRadius: 4,
-    height: '100%',
-    width: 4,
+    backgroundColor: theme.colors.accent,
+    borderRadius: 2,
+    width: 3,
+    alignSelf: 'stretch',
+    marginVertical: 8,
   },
   clearButton: {
     alignItems: 'center',
@@ -56,23 +64,25 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 18,
     fontWeight: '600',
+    color: theme.colors.placeholder,
   },
+  // Flush banner: full-bleed inside the bar, sharing the bar background with a
+  // bottom hairline, so it reads as the composer growing a header.
   container: {
-    borderRadius: 8,
     flexDirection: 'row',
-    marginBottom: 8,
-    marginHorizontal: 10,
+    alignItems: 'center',
     overflow: 'hidden',
+    paddingHorizontal: theme.spacing.screenEdge,
+    backgroundColor: theme.colors.inputBarBackground,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.separator,
   },
-  containerDark: {
-    backgroundColor: '#2c2c2e',
-  },
-  containerLight: {
-    backgroundColor: '#e9e9eb',
+  leadingIcon: {
+    marginRight: 8,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 8,
   },
   image: {
@@ -87,15 +97,10 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
-  },
-  textDark: {
-    color: '#fff',
-  },
-  textLight: {
-    color: '#333',
+    color: theme.colors.inputText,
   },
   username: {
-    color: '#0084ff',
+    color: theme.colors.accent,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 2,
@@ -108,12 +113,13 @@ const styles = StyleSheet.create({
 export function ReplyPreview ({
   replyMessage,
   onClearReply,
+  mode = 'reply',
   containerStyle,
   textStyle,
   imageStyle,
 }: ReplyPreviewProps) {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === 'dark'
+  const styles = useThemedStyles(createStyles)
+  const labels = useLabels()
 
   const animationProgress = useSharedValue(0)
   const contentHeight = useSharedValue(DEFAULT_HEIGHT)
@@ -150,27 +156,21 @@ export function ReplyPreview ({
       [0, 0.5, 1]
     )
 
-    const translateY = interpolate(
-      animationProgress.value,
-      [0, 1],
-      [10, 0]
-    )
-
     return {
       height,
       opacity,
-      transform: [{ translateY }],
     }
   })
 
   const displayName = replyMessage.user?.name || 'Unknown'
+  const accent = styles.username.color
+  const title = mode === 'edit' ? labels.editing : formatLabel(labels.replyingTo, { name: displayName })
 
   return (
     <Animated.View style={[styles.wrapper, wrapperAnimatedStyle]}>
       <View
         style={[
           styles.container,
-          isDark ? styles.containerDark : styles.containerLight,
           containerStyle,
         ]}
         onLayout={e => {
@@ -182,6 +182,11 @@ export function ReplyPreview ({
           })
         }}
       >
+        <View style={styles.leadingIcon}>
+          {mode === 'edit'
+            ? <Icon name='pencil' color={accent} size={18} fallback={<PencilIcon color={accent} size={18} />} />
+            : <Icon name='reply' color={accent} size={18} fallback={<ReplyArrowIcon color={accent} size={18} />} />}
+        </View>
         <View style={styles.borderIndicator} />
         <View style={styles.content}>
           <View style={styles.row}>
@@ -193,13 +198,12 @@ export function ReplyPreview ({
             )}
             <View style={{ flex: 1 }}>
               <Text style={styles.username} numberOfLines={1}>
-                Replying to {displayName}
+                {title}
               </Text>
               {replyMessage.text && (
                 <Text
                   style={[
                     styles.text,
-                    isDark ? styles.textDark : styles.textLight,
                     textStyle,
                   ]}
                   numberOfLines={2}
@@ -215,14 +219,7 @@ export function ReplyPreview ({
           onPress={handleClear}
           hitSlop={8}
         >
-          <Text
-            style={[
-              styles.clearButtonText,
-              isDark ? styles.textDark : styles.textLight,
-            ]}
-          >
-            ×
-          </Text>
+          <Icon name='close' color={styles.clearButtonText.color} size={16} fallback={<CloseIcon color={styles.clearButtonText.color} size={16} />} />
         </Pressable>
       </View>
     </Animated.View>

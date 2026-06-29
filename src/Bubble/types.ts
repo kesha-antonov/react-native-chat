@@ -18,6 +18,8 @@ import {
   Omit,
   MessageVideoProps,
   MessageAudioProps,
+  MessageLocationProps,
+  MessageMenuItem,
 } from '../Models'
 import { QuickRepliesProps } from '../QuickReplies'
 import { ReactionsProps } from '../Reactions'
@@ -42,6 +44,12 @@ export type RenderMessageAudioProps<TMessage extends IMessage> = Omit<
   'containerStyle' | 'wrapperStyle'
 > &
   MessageAudioProps<TMessage>
+
+export type RenderMessageLocationProps<TMessage extends IMessage> = Omit<
+  BubbleProps<TMessage>,
+  'containerStyle' | 'wrapperStyle'
+> &
+  MessageLocationProps<TMessage>
 
 export type RenderMessageTextProps<TMessage extends IMessage> = Omit<
   BubbleProps<TMessage>,
@@ -91,6 +99,9 @@ export interface BubbleProps<TMessage extends IMessage> {
   renderMessageAudio?: (
     props: RenderMessageAudioProps<TMessage>
   ) => React.ReactNode
+  renderMessageLocation?: (
+    props: RenderMessageLocationProps<TMessage>
+  ) => React.ReactNode
   renderMessageText?: (props: RenderMessageTextProps<TMessage>) => React.ReactNode
   renderCustomView?: (bubbleProps: BubbleProps<TMessage>) => React.ReactNode
   renderTime?: (timeProps: TimeProps<TMessage>) => React.ReactNode
@@ -104,4 +115,6 @@ export interface BubbleProps<TMessage extends IMessage> {
   messageReply?: BubbleReplyProps<TMessage>
   /** Emoji reactions configuration */
   reactions?: ReactionsProps<TMessage>
+  /** Telegram-style long-press context menu actions (array or per-message function) */
+  messageActions?: MessageMenuItem[] | ((message: TMessage) => MessageMenuItem[])
 }

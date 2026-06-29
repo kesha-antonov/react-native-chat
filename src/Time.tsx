@@ -2,21 +2,23 @@ import React, { useMemo } from 'react'
 import { StyleSheet, View, ViewStyle, TextStyle , Text } from 'react-native'
 import dayjs from 'dayjs'
 import { useChatContext } from './ChatContext'
-import { Color } from './Color'
 import { TIME_FORMAT } from './Constant'
+import { useThemedStyles } from './hooks/useTheme'
 import { LeftRightStyle, IMessage } from './Models'
 import { getStyleWithPosition } from './styles'
+import { ChatTheme } from './Theme'
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   text: {
-    fontSize: 10,
+    fontSize: theme.typography.time.fontSize,
+    fontWeight: theme.typography.time.fontWeight,
     textAlign: 'right',
   },
   text_left: {
-    color: Color.timeTextColor,
+    color: theme.colors.incomingMeta,
   },
   text_right: {
-    color: Color.white,
+    color: theme.colors.outgoingMeta,
   },
 })
 
@@ -36,6 +38,7 @@ export const Time = <TMessage extends IMessage = IMessage>({
   timeTextStyle,
 }: TimeProps<TMessage>) => {
   const { getLocale } = useChatContext()
+  const styles = useThemedStyles(createStyles)
 
   const formattedTime = useMemo(() => {
     if (!currentMessage)

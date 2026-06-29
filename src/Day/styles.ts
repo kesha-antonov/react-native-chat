@@ -1,22 +1,22 @@
 import { StyleSheet } from 'react-native'
-import { Color } from '../Color'
+import { ChatTheme } from '../Theme'
 
-export default StyleSheet.create({
-  container: {
-    marginTop: 5,
-    marginBottom: 10,
-  },
-  wrapper: {
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingLeft: 10,
-    paddingRight: 10,
-    borderRadius: 15,
-  },
-  text: {
-    color: Color.white,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-})
+export const createDayStyles = (theme: ChatTheme) =>
+  StyleSheet.create({
+    container: {
+      marginTop: 8,
+      marginBottom: 12,
+    },
+    wrapper: {
+      backgroundColor: theme.colors.dayPillBackground,
+      paddingVertical: 5,
+      paddingHorizontal: 12,
+      borderRadius: theme.radii.dayPill,
+    },
+    text: {
+      color: theme.colors.dayPillText,
+      fontSize: theme.typography.day.fontSize,
+      fontWeight: theme.typography.day.fontWeight,
+      letterSpacing: 0.2,
+    },
+  })

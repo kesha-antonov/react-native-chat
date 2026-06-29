@@ -1,18 +1,22 @@
-import React, { ReactNode, useCallback } from 'react'
+import React, { ReactNode, useCallback, useState } from 'react'
 import {
   StyleSheet,
   View,
   StyleProp,
   ViewStyle,
-  TextStyle,
-  Text } from 'react-native'
-import { useChatContext } from './ChatContext'
-import { Color } from './Color'
+  TextStyle } from 'react-native'
+import { AttachmentAction, AttachmentSheet } from './components/AttachmentSheet'
+import { Icon } from './components/Icon'
+import { PaperclipIcon } from './components/MediaControls'
 import { TouchableOpacity } from './components/TouchableOpacity'
+import { useThemedStyles } from './hooks/useTheme'
 import stylesCommon from './styles'
+import { ChatTheme } from './Theme'
 
 export interface ActionsProps {
-  actions?: Array<{ title: string, action: () => void }>
+  /** Actions shown in the attachment sheet. Add `icon`/`color` for a grid layout. */
+  actions?: AttachmentAction[]
+  /** Tint color for the action labels in the sheet (defaults to the theme accent). */
   actionSheetOptionTintColor?: string
   icon?: () => ReactNode
   wrapperStyle?: StyleProp<ViewStyle>
@@ -23,14 +27,14 @@ export interface ActionsProps {
 
 export function Actions ({
   actions,
-  actionSheetOptionTintColor = Color.optionTintColor,
+  actionSheetOptionTintColor,
   icon,
   wrapperStyle,
-  iconTextStyle,
   onPressActionButton,
   buttonStyle,
 }: ActionsProps) {
-  const { actionSheet } = useChatContext()
+  const styles = useThemedStyles(createStyles)
+  const [isSheetVisible, setIsSheetVisible] = useState(false)
 
   const handlePress = useCallback(() => {
     if (onPressActionButton) {
@@ -38,71 +42,56 @@ export function Actions ({
       return
     }
 
-    if (!actions?.length)
-      return
-
-    const titles = actions.map(item => item.title)
-
-    actionSheet().showActionSheetWithOptions(
-      {
-        options: titles,
-        cancelButtonIndex: titles.length - 1,
-        tintColor: actionSheetOptionTintColor,
-      },
-      (buttonIndex?: number) => {
-        if (buttonIndex === undefined)
-          return
-
-        const item = actions[buttonIndex]
-        item.action?.()
-      }
-    )
-  }, [actionSheet, actions, actionSheetOptionTintColor, onPressActionButton])
+    if (actions?.length)
+      setIsSheetVisible(true)
+  }, [actions, onPressActionButton])
 
   const renderIcon = useCallback(() => {
     if (icon)
       return icon()
 
+    const size = styles.iconText.fontSize
     return (
-      <View style={[stylesCommon.centerItems, styles.wrapper, wrapperStyle]}>
-        <Text style={[styles.iconText, iconTextStyle]}>{'+'}</Text>
+      <View style={[stylesCommon.centerItems, wrapperStyle]}>
+        <Icon name='paperclip' color={styles.iconText.color} size={size} fallback={<PaperclipIcon color={styles.iconText.color} size={size} />} />
       </View>
     )
-  }, [icon, iconTextStyle, wrapperStyle])
+  }, [icon, wrapperStyle, styles])
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
         onPress={handlePress}
+        hitSlop={8}
         style={[styles.button, buttonStyle]}
       >
         {renderIcon()}
       </TouchableOpacity>
+      <AttachmentSheet
+        visible={isSheetVisible}
+        actions={actions ?? []}
+        onClose={() => setIsSheetVisible(false)}
+        tintColor={actionSheetOptionTintColor}
+      />
     </View>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   container: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   button: {
-    paddingLeft: 10,
-    paddingRight: 4,
-    paddingVertical: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 8,
   },
-
-  wrapper: {
-    borderColor: Color.defaultColor,
-    borderWidth: 2,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-  },
+  // Inset attachment icon: borderless, sized/colored as a field inset control.
   iconText: {
-    color: Color.defaultColor,
+    color: theme.colors.incomingMeta,
     fontWeight: 'bold',
-    fontSize: 16,
-    lineHeight: 16,
+    fontSize: theme.composer.insetIconSize,
+    lineHeight: theme.composer.insetIconSize,
   },
 })

@@ -49,6 +49,22 @@ export default function ChatLayout () {
         options={{ title: 'Reactions' }}
       />
       <Stack.Screen
+        name='context-menu'
+        options={{ title: 'Context Menu' }}
+      />
+      <Stack.Screen
+        name='media'
+        options={{ title: 'Media & Voice' }}
+      />
+      <Stack.Screen
+        name='theming'
+        options={{ title: 'Theming & Icons' }}
+      />
+      <Stack.Screen
+        name='localization'
+        options={{ title: 'Localization (i18n)' }}
+      />
+      <Stack.Screen
         name='day-animated'
         options={{ title: 'Day Animated' }}
       />

@@ -15,10 +15,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
           "maxWidth": "70%",
         },
         {
-          "marginBottom": 10,
-        },
-        {
-          "marginBottom": 2,
+          "marginBottom": 8,
         },
         undefined,
       ]
@@ -29,14 +26,15 @@ exports[`Message component should render <Message /> and compare with snapshot 1
         style={
           [
             {
-              "backgroundColor": "#f0f0f0",
-              "borderRadius": 15,
+              "backgroundColor": "#FFFFFF",
+              "borderRadius": 18,
               "justifyContent": "flex-end",
               "minHeight": 20,
             },
             null,
             null,
             undefined,
+            false,
           ]
         }
       >
@@ -75,8 +73,8 @@ exports[`Message component should render <Message /> and compare with snapshot 1
             style={
               [
                 {
-                  "marginHorizontal": 10,
-                  "marginVertical": 5,
+                  "marginHorizontal": 12,
+                  "marginVertical": 6,
                 },
                 undefined,
               ]
@@ -86,7 +84,12 @@ exports[`Message component should render <Message /> and compare with snapshot 1
               style={
                 [
                   {
-                    "color": "black",
+                    "fontSize": 16,
+                    "fontWeight": "400",
+                    "lineHeight": 21,
+                  },
+                  {
+                    "color": "#000000",
                   },
                   undefined,
                   undefined,
@@ -100,11 +103,11 @@ exports[`Message component should render <Message /> and compare with snapshot 1
             style={
               [
                 {
-                  "alignItems": "flex-end",
+                  "alignItems": "center",
                   "flexDirection": "row",
-                  "justifyContent": "space-between",
-                  "paddingBottom": 5,
-                  "paddingHorizontal": 10,
+                  "justifyContent": "flex-end",
+                  "paddingBottom": 6,
+                  "paddingHorizontal": 12,
                 },
                 undefined,
               ]
@@ -116,6 +119,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
                   "alignItems": "center",
                   "flexDirection": "row",
                   "flexGrow": 1,
+                  "gap": 3,
                   "justifyContent": "flex-end",
                 }
               }
@@ -125,8 +129,9 @@ exports[`Message component should render <Message /> and compare with snapshot 1
                   style={
                     [
                       {
-                        "color": "#aaa",
-                        "fontSize": 10,
+                        "color": "#8E8E93",
+                        "fontSize": 12,
+                        "fontWeight": "400",
                         "textAlign": "right",
                       },
                       undefined,
@@ -158,10 +163,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
           "maxWidth": "70%",
         },
         {
-          "marginBottom": 10,
-        },
-        {
-          "marginBottom": 2,
+          "marginBottom": 8,
         },
         undefined,
       ]
@@ -196,9 +198,9 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
             },
             [
               {
-                "borderRadius": 18,
-                "height": 36,
-                "width": 36,
+                "borderRadius": 17,
+                "height": 34,
+                "width": 34,
               },
               undefined,
             ],
@@ -211,14 +213,15 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
         style={
           [
             {
-              "backgroundColor": "#f0f0f0",
-              "borderRadius": 15,
+              "backgroundColor": "#FFFFFF",
+              "borderRadius": 18,
               "justifyContent": "flex-end",
               "minHeight": 20,
             },
             null,
             null,
             undefined,
+            false,
           ]
         }
       >
@@ -257,8 +260,8 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
             style={
               [
                 {
-                  "marginHorizontal": 10,
-                  "marginVertical": 5,
+                  "marginHorizontal": 12,
+                  "marginVertical": 6,
                 },
                 undefined,
               ]
@@ -268,7 +271,12 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
               style={
                 [
                   {
-                    "color": "black",
+                    "fontSize": 16,
+                    "fontWeight": "400",
+                    "lineHeight": 21,
+                  },
+                  {
+                    "color": "#000000",
                   },
                   undefined,
                   undefined,
@@ -282,11 +290,11 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
             style={
               [
                 {
-                  "alignItems": "flex-end",
+                  "alignItems": "center",
                   "flexDirection": "row",
-                  "justifyContent": "space-between",
-                  "paddingBottom": 5,
-                  "paddingHorizontal": 10,
+                  "justifyContent": "flex-end",
+                  "paddingBottom": 6,
+                  "paddingHorizontal": 12,
                 },
                 undefined,
               ]
@@ -298,6 +306,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
                   "alignItems": "center",
                   "flexDirection": "row",
                   "flexGrow": 1,
+                  "gap": 3,
                   "justifyContent": "flex-end",
                 }
               }
@@ -307,8 +316,9 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
                   style={
                     [
                       {
-                        "color": "#aaa",
-                        "fontSize": 10,
+                        "color": "#8E8E93",
+                        "fontSize": 12,
+                        "fontWeight": "400",
                         "textAlign": "right",
                       },
                       undefined,
@@ -340,10 +350,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
           "maxWidth": "70%",
         },
         {
-          "marginBottom": 10,
-        },
-        {
-          "marginBottom": 2,
+          "marginBottom": 8,
         },
         undefined,
       ]
@@ -378,9 +385,9 @@ exports[`Message component should render null if user has no Avatar 1`] = `
             },
             [
               {
-                "borderRadius": 18,
-                "height": 36,
-                "width": 36,
+                "borderRadius": 17,
+                "height": 34,
+                "width": 34,
               },
               undefined,
             ],
@@ -393,14 +400,15 @@ exports[`Message component should render null if user has no Avatar 1`] = `
         style={
           [
             {
-              "backgroundColor": "#f0f0f0",
-              "borderRadius": 15,
+              "backgroundColor": "#FFFFFF",
+              "borderRadius": 18,
               "justifyContent": "flex-end",
               "minHeight": 20,
             },
             null,
             null,
             undefined,
+            false,
           ]
         }
       >
@@ -439,8 +447,8 @@ exports[`Message component should render null if user has no Avatar 1`] = `
             style={
               [
                 {
-                  "marginHorizontal": 10,
-                  "marginVertical": 5,
+                  "marginHorizontal": 12,
+                  "marginVertical": 6,
                 },
                 undefined,
               ]
@@ -450,7 +458,12 @@ exports[`Message component should render null if user has no Avatar 1`] = `
               style={
                 [
                   {
-                    "color": "black",
+                    "fontSize": 16,
+                    "fontWeight": "400",
+                    "lineHeight": 21,
+                  },
+                  {
+                    "color": "#000000",
                   },
                   undefined,
                   undefined,
@@ -464,11 +477,11 @@ exports[`Message component should render null if user has no Avatar 1`] = `
             style={
               [
                 {
-                  "alignItems": "flex-end",
+                  "alignItems": "center",
                   "flexDirection": "row",
-                  "justifyContent": "space-between",
-                  "paddingBottom": 5,
-                  "paddingHorizontal": 10,
+                  "justifyContent": "flex-end",
+                  "paddingBottom": 6,
+                  "paddingHorizontal": 12,
                 },
                 undefined,
               ]
@@ -480,6 +493,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
                   "alignItems": "center",
                   "flexDirection": "row",
                   "flexGrow": 1,
+                  "gap": 3,
                   "justifyContent": "flex-end",
                 }
               }
@@ -489,8 +503,9 @@ exports[`Message component should render null if user has no Avatar 1`] = `
                   style={
                     [
                       {
-                        "color": "#aaa",
-                        "fontSize": 10,
+                        "color": "#8E8E93",
+                        "fontSize": 12,
+                        "fontWeight": "400",
                         "textAlign": "right",
                       },
                       undefined,

@@ -5,31 +5,37 @@ import {
   TextStyle,
   ViewStyle,
 } from 'react-native'
-import {
-  ActionSheetOptions,
-} from '@expo/react-native-action-sheet'
 import { KeyboardProvider, KeyboardAvoidingViewProps } from 'react-native-keyboard-controller'
 
 import { ActionsProps } from '../Actions'
 import { AvatarProps } from '../Avatar'
 import { BubbleProps } from '../Bubble'
+import { ActionSheetOptions } from '../ChatContext'
+import { AttachmentAction } from '../components/AttachmentSheet'
 import { ComposerProps } from '../Composer'
+import { ChatLabels } from '../i18n'
+import { ChatIcons } from '../Icons'
 import { InputToolbarProps } from '../InputToolbar'
 import { MessageImageProps } from '../MessageImage'
 import { AnimatedList, MessagesContainerProps } from '../MessagesContainer'
 import { MessageTextProps } from '../MessageText'
 import {
+  AudioRecordingProps,
   IMessage,
   LeftRightStyle,
   MessageAudioProps,
+  MessageLocationProps,
+  MessageMenuItem,
   MessageVideoProps,
   User,
+  VideoRecordingProps,
 } from '../Models'
 import { QuickRepliesProps } from '../QuickReplies'
 import { ReactionsProps } from '../Reactions'
 import { ReplyProps } from '../Reply'
 import { SendProps } from '../Send'
 import { SystemMessageProps } from '../SystemMessage'
+import { PartialChatTheme } from '../Theme'
 import { TimeProps } from '../Time'
 
 export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<MessagesContainerProps<TMessage>, 'messageReplyContainerStyle'>> {
@@ -50,6 +56,14 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   locale?: string
   /* Force color scheme (light/dark); default is undefined (uses system color scheme) */
   colorScheme?: 'light' | 'dark'
+  /* Override the modern default light theme tokens (deep-merged over defaults) */
+  theme?: PartialChatTheme
+  /* Override the modern default dark theme tokens (deep-merged over defaults) */
+  darkTheme?: PartialChatTheme
+  /* Override built-in icons (e.g. with lucide-react-native); drawn icons are used for any name not provided */
+  icons?: ChatIcons
+  /* Override UI strings; merged over the built-in translation for `locale`, then English */
+  labels?: Partial<ChatLabels>
   /* Format to use for rendering times; default is 'LT' */
   timeFormat?: string
   /* Format to use for rendering dates; default is 'll' */
@@ -76,7 +90,7 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   minComposerHeight?: number
   /* composer min Height */
   maxComposerHeight?: number
-  actions?: Array<{ title: string, action: () => void }>
+  actions?: AttachmentAction[]
   actionSheetOptionTintColor?: string
   quickReplyStyle?: StyleProp<ViewStyle>
   quickReplyTextStyle?: StyleProp<TextStyle>
@@ -122,6 +136,8 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   renderMessageVideo?: (props: MessageVideoProps<TMessage>) => React.ReactNode
   /* Custom message audio */
   renderMessageAudio?: (props: MessageAudioProps<TMessage>) => React.ReactNode
+  /* Custom message location */
+  renderMessageLocation?: (props: MessageLocationProps<TMessage>) => React.ReactNode
   /* Custom view inside the bubble */
   renderCustomView?: (props: BubbleProps<TMessage>) => React.ReactNode
   /* Custom time inside a message */
@@ -165,4 +181,12 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   reply?: ReplyProps<TMessage>
   /** Emoji reactions configuration */
   reactions?: ReactionsProps<TMessage>
+  /** Telegram-style long-press context menu actions (array or per-message function) */
+  messageActions?: MessageMenuItem[] | ((message: TMessage) => MessageMenuItem[])
+  /** Show an emoji button inset on the left of the composer field; called on press */
+  onPressEmoji?: () => void
+  /** Telegram-style hold-to-record voice messages (needs optional expo-audio) */
+  audioRecording?: AudioRecordingProps
+  /** Record-and-send video messages from the camera (needs optional expo-image-picker) */
+  videoRecording?: VideoRecordingProps
 }

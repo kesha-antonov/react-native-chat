@@ -2,6 +2,8 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   View,
   Pressable,
+  StyleSheet,
+  TextStyle,
   Text } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -14,9 +16,14 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { useChatContext } from '../ChatContext'
+import { ContextMenu } from '../components/ContextMenu'
+import { Icon } from '../components/Icon'
 import { MessageReply } from '../components/MessageReply'
+import { PendingClock, Ticks } from '../components/Ticks'
+import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { MessageAudio } from '../MessageAudio'
 import { MessageImage } from '../MessageImage'
+import { MessageLocation } from '../MessageLocation'
 import { MessageText } from '../MessageText'
 import { MessageVideo } from '../MessageVideo'
 import { IMessage } from '../Models'
@@ -25,7 +32,7 @@ import { DEFAULT_REACTION_EMOJIS, MessageReactions, ReactionPicker } from '../Re
 import { getStyleWithPosition } from '../styles'
 import { Time } from '../Time'
 import { isSameUser, isSameDay, renderComponentOrElement } from '../utils'
-import styles from './styles'
+import { createBubbleStyles } from './styles'
 import { BubbleProps, RenderMessageTextProps } from './types'
 
 export * from './types'
@@ -61,9 +68,21 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     onPressMessage: onPressMessageProp,
     onLongPressMessage: onLongPressMessageProp,
     reactions,
+    messageActions,
   } = props
 
   const context = useChatContext()
+  const theme = useTheme()
+  const styles = useThemedStyles(createBubbleStyles)
+
+  // Resolve the long-press context-menu actions for this message.
+  const menuItems = useMemo(() => {
+    if (!messageActions || !currentMessage)
+      return []
+
+    return typeof messageActions === 'function' ? messageActions(currentMessage) : messageActions
+  }, [messageActions, currentMessage])
+  const hasMenu = menuItems.length > 0
 
   const bubbleContainerRef = useRef<View>(null)
 
@@ -163,6 +182,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     nextMessage,
     position,
     containerToNextStyle,
+    styles,
   ])
 
   const styledBubbleToPrevious = useMemo(() => {
@@ -184,6 +204,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     previousMessage,
     position,
     containerToPreviousStyle,
+    styles,
   ])
 
   const renderQuickReplies = useCallback(() => {
@@ -283,7 +304,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     if (props.renderMessageVideo)
       return renderComponentOrElement(props.renderMessageVideo, messageVideoProps)
 
-    return <MessageVideo />
+    return <MessageVideo {...messageVideoProps} />
   }, [props, currentMessage])
 
   const renderMessageAudio = useCallback(() => {
@@ -301,7 +322,25 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     if (props.renderMessageAudio)
       return renderComponentOrElement(props.renderMessageAudio, messageAudioProps)
 
-    return <MessageAudio />
+    return <MessageAudio {...messageAudioProps} />
+  }, [props, currentMessage])
+
+  const renderMessageLocation = useCallback(() => {
+    if (!currentMessage?.location)
+      return null
+
+    const {
+      /* eslint-disable @typescript-eslint/no-unused-vars */
+      containerStyle,
+      wrapperStyle,
+      /* eslint-enable @typescript-eslint/no-unused-vars */
+      ...messageLocationProps
+    } = props
+
+    if (props.renderMessageLocation)
+      return renderComponentOrElement(props.renderMessageLocation, messageLocationProps)
+
+    return <MessageLocation {...messageLocationProps} />
   }, [props, currentMessage])
 
   const renderTicks = useCallback(() => {
@@ -323,31 +362,34 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     if (
       currentMessage &&
       (currentMessage.sent || currentMessage.received || currentMessage.pending)
-    )
+    ) {
+      // Allow a color override via the (legacy) tickStyle prop.
+      const overrideColor = (StyleSheet.flatten(props.tickStyle) as TextStyle | undefined)?.color as
+        | string
+        | undefined
+      const sentColor = overrideColor ?? (position === 'right' ? theme.colors.ticksSent : theme.colors.incomingMeta)
+      const readColor = overrideColor ?? (position === 'right' ? theme.colors.ticksRead : theme.colors.accent)
+
       return (
         <View style={styles.messageStatusContainer}>
-          {!!currentMessage.sent && (
-            <Text style={[styles.messageStatus, props.tickStyle]}>
-              {'✓'}
-            </Text>
-          )}
-          {!!currentMessage.received && (
-            <Text style={[styles.messageStatus, props.tickStyle]}>
-              {'✓'}
-            </Text>
-          )}
-          {!!currentMessage.pending && (
-            <Text style={[styles.messageStatus, props.tickStyle]}>
-              {'🕓'}
-            </Text>
-          )}
+          {currentMessage.pending
+            ? <Icon name='clock' color={sentColor} size={11} fallback={<PendingClock color={sentColor} />} />
+            : currentMessage.received
+              ? <Icon name='checkAll' color={readColor} size={14} fallback={<Ticks double color={readColor} />} />
+              : currentMessage.sent
+                ? <Icon name='check' color={sentColor} size={14} fallback={<Ticks color={sentColor} />} />
+                : null}
         </View>
       )
+    }
 
     return null
   }, [
     props,
     currentMessage,
+    position,
+    theme,
+    styles,
   ])
 
   const renderTime = useCallback(() => {
@@ -398,6 +440,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   }, [
     currentMessage,
     props,
+    styles,
   ])
 
   const renderCustomView = useCallback(() => {
@@ -445,6 +488,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         {renderMessageImage()}
         {renderMessageVideo()}
         {renderMessageAudio()}
+        {renderMessageLocation()}
         {renderMessageText()}
         {props.isCustomViewBottom && renderCustomView()}
       </>
@@ -455,12 +499,14 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     renderMessageImage,
     renderMessageVideo,
     renderMessageAudio,
+    renderMessageLocation,
     renderMessageText,
     props.isCustomViewBottom,
   ])
 
   const renderBubbleBody = useCallback(() => (
     <>
+      {renderUsername()}
       {renderBubbleContent()}
       <View
         style={[
@@ -468,7 +514,6 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
           bottomContainerStyle?.[position],
         ]}
       >
-        {renderUsername()}
         <View style={styles.messageTimeAndStatusContainer}>
           {renderTime()}
           {renderTicks()}
@@ -482,14 +527,20 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     renderUsername,
     renderTime,
     renderTicks,
+    styles,
   ])
+
+  // A pure video note (round video, no text) drops the bubble background so the
+  // circle floats like in Telegram.
+  const isVideoNote = !!currentMessage?.videoNote && !!currentMessage?.video && !currentMessage?.text
 
   const wrapperStyleList = useMemo(() => [
     getStyleWithPosition(styles, 'wrapper', position),
     styledBubbleToNext,
     styledBubbleToPrevious,
     wrapperStyle?.[position],
-  ], [position, styledBubbleToNext, styledBubbleToPrevious, wrapperStyle])
+    isVideoNote && styles.noteWrapper,
+  ], [position, styledBubbleToNext, styledBubbleToPrevious, wrapperStyle, styles, isVideoNote])
 
   const renderReactionsDisplay = useCallback(() => {
     const currentReactions = currentMessage?.reactions
@@ -539,10 +590,30 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return <ReactionPicker {...pickerProps} />
   }, [reactions, isPickerVisible, currentMessage, position, pickerAnchor])
 
-  if (reactions?.isEnabled)
-    // Reactions path: the Animated.View carries only the scale transform,
-    // keeping the animation isolated from the static bubble styles on the
-    // inner View. Tap/long-press are handled by the composed gesture.
+  const renderContextMenu = useCallback(() => {
+    const reactionsRow = reactions?.isEnabled
+      ? {
+        emojis: reactions.emojis ?? DEFAULT_REACTION_EMOJIS,
+        onSelect: (emoji: string) => reactions?.onReactionPress?.(currentMessage, emoji),
+      }
+      : undefined
+
+    return (
+      <ContextMenu
+        visible={isPickerVisible}
+        items={menuItems}
+        onDismiss={() => setIsPickerVisible(false)}
+        position={position}
+        {...pickerAnchor}
+        reactions={reactionsRow}
+      />
+    )
+  }, [reactions, menuItems, isPickerVisible, position, pickerAnchor, currentMessage])
+
+  // Overlay path: a long-press opens either the Telegram-style context menu
+  // (when messageActions are provided, optionally with a reactions row) or the
+  // reactions quick-picker. The Animated.View carries only the scale transform.
+  if (reactions?.isEnabled || hasMenu)
     return (
       <Animated.View style={containerStyle?.[position]} ref={bubbleContainerRef}>
         <GestureDetector gesture={reactionsGesture}>
@@ -554,7 +625,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         </GestureDetector>
         {renderQuickReplies()}
         {renderReactionsDisplay()}
-        {renderReactionPickerModal()}
+        {hasMenu ? renderContextMenu() : renderReactionPickerModal()}
       </Animated.View>
     )
 

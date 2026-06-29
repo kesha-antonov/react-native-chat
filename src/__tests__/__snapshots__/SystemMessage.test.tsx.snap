@@ -21,8 +21,8 @@ exports[`SystemMessage should render <SystemMessage /> and compare with snapshot
     style={
       [
         {
-          "backgroundColor": "rgba(0,0,0,0.05)",
-          "borderColor": "rgba(0,0,0,0.1)",
+          "backgroundColor": "rgba(0, 0, 0, 0.06)",
+          "borderColor": "rgba(0, 0, 0, 0.08)",
           "borderRadius": 20,
           "borderWidth": 1,
           "maxWidth": "70%",
@@ -37,8 +37,8 @@ exports[`SystemMessage should render <SystemMessage /> and compare with snapshot
       style={
         [
           {
-            "marginHorizontal": 10,
-            "marginVertical": 5,
+            "marginHorizontal": 12,
+            "marginVertical": 6,
           },
           [
             {
@@ -54,14 +54,20 @@ exports[`SystemMessage should render <SystemMessage /> and compare with snapshot
         style={
           [
             {
-              "color": "black",
+              "fontSize": 16,
+              "fontWeight": "400",
+              "lineHeight": 21,
+            },
+            {
+              "color": "#000000",
             },
             undefined,
             [
               {
                 "backgroundColor": "transparent",
-                "fontSize": 12,
-                "fontWeight": "300",
+                "color": "#8E8E93",
+                "fontSize": 13,
+                "fontWeight": "400",
                 "textAlign": "center",
               },
               undefined,

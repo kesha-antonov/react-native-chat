@@ -7,7 +7,9 @@ import {
   ViewStyle,
 } from 'react-native'
 import { ChatAvatar } from './ChatAvatar'
+import { useThemedStyles } from './hooks/useTheme'
 import { IMessage, LeftRightStyle, User } from './Models'
+import { ChatTheme } from './Theme'
 import { isSameUser, isSameDay } from './utils'
 
 interface Styles {
@@ -23,33 +25,26 @@ interface Styles {
   }
 }
 
-const styles: Styles = {
-  left: StyleSheet.create({
-    container: {
-      marginRight: 8,
-    },
-    onTop: {
-      alignSelf: 'flex-start',
-    },
-    image: {
-      height: 36,
-      width: 36,
-      borderRadius: 18,
-    },
-  }),
-  right: StyleSheet.create({
-    container: {
-      marginLeft: 8,
-    },
-    onTop: {
-      alignSelf: 'flex-start',
-    },
-    image: {
-      height: 36,
-      width: 36,
-      borderRadius: 18,
-    },
-  }),
+const createStyles = (theme: ChatTheme): Styles => {
+  const size = theme.avatar.size
+  const image: ImageStyle = {
+    height: size,
+    width: size,
+    borderRadius: size / 2,
+  }
+
+  return {
+    left: StyleSheet.create({
+      container: { marginRight: 8 },
+      onTop: { alignSelf: 'flex-start' },
+      image,
+    }),
+    right: StyleSheet.create({
+      container: { marginLeft: 8 },
+      onTop: { alignSelf: 'flex-start' },
+      image,
+    }),
+  }
 }
 
 export interface AvatarProps<TMessage extends IMessage> {
@@ -83,6 +78,8 @@ export function Avatar<TMessage extends IMessage = IMessage> (
     onPressAvatar,
     onLongPressAvatar,
   } = props
+
+  const styles = useThemedStyles(createStyles)
 
   const messageToCompare = isAvatarOnTop ? previousMessage : nextMessage
 
@@ -127,6 +124,7 @@ export function Avatar<TMessage extends IMessage = IMessage> (
     imageStyle,
     onPressAvatar,
     onLongPressAvatar,
+    styles,
   ])
 
   if (renderAvatar === null)

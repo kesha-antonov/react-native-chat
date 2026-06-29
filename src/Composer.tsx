@@ -1,16 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
-  Platform,
   StyleSheet,
-  TextInputChangeEvent,
   TextInputContentSizeChangeEvent,
   TextInputProps,
   View,
 } from 'react-native'
 import { TextInput } from 'react-native-gesture-handler'
-import { Color } from './Color'
 import { useColorScheme } from './hooks/useColorScheme'
-import stylesCommon, { getColorSchemeStyle } from './styles'
+import { useLabels } from './hooks/useLabels'
+import { useTheme, useThemedStyles } from './hooks/useTheme'
+import { ChatTheme } from './Theme'
 
 export interface ComposerProps {
   composerHeight?: number
@@ -18,87 +17,96 @@ export interface ComposerProps {
   textInputProps?: Partial<TextInputProps>
 }
 
+// Static text-input metrics. lineHeight matches typography.message.lineHeight
+// (21) so composed text and sent bubbles share identical metrics. The vertical
+// padding is derived from the bar height (see createStyles) so a single line of
+// text is vertically centered in the field.
+const TEXT_INPUT_METRICS = {
+  fontSize: 16,
+  lineHeight: 21,
+}
+
 export function Composer ({
   text = '',
   textInputProps,
 }: ComposerProps): React.ReactElement {
   const colorScheme = useColorScheme()
+  const theme = useTheme()
+  const labels = useLabels()
+  const styles = useThemedStyles(createStyles)
   const isDark = colorScheme === 'dark'
 
-  const placeholder = textInputProps?.placeholder ?? 'Type a message...'
+  const maxHeight = theme.composer.maxHeight
+  const placeholder = textInputProps?.placeholder ?? labels.placeholder
 
-  const minHeight = useMemo(() =>
-    Platform.select({
-      web: styles.textInput.lineHeight + styles.textInput.paddingTop + styles.textInput.paddingBottom,
-      default: undefined,
-    })
-  , [])
+  // A single line fills the bar height so its text sits centered (symmetric
+  // padding); it grows from there up to maxHeight.
+  const ONE_LINE = theme.composer.minHeight
 
-  const [height, setHeight] = useState<number | undefined>(minHeight)
+  const [height, setHeight] = useState<number>(ONE_LINE)
 
-  // Reset the (web) auto-grown height back to its minimum once the text is
-  // cleared, e.g. after sending. Without this the composer stays expanded at
-  // the height of the previously sent multiline message. (#2716)
+  // Grow with content up to maxHeight, then scroll internally. Works on native
+  // (previously only web capped growth), so a long paste no longer pushes the
+  // whole bar up the screen.
+  const handleContentSizeChange = useCallback((e: TextInputContentSizeChangeEvent) => {
+    const contentHeight = e.nativeEvent.contentSize.height
+    setHeight(Math.min(maxHeight, Math.max(ONE_LINE, contentHeight)))
+  }, [maxHeight, ONE_LINE])
+
+  // Reset to a single line once the text is cleared (e.g. after sending), so the
+  // field doesn't stay expanded at the height of the previous multiline message.
   useEffect(() => {
-    if (Platform.OS === 'web' && text.length === 0)
-      setHeight(minHeight)
-  }, [text, minHeight])
+    if (text.length === 0)
+      setHeight(ONE_LINE)
+  }, [text, ONE_LINE])
 
-  const handleContentSizeChange = useMemo(() => {
-    if (Platform.OS === 'web')
-      return (e: TextInputContentSizeChangeEvent) => {
-        const contentHeight = e.nativeEvent.contentSize.height
-        setHeight(Math.max(minHeight ?? 0, contentHeight))
-      }
-
-    return undefined
-  }, [minHeight])
-
-  const handleChange = useCallback((event: TextInputChangeEvent) => {
-    if (Platform.OS === 'web')
-      // Reset height to 0 to get the correct scrollHeight
-      requestAnimationFrame(() => {
-        // @ts-expect-error - web-specific code
-        event.nativeEvent.target.style.height = '0px'
-        // @ts-expect-error - web-specific code
-        event.nativeEvent.target.style.height = `${event.nativeEvent.target.scrollHeight}px`
-      })
-  }, [])
+  const atMax = height >= maxHeight
 
   return (
-    <View style={stylesCommon.fill}>
+    <View style={styles.field}>
       <TextInput
         testID={placeholder}
         accessible
         accessibilityLabel={placeholder}
-        placeholderTextColor={textInputProps?.placeholderTextColor ?? (isDark ? '#888' : Color.defaultColor)}
+        placeholderTextColor={textInputProps?.placeholderTextColor ?? theme.colors.placeholder}
         value={text}
         enablesReturnKeyAutomatically
         underlineColorAndroid='transparent'
         keyboardAppearance={isDark ? 'dark' : 'default'}
         multiline
+        scrollEnabled={atMax}
         placeholder={placeholder}
         onContentSizeChange={handleContentSizeChange}
-        onChange={handleChange}
         {...textInputProps}
-        style={[getColorSchemeStyle(styles, 'textInput', colorScheme), stylesWeb.textInput, { height }, textInputProps?.style]}
+        style={[styles.textInput, stylesWeb.textInput, { height }, textInputProps?.style]}
       />
     </View>
   )
 }
 
-const styles = StyleSheet.create({
-  textInput: {
-    fontSize: 16,
-    lineHeight: 22,
-    paddingTop: 8,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-  },
-  textInput_dark: {
-    color: '#fff',
-  },
-})
+const createStyles = (theme: ChatTheme) => {
+  // Center a single line vertically: split the leftover space (bar height minus
+  // one line of text) into equal top/bottom padding.
+  const paddingVertical = Math.max(4, (theme.composer.minHeight - TEXT_INPUT_METRICS.lineHeight) / 2)
+
+  return StyleSheet.create({
+    // Transparent slot: the rounded pill is provided by the InputToolbar field
+    // group so the inset emoji/attachment buttons share the pill surface.
+    field: {
+      flex: 1,
+      justifyContent: 'center',
+      minHeight: theme.composer.minHeight,
+    },
+    textInput: {
+      fontSize: TEXT_INPUT_METRICS.fontSize,
+      lineHeight: TEXT_INPUT_METRICS.lineHeight,
+      paddingTop: paddingVertical,
+      paddingBottom: paddingVertical,
+      paddingHorizontal: 0,
+      color: theme.colors.inputText,
+    },
+  })
+}
 
 const stylesWeb = StyleSheet.create({
   textInput: {

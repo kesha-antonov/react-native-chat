@@ -52,7 +52,6 @@
     ]
   },
   "dependencies": {
-    "@expo/react-native-action-sheet": "^4.1.1",
     "@types/lodash.isequal": "^4.5.8",
     "dayjs": "^1.11.19",
     "lodash.isequal": "^4.5.0",
@@ -105,14 +104,52 @@
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
+    "@lodev09/react-native-true-sheet": "*",
+    "expo-audio": "*",
+    "expo-device": "*",
+    "expo-image-picker": "*",
+    "expo-video": "*",
     "react": ">=18.0.0",
     "react-native": "*",
+    "react-native-audio-api": "*",
     "react-native-gesture-handler": ">=2.0.0",
     "react-native-keyboard-controller": ">=1.0.0",
     "react-native-reanimated": ">=3.0.0 || ^4.0.0",
-    "react-native-safe-area-context": ">=5.0.0"
+    "react-native-safe-area-context": ">=5.0.0",
+    "react-native-streamdown": "*",
+    "react-native-svg": "*",
+    "react-native-vision-camera": "*"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "peerDependenciesMeta": {
+    "@lodev09/react-native-true-sheet": {
+      "optional": true
+    },
+    "expo-audio": {
+      "optional": true
+    },
+    "expo-device": {
+      "optional": true
+    },
+    "expo-image-picker": {
+      "optional": true
+    },
+    "expo-video": {
+      "optional": true
+    },
+    "react-native-audio-api": {
+      "optional": true
+    },
+    "react-native-streamdown": {
+      "optional": true
+    },
+    "react-native-svg": {
+      "optional": true
+    },
+    "react-native-vision-camera": {
+      "optional": true
+    }
+  },
+  "packageManager": "yarn@4.17.0",
   "engines": {
     "node": ">=20"
   }

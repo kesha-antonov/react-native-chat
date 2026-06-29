@@ -7,8 +7,10 @@ import calendar from 'dayjs/plugin/calendar'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useChatContext } from '../ChatContext'
 import { DATE_FORMAT } from '../Constant'
+import { useLabels } from '../hooks/useLabels'
+import { useThemedStyles } from '../hooks/useTheme'
 import stylesCommon from '../styles'
-import styles from './styles'
+import { createDayStyles } from './styles'
 import { DayProps } from './types'
 
 export * from './types'
@@ -25,6 +27,8 @@ export function Day ({
   textProps,
 }: DayProps) {
   const { getLocale } = useChatContext()
+  const labels = useLabels()
+  const styles = useThemedStyles(createDayStyles)
 
   const dateStr = useMemo(() => {
     if (createdAt == null)
@@ -38,12 +42,12 @@ export function Day ({
 
     if (now.diff(date, 'days') < 1)
       return date.calendar(now, {
-        sameDay: '[Today]',
+        sameDay: `[${labels.today}]`,
         ...dateFormatCalendar,
       })
 
     return date.format(dateFormat)
-  }, [createdAt, dateFormat, getLocale, dateFormatCalendar])
+  }, [createdAt, dateFormat, getLocale, dateFormatCalendar, labels.today])
 
   if (!dateStr)
     return null

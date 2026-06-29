@@ -1,5 +1,60 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+- **Modern, Telegram-inspired redesign** of the default look: azure accent (replacing the old Messenger blue), softer 18px bubbles with grouped corners, inline 12px time with vector delivery ticks, rounded composer with an accent send-button, translucent day-separator pill, sender name at the top of a group, and a softened scroll-to-bottom button.
+- **Theme system + dark mode**: new `ChatTheme` with `colors` / `radii` / `spacing` / `typography` / `avatar` / `sendButton` tokens, plus `defaultLightTheme` / `defaultDarkTheme`. Override any subset via the `theme` and `darkTheme` props on `<Chat>`; the resolved theme is shared through context and switches at runtime with the color scheme. Explicit per-component style props still win.
+  - New `useTheme()` hook and `useThemedStyles(factory)` helper for building theme-aware `StyleSheet`s (both exported).
+- **Tighter message grouping**: consecutive messages from the same author get softened inner corners and reduced spacing (Telegram-style), so a run of messages reads as one group.
+- **Video & audio messages now have real default renderers** instead of "not implemented" placeholders:
+  - Inline playback when the optional `expo-video` / `expo-audio` peers are installed; otherwise a tappable `MediaCard` that opens the media in the system player.
+  - `MessageVideo` / `MessageAudio` now receive `currentMessage` (previously rendered with no props).
+  - Inline video uses the current `expo-video` `fullscreenOptions` API (no deprecation warning) and shows a dark placeholder while the first frame loads instead of flashing a white box.
+- **Voice notes** (optional): Telegram-style hold-to-record mic with slide-to-cancel and a live recording bar (uses `expo-audio`). Playback renders a decoded **waveform** with a progress cursor when `react-native-audio-api` is installed. Enable with `audioRecording={{ isEnabled: true }}`.
+- **Video notes** (optional): a round front-camera recorder via `react-native-vision-camera`, falling back to `expo-image-picker`'s system camera. Enable with `videoRecording={{ isEnabled: true }}`.
+- **Location messages**: `IMessage.location` now renders a default map card that opens the system maps app on tap, with a `renderMessageLocation` override and `MessageLocation` component.
+- **Markdown message text**: render AI/streamed replies as markdown. Opt in with `messageTextProps={{ markdown: true }}` (streamed messages auto-render as markdown unless disabled). Ships a **built-in dependency-free renderer** (headings, bullet/ordered lists, blockquotes, fenced + inline code, bold/italic/strikethrough, and links) that handles streaming-incomplete markdown gracefully, so it works out of the box. When the optional `react-native-streamdown` peer is installed it is used instead for richer streaming-safe rendering; `markdownProps` is forwarded to it. Exposed as `BasicMarkdown`.
+- **Animated delivery status**: the "pending" clock now spins while sending; `sent` / `received` render as crisp vector check marks (replacing the `✓` / `🕓` glyphs).
+- **Icon override registry**: an `icons` prop on `<Chat>` lets you replace any built-in icon (send, mic, camera, play, pause, check, checkAll, clock, pin, plus, close, chevronLeft, chevronDown, emoji, paperclip, reply, pencil, lock, trash) with your own - e.g. `lucide-react-native`. The built-in icons are the official [Lucide](https://lucide.dev) glyphs, rendered via the optional `react-native-svg` peer; if it isn't installed they fall back to dependency-free drawn icons. Exposed `ChatIcons` type, `useIcons`, and an `Icon` resolver component.
+- **Telegram-style long-press context menu**: a new `messageActions` prop (array or per-message function of `{ label, icon?, onPress, destructive? }`) shows a floating, themed action menu anchored to the bubble on long-press, with an optional reactions row on top when reactions are enabled. Exposed the `ContextMenu` component and `MessageMenuItem` type.
+- **Themed attachment sheet**: the composer "+" actions now open a dependency-free, themed slide-up sheet (`AttachmentSheet`) instead of the system action sheet. Add `icon`/`color` to an action to render a Telegram-style attachment **grid** (tiles + grab handle) instead of a list.
+- **Composer redesign (Telegram field-as-bar)**: the composer is now one rounded field spanning the bar, with inset attachment (paperclip) and camera buttons on the right and an optional emoji button on the left (`onPressEmoji`). The text field grows to a max height then scrolls internally on native (previously unbounded), its `lineHeight` matches sent bubbles, and the bar pads for the home indicator (safe-area). New theme tokens: `composer` (minHeight/maxHeight/fieldPaddingH/insetIconSize), `voice` (cancel/lock thresholds), `colors.inputFieldBorder`, and `radii.inputField` is 18.
+- **Send button is always visible**: it shows accent (active) when there's text to send and a muted gray (inactive) when the field is empty, so the right slot is never empty - except when a voice/video/stop control takes its place (e.g. with `audioRecording` enabled, the empty field shows the mic and switches to send once you type). The default send glyph is now the Lucide "send" paper-plane, rendered via `react-native-svg` when available (with a dependency-free triangle fallback) instead of a vertical arrow.
+- **Reply/edit banner**: the reply preview is now a flush banner inside the bar (shared background + hairline) with a leading reply glyph, and supports an `edit` mode (pencil glyph) via `mode`.
+- New overridable icons: `emoji`, `paperclip`, `reply`, `pencil`, `lock`, `trash` (drawn fallbacks; override via the `icons` prop).
+- **Localization (i18n)** for UI strings: a `labels` prop on `<Chat>` overrides any string, and built-in translations ship for `en`/`es`/`fr`/`de`/`ru` (selected by the existing `locale` prop). All previously hardcoded strings (composer placeholder, send, cancel, load earlier, today, voice/video/location labels, slide-to-cancel, reply/edit banner, camera permission) now route through it. Exposed the `ChatLabels` type, `defaultLabels`, `translations`, `resolveLabels`, and the `useLabels` hook.
+
+### ⚠️ Breaking / Migration
+- **Removed `@expo/react-native-action-sheet` as a dependency.** The library no longer bundles or wraps an action sheet. The `actionSheet` prop and `context.actionSheet()` remain as an escape hatch but default to a no-op - if you relied on the built-in action sheet (e.g. calling `context.actionSheet()` in a custom `onLongPressMessage`), either pass your own `actionSheet` implementation (install `@expo/react-native-action-sheet` yourself and wrap your tree in `ActionSheetProvider`) or adopt the new `messageActions` context menu. The composer "+" actions need no change - they now use the built-in themed `AttachmentSheet`.
+
+### ⚡ Performance
+- **Memoized message rows.** Each list row (`Item`) is now wrapped in `React.memo` with a conservative comparator: message data is deep-compared (any change to text, status, reactions, etc. re-renders) and every other prop is reference-compared (any new render-function, config, style, or shared-value reference re-renders). The only skip is a genuine no-op, so appending a message no longer re-renders every visible row - and there is no path where new props leave stale content on screen. For best results, memoize custom render props (`renderBubble`, etc.) on your side.
+- Missing prev/next messages at the list edges now use a shared frozen empty object instead of a fresh `{}` each render, so the row memo's fast path holds.
+- **Tuned FlatList virtualization** defaults for chat lists (`removeClippedSubviews` on Android, `initialNumToRender`, `maxToRenderPerBatch`, `windowSize`, `updateCellsBatchingPeriod`) - all overridable via `listProps`.
+
+### 🔧 Improvements
+- Reactions, day pill, typing indicator, reply preview/quote, "Load earlier" pill, attachment button, system messages, and the initials-avatar palette are all theme-driven, with proper dark-mode colors (previously hard-coded; some were broken in dark mode).
+- Reply UI now uses the shared accent (fixing the stale `#0084ff` in the reply preview and message-reply quote).
+- Styling is consistent and DRY: every component reads design tokens through `useThemedStyles`; inline style objects were replaced with `StyleSheet` factories.
+
+### 🧹 Internal
+- Removed dead duplicate `src/MessageReply.tsx` and `src/ReplyPreview.tsx` (the exported components live in `src/components/`).
+
+### 📦 Dependencies
+- Added optional `peerDependencies` (all gated by `peerDependenciesMeta.optional`, nothing is required): `expo-video`, `expo-audio`, `expo-image-picker`, `react-native-audio-api`, `react-native-vision-camera`, `react-native-streamdown`, `react-native-svg` (used for the Lucide send glyph; falls back to a drawn icon when absent).
+
+### 🛠️ Tooling
+- Migrated the library and the example app to **Yarn 4** (corepack-driven `packageManager`, `nodeLinker: node-modules`, Berry lockfiles). CI now enables corepack and uses `yarn install --immutable`.
+
+### 📝 Docs
+- New README sections covering the redesign: "What's new vs react-native-gifted-chat", one-line theming, voice/video/location messages, custom icons (e.g. Lucide), markdown rendering for AI replies, the long-press message-actions menu, and a performance overview.
+- Added a migration guide from `react-native-gifted-chat`.
+
+### 📲 Example app
+- New demo screens (registered in the chat stack and the "Explore" list): **Context Menu**, **Media & Voice**, **Theming & Icons**, and **Localization (i18n)**.
+- Added a lightweight `EmojiPicker` for the composer emoji-button demo, and updated the AI bot and Slack examples for the new theming/composer APIs.
+
 ## [4.1.0] - 2026-06-19
 
 ### ✨ Features

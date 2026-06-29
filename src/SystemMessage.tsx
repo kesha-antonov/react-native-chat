@@ -7,9 +7,11 @@ import {
   TextStyle,
 } from 'react-native'
 import { Color } from './Color'
+import { useThemedStyles } from './hooks/useTheme'
 import { MessageText, MessageTextProps } from './MessageText'
 import { IMessage } from './Models'
 import stylesCommon from './styles'
+import { ChatTheme } from './Theme'
 
 export interface SystemMessageProps<TMessage extends IMessage> {
   currentMessage: TMessage
@@ -28,6 +30,8 @@ export function SystemMessage<TMessage extends IMessage> ({
   messageTextProps,
   children,
 }: SystemMessageProps<TMessage>) {
+  const styles = useThemedStyles(createStyles)
+
   if (currentMessage == null)
     return null
 
@@ -51,7 +55,7 @@ export function SystemMessage<TMessage extends IMessage> ({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     marginVertical: 5,
@@ -61,10 +65,10 @@ const styles = StyleSheet.create({
     maxWidth: '70%',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: theme.colors.separator,
     paddingHorizontal: 10,
     paddingVertical: 10,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: theme.colors.reactionBackground,
   },
   messageContainer: {
     marginVertical: 0,
@@ -72,8 +76,9 @@ const styles = StyleSheet.create({
   },
   text: {
     backgroundColor: Color.backgroundTransparent,
-    fontSize: 12,
-    fontWeight: '300',
+    color: theme.colors.incomingMeta,
+    fontSize: theme.typography.system.fontSize,
+    fontWeight: theme.typography.system.fontWeight,
     textAlign: 'center',
   },
 })

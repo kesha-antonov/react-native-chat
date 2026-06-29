@@ -13,48 +13,40 @@ exports[`should render <Chat/> and compare with snapshot 1`] = `
     statusBarTranslucent={true}
   >
     <View
+      onLayout={[Function]}
       style={
-        {
-          "flex": 1,
-        }
+        [
+          {
+            "flex": 1,
+          },
+          {
+            "overflow": "hidden",
+          },
+        ]
       }
+      testID="GC_WRAPPER"
     >
       <View
-        onLayout={[Function]}
+        behavior="translate-with-padding"
+        keyboardVerticalOffset={0}
         style={
-          [
-            {
-              "flex": 1,
-            },
-            {
-              "overflow": "hidden",
-            },
-          ]
+          {
+            "flex": 1,
+          }
         }
-        testID="GC_WRAPPER"
       >
         <View
-          behavior="translate-with-padding"
-          keyboardVerticalOffset={0}
           style={
-            {
-              "flex": 1,
-            }
+            [
+              {
+                "flex": 1,
+              },
+              {
+                "opacity": 0,
+              },
+            ]
           }
-        >
-          <View
-            style={
-              [
-                {
-                  "flex": 1,
-                },
-                {
-                  "opacity": 0,
-                },
-              ]
-            }
-          />
-        </View>
+        />
       </View>
     </View>
   </KeyboardProvider>
@@ -74,48 +66,40 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
     statusBarTranslucent={true}
   >
     <View
+      onLayout={[Function]}
       style={
-        {
-          "flex": 1,
-        }
+        [
+          {
+            "flex": 1,
+          },
+          {
+            "overflow": "hidden",
+          },
+        ]
       }
+      testID="GC_WRAPPER"
     >
       <View
-        onLayout={[Function]}
+        behavior="translate-with-padding"
+        keyboardVerticalOffset={0}
         style={
-          [
-            {
-              "flex": 1,
-            },
-            {
-              "overflow": "hidden",
-            },
-          ]
+          {
+            "flex": 1,
+          }
         }
-        testID="GC_WRAPPER"
       >
         <View
-          behavior="translate-with-padding"
-          keyboardVerticalOffset={0}
           style={
-            {
-              "flex": 1,
-            }
+            [
+              {
+                "flex": 1,
+              },
+              {
+                "opacity": 0,
+              },
+            ]
           }
-        >
-          <View
-            style={
-              [
-                {
-                  "flex": 1,
-                },
-                {
-                  "opacity": 0,
-                },
-              ]
-            }
-          />
-        </View>
+        />
       </View>
     </View>
   </KeyboardProvider>
@@ -135,48 +119,40 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
     statusBarTranslucent={true}
   >
     <View
+      onLayout={[Function]}
       style={
-        {
-          "flex": 1,
-        }
+        [
+          {
+            "flex": 1,
+          },
+          {
+            "overflow": "hidden",
+          },
+        ]
       }
+      testID="GC_WRAPPER"
     >
       <View
-        onLayout={[Function]}
+        behavior="translate-with-padding"
+        keyboardVerticalOffset={0}
         style={
-          [
-            {
-              "flex": 1,
-            },
-            {
-              "overflow": "hidden",
-            },
-          ]
+          {
+            "flex": 1,
+          }
         }
-        testID="GC_WRAPPER"
       >
         <View
-          behavior="translate-with-padding"
-          keyboardVerticalOffset={0}
           style={
-            {
-              "flex": 1,
-            }
+            [
+              {
+                "flex": 1,
+              },
+              {
+                "opacity": 0,
+              },
+            ]
           }
-        >
-          <View
-            style={
-              [
-                {
-                  "flex": 1,
-                },
-                {
-                  "opacity": 0,
-                },
-              ]
-            }
-          />
-        </View>
+        />
       </View>
     </View>
   </KeyboardProvider>

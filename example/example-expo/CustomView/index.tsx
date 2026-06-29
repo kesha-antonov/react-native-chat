@@ -1,10 +1,7 @@
 import React, { useCallback } from 'react'
 import { Platform, View, Text } from 'react-native'
-import Constants from 'expo-constants'
 import * as Linking from 'expo-linking'
 import { RectButton } from 'react-native-gesture-handler'
-import MapView from 'react-native-maps'
-import commonStyles from '../../styles'
 import styles from './styles'
 import type { CustomViewProps } from './types'
 
@@ -38,37 +35,22 @@ const CustomView = ({
   }, [currentMessage])
 
   if (currentMessage.location) {
-    // Check if Google Maps API key is configured for Android
-    const androidApiKey = Constants.expoConfig?.android?.config?.googleMaps?.apiKey
-    const hasAndroidApiKey = androidApiKey && androidApiKey !== 'YOUR_GOOGLE_MAPS_API_KEY'
-    const shouldShowPlaceholder = Platform.OS === 'android' && !hasAndroidApiKey
+    const { latitude, longitude } = currentMessage.location
 
-    // Use native MapView for iOS or Android with API key
+    // Dependency-free location card (no native map dependency). Tap to open the
+    // coordinates in the system Maps app.
     return (
       <RectButton
         style={containerStyle}
         onPress={openMapAsync}
       >
-        {
-          shouldShowPlaceholder
-            ? (
-              <View style={[commonStyles.center, styles.mapView, mapViewStyle]}>
-                <Text style={commonStyles.textCenter}>Google Maps API key is not configured.</Text>
-              </View>
-            ) : (
-              <MapView
-                style={[styles.mapView, mapViewStyle]}
-                region={{
-                  latitude: currentMessage.location.latitude,
-                  longitude: currentMessage.location.longitude,
-                  latitudeDelta: 0.0922,
-                  longitudeDelta: 0.0421,
-                }}
-                scrollEnabled={false}
-                zoomEnabled={false}
-              />
-            )
-        }
+        <View style={[styles.mapView, mapViewStyle]}>
+          <Text style={styles.pin}>📍</Text>
+          <Text style={styles.coords}>
+            {latitude.toFixed(5)}, {longitude.toFixed(5)}
+          </Text>
+          <Text style={styles.hint}>Tap to open in Maps</Text>
+        </View>
       </RectButton>
     )
   }

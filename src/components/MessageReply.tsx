@@ -11,7 +11,9 @@ import {
   ViewStyle,
 } from 'react-native'
 
+import { useThemedStyles } from '../hooks/useTheme'
 import { IMessage, ReplyMessage } from '../Models'
+import { ChatTheme } from '../Theme'
 import { isSameUser } from '../utils'
 
 export interface MessageReplyProps<TMessage extends IMessage = IMessage> {
@@ -39,7 +41,7 @@ export interface MessageReplyProps<TMessage extends IMessage = IMessage> {
   onPress?: (replyMessage: ReplyMessage) => void
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   container: {
     borderRadius: 8,
     marginBottom: 4,
@@ -47,13 +49,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   containerLeft: {
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
-    borderLeftColor: '#0084ff',
+    backgroundColor: theme.colors.reactionBackground,
+    borderLeftColor: theme.colors.accent,
     borderLeftWidth: 3,
   },
   containerRight: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderLeftColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: theme.colors.outgoingOverlay,
+    borderLeftColor: theme.colors.outgoingMeta,
     borderLeftWidth: 3,
   },
   image: {
@@ -66,20 +68,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   textLeft: {
-    color: '#333',
+    color: theme.colors.incomingText,
   },
   textRight: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: theme.colors.outgoingText,
   },
   username: {
     fontWeight: '600',
     marginBottom: 2,
   },
   usernameLeft: {
-    color: '#0084ff',
+    color: theme.colors.accent,
   },
   usernameRight: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: theme.colors.outgoingText,
   },
 })
 
@@ -96,6 +98,8 @@ export function MessageReply<TMessage extends IMessage = IMessage> ({
   imageStyle,
   onPress,
 }: MessageReplyProps<TMessage>) {
+  const styles = useThemedStyles(createStyles)
+
   const isCurrentUser = useMemo(
     () => isSameUser(currentMessage, { user: replyMessage.user } as TMessage),
     [currentMessage, replyMessage.user]

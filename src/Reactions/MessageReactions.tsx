@@ -1,8 +1,9 @@
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
-import { Color } from '../Color'
+import { useThemedStyles } from '../hooks/useTheme'
 import { IMessage } from '../Models'
+import { ChatTheme } from '../Theme'
 import { MessageReactionsDisplayProps } from './types'
 
 export const MessageReactions = <TMessage extends IMessage = IMessage>(
@@ -19,6 +20,8 @@ export const MessageReactions = <TMessage extends IMessage = IMessage>(
     reactionTextStyle,
     reactionCountStyle,
   } = props
+
+  const styles = useThemedStyles(createStyles)
 
   if (!reactions || reactions.length === 0)
     return null
@@ -65,52 +68,53 @@ export const MessageReactions = <TMessage extends IMessage = IMessage>(
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 3,
-    gap: 4,
-  },
-  containerLeft: {
-    justifyContent: 'flex-start',
-    paddingLeft: 4,
-  },
-  containerRight: {
-    justifyContent: 'flex-end',
-    paddingRight: 4,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderWidth: 1,
-  },
-  pillInactive: {
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
-    borderColor: 'transparent',
-  },
-  pillActive: {
-    backgroundColor: 'rgba(0, 132, 255, 0.15)',
-    borderColor: Color.defaultBlue,
-  },
-  pillPressed: {
-    opacity: 0.7,
-  },
-  emoji: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  count: {
-    fontSize: 12,
-    marginLeft: 3,
-    color: Color.black,
-    lineHeight: 20,
-  },
-  countActive: {
-    color: Color.defaultBlue,
-    fontWeight: '600',
-  },
-})
+const createStyles = (theme: ChatTheme) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginTop: 3,
+      gap: 4,
+    },
+    containerLeft: {
+      justifyContent: 'flex-start',
+      paddingLeft: 4,
+    },
+    containerRight: {
+      justifyContent: 'flex-end',
+      paddingRight: 4,
+    },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: theme.radii.reaction,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderWidth: 1,
+    },
+    pillInactive: {
+      backgroundColor: theme.colors.reactionBackground,
+      borderColor: 'transparent',
+    },
+    pillActive: {
+      backgroundColor: theme.colors.reactionActiveBackground,
+      borderColor: theme.colors.accent,
+    },
+    pillPressed: {
+      opacity: 0.7,
+    },
+    emoji: {
+      fontSize: 15,
+      lineHeight: 20,
+    },
+    count: {
+      fontSize: 12,
+      marginLeft: 3,
+      color: theme.colors.incomingText,
+      lineHeight: 20,
+    },
+    countActive: {
+      color: theme.colors.accent,
+      fontWeight: '600',
+    },
+  })

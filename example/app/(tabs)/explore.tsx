@@ -1,6 +1,6 @@
 import React from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
-import { useRouter } from 'expo-router'
+import { Href, useRouter } from 'expo-router'
 import { RectButton } from 'react-native-gesture-handler'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -8,11 +8,15 @@ import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 import { useThemeColor } from '@/hooks/use-theme-color'
 
-type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions' | 'day-animated'
+type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions' | 'context-menu' | 'media' | 'theming' | 'localization' | 'day-animated'
 
 const examples: Array<{ id: ChatExample, title: string, description: string }> = [
-  { id: 'ai-bot', title: 'AI Bot (Streaming)', description: 'Streamed assistant replies with a typing cursor and Stop button' },
+  { id: 'ai-bot', title: 'AI Bot (Streaming + Markdown)', description: 'Streamed assistant replies with a typing cursor, Stop button, and markdown rendering' },
   { id: 'reactions', title: 'Reactions', description: 'Long-press a message to react with emojis, with a full emoji browser' },
+  { id: 'context-menu', title: 'Context Menu', description: 'Telegram-style long-press menu with Copy/Delete actions and a reactions row' },
+  { id: 'media', title: 'Media & Voice', description: 'Audio, video and location messages, hold-to-record voice notes, and video recording' },
+  { id: 'theming', title: 'Theming & Icons', description: 'Switch themes at runtime and override icons via the icon registry' },
+  { id: 'localization', title: 'Localization (i18n)', description: 'Switch UI language at runtime; built-in en/es/fr/de/ru + custom labels' },
   { id: 'basic', title: 'Basic Example', description: 'Basic chat with keyboard logging for testing' },
   { id: 'links', title: 'Links & Patterns', description: 'Phone numbers, emails, URLs, hashtags, and mentions' },
   { id: 'customized-rendering', title: 'Customized Rendering', description: 'Customized chat with all rendering options' },
@@ -42,7 +46,7 @@ export default function ExploreScreen () {
             <RectButton
               key={example.id}
               style={[styles.exampleCard, { borderColor }]}
-              onPress={() => router.push(`/chat/${example.id}`)}
+              onPress={() => router.push(`/chat/${example.id}` as Href)}
             >
               <ThemedText type='subtitle' style={styles.exampleTitle}>
                 {example.title}
@@ -74,21 +78,30 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   examplesContainer: {
-    padding: 20,
-    gap: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 12,
   },
   exampleCard: {
-    padding: 20,
+    width: '48.5%',
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    gap: 8,
+    gap: 6,
   },
   exampleTitle: {
-    marginBottom: 4,
+    marginBottom: 2,
+    fontSize: 16,
+    lineHeight: 20,
   },
   exampleDescription: {
     opacity: 0.7,
-    marginBottom: 8,
+    marginBottom: 6,
+    fontSize: 13,
+    lineHeight: 17,
   },
   tryButton: {
     alignSelf: 'flex-start',

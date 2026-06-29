@@ -1,66 +1,73 @@
 import { StyleSheet } from 'react-native'
-import { Color } from '../Color'
+import { ChatTheme } from '../Theme'
 
-const styles = StyleSheet.create({
-  wrapper: {
-    borderRadius: 15,
-    minHeight: 20,
-  },
-  wrapper_left: {
-    backgroundColor: Color.leftBubbleBackground,
-    justifyContent: 'flex-end',
-  },
-  wrapper_right: {
-    backgroundColor: Color.defaultBlue,
-    justifyContent: 'flex-end',
-  },
+export const createBubbleStyles = (theme: ChatTheme) => {
+  const { colors, radii, spacing, typography } = theme
 
-  bottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingHorizontal: 10,
-    paddingBottom: 5,
-  },
+  return StyleSheet.create({
+    wrapper: {
+      borderRadius: radii.bubble,
+      minHeight: 20,
+    },
+    wrapper_left: {
+      backgroundColor: colors.incomingBubble,
+      justifyContent: 'flex-end',
+    },
+    wrapper_right: {
+      backgroundColor: colors.outgoingBubble,
+      justifyContent: 'flex-end',
+    },
+    // A round video note floats with no bubble background/chrome (Telegram-style).
+    noteWrapper: {
+      backgroundColor: 'transparent',
+    },
 
-  containerToNext_left: {
-    borderBottomLeftRadius: 3,
-  },
-  containerToNext_right: {
-    borderBottomRightRadius: 3,
-  },
+    bottom: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      paddingHorizontal: spacing.bubblePaddingH,
+      paddingBottom: spacing.bubblePaddingV,
+    },
 
-  containerToPrevious_left: {
-    borderTopLeftRadius: 3,
-  },
-  containerToPrevious_right: {
-    borderTopRightRadius: 3,
-  },
+    // Soften the inner corners of grouped messages instead of squaring them off.
+    containerToNext_left: {
+      borderBottomLeftRadius: radii.bubbleGrouped,
+    },
+    containerToNext_right: {
+      borderBottomRightRadius: radii.bubbleGrouped,
+    },
 
-  messageTimeAndStatusContainer: {
-    flexGrow: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
+    containerToPrevious_left: {
+      borderTopLeftRadius: radii.bubbleGrouped,
+    },
+    containerToPrevious_right: {
+      borderTopRightRadius: radii.bubbleGrouped,
+    },
 
-  messageStatusContainer: {
-    flexDirection: 'row',
-    marginLeft: 5,
-  },
-  messageStatus: {
-    fontSize: 10,
-    color: Color.white,
-  },
+    messageTimeAndStatusContainer: {
+      flexGrow: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: 3,
+    },
 
-  usernameContainer: {
-    flexDirection: 'row',
-    marginRight: 5,
-  },
-  username: {
-    fontSize: 12,
-    color: '#aaa',
-  },
-})
+    messageStatusContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
 
-export default styles
+    usernameContainer: {
+      paddingHorizontal: spacing.bubblePaddingH,
+      paddingTop: spacing.bubblePaddingV,
+    },
+    username: {
+      fontSize: typography.senderName.fontSize,
+      fontWeight: typography.senderName.fontWeight,
+      color: colors.senderName,
+    },
+  })
+}
+
+export type BubbleStyles = ReturnType<typeof createBubbleStyles>

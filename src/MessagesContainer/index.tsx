@@ -4,9 +4,11 @@ import {
   LayoutChangeEvent,
   ListRenderItemInfo,
   CellRendererProps,
-  Text } from 'react-native'
+  Platform } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 import Animated, { runOnJS, ScrollEvent, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { Icon } from '../components/Icon'
+import { useThemedStyles } from '../hooks/useTheme'
 import { LoadEarlierMessages } from '../LoadEarlierMessages'
 import { warning } from '../logging'
 import { IMessage } from '../Models'
@@ -16,10 +18,13 @@ import { isSameDay, useCallbackThrottled } from '../utils'
 import { DayAnimated } from './components/DayAnimated'
 import { Item } from './components/Item'
 import { ItemProps } from './components/Item/types'
-import styles from './styles'
+import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions, AnimatedFlatList } from './types'
 
 export * from './types'
+
+// Stable reference for the missing prev/next message at the list edges.
+const EMPTY_MESSAGE = Object.freeze({}) as IMessage
 
 export const MessagesContainer = <TMessage extends IMessage>(props: MessagesContainerProps<TMessage>) => {
   const {
@@ -43,6 +48,8 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     renderDay: renderDayProp,
     isDayAnimationEnabled = true,
   } = props
+
+  const themedStyles = useThemedStyles(createThemedStyles)
 
   const listPropsOnScrollProp = listProps?.onScroll
 
@@ -205,10 +212,13 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     }
 
     if (messages) {
+      // Use a shared frozen empty message for the edges so missing prev/next
+      // keep a stable reference (a fresh `{}` each render would defeat the
+      // Item memo's deep-compare fast path).
       const previousMessage =
-        (isInverted ? messages[index + 1] : messages[index - 1]) || {}
+        (isInverted ? messages[index + 1] : messages[index - 1]) || EMPTY_MESSAGE
       const nextMessage =
-        (isInverted ? messages[index - 1] : messages[index + 1]) || {}
+        (isInverted ? messages[index - 1] : messages[index + 1]) || EMPTY_MESSAGE
 
       const messageProps: ItemProps<TMessage> = {
         position: user?._id != null && messageItem.user?._id === user._id ? 'right' : 'left',
@@ -268,8 +278,16 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     if (scrollToBottomComponentProp)
       return scrollToBottomComponentProp()
 
-    return <Text>{'V'}</Text>
-  }, [scrollToBottomComponentProp])
+    // A downward chevron drawn with borders (no glyph), themed with the accent.
+    return (
+      <Icon
+        name='chevronDown'
+        color={themedStyles.chevronColor.color}
+        size={16}
+        fallback={<View style={themedStyles.scrollChevron} />}
+      />
+    )
+  }, [scrollToBottomComponentProp, themedStyles])
 
   const handleScrollToBottomPress = useCallback(() => {
     doScrollToBottom()
@@ -281,6 +299,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         style={[
           stylesCommon.centerItems,
           styles.scrollToBottomContent,
+          themedStyles.scrollSurface,
           scrollToBottomContentStyle,
           scrollToBottomStyleAnim,
         ]}
@@ -288,7 +307,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         {renderScrollBottomComponent()}
       </Animated.View>
     )
-  }, [scrollToBottomStyleAnim, scrollToBottomContentStyle, renderScrollBottomComponent])
+  }, [scrollToBottomStyleAnim, scrollToBottomContentStyle, renderScrollBottomComponent, themedStyles])
 
   const ScrollToBottomWrapper = useCallback(() => {
     if (!isScrollToBottomEnabled)
@@ -443,6 +462,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     <View
       style={[
         styles.contentContainerStyle,
+        themedStyles.root,
         isAlignedTop ? styles.containerAlignTop : stylesCommon.fill,
       ]}
     >
@@ -453,6 +473,13 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         renderItem={renderItem}
         inverted={isInverted}
         automaticallyAdjustContentInsets={false}
+        // Virtualization defaults tuned for chat lists. All are overridable via
+        // `listProps` below (spread last), so consumers keep full control.
+        removeClippedSubviews={Platform.OS === 'android'}
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={9}
+        updateCellsBatchingPeriod={50}
         style={stylesCommon.fill}
         contentContainerStyle={styles.messagesContainer}
         ListEmptyComponent={renderChatEmpty}

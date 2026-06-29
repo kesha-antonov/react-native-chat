@@ -8,7 +8,9 @@ import {
   View,
 } from 'react-native'
 
+import { useThemedStyles } from '../hooks/useTheme'
 import { IMessage } from '../Models'
+import { ChatTheme } from '../Theme'
 import { ReactionPickerProps } from './types'
 
 const PICKER_HEIGHT = 54
@@ -37,6 +39,8 @@ export const ReactionPicker = <TMessage extends IMessage = IMessage>(
     pickerContainerStyle,
     pickerEmojiStyle,
   } = props
+
+  const styles = useThemedStyles(createStyles)
 
   const { width: screenWidth } = Dimensions.get('window')
 
@@ -104,13 +108,13 @@ export const ReactionPicker = <TMessage extends IMessage = IMessage>(
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ChatTheme) => StyleSheet.create({
   picker: {
     position: 'absolute',
     height: PICKER_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: PICKER_HEIGHT / 2,
     paddingHorizontal: PICKER_PADDING_H,
     shadowColor: '#000',
@@ -127,7 +131,7 @@ const styles = StyleSheet.create({
     borderRadius: EMOJI_BUTTON_SIZE / 2,
   },
   emojiButtonPressed: {
-    backgroundColor: 'rgba(0, 0, 0, 0.07)',
+    backgroundColor: theme.colors.reactionBackground,
     transform: [{ scale: 1.2 }],
   },
   emoji: {

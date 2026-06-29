@@ -8,6 +8,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native'
+import { useActionSheet } from '@expo/react-native-action-sheet'
 import {
   MessageText,
   MessageImage,
@@ -75,6 +76,9 @@ const Bubble = (props: Props) => {
   } = props
 
   const context = useChatContext()
+  // The library no longer bundles an action sheet; consumers bring their own.
+  // This screen wraps the chat in an ActionSheetProvider (see SlackExample).
+  const { showActionSheetWithOptions } = useActionSheet()
 
   const handleLongPress = useCallback(() => {
     if (onLongPress) {
@@ -87,7 +91,7 @@ const Bubble = (props: Props) => {
 
     const options = ['Copy Text', 'Cancel']
     const cancelButtonIndex = options.length - 1
-    context.actionSheet().showActionSheetWithOptions(
+    showActionSheetWithOptions(
       {
         options,
         cancelButtonIndex,
@@ -100,7 +104,7 @@ const Bubble = (props: Props) => {
         }
       }
     )
-  }, [context, currentMessage, onLongPress])
+  }, [showActionSheetWithOptions, context, currentMessage, onLongPress])
 
   const renderMessageText = useCallback(() => {
     if (currentMessage.text) {
