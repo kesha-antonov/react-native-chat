@@ -1,6 +1,8 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@kesha-antonov/react-native-chat"><img alt="npm version" src="https://badge.fury.io/js/@kesha-antonov%2Freact-native-chat.svg"/></a>
   <a href="https://www.npmjs.com/package/@kesha-antonov/react-native-chat"><img alt="npm downloads" src="https://img.shields.io/npm/dm/@kesha-antonov%2Freact-native-chat.svg"/></a>
+  <a href="https://npm-stat.com/charts.html?package=%40kesha-antonov%2Freact-native-chat&from=2015-01-01"><img alt="total npm downloads" src="https://img.shields.io/badge/total%20downloads-466-blue.svg"/></a>
+  <a href="https://www.npmjs.com/package/@kesha-antonov/react-native-chat"><img alt="npm downloads (last 18 months)" src="https://img.shields.io/npm/dt/@kesha-antonov%2Freact-native-chat.svg?label=18-months%20downloads"/></a>
   <a href="https://github.com/kesha-antonov/react-native-chat/actions/workflows/main.yml"><img src="https://github.com/kesha-antonov/react-native-chat/actions/workflows/main.yml/badge.svg" alt="build"></a>
   <img src="https://img.shields.io/badge/platforms-iOS%20%7C%20Android%20%7C%20Web-lightgrey.svg" alt="platforms">
   <img src="https://img.shields.io/badge/TypeScript-supported-blue.svg" alt="TypeScript">
