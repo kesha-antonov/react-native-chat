@@ -19,6 +19,8 @@
   </a>
 </p>
 
+> 🚧 **v4.2.0 is in active development (WIP)** on the [`4.2.0`](https://github.com/kesha-antonov/react-native-chat/tree/4.2.0) branch - a Telegram-inspired redesign with a theme system + dark mode, localization (i18n), an icon override registry, Telegram-style voice notes, round video notes, location/media messages, markdown replies, and a long-press context menu. See the [`4.2.0` branch](https://github.com/kesha-antonov/react-native-chat/tree/4.2.0) for the latest work.
+
 ---
 
 ## ✨ Features
