@@ -117,4 +117,15 @@ export interface BubbleProps<TMessage extends IMessage> {
   reactions?: ReactionsProps<TMessage>
   /** Telegram-style long-press context menu actions (array or per-message function) */
   messageActions?: MessageMenuItem[] | ((message: TMessage) => MessageMenuItem[])
+  /**
+   * Controls whether the bubble attaches its tap / long-press gestures, which
+   * `reactions` and `messageActions` rely on. Pass `false` (or a predicate
+   * returning `false`) for messages that render natively interactive content -
+   * a video player with its own controls, a map, a WebView - whose touches
+   * must not compete with the bubble.
+   * Note: with gestures off, that message can no longer open the reaction
+   * picker or the context menu.
+   * @default true
+   */
+  isMessageGestureEnabled?: boolean | ((message: TMessage) => boolean)
 }

@@ -5,9 +5,34 @@ export const createBubbleStyles = (theme: ChatTheme) => {
   const { colors, radii, spacing, typography } = theme
 
   return StyleSheet.create({
+    // Fills the message row so the pressable surface reaches the far edge, with
+    // the bubble itself pinned to the sender's side.
+    container: {
+      flex: 1,
+    },
+    container_left: {
+      alignItems: 'flex-start',
+    },
+    container_right: {
+      alignItems: 'flex-end',
+    },
+
+    // Full-width band holding the bubble - this is what the reactions gesture is
+    // attached to, so the whole row responds and not just the bubble.
+    rowSurface: {
+      alignSelf: 'stretch',
+    },
+    rowSurface_left: {
+      alignItems: 'flex-start',
+    },
+    rowSurface_right: {
+      alignItems: 'flex-end',
+    },
+
     wrapper: {
       borderRadius: radii.bubble,
       minHeight: 20,
+      maxWidth: '70%',
     },
     wrapper_left: {
       backgroundColor: colors.incomingBubble,

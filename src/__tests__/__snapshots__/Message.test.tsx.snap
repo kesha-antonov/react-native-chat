@@ -11,8 +11,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
           "alignItems": "flex-end",
           "flexDirection": "row",
           "justifyContent": "flex-start",
-          "marginLeft": 8,
-          "maxWidth": "70%",
+          "marginHorizontal": 8,
         },
         {
           "marginBottom": 8,
@@ -21,7 +20,17 @@ exports[`Message component should render <Message /> and compare with snapshot 1
       ]
     }
   >
-    <View>
+    <View
+      style={
+        [
+          {
+            "alignItems": "flex-start",
+            "flex": 1,
+          },
+          undefined,
+        ]
+      }
+    >
       <View
         style={
           [
@@ -29,6 +38,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
               "backgroundColor": "#FFFFFF",
               "borderRadius": 18,
               "justifyContent": "flex-end",
+              "maxWidth": "70%",
               "minHeight": 20,
             },
             null,
@@ -159,8 +169,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
           "alignItems": "flex-end",
           "flexDirection": "row",
           "justifyContent": "flex-start",
-          "marginLeft": 8,
-          "maxWidth": "70%",
+          "marginHorizontal": 8,
         },
         {
           "marginBottom": 8,
@@ -208,7 +217,17 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
         }
       />
     </View>
-    <View>
+    <View
+      style={
+        [
+          {
+            "alignItems": "flex-start",
+            "flex": 1,
+          },
+          undefined,
+        ]
+      }
+    >
       <View
         style={
           [
@@ -216,6 +235,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
               "backgroundColor": "#FFFFFF",
               "borderRadius": 18,
               "justifyContent": "flex-end",
+              "maxWidth": "70%",
               "minHeight": 20,
             },
             null,
@@ -346,8 +366,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
           "alignItems": "flex-end",
           "flexDirection": "row",
           "justifyContent": "flex-start",
-          "marginLeft": 8,
-          "maxWidth": "70%",
+          "marginHorizontal": 8,
         },
         {
           "marginBottom": 8,
@@ -395,7 +414,17 @@ exports[`Message component should render null if user has no Avatar 1`] = `
         }
       />
     </View>
-    <View>
+    <View
+      style={
+        [
+          {
+            "alignItems": "flex-start",
+            "flex": 1,
+          },
+          undefined,
+        ]
+      }
+    >
       <View
         style={
           [
@@ -403,6 +432,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
               "backgroundColor": "#FFFFFF",
               "borderRadius": 18,
               "justifyContent": "flex-end",
+              "maxWidth": "70%",
               "minHeight": 20,
             },
             null,

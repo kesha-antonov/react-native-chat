@@ -69,6 +69,7 @@
     "@react-native/eslint-config": "0.81.5",
     "@react-native/metro-config": "0.81.5",
     "@react-native/typescript-config": "0.81.5",
+    "@shopify/flash-list": "^2.3.2",
     "@stylistic/eslint-plugin": "^3.1.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.0",
@@ -105,6 +106,7 @@
   },
   "peerDependencies": {
     "@lodev09/react-native-true-sheet": "*",
+    "@shopify/flash-list": "*",
     "expo-audio": "*",
     "expo-device": "*",
     "expo-image-picker": "*",
@@ -122,6 +124,9 @@
   },
   "peerDependenciesMeta": {
     "@lodev09/react-native-true-sheet": {
+      "optional": true
+    },
+    "@shopify/flash-list": {
       "optional": true
     },
     "expo-audio": {

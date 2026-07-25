@@ -183,6 +183,17 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   reactions?: ReactionsProps<TMessage>
   /** Telegram-style long-press context menu actions (array or per-message function) */
   messageActions?: MessageMenuItem[] | ((message: TMessage) => MessageMenuItem[])
+  /**
+   * Controls whether message bubbles attach the tap / long-press gestures that
+   * `reactions` and `messageActions` rely on. Pass `false` (or a predicate
+   * returning `false`) for messages rendering natively interactive content -
+   * a video player with its own controls, a map, a WebView - whose touches
+   * must not compete with the bubble.
+   * Note: with gestures off, those messages can no longer open the reaction
+   * picker or the context menu.
+   * @default true
+   */
+  isMessageGestureEnabled?: boolean | ((message: TMessage) => boolean)
   /** Show an emoji button inset on the left of the composer field; called on press */
   onPressEmoji?: () => void
   /** Telegram-style hold-to-record voice messages (needs optional expo-audio) */

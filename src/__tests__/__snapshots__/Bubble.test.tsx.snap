@@ -1,7 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should render <Bubble /> and compare with snapshot 1`] = `
-<View>
+<View
+  style={
+    [
+      {
+        "alignItems": "flex-start",
+        "flex": 1,
+      },
+      undefined,
+    ]
+  }
+>
   <View
     style={
       [
@@ -9,6 +19,7 @@ exports[`should render <Bubble /> and compare with snapshot 1`] = `
           "backgroundColor": "#FFFFFF",
           "borderRadius": 18,
           "justifyContent": "flex-end",
+          "maxWidth": "70%",
           "minHeight": 20,
         },
         null,

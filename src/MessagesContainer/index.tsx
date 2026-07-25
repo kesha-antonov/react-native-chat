@@ -4,6 +4,8 @@ import {
   LayoutChangeEvent,
   ListRenderItemInfo,
   CellRendererProps,
+  StyleProp,
+  ViewStyle,
   Platform } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 import Animated, { runOnJS, ScrollEvent, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -18,6 +20,7 @@ import { isSameDay, useCallbackThrottled } from '../utils'
 import { DayAnimated } from './components/DayAnimated'
 import { Item } from './components/Item'
 import { ItemProps } from './components/Item/types'
+import { AnimatedFlashList, isFlashListAvailable } from './FlashList'
 import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions, AnimatedFlatList } from './types'
 
@@ -25,6 +28,14 @@ export * from './types'
 
 // Stable reference for the missing prev/next message at the list edges.
 const EMPTY_MESSAGE = Object.freeze({}) as IMessage
+
+/** Props FlashList hands to its `CellRendererComponent`. */
+interface FlashListCellProps {
+  index: number
+  style?: StyleProp<ViewStyle>
+  onLayout?: (event: LayoutChangeEvent) => void
+  children?: React.ReactNode
+}
 
 export const MessagesContainer = <TMessage extends IMessage>(props: MessagesContainerProps<TMessage>) => {
   const {
@@ -47,7 +58,17 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     scrollToBottomComponent: scrollToBottomComponentProp,
     renderDay: renderDayProp,
     isDayAnimationEnabled = true,
+    isFlashListEnabled = false,
   } = props
+
+  const isFlashList = isFlashListEnabled && isFlashListAvailable
+
+  useEffect(() => {
+    if (isFlashListEnabled && !isFlashListAvailable)
+      warning(
+        'Chat: `isFlashListEnabled` is set but `@shopify/flash-list` is not installed - falling back to FlatList'
+      )
+  }, [isFlashListEnabled])
 
   const themedStyles = useThemedStyles(createThemedStyles)
 
@@ -355,49 +376,54 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   const keyExtractor = useCallback((item: unknown) => (item as TMessage)._id.toString(), [])
 
+  // Records where each message sits in the content so the floating day header
+  // knows which day is currently on screen. Shared by both cell renderers.
+  const trackDayPosition = useCallback((message: IMessage | undefined, layout: { y: number, height: number }) => {
+    // Only track positions when day animation is enabled
+    if (!isDayAnimationEnabled || !message)
+      return
+
+    const id = message._id.toString()
+    const { y, height } = layout
+
+    const newValue = {
+      y,
+      height,
+      createdAt: new Date(message.createdAt).getTime(),
+    }
+
+    daysPositions.modify(value => {
+      'worklet'
+
+      const isSameDay = (date1: number, date2: number) => {
+        const d1 = new Date(date1)
+        const d2 = new Date(date2)
+
+        return (
+          d1.getDate() === d2.getDate() &&
+          d1.getMonth() === d2.getMonth() &&
+          d1.getFullYear() === d2.getFullYear()
+        )
+      }
+
+      for (const [key, item] of Object.entries(value))
+        if (isSameDay(newValue.createdAt, item.createdAt) && (isInverted ? item.y <= newValue.y : item.y >= newValue.y)) {
+          delete value[key]
+          break
+        }
+
+      // @ts-expect-error: https://docs.swmansion.com/react-native-reanimated/docs/core/useSharedValue#remarks
+      value[id] = newValue
+      return value
+    })
+  }, [daysPositions, isInverted, isDayAnimationEnabled])
+
   const renderCell = useCallback((props: CellRendererProps<unknown>) => {
     const { item, onLayout: onLayoutProp, children } = props
-    const id = (item as IMessage)._id.toString()
 
     const handleOnLayout = (event: LayoutChangeEvent) => {
       onLayoutProp?.(event)
-
-      // Only track positions when day animation is enabled
-      if (!isDayAnimationEnabled)
-        return
-
-      const { y, height } = event.nativeEvent.layout
-
-      const newValue = {
-        y,
-        height,
-        createdAt: new Date((item as IMessage).createdAt).getTime(),
-      }
-
-      daysPositions.modify(value => {
-        'worklet'
-
-        const isSameDay = (date1: number, date2: number) => {
-          const d1 = new Date(date1)
-          const d2 = new Date(date2)
-
-          return (
-            d1.getDate() === d2.getDate() &&
-            d1.getMonth() === d2.getMonth() &&
-            d1.getFullYear() === d2.getFullYear()
-          )
-        }
-
-        for (const [key, item] of Object.entries(value))
-          if (isSameDay(newValue.createdAt, item.createdAt) && (isInverted ? item.y <= newValue.y : item.y >= newValue.y)) {
-            delete value[key]
-            break
-          }
-
-        // @ts-expect-error: https://docs.swmansion.com/react-native-reanimated/docs/core/useSharedValue#remarks
-        value[id] = newValue
-        return value
-      })
+      trackDayPosition(item as IMessage, event.nativeEvent.layout)
     }
 
     return (
@@ -408,7 +434,31 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         {children}
       </View>
     )
-  }, [daysPositions, isInverted, isDayAnimationEnabled])
+  }, [trackDayPosition])
+
+  // FlashList recycles cells and hands its CellRendererComponent only an
+  // `index` (no `item`), so the message is looked up through a ref to keep the
+  // component identity stable - recreating it would remount every row.
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
+
+  const FlashListCell = useMemo(() => {
+    const Cell = React.forwardRef<View, FlashListCellProps>(({ index, onLayout: onLayoutProp, children, ...rest }, ref) => {
+      const handleOnLayout = (event: LayoutChangeEvent) => {
+        onLayoutProp?.(event)
+        trackDayPosition(messagesRef.current[index], event.nativeEvent.layout)
+      }
+
+      return (
+        <View ref={ref} {...rest} onLayout={handleOnLayout}>
+          {children}
+        </View>
+      )
+    })
+
+    Cell.displayName = 'FlashListCell'
+    return Cell
+  }, [trackDayPosition])
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
@@ -458,6 +508,26 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     })
   }, [messages, daysPositions, isInverted, isDayAnimationEnabled])
 
+  // Props shared by both list engines. FlatList-only virtualization knobs and
+  // FlashList-only options are added at the call sites below.
+  const commonListProps = {
+    ref: forwardRef,
+    keyExtractor,
+    data: messages,
+    renderItem,
+    inverted: isInverted,
+    style: stylesCommon.fill,
+    contentContainerStyle: styles.messagesContainer,
+    ListEmptyComponent: renderChatEmpty,
+    ListFooterComponent: isInverted ? ListHeaderComponent : <>{ListFooterComponent}</>,
+    ListHeaderComponent: isInverted ? <>{ListFooterComponent}</> : ListHeaderComponent,
+    scrollEventThrottle: 1,
+    onEndReached,
+    onEndReachedThreshold: 0.1,
+    keyboardDismissMode: 'interactive' as const,
+    keyboardShouldPersistTaps: 'handled' as const,
+  }
+
   return (
     <View
       style={[
@@ -466,39 +536,40 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         isAlignedTop ? styles.containerAlignTop : stylesCommon.fill,
       ]}
     >
-      <AnimatedFlatList
-        ref={forwardRef}
-        keyExtractor={keyExtractor}
-        data={messages}
-        renderItem={renderItem}
-        inverted={isInverted}
-        automaticallyAdjustContentInsets={false}
-        // Virtualization defaults tuned for chat lists. All are overridable via
-        // `listProps` below (spread last), so consumers keep full control.
-        removeClippedSubviews={Platform.OS === 'android'}
-        initialNumToRender={12}
-        maxToRenderPerBatch={10}
-        windowSize={9}
-        updateCellsBatchingPeriod={50}
-        style={stylesCommon.fill}
-        contentContainerStyle={styles.messagesContainer}
-        ListEmptyComponent={renderChatEmpty}
-        ListFooterComponent={
-          isInverted ? ListHeaderComponent : <>{ListFooterComponent}</>
-        }
-        ListHeaderComponent={
-          isInverted ? <>{ListFooterComponent}</> : ListHeaderComponent
-        }
-        scrollEventThrottle={1}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.1}
-        keyboardDismissMode='interactive'
-        keyboardShouldPersistTaps='handled'
-        {...listProps}
-        onScroll={scrollHandler}
-        onLayout={onLayoutList}
-        CellRendererComponent={renderCell}
-      />
+      {isFlashList
+        ? (
+          <AnimatedFlashList
+            {...commonListProps}
+            // FlashList v2 keeps the viewport pinned to the newest message on
+            // its own; a non-inverted chat additionally wants the first render
+            // to start at the bottom. Overridable through `listProps`.
+            maintainVisibleContentPosition={{
+              startRenderingFromBottom: !isInverted,
+              autoscrollToBottomThreshold: 0.2,
+            }}
+            {...listProps}
+            onScroll={scrollHandler}
+            onLayout={onLayoutList}
+            CellRendererComponent={FlashListCell}
+          />
+        )
+        : (
+          <AnimatedFlatList
+            {...commonListProps}
+            automaticallyAdjustContentInsets={false}
+            // Virtualization defaults tuned for chat lists. All are overridable via
+            // `listProps` below (spread last), so consumers keep full control.
+            removeClippedSubviews={Platform.OS === 'android'}
+            initialNumToRender={12}
+            maxToRenderPerBatch={10}
+            windowSize={9}
+            updateCellsBatchingPeriod={50}
+            {...listProps}
+            onScroll={scrollHandler}
+            onLayout={onLayoutList}
+            CellRendererComponent={renderCell}
+          />
+        )}
       <ScrollToBottomWrapper />
       {isDayAnimationEnabled && (
         <DayAnimated
