@@ -70,6 +70,7 @@
     "@react-native/eslint-config": "0.81.5",
     "@react-native/metro-config": "0.81.5",
     "@react-native/typescript-config": "0.81.5",
+    "@shopify/flash-list": "^2.3.2",
     "@stylistic/eslint-plugin": "^3.1.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.0",
@@ -105,6 +106,7 @@
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
+    "@shopify/flash-list": "*",
     "react": ">=18.0.0",
     "react-native": "*",
     "react-native-gesture-handler": ">=2.0.0",
@@ -115,5 +117,10 @@
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "engines": {
     "node": ">=20"
+  },
+  "peerDependenciesMeta": {
+    "@shopify/flash-list": {
+      "optional": true
+    }
   }
 }

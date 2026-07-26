@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+- **Row-wide press target for reactions**: the long-press surface now spans the whole message row instead of just the bubble, so pressing the empty space beside a bubble opens the reaction picker - matching Telegram on Android. The message row is full-width now and the 70% width cap moved from the row onto the bubble itself (bubbles beside an avatar therefore get slightly more room).
+- **`isMessageGestureEnabled`**: opt a message's *bubble* out of that surface (accepts a bool or a per-message predicate) for content that must own its touches - e.g. `isMessageGestureEnabled={message => !message.video}`. The surface moves behind the bubble rather than disappearing, so long-pressing beside the bubble still opens the picker and reactions are never lost for that message.
+- **Optional FlashList engine** ([#3](https://github.com/kesha-antonov/react-native-chat/issues/3)): set `isFlashListEnabled` to render messages with `@shopify/flash-list` v2 instead of `FlatList`, which recycles rows and removes the `VirtualizedList: You have a large list that is slow to update` warning on long histories. `@shopify/flash-list` is an **optional** peer dependency - when it is missing the prop is ignored, a warning is logged, and `FlatList` is used. The chat wires FlashList's `maintainVisibleContentPosition` for you (`startRenderingFromBottom` on non-inverted lists, `autoscrollToBottomThreshold: 0.2`), and `listProps` still overrides everything. `isInverted`, the floating day header, infinite scroll and the scroll-to-bottom button all keep working.
+
+### 🐛 Bug Fixes
+- **Video controls no longer dead when reactions are enabled** ([#1](https://github.com/kesha-antonov/react-native-chat/issues/1)): the bubble's reaction gestures ran with the default `cancelsTouchesInView`, so on iOS they cancelled touches on native subviews and a `react-native-video` / `expo-video` player rendered through `renderMessageVideo` never got its play/seek/fullscreen taps. Both the tap and long-press recognizers now set `cancelsTouchesInView(false)`, and the tap gesture is only attached when `onPressMessage` is actually provided instead of always competing for touches.
+
 ## [4.1.0] - 2026-06-19
 
 ### ✨ Features

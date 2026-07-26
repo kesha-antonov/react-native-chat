@@ -50,6 +50,15 @@ export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
   user?: User
   /** Additional props for FlatList */
   listProps?: AnimatedListProps<TMessage>
+  /**
+   * Render messages with `@shopify/flash-list` (v2) instead of `FlatList`.
+   * Requires the optional `@shopify/flash-list` peer dependency and the New
+   * Architecture; falls back to `FlatList` with a warning when it is missing.
+   * FlashList recycles rows, which removes the `VirtualizedList: You have a
+   * large list that is slow to update` warning on long histories.
+   * @default false
+   */
+  isFlashListEnabled?: boolean
   /** Reverses display order of messages; default is true */
   isInverted?: boolean
   /** Controls whether or not the message bubbles appear at the top of the chat */

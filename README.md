@@ -349,6 +349,7 @@ function ChatScreen() {
 - **`renderChatEmpty`** _(Component | Function)_ - Custom component to render in the ListView when messages are empty
 - **`renderChatFooter`** _(Component | Function)_ - Custom component to render below the MessagesContainer (separate from the ListView)
 - **`listProps`** _(Object)_ - Extra props to be passed to the messages [`<FlatList>`](https://reactnative.dev/docs/flatlist). Supports all FlatList props including `maintainVisibleContentPosition` for keeping scroll position when new messages arrive (useful for AI chatbots).
+- **`isFlashListEnabled`** _(Bool)_ - Render messages with [`@shopify/flash-list`](https://shopify.github.io/flash-list/) v2 instead of `FlatList`; default is `false`. See [FlashList](#flashlist-opt-in).
 
 ### Message Bubbles & Content
 
@@ -361,6 +362,7 @@ function ChatScreen() {
 - **`isCustomViewBottom`** _(Bool)_ - Determine whether renderCustomView is displayed before or after the text, image and video views; default is `false`
 - **`onPressMessage`** _(Function(`context`, `message`))_ - Callback when a message bubble is pressed
 - **`onLongPressMessage`** _(Function(`context`, `message`))_ - Callback when a message bubble is long-pressed; you can use this to show action sheets (e.g., copy, delete, reply)
+- **`isMessageGestureEnabled`** _(Bool | Function(`message`))_ - Whether the bubble itself is part of the row's tap / long-press surface that `reactions` relies on; default is `true`. Pass `false`, or a predicate, for messages that render natively interactive content - the row beside the bubble stays pressable either way. See [Interactive content inside bubbles](#interactive-content-inside-bubbles-video-players-maps).
 - **`imageProps`** _(Object)_ - Extra props to be passed to the [`<Image>`](https://reactnative.dev/docs/image) component created by the default `renderMessageImage`
 - **`imageStyle`** _(Object)_ - Custom style for message images
 - **`videoProps`** _(Object)_ - Extra props to be passed to the video component created by the required `renderMessageVideo`
@@ -789,6 +791,56 @@ Message text is automatically scanned for URLs, emails, and phone numbers; hasht
 ```
 
 For full control, pass custom `matchers` (`{ type, pattern, getLinkUrl?, getLinkText?, renderLink?, onPress? }[]`) to add or override patterns. See the Links example in the [example app](#-example-app).
+
+### Interactive content inside bubbles (video players, maps)
+
+When `reactions` are enabled, the long-press surface spans the **whole message row** - the bubble *and* the empty space beside it, the way Telegram behaves on Android. (A tap gesture is added on top only when `onPressMessage` is set.) Those recognizers do not cancel touches on native subviews, so a `react-native-video` / `expo-video` player rendered through `renderMessageVideo` keeps its native `controls` interactive.
+
+If a message must own every touch that lands on it, set `isMessageGestureEnabled` to `false` for it. The gesture surface then drops *behind* the bubble: the bubble's content takes its touches, and long-pressing the row next to the bubble still opens the picker - so reactions are never lost for that message.
+
+```tsx
+<Chat
+  reactions={{ isEnabled: true, onReactionPress }}
+  renderMessageVideo={props => <Video source={{ uri: props.currentMessage.video }} controls style={styles.video} />}
+  // the video owns its controls; long-press beside the bubble still reacts
+  isMessageGestureEnabled={message => !message.video}
+/>
+```
+
+### FlashList (opt-in)
+
+On long histories `FlatList` can log `VirtualizedList: You have a large list that is slow to update`. [FlashList](https://shopify.github.io/flash-list/) v2 recycles rows instead of keeping them mounted, which removes that class of stall. It is supported as an **optional** dependency - install it yourself and flip one prop:
+
+```bash
+yarn add @shopify/flash-list
+```
+
+```jsx
+<Chat messages={messages} user={user} isFlashListEnabled />
+```
+
+Everything else keeps working: `isInverted`, the floating day header, `loadEarlierMessagesProps` infinite scroll, the scroll-to-bottom button, and `listProps` (spread last, so it overrides the defaults below).
+
+The chat sets FlashList's `maintainVisibleContentPosition` for you - `startRenderingFromBottom` when `isInverted={false}`, plus `autoscrollToBottomThreshold: 0.2` so new messages follow the viewport only when you are already at the bottom. Override it through `listProps` if you want different thresholds:
+
+```jsx
+<Chat
+  isFlashListEnabled
+  listProps={{
+    maintainVisibleContentPosition: {
+      autoscrollToBottomThreshold: 0.1,
+      animateAutoScrollToBottom: false,
+    },
+  }}
+  {...props}
+/>
+```
+
+Notes:
+
+- FlashList v2 requires the **New Architecture**. On the old architecture it falls back to a slower JS path.
+- `FlatList`-only knobs (`windowSize`, `maxToRenderPerBatch`, `initialNumToRender`, `updateCellsBatchingPeriod`, `removeClippedSubviews`) are not forwarded to FlashList - it sizes its own render window.
+- If `@shopify/flash-list` is not installed, the prop is ignored, a warning is logged, and `FlatList` is used.
 
 ### Copy to Clipboard
 

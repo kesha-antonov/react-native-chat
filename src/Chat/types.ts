@@ -165,4 +165,14 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   reply?: ReplyProps<TMessage>
   /** Emoji reactions configuration */
   reactions?: ReactionsProps<TMessage>
+  /**
+   * Controls whether the bubble itself is part of the row's tap / long-press
+   * surface that `reactions` relies on. Pass `false` (or a predicate returning
+   * `false`) for messages that render natively interactive content - a video
+   * player with its own controls, a map, a WebView - whose touches must not
+   * compete with the bubble. The surface beside the bubble stays pressable
+   * either way, so reactions are never lost for that message.
+   * @default true
+   */
+  isMessageGestureEnabled?: boolean | ((message: TMessage) => boolean)
 }

@@ -1,18 +1,18 @@
 import { StyleSheet } from 'react-native'
 
 export default StyleSheet.create({
+  // The row spans the full width so a long-press anywhere beside the bubble
+  // still opens the reactions (Telegram-style). The 70% cap lives on the bubble
+  // itself (see `wrapper` in Bubble/styles).
   container: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    maxWidth: '70%',
+    marginHorizontal: 8,
   },
   container_left: {
     justifyContent: 'flex-start',
-    marginLeft: 8,
   },
   container_right: {
     justifyContent: 'flex-end',
-    marginRight: 8,
-    alignSelf: 'flex-end',
   },
 })

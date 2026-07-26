@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   View,
   Pressable,
+  StyleSheet,
   Text } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -61,9 +62,19 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     onPressMessage: onPressMessageProp,
     onLongPressMessage: onLongPressMessageProp,
     reactions,
+    isMessageGestureEnabled = true,
   } = props
 
   const context = useChatContext()
+
+  // Consumers can hand the touches back to natively interactive content
+  // (video controls, maps, WebViews) on a per-message basis.
+  const isGestureEnabled = useMemo(() => {
+    if (typeof isMessageGestureEnabled === 'function')
+      return currentMessage ? isMessageGestureEnabled(currentMessage) : true
+
+    return isMessageGestureEnabled
+  }, [isMessageGestureEnabled, currentMessage])
 
   const bubbleContainerRef = useRef<View>(null)
 
@@ -104,6 +115,9 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const tapGesture = useMemo(
     () =>
       Gesture.Tap()
+        // Keep native subviews (video controls, maps, native buttons) receiving
+        // touches. iOS cancels them by default the moment this recognizer wins.
+        .cancelsTouchesInView(false)
         .runOnJS(true)
         .onEnd((_e, success) => {
           if (success)
@@ -115,6 +129,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const longPressGesture = useMemo(
     () =>
       Gesture.LongPress()
+        .cancelsTouchesInView(false)
         .onBegin(() => {
           messageScale.value = withTiming(SCALE_PRESSED, {
             duration: SCALE_DURATION_IN,
@@ -139,9 +154,13 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   // Exclusive composition: a long-press wins over the tap when held long
   // enough; a quick lift lets the tap through. Both share the onBegin/onFinalize
   // scale animation because onBegin always fires before either gesture wins.
+  // The tap is only attached when there is something to call - otherwise it
+  // would compete with interactive content inside the bubble for no reason.
   const reactionsGesture = useMemo(
-    () => Gesture.Exclusive(longPressGesture, tapGesture),
-    [longPressGesture, tapGesture]
+    () => onPressMessageProp
+      ? Gesture.Exclusive(longPressGesture, tapGesture)
+      : longPressGesture,
+    [longPressGesture, tapGesture, onPressMessageProp]
   )
 
   const styledBubbleToNext = useMemo(() => {
@@ -491,6 +510,16 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     wrapperStyle?.[position],
   ], [position, styledBubbleToNext, styledBubbleToPrevious, wrapperStyle])
 
+  const containerStyleList = useMemo(() => [
+    getStyleWithPosition(styles, 'container', position),
+    containerStyle?.[position],
+  ], [position, containerStyle])
+
+  const rowSurfaceStyle = useMemo(
+    () => getStyleWithPosition(styles, 'rowSurface', position),
+    [position]
+  )
+
   const renderReactionsDisplay = useCallback(() => {
     const currentReactions = currentMessage?.reactions
     if (!currentReactions || currentReactions.length === 0)
@@ -539,37 +568,65 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return <ReactionPicker {...pickerProps} />
   }, [reactions, isPickerVisible, currentMessage, position, pickerAnchor])
 
-  if (reactions?.isEnabled)
-    // Reactions path: the Animated.View carries only the scale transform,
-    // keeping the animation isolated from the static bubble styles on the
-    // inner View. Tap/long-press are handled by the composed gesture.
+  // Reactions path: the Animated.View carries only the scale transform, keeping
+  // the animation isolated from the static bubble styles on the inner View.
+  // Tap/long-press are handled by the composed gesture.
+  if (reactions?.isEnabled) {
+    // `rowSurface` spans the whole message row, so a long-press in the empty
+    // space beside the bubble opens the picker too - the way Telegram behaves.
+    const bubbleRow = (
+      <View style={rowSurfaceStyle}>
+        <Animated.View style={bubbleScaleStyle}>
+          <View style={wrapperStyleList} ref={bubbleContainerRef}>
+            {renderBubbleBody()}
+          </View>
+        </Animated.View>
+      </View>
+    )
+
     return (
-      <Animated.View style={containerStyle?.[position]} ref={bubbleContainerRef}>
-        <GestureDetector gesture={reactionsGesture}>
-          <Animated.View style={bubbleScaleStyle}>
-            <View style={wrapperStyleList}>
-              {renderBubbleBody()}
-            </View>
-          </Animated.View>
-        </GestureDetector>
+      <Animated.View style={containerStyleList}>
+        {isGestureEnabled
+          ? (
+            <GestureDetector gesture={reactionsGesture}>
+              {bubbleRow}
+            </GestureDetector>
+          )
+          : (
+            // Gestures are off for this message, so the surface drops *behind*
+            // the bubble: the bubble's own content (native video controls, a
+            // map, a WebView) keeps every touch that lands on it, while the rest
+            // of the row still opens the picker.
+            <>
+              <GestureDetector gesture={reactionsGesture}>
+                <View style={StyleSheet.absoluteFill} />
+              </GestureDetector>
+              {bubbleRow}
+            </>
+          )}
         {renderQuickReplies()}
         {renderReactionsDisplay()}
         {renderReactionPickerModal()}
       </Animated.View>
     )
+  }
 
   // Default path: unchanged behaviour for existing users, preserving
   // touchableProps, native press feedback, and the onLongPressMessage callback.
   return (
-    <View style={containerStyle?.[position]}>
+    <View style={containerStyleList}>
       <View style={wrapperStyleList}>
-        <Pressable
-          onPress={onPress}
-          onLongPress={onLongPress}
-          {...props.touchableProps}
-        >
-          {renderBubbleBody()}
-        </Pressable>
+        {isGestureEnabled
+          ? (
+            <Pressable
+              onPress={onPress}
+              onLongPress={onLongPress}
+              {...props.touchableProps}
+            >
+              {renderBubbleBody()}
+            </Pressable>
+          )
+          : renderBubbleBody()}
       </View>
       {renderQuickReplies()}
     </View>
