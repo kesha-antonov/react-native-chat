@@ -1532,13 +1532,8 @@
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
 "@kesha-antonov/react-native-chat@link:..":
-  version "4.1.0"
-  dependencies:
-    "@expo/react-native-action-sheet" "^4.1.1"
-    "@types/lodash.isequal" "^4.5.8"
-    dayjs "^1.11.19"
-    lodash.isequal "^4.5.0"
-    react-native-zoom-reanimated "^1.5.2"
+  version "0.0.0"
+  uid ""
 
 "@napi-rs/wasm-runtime@^0.2.11":
   version "0.2.12"
@@ -6508,10 +6503,10 @@ react-native-is-edge-to-edge@^1.1.6, react-native-is-edge-to-edge@^1.2.1:
   resolved "https://registry.yarnpkg.com/react-native-is-edge-to-edge/-/react-native-is-edge-to-edge-1.2.1.tgz#64e10851abd9d176cbf2b40562f751622bde3358"
   integrity sha512-FLbPWl/MyYQWz+KwqOZsSyj2JmLKglHatd3xLZWskXOpRaio4LfEDEz8E/A6uD8QoTHW6Aobw1jbEwK7KMgR7Q==
 
-react-native-keyboard-controller@1.20.6:
-  version "1.20.6"
-  resolved "https://registry.yarnpkg.com/react-native-keyboard-controller/-/react-native-keyboard-controller-1.20.6.tgz#139a66f36734a69648822bf2e7ec3c90e7b3dc8e"
-  integrity sha512-RS6FjIjTFtAMQGdcXp3m6jUs1XgDa8qkpO5c4ix1S5HS0z3L2E1LUOY5rD73YUADOO3MfQN1z3JkHdBtzKucbg==
+react-native-keyboard-controller@^1.21.14:
+  version "1.22.2"
+  resolved "https://registry.yarnpkg.com/react-native-keyboard-controller/-/react-native-keyboard-controller-1.22.2.tgz#b6e478ea7aed5369127c8f0f8bdf69f4d6659a41"
+  integrity sha512-O5NfkDCzNFJPkcyCNKdaRV9ouEeUNml/x5PMpKt3m5zkER0HM/qPCgg6ajpFieZSOUhZRrdUWd+966Abs2oERw==
   dependencies:
     react-native-is-edge-to-edge "^1.2.1"
 

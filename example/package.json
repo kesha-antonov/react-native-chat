@@ -20,6 +20,7 @@
   "dependencies": {
     "@expo/react-native-action-sheet": "^4.1.1",
     "@expo/vector-icons": "^15.0.3",
+    "@kesha-antonov/react-native-chat": "link:..",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.9.5",
@@ -46,8 +47,7 @@
     "react-native": "0.81.5",
     "react-native-emoji-chooser": "^0.1.11",
     "react-native-gesture-handler": "~2.30.0",
-    "@kesha-antonov/react-native-chat": "link:..",
-    "react-native-keyboard-controller": "1.20.6",
+    "react-native-keyboard-controller": "^1.21.14",
     "react-native-maps": "1.20.1",
     "react-native-paper": "^5.14.5",
     "react-native-reanimated": "~4.1.1",
