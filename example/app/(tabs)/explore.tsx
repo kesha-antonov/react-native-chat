@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 import { useThemeColor } from '@/hooks/use-theme-color'
 
-type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions' | 'day-animated' | 'keyboard-provider'
+type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions' | 'day-animated' | 'keyboard-provider' | 'aligned-top'
 
 const examples: Array<{ id: ChatExample, title: string, description: string }> = [
   { id: 'ai-bot', title: 'AI Bot (Streaming)', description: 'Streamed assistant replies with a typing cursor and Stop button' },
@@ -20,6 +20,7 @@ const examples: Array<{ id: ChatExample, title: string, description: string }> =
   { id: 'reply', title: 'Reply Example', description: 'Example demonstrating reply functionality' },
   { id: 'day-animated', title: 'Day Animated', description: 'Multi-day chat with Load earlier for testing the animated day header' },
   { id: 'keyboard-provider', title: 'App KeyboardProvider', description: 'Bare Chat under the app-level KeyboardProvider, with no keyboard props (issue #11)' },
+  { id: 'aligned-top', title: 'Top Aligned (short chat)', description: 'isAlignedTop false / true / auto on a short chat, with optional very tall bubbles' },
 ]
 
 export default function ExploreScreen () {

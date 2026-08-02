@@ -277,7 +277,7 @@ interface User {
 
   Only used when Chat mounts the provider itself. If your app already mounts a `KeyboardProvider` (the setup `react-native-keyboard-controller` recommends - once, at the root), Chat detects it and reuses it instead of nesting a second one, and this prop is ignored. Configure the provider where you mount it.
 - **`keyboardAvoidingViewProps`** _(Object)_ - Props to be passed to the [`KeyboardAvoidingView`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-avoiding-view). See **keyboardVerticalOffset** below for proper keyboard handling.
-- **`isAlignedTop`** _(Boolean)_ Controls whether or not the message bubbles appear at the top of the chat (Default is false - bubbles align to bottom)
+- **`isAlignedTop`** _(`boolean | 'auto'`)_ - Where the bubbles sit **while the whole conversation fits on screen**; once it is taller than the list this has no effect. `false` (default) keeps the usual bottom-anchored chat, `true` pins the messages to the top, and `'auto'` pins them to the top while the keyboard is closed and re-anchors them to the bottom while it is open - so a short conversation starts under the header and moves above the keyboard when the composer is focused ([#2736](https://github.com/FaridSafi/react-native-gifted-chat/issues/2736)). Works with either `isInverted` setting; ignored when `isFlashListEnabled` is set, since FlashList positions its own items.
 - **`isInverted`** _(Bool)_ - Reverses display order of `messages`; default is `true`
 
 #### Understanding `keyboardVerticalOffset`

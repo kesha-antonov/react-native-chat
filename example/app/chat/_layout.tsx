@@ -56,6 +56,10 @@ export default function ChatLayout () {
         name='keyboard-provider'
         options={{ title: 'App KeyboardProvider' }}
       />
+      <Stack.Screen
+        name='aligned-top'
+        options={{ title: 'Top Aligned (short chat)' }}
+      />
     </Stack>
   )
 }
