@@ -3,7 +3,6 @@ import { StyleSheet, View, useColorScheme } from 'react-native'
 import { Chat, IMessage, MessageReaction, ReactionPickerProps } from '@kesha-antonov/react-native-chat'
 
 import messagesData from '../../example-expo/data/messages'
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 import { EmojiReactionPicker } from './reactions/EmojiReactionPicker'
 
@@ -16,7 +15,6 @@ const CURRENT_USER_ID = 1
 export default function ReactionsExample () {
   const [messages, setMessages] = useState<IChatMessage[]>(messagesData)
   const colorScheme = useColorScheme()
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
   const isDark = colorScheme === 'dark'
 
   const user = useMemo(() => ({
@@ -101,7 +99,6 @@ export default function ReactionsExample () {
         textInputProps={{
           style: getColorSchemeStyle(styles, 'composer', colorScheme),
         }}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
         reactions={{
           isEnabled: true,
           onReactionPress: handleReactionPress,

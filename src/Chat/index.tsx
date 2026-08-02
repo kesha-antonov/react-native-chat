@@ -20,9 +20,10 @@ import dayjs from 'dayjs'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 import { KeyboardAvoidingView, KeyboardProvider } from 'react-native-keyboard-controller'
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaProvider, useSafeAreaFrame } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { TEST_ID } from '../Constant'
+import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
 import { InputToolbar } from '../InputToolbar'
 import { MessagesContainer, AnimatedList } from '../MessagesContainer'
 import { IMessage, ReplyMessage } from '../Models'
@@ -74,7 +75,12 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   const actionSheetRef = useRef<ActionSheetProviderRef>(null)
 
-  const insets = useSafeAreaInsets()
+  // `keyboardVerticalOffset` is the distance from the top of the window down to this
+  // chat container - it depends on the navigation header and on whatever else the app
+  // draws above the chat, which insets cannot see. `SafeAreaProvider` (mounted right
+  // around us by `ChatWrapper`) already reports exactly that: its frame is measured
+  // natively against the root view and refreshed on every layout change.
+  const frame = useSafeAreaFrame()
 
   const messagesContainerRef = useMemo(
     () => props.messagesContainerRef || createRef<AnimatedList<TMessage>>(),
@@ -328,7 +334,7 @@ function Chat<TMessage extends IMessage = IMessage> (
         >
           <KeyboardAvoidingView
             behavior='translate-with-padding'
-            keyboardVerticalOffset={insets.top}
+            keyboardVerticalOffset={frame.y}
             style={stylesCommon.fill}
             {...props.keyboardAvoidingViewProps}
           >
@@ -351,12 +357,16 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
     ...rest
   } = props
 
+  // Apps are meant to mount `KeyboardProvider` once, at the root. Nesting a second one
+  // breaks keyboard handling on Android, so we only provide one when the app has none.
+  const hasKeyboardProvider = useHasKeyboardProvider()
+
   const chat = <Chat<TMessage> {...rest} />
 
   return (
     <GestureHandlerRootView style={styles.fill}>
       <SafeAreaProvider>
-        {disableKeyboardProvider
+        {disableKeyboardProvider || hasKeyboardProvider
           ? chat
           : (
             <KeyboardProvider

@@ -2,7 +2,6 @@ import React, { useCallback } from 'react'
 import { Pressable, StyleSheet, View, useColorScheme } from 'react-native'
 import { Chat, IMessage, Send, useStreamingMessages } from '@kesha-antonov/react-native-chat'
 
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 const USER = { _id: 1, name: 'You' }
@@ -56,7 +55,6 @@ function StopButton ({ onPress }: { onPress: () => void }) {
 
 export default function AIBotExample () {
   const colorScheme = useColorScheme()
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
 
   const {
     messages,
@@ -110,7 +108,6 @@ export default function AIBotExample () {
         renderSend={renderSend}
         messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
         textInputProps={{ style: getColorSchemeStyle(styles, 'composer', colorScheme) }}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
       />
     </View>
   )

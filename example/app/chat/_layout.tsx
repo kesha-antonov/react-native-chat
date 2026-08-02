@@ -52,6 +52,10 @@ export default function ChatLayout () {
         name='day-animated'
         options={{ title: 'Day Animated' }}
       />
+      <Stack.Screen
+        name='keyboard-provider'
+        options={{ title: 'App KeyboardProvider' }}
+      />
     </Stack>
   )
 }

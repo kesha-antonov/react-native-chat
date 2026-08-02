@@ -159,14 +159,9 @@ See the full guide (codemod included) in **[docs/MIGRATION.md](docs/MIGRATION.md
 ```jsx
 import React, { useState, useCallback, useEffect } from 'react'
 import { Chat } from '@kesha-antonov/react-native-chat'
-import { useHeaderHeight } from '@react-navigation/elements'
 
 export function Example() {
   const [messages, setMessages] = useState([])
-
-  // keyboardVerticalOffset = distance from screen top to Chat container
-  // useHeaderHeight() returns status bar + navigation header height
-  const headerHeight = useHeaderHeight()
 
   useEffect(() => {
     setMessages([
@@ -196,7 +191,6 @@ export function Example() {
       user={{
         _id: 1,
       }}
-      keyboardAvoidingViewProps={{ keyboardVerticalOffset: headerHeight }}
     />
   )
 }
@@ -282,41 +276,27 @@ interface User {
 - **`keyboardProviderProps`** _(Object)_ - Props to be passed to the [`KeyboardProvider`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/keyboard-provider) for keyboard handling. Default values:
   - `statusBarTranslucent: true` - Required on Android for correct keyboard height calculation when status bar is translucent (edge-to-edge mode)
   - `navigationBarTranslucent: true` - Required on Android for correct keyboard height calculation when navigation bar is translucent (edge-to-edge mode)
+
+  Only used when Chat mounts the provider itself. If your app already mounts a `KeyboardProvider` (the setup `react-native-keyboard-controller` recommends - once, at the root), Chat detects it and reuses it instead of nesting a second one, and this prop is ignored. Configure the provider where you mount it.
 - **`keyboardAvoidingViewProps`** _(Object)_ - Props to be passed to the [`KeyboardAvoidingView`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-avoiding-view). See **keyboardVerticalOffset** below for proper keyboard handling.
 - **`isAlignedTop`** _(Boolean)_ Controls whether or not the message bubbles appear at the top of the chat (Default is false - bubbles align to bottom)
 - **`isInverted`** _(Bool)_ - Reverses display order of `messages`; default is `true`
 
 #### Understanding `keyboardVerticalOffset`
 
-The [`keyboardVerticalOffset`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-avoiding-view#keyboardverticaloffset) tells the KeyboardAvoidingView where its container starts relative to the top of the screen. This is essential when Chat is not positioned at the very top of the screen (e.g., when you have a navigation header).
+[`keyboardVerticalOffset`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-avoiding-view#keyboardverticaloffset) tells the KeyboardAvoidingView how far down the screen its container starts. That distance depends on the navigation header and on anything else you render above the chat.
 
-**Default value:** `insets.top` (status bar height from `useSafeAreaInsets()`). This works correctly only when Chat fills the entire screen without a navigation header. If you have a navigation header, you need to pass the correct offset via `keyboardAvoidingViewProps`.
+**You do not normally need to set it.** Chat measures its own position on screen and uses that, so the input toolbar sits on the keyboard whether the chat is full-screen or under a navigation header. The measurement comes from the `SafeAreaProvider` frame and updates on rotation and layout changes.
 
-**What the value means:** The offset equals the distance (in points) from the top of the screen to the top of your Chat container. This typically includes:
-- Status bar height
-- Navigation header height (on iOS, `useHeaderHeight()` already includes status bar)
-
-**How to use:**
+Pass your own value only to add extra space above the keyboard - it replaces the measured one:
 
 ```jsx
-import { useHeaderHeight } from '@react-navigation/elements'
-
-function ChatScreen() {
-  // useHeaderHeight() returns status bar + navigation header height on iOS
-  const headerHeight = useHeaderHeight()
-
-  return (
-    <Chat
-      keyboardAvoidingViewProps={{ keyboardVerticalOffset: headerHeight }}
-      // ... other props
-    />
-  )
-}
+<Chat keyboardAvoidingViewProps={{ keyboardVerticalOffset: headerHeight + 16 }} />
 ```
 
-> **Note:** `useHeaderHeight()` requires your chat component to be rendered inside a proper navigation screen (not conditional rendering). If it returns `0`, ensure your chat screen is a real navigation screen with a visible header.
+If you do, sanity-check it on device: a toolbar behind the keyboard means the value is too small, a gap above the keyboard means it is too large. `useHeaderHeight()` is the usual source, but some navigator setups report a value that does not match the header you actually render.
 
-**Why this matters:** Without the correct offset, the keyboard may overlap the input field or leave extra space. The KeyboardAvoidingView uses this value to calculate how much to shift the content when the keyboard appears.
+> **Upgrading from 4.1.0 or earlier:** the default used to be `insets.top`, which could not account for a navigation header - so most apps passed `useHeaderHeight()` to compensate. That is no longer needed; drop it and let Chat measure, or the toolbar will float above the keyboard by the header height.
 
 ### Text Input & Composer
 

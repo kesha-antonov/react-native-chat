@@ -3,13 +3,11 @@ import { StyleSheet, View, useColorScheme } from 'react-native'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 import messagesData from '../../example-expo/data/messages'
 import SlackMessage from '../../example-slack-message/src/SlackMessage'
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 export default function SlackExample () {
   const [messages, setMessages] = useState<IMessage[]>(messagesData)
   const colorScheme = useColorScheme()
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
 
   const user = useMemo(() => ({
     _id: 1,
@@ -38,7 +36,6 @@ export default function SlackExample () {
         textInputProps={{
           style: getColorSchemeStyle(styles, 'composer', colorScheme),
         }}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
       />
     </View>
   )

@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View, useColorScheme } from 'react-native'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 // Generates a labelled chat spanning several days so the floating/animated day
@@ -47,8 +46,6 @@ export default function DayAnimatedExample () {
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
   const colorScheme = useColorScheme()
 
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
-
   const user = useMemo(() => ({
     _id: 1,
     name: 'Developer',
@@ -86,7 +83,6 @@ export default function DayAnimatedExample () {
         textInputProps={{
           style: getColorSchemeStyle(styles, 'composer', colorScheme),
         }}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
         isScrollToBottomEnabled
       />
     </View>

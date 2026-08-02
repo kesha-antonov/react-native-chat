@@ -146,11 +146,15 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
     quickReplies: QuickRepliesProps<TMessage>
   ) => React.ReactNode
   renderQuickReplySend?: () => React.ReactNode
+  /**
+   * Props for the built-in `KeyboardProvider`. Ignored when your app already mounts
+   * its own - configure the provider where you mount it instead.
+   */
   keyboardProviderProps?: React.ComponentProps<typeof KeyboardProvider>
   /**
    * Skip rendering the built-in `KeyboardProvider` wrapper.
-   * Enable this when your app already mounts its own `KeyboardProvider`
-   * (e.g. once at the root), or when the default `statusBarTranslucent` /
+   * A `KeyboardProvider` mounted by your app is detected and reused automatically, so
+   * this is only needed to opt out entirely - e.g. when the default `statusBarTranslucent` /
    * `navigationBarTranslucent` edge-to-edge behavior causes layout shift,
    * flicker on mount, or a header/content jump on Android/Expo.
    * Default is `false`.

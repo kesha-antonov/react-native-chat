@@ -4,11 +4,9 @@ import { ActionSheetProvider, useActionSheet } from '@expo/react-native-action-s
 import { Chat, IMessage, LinkMatcher } from '@kesha-antonov/react-native-chat'
 import { setStringAsync } from 'expo-clipboard'
 import { isValidPhoneNumber, parsePhoneNumberWithError } from 'libphonenumber-js'
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 
 const LinksExample: React.FC = () => {
   const { showActionSheetWithOptions } = useActionSheet()
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
 
   const initialMessages: IMessage[] = useMemo(() => [
     {
@@ -203,7 +201,6 @@ const LinksExample: React.FC = () => {
             mentionUrl: 'https://x.com',
             hashtagUrl: 'https://x.com/hashtag',
           }}
-          keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
           colorScheme='light'
         />
       </View>
