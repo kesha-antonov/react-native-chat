@@ -273,9 +273,7 @@ interface User {
 
 ### Keyboard & Layout
 
-- **`keyboardProviderProps`** _(Object)_ - Props to be passed to the [`KeyboardProvider`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/keyboard-provider) for keyboard handling. Default values:
-  - `statusBarTranslucent: true` - Required on Android for correct keyboard height calculation when status bar is translucent (edge-to-edge mode)
-  - `navigationBarTranslucent: true` - Required on Android for correct keyboard height calculation when navigation bar is translucent (edge-to-edge mode)
+- **`keyboardProviderProps`** _(Object)_ - Props to be passed to the [`KeyboardProvider`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/keyboard-provider) for keyboard handling. No defaults are applied - in particular Chat does **not** set `statusBarTranslucent` / `navigationBarTranslucent`, because on Android those change the *activity window* and the change outlives the chat screen ([#2755](https://github.com/FaridSafi/react-native-gifted-chat/issues/2755)). `react-native-keyboard-controller` turns them on by itself when the app is genuinely edge-to-edge, so there is nothing to set in a normal app.
 
   Only used when Chat mounts the provider itself. If your app already mounts a `KeyboardProvider` (the setup `react-native-keyboard-controller` recommends - once, at the root), Chat detects it and reuses it instead of nesting a second one, and this prop is ignored. Configure the provider where you mount it.
 - **`keyboardAvoidingViewProps`** _(Object)_ - Props to be passed to the [`KeyboardAvoidingView`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-avoiding-view). See **keyboardVerticalOffset** below for proper keyboard handling.

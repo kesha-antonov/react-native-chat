@@ -8,10 +8,7 @@ exports[`should render <Chat/> and compare with snapshot 1`] = `
     }
   }
 >
-  <KeyboardProvider
-    navigationBarTranslucent={true}
-    statusBarTranslucent={true}
-  >
+  <KeyboardProvider>
     <View
       style={
         {
@@ -69,10 +66,7 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
     }
   }
 >
-  <KeyboardProvider
-    navigationBarTranslucent={true}
-    statusBarTranslucent={true}
-  >
+  <KeyboardProvider>
     <View
       style={
         {
@@ -130,10 +124,7 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
     }
   }
 >
-  <KeyboardProvider
-    navigationBarTranslucent={true}
-    statusBarTranslucent={true}
-  >
+  <KeyboardProvider>
     <View
       style={
         {

@@ -173,3 +173,32 @@ it('skips the KeyboardProvider when `disableKeyboardProvider` is set', () => {
 
   expect(findKeyboardProviders(toJSON())).toHaveLength(0)
 })
+
+it('does not force the system bars translucent on the app window (#2755)', () => {
+  // Those props tell Android "the app already draws behind the system bars", and the
+  // provider answers by zeroing the activity content view's margins - a window-level
+  // change it never undoes, so the host app stays under the navigation bar after the
+  // chat screen is gone. Only the app knows whether it is edge-to-edge.
+  const [provider] = findKeyboardProviders(
+    render(<Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />).toJSON()
+  )
+
+  expect(provider.props.statusBarTranslucent).toBeUndefined()
+  expect(provider.props.navigationBarTranslucent).toBeUndefined()
+})
+
+it('still lets `keyboardProviderProps` set the translucency explicitly', () => {
+  const [provider] = findKeyboardProviders(
+    render(
+      <Chat
+        messages={messages}
+        onSend={() => {}}
+        user={{ _id: 1 }}
+        keyboardProviderProps={{ statusBarTranslucent: true, navigationBarTranslucent: true }}
+      />
+    ).toJSON()
+  )
+
+  expect(provider.props.statusBarTranslucent).toBe(true)
+  expect(provider.props.navigationBarTranslucent).toBe(true)
+})
