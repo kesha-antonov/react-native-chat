@@ -25,10 +25,6 @@ export const createThemedStyles = (theme: ChatTheme) => StyleSheet.create({
 })
 
 export default StyleSheet.create({
-  containerAlignTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
   contentContainerStyle: {
     flexGrow: 1,
     justifyContent: 'flex-start',

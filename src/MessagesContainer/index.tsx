@@ -10,6 +10,7 @@ import {
 import { Pressable } from 'react-native-gesture-handler'
 import Animated, { runOnJS, ScrollEvent, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { Icon } from '../components/Icon'
+import { useIsKeyboardVisible } from '../hooks/useIsKeyboardVisible'
 import { useThemedStyles } from '../hooks/useTheme'
 import { LoadEarlierMessages } from '../LoadEarlierMessages'
 import { warning } from '../logging'
@@ -71,6 +72,36 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [isFlashListEnabled])
 
   const themedStyles = useThemedStyles(createThemedStyles)
+
+  useEffect(() => {
+    if (isFlashList && isAlignedTop)
+      warning(
+        'Chat: `isAlignedTop` is ignored when `isFlashListEnabled` is set - FlashList lays its items out itself and does not honour `contentContainerStyle` alignment'
+      )
+  }, [isFlashList, isAlignedTop])
+
+  // `'auto'` is the only mode that cares about the keyboard, so the other two never
+  // subscribe - and never re-render the whole list when the keyboard moves.
+  const isKeyboardVisible = useIsKeyboardVisible(isAlignedTop === 'auto')
+
+  const isTopAligned = isAlignedTop === 'auto'
+    ? !isKeyboardVisible
+    : isAlignedTop === true
+
+  // Alignment lives on the list's content container rather than on the wrapper: with
+  // `flexGrow` the content is at least a viewport tall, so `justifyContent` places a
+  // short conversation and is a no-op once the messages outgrow the list - which keeps
+  // long chats scrollable instead of letting the list size itself to its content.
+  // An inverted list is flipped, so its content-container start is the visual bottom.
+  const alignmentStyle = useMemo(() => {
+    if (!isAlignedTop || isFlashList)
+      return undefined
+
+    return {
+      flexGrow: 1,
+      justifyContent: isTopAligned === isInverted ? 'flex-end' : 'flex-start',
+    } as const
+  }, [isAlignedTop, isFlashList, isTopAligned, isInverted])
 
   const listPropsOnScrollProp = listProps?.onScroll
 
@@ -517,7 +548,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     renderItem,
     inverted: isInverted,
     style: stylesCommon.fill,
-    contentContainerStyle: styles.messagesContainer,
+    contentContainerStyle: [styles.messagesContainer, alignmentStyle],
     ListEmptyComponent: renderChatEmpty,
     ListFooterComponent: isInverted ? ListHeaderComponent : <>{ListFooterComponent}</>,
     ListHeaderComponent: isInverted ? <>{ListFooterComponent}</> : ListHeaderComponent,
@@ -529,13 +560,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }
 
   return (
-    <View
-      style={[
-        styles.contentContainerStyle,
-        themedStyles.root,
-        isAlignedTop ? styles.containerAlignTop : stylesCommon.fill,
-      ]}
-    >
+    <View style={[styles.contentContainerStyle, themedStyles.root, stylesCommon.fill]}>
       {isFlashList
         ? (
           <AnimatedFlashList

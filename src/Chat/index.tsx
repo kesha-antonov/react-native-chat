@@ -14,10 +14,11 @@ import {
 import dayjs from 'dayjs'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
-import { KeyboardAvoidingView, KeyboardProvider } from 'react-native-keyboard-controller'
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { TEST_ID } from '../Constant'
+import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
 import { resolveLabels } from '../i18n'
 import { InputToolbar } from '../InputToolbar'
 import { MessagesContainer, AnimatedList } from '../MessagesContainer'
@@ -25,6 +26,7 @@ import { IMessage, ReplyMessage } from '../Models'
 import stylesCommon from '../styles'
 import { resolveTheme } from '../Theme'
 import { renderComponentOrElement } from '../utils'
+import { ChatKeyboardAvoidingView } from './ChatKeyboardAvoidingView'
 import styles from './styles'
 import { ChatProps } from './types'
 
@@ -85,8 +87,6 @@ function Chat<TMessage extends IMessage = IMessage> (
     () => resolveLabels(locale, labels),
     [locale, labels]
   )
-
-  const insets = useSafeAreaInsets()
 
   const messagesContainerRef = useMemo(
     () => props.messagesContainerRef || createRef<AnimatedList<TMessage>>(),
@@ -342,18 +342,15 @@ function Chat<TMessage extends IMessage = IMessage> (
         style={[stylesCommon.fill, styles.contentContainer]}
         onLayout={onInitialLayoutViewLayout}
       >
-        <KeyboardAvoidingView
-          behavior='translate-with-padding'
-          keyboardVerticalOffset={insets.top}
-          style={stylesCommon.fill}
-          {...props.keyboardAvoidingViewProps}
+        <ChatKeyboardAvoidingView
+          keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}
         >
           <View style={[stylesCommon.fill, !isInitialized && styles.hidden]}>
             {renderMessages}
             {inputToolbarFragment}
           </View>
           {!isInitialized && renderComponentOrElement(renderLoading, {})}
-        </KeyboardAvoidingView>
+        </ChatKeyboardAvoidingView>
       </View>
     </ChatContext.Provider>
   )
@@ -366,19 +363,27 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
     ...rest
   } = props
 
+  // Apps are meant to mount `KeyboardProvider` once, at the root. Nesting a second one
+  // breaks keyboard handling on Android, so we only provide one when the app has none.
+  const hasKeyboardProvider = useHasKeyboardProvider()
+
   const chat = <Chat<TMessage> {...rest} />
 
   return (
     <GestureHandlerRootView style={styles.fill}>
       <SafeAreaProvider>
-        {disableKeyboardProvider
+        {disableKeyboardProvider || hasKeyboardProvider
           ? chat
           : (
-            <KeyboardProvider
-              statusBarTranslucent
-              navigationBarTranslucent
-              {...keyboardProviderProps}
-            >
+            // No `statusBarTranslucent` / `navigationBarTranslucent` here on purpose.
+            // On Android those tell the provider that the app already draws behind the
+            // system bars, and it answers by zeroing the *activity* content view's
+            // margins - a window-level change it never undoes, so a chat screen would
+            // leave the whole app under the navigation bar after you navigate away
+            // (#2755). react-native-keyboard-controller turns both on by itself when
+            // the app really is edge-to-edge, so forcing them only ever mismatches a
+            // window that is not. Override via `keyboardProviderProps` if needed.
+            <KeyboardProvider {...keyboardProviderProps}>
               {chat}
             </KeyboardProvider>
           )}

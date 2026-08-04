@@ -8,8 +8,6 @@ piece plain chat UIs make you hand-roll.
 
 - **`IMessage.streaming?: boolean`** - mark a message as still streaming. While
   true, its bubble shows a blinking caret ([`StreamingCursor`](../src/components/StreamingCursor.tsx)).
-- **`Chat.updateMessage(messages, id, patch)`** - immutable update of one message
-  by `_id` (only the matched message is replaced), cheap enough to call per token.
 - **`useStreamingMessages(...)`** - a hook that owns the message list and batches
   token pushes with `requestAnimationFrame`, so a fast stream renders at most once
   per frame and only the streaming bubble re-renders. It also wires up

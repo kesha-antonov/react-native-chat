@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Chat, ChatIcons, IMessage, PartialChatTheme } from '@kesha-antonov/react-native-chat'
 
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Theme Bot' }
@@ -41,7 +40,6 @@ const PRESETS: Array<{ id: string, label: string, theme?: PartialChatTheme }> = 
 ]
 
 export default function ThemingExample () {
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
   const [presetId, setPresetId] = useState('default')
 
@@ -77,7 +75,6 @@ export default function ThemingExample () {
         user={USER}
         theme={theme}
         icons={customIcons}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
       />
     </View>
   )

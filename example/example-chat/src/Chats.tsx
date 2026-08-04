@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useColorScheme } from 'react-native'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import {
   renderAvatar,
   renderBubble,
@@ -18,7 +17,6 @@ const Chats = () => {
   const [messages, setMessages] = useState<IMessage[]>([])
   const colorScheme = useColorScheme()
   const isDark = colorScheme === 'dark'
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
 
   useEffect(() => {
     setMessages(initialMessages.reverse())
@@ -62,7 +60,6 @@ const Chats = () => {
         style: isDark && { backgroundColor: '#2a2a2a', color: '#fff' },
         onChangeText: setText,
       }}
-      keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
     />
   )
 }

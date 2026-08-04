@@ -97,5 +97,5 @@ Then review the diff and run your type-checker / lint.
 ## What's new beyond RNGC
 
 The one capability not in RNGC is **streaming (AI) messages** - token-by-token
-replies for AI/chatbot UIs (`useStreamingMessages`, a blinking `StreamingCursor`,
-`Chat.updateMessage`). See [docs/STREAMING.md](./STREAMING.md).
+replies for AI/chatbot UIs (`useStreamingMessages`, a blinking `StreamingCursor`).
+See [docs/STREAMING.md](./STREAMING.md).

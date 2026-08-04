@@ -3,7 +3,6 @@ import { StyleSheet, View, useColorScheme } from 'react-native'
 import { Chat, IMessage, ReplyMessage } from '@kesha-antonov/react-native-chat'
 
 import messagesData from '../../example-expo/data/messages'
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 export interface IChatMessage extends IMessage {
@@ -13,7 +12,6 @@ export interface IChatMessage extends IMessage {
 export default function ReplyExample () {
   const [messages, setMessages] = useState<IChatMessage[]>(messagesData)
   const colorScheme = useColorScheme()
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
 
   const user = useMemo(() => ({
     _id: 1,
@@ -54,7 +52,6 @@ export default function ReplyExample () {
           },
           onPress: handlePressReply,
         }}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
       />
     </View>
   )

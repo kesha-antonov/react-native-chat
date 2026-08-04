@@ -3,7 +3,6 @@ import { StyleSheet, View, useColorScheme } from 'react-native'
 import { Chat, IMessage, MessageMenuItem, MessageReaction } from '@kesha-antonov/react-native-chat'
 import * as Clipboard from 'expo-clipboard'
 
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 interface ChatMessage extends IMessage {
@@ -21,7 +20,6 @@ const INITIAL_MESSAGES: ChatMessage[] = [
 
 export default function ContextMenuExample () {
   const colorScheme = useColorScheme()
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
 
   const onSend = useCallback((newMessages: ChatMessage[] = []) => {
@@ -78,7 +76,6 @@ export default function ContextMenuExample () {
         user={USER}
         messageActions={messageActions}
         reactions={{ isEnabled: true, onReactionPress: handleReactionPress }}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
       />
     </View>
   )

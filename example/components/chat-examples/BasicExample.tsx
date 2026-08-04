@@ -6,7 +6,6 @@ import CustomActions from '../../example-expo/CustomActions'
 import CustomView from '../../example-expo/CustomView'
 import earlierMessages from '../../example-expo/data/earlierMessages'
 import messagesData from '../../example-expo/data/messages'
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 export default function BasicExample () {
@@ -14,8 +13,6 @@ export default function BasicExample () {
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const colorScheme = useColorScheme()
-
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
 
   const user = useMemo(() => ({
     _id: 1,
@@ -73,7 +70,6 @@ export default function BasicExample () {
         messageTextProps={{
           hashtag: 'twitter',
         }}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
         isScrollToBottomEnabled
       />
     </View>

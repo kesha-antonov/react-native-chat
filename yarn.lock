@@ -2087,6 +2087,7 @@ __metadata:
     typescript: "npm:^5.9.3"
   peerDependencies:
     "@lodev09/react-native-true-sheet": "*"
+    "@shopify/flash-list": "*"
     expo-audio: "*"
     expo-device: "*"
     expo-image-picker: "*"
@@ -2103,6 +2104,8 @@ __metadata:
     react-native-vision-camera: "*"
   peerDependenciesMeta:
     "@lodev09/react-native-true-sheet":
+      optional: true
+    "@shopify/flash-list":
       optional: true
     expo-audio:
       optional: true

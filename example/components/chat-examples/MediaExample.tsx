@@ -3,7 +3,6 @@ import { Alert, StyleSheet, View, useColorScheme } from 'react-native'
 import { AttachmentAction, Chat, IMessage } from '@kesha-antonov/react-native-chat'
 import { Camera as CameraIcon, FileText, Image as ImageIcon, MapPin } from 'lucide-react-native'
 
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 import EmojiPicker from '../EmojiPicker'
 
@@ -46,7 +45,6 @@ const INITIAL_MESSAGES: IMessage[] = [
 
 export default function MediaExample () {
   const colorScheme = useColorScheme()
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
   const [text, setText] = useState('')
   const [isEmojiOpen, setIsEmojiOpen] = useState(false)
@@ -99,7 +97,6 @@ export default function MediaExample () {
         actions={attachmentActions}
         // Emoji button inset on the left of the field opens the emoji picker.
         onPressEmoji={() => setIsEmojiOpen(true)}
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
       />
       <EmojiPicker
         visible={isEmojiOpen}

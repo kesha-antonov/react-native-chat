@@ -2,7 +2,6 @@ import React, { useCallback, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
-import { useKeyboardVerticalOffset } from '../../hooks/useKeyboardVerticalOffset'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Bot' }
@@ -21,7 +20,6 @@ const LOCALES: Array<{ id: string, label: string }> = [
 ]
 
 export default function LocalizationExample () {
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
   const [locale, setLocale] = useState('en')
 
@@ -56,7 +54,6 @@ export default function LocalizationExample () {
         locale={locale}
         // Built-in translations are selected by `locale`. Override individual
         // strings with `labels`, e.g. labels={{ placeholder: 'Say hi...' }}.
-        keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
       />
     </View>
   )
