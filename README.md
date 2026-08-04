@@ -102,7 +102,7 @@
 ### Expo Projects
 
 ```bash
-npx expo install react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
+npx expo install @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
 ```
 
 ### Bare React Native Projects
@@ -111,12 +111,12 @@ npx expo install react-native-chat react-native-reanimated react-native-gesture-
 
 Using yarn:
 ```bash
-yarn add react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
+yarn add @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
 ```
 
 Using npm:
 ```bash
-npm install --save react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
+npm install --save @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
 ```
 
 **Step 2:** Install iOS pods
@@ -276,6 +276,7 @@ interface User {
 - **`keyboardProviderProps`** _(Object)_ - Props to be passed to the [`KeyboardProvider`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/keyboard-provider) for keyboard handling. No defaults are applied - in particular Chat does **not** set `statusBarTranslucent` / `navigationBarTranslucent`, because on Android those change the *activity window* and the change outlives the chat screen ([#2755](https://github.com/FaridSafi/react-native-gifted-chat/issues/2755)). `react-native-keyboard-controller` turns them on by itself when the app is genuinely edge-to-edge, so there is nothing to set in a normal app.
 
   Only used when Chat mounts the provider itself. If your app already mounts a `KeyboardProvider` (the setup `react-native-keyboard-controller` recommends - once, at the root), Chat detects it and reuses it instead of nesting a second one, and this prop is ignored. Configure the provider where you mount it.
+- **`disableKeyboardProvider`** _(Bool)_ - Skip the built-in `KeyboardProvider` entirely; default is `false`. You do **not** need this just because your app mounts its own provider - that case is detected and reused. Reach for it only to opt out completely, e.g. when the provider's edge-to-edge behavior causes layout shift or a header jump on Android/Expo.
 - **`keyboardAvoidingViewProps`** _(Object)_ - Props to be passed to the [`KeyboardAvoidingView`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-avoiding-view). See **keyboardVerticalOffset** below for proper keyboard handling.
 - **`isAlignedTop`** _(`boolean | 'auto'`)_ - Where the bubbles sit **while the whole conversation fits on screen**; once it is taller than the list this has no effect. `false` (default) keeps the usual bottom-anchored chat, `true` pins the messages to the top, and `'auto'` pins them to the top while the keyboard is closed and re-anchors them to the bottom while it is open - so a short conversation starts under the header and moves above the keyboard when the composer is focused ([#2736](https://github.com/FaridSafi/react-native-gifted-chat/issues/2736)). Works with either `isInverted` setting; ignored when `isFlashListEnabled` is set, since FlashList positions its own items.
 - **`isInverted`** _(Bool)_ - Reverses display order of `messages`; default is `true`
@@ -302,15 +303,14 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`initialText`** _(String)_ - Initial text to display in the input field
 - **`isSendButtonAlwaysVisible`** _(Bool)_ - Always show send button in input text composer; default `false`, show only when text input is not empty
 - **`isTextOptional`** _(Bool)_ - Allow sending messages without text (useful for media-only messages); default `false`. Use with `isSendButtonAlwaysVisible` for media attachments.
-- **`minComposerHeight`** _(Object)_ - Custom min-height of the composer.
-- **`maxComposerHeight`** _(Object)_ - Custom max height of the composer.
-- **`minInputToolbarHeight`** _(Integer)_ - Minimum height of the input toolbar; default is `44`
 - **`renderInputToolbar`** _(Component | Function)_ - Custom message composer container
 - **`renderComposer`** _(Component | Function)_ - Custom text input message composer
 - **`renderSend`** _(Component | Function)_ - Custom send button; you can pass children to the original `Send` component quite easily, for example, to use a custom icon ([example](https://github.com/kesha-antonov/react-native-chat/pull/487))
 - **`renderActions`** _(Component | Function)_ - Custom action button on the left of the message composer
 - **`renderAccessory`** _(Component | Function)_ - Custom second line of actions below the message composer
 - **`textInputProps`** _(Object)_ - props to be passed to the [`<TextInput>`](https://reactnative.dev/docs/textinput).
+
+> **Composer height** - there are no height props. The composer starts one line tall and grows with its content. Constrain it through `textInputProps.style` (e.g. `{ maxHeight: 120 }`), which is applied after the measured height and wins.
 
 ### Actions & Action Sheet
 
@@ -426,11 +426,19 @@ See full example in [LinksExample](example/components/chat-examples/LinksExample
 - **`timeFormat`** _(String)_ - Format to use for rendering times; default is `'LT'` (see [Day.js Format](https://day.js.org/docs/en/display/format))
 - **`dateFormat`** _(String)_ - Format to use for rendering dates; default is `'D MMMM'` (see [Day.js Format](https://day.js.org/docs/en/display/format))
 - **`dateFormatCalendar`** _(Object)_ - Format to use for rendering relative times; default is `{ sameDay: '[Today]' }` (see [Day.js Calendar](https://day.js.org/docs/en/plugin/calendar))
-- **`renderDay`** _(Component | Function)_ - Custom day above a message
-- **`dayProps`** _(Object)_ - Props to pass to the Day component:
-  - `containerStyle` - Custom style for the day container
-  - `wrapperStyle` - Custom style for the day wrapper
-  - `textProps` - Props to pass to the Text component (e.g., `style`, `allowFontScaling`, `numberOfLines`)
+- **`renderDay`** _(Component | Function)_ - Custom day above a message. This is also how the day label is styled - it receives `DayProps` (`createdAt`, `dateFormat`, `dateFormatCalendar`, `containerStyle`, `wrapperStyle`, `textProps`, `isAnimated`), so render the built-in `Day` with the styles you want:
+
+  ```tsx
+  import { Chat, Day, DayProps } from '@kesha-antonov/react-native-chat'
+
+  <Chat
+    renderDay={(props: DayProps) => (
+      <Day {...props} wrapperStyle={{ backgroundColor: '#eee' }} textProps={{ style: { color: '#333' } }} />
+    )}
+  />
+  ```
+
+  `isAnimated` is `true` for the floating header that sticks to the top while scrolling and `false` for the inline separators, so one function can style them differently.
 - **`renderTime`** _(Component | Function)_ - Custom time inside a message
 - **`timeTextStyle`** _(Object)_ - Custom text style for time inside messages (supports left/right styles)
 - **`isDayAnimationEnabled`** _(Bool)_ - Enable animated day label that appears on scroll; default is `true`
@@ -647,8 +655,7 @@ const [isScrolledUp, setIsScrolledUp] = useState(false)
 Render AI assistant replies token-by-token. The library batches incoming chunks with `requestAnimationFrame` (one render per frame, only the streaming bubble re-renders) and shows a blinking caret while a message is still streaming.
 
 - **`IMessage.streaming`** - flag a message as streaming (shows the caret)
-- **`Chat.updateMessage(messages, id, patch)`** - immutable per-message update, cheap enough for per-token appends
-- **`useStreamingMessages(...)`** - owns the message list, rAF-batches `push()`, and supports stop via `AbortController`
+- **`useStreamingMessages(...)`** - owns the message list, rAF-batches `push()`, and supports stop via `AbortController`. It returns `{ messages, setMessages, append, startStream, isStreaming, stop }`; `setMessages` is there for anything the hook does not cover, so you can patch a message with a plain `map`.
 
 ```tsx
 import { useCallback } from 'react'
