@@ -19,8 +19,8 @@ import {
 import dayjs from 'dayjs'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
-import { KeyboardAvoidingView, KeyboardProvider } from 'react-native-keyboard-controller'
-import { SafeAreaProvider, useSafeAreaFrame } from 'react-native-safe-area-context'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { TEST_ID } from '../Constant'
 import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
@@ -29,6 +29,7 @@ import { MessagesContainer, AnimatedList } from '../MessagesContainer'
 import { IMessage, ReplyMessage } from '../Models'
 import stylesCommon from '../styles'
 import { renderComponentOrElement } from '../utils'
+import { ChatKeyboardAvoidingView } from './ChatKeyboardAvoidingView'
 import styles from './styles'
 import { ChatProps } from './types'
 
@@ -74,13 +75,6 @@ function Chat<TMessage extends IMessage = IMessage> (
   const colorScheme = colorSchemeProp !== undefined ? colorSchemeProp : systemColorScheme
 
   const actionSheetRef = useRef<ActionSheetProviderRef>(null)
-
-  // `keyboardVerticalOffset` is the distance from the top of the window down to this
-  // chat container - it depends on the navigation header and on whatever else the app
-  // draws above the chat, which insets cannot see. `SafeAreaProvider` (mounted right
-  // around us by `ChatWrapper`) already reports exactly that: its frame is measured
-  // natively against the root view and refreshed on every layout change.
-  const frame = useSafeAreaFrame()
 
   const messagesContainerRef = useMemo(
     () => props.messagesContainerRef || createRef<AnimatedList<TMessage>>(),
@@ -332,18 +326,15 @@ function Chat<TMessage extends IMessage = IMessage> (
           style={[stylesCommon.fill, styles.contentContainer]}
           onLayout={onInitialLayoutViewLayout}
         >
-          <KeyboardAvoidingView
-            behavior='translate-with-padding'
-            keyboardVerticalOffset={frame.y}
-            style={stylesCommon.fill}
-            {...props.keyboardAvoidingViewProps}
+          <ChatKeyboardAvoidingView
+            keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}
           >
             <View style={[stylesCommon.fill, !isInitialized && styles.hidden]}>
               {renderMessages}
               {inputToolbarFragment}
             </View>
             {!isInitialized && renderComponentOrElement(renderLoading, {})}
-          </KeyboardAvoidingView>
+          </ChatKeyboardAvoidingView>
         </View>
       </ActionSheetProvider>
     </ChatContext.Provider>

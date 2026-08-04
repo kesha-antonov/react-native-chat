@@ -160,7 +160,13 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    * Default is `false`.
    */
   disableKeyboardProvider?: boolean
-  /** Props for KeyboardAvoidingView. Use `keyboardVerticalOffset` to account for headers or iOS predictive text bar (~44pt). */
+  /**
+   * Props for the `KeyboardAvoidingView` that keeps the input toolbar above the keyboard.
+   *
+   * `keyboardVerticalOffset` no longer needs to be set - Chat measures how far down the
+   * window it sits, navigation header included. Pass it only to override that measurement:
+   * too small leaves the toolbar behind the keyboard, too large leaves a gap above it.
+   */
   keyboardAvoidingViewProps?: KeyboardAvoidingViewProps
   /** Enable animated day label that appears on scroll; default is true */
   isDayAnimationEnabled?: boolean
