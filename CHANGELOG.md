@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-08-05
+
+### ⚠️ Upgrade notes
+Everything new in this release is opt-in, but four fixes change how an existing chat lays out. Read these before upgrading:
+
+1. **Remove `useHeaderHeight()` if you pass it to `keyboardVerticalOffset`.** The default used to be `insets.top`, which could not see a navigation header, so the README recommended compensating with `useHeaderHeight()`. Chat now measures the offset itself - if you keep passing it, the toolbar floats above the keyboard by a header height. This is the only change that requires a code edit.
+2. **The message row is full-width now** and the 70% width cap moved from the row onto the bubble. Custom `containerStyle` / `wrapperStyle` overrides that assumed the old row width may render differently; bubbles beside an avatar get slightly more room.
+3. **Chat no longer passes `statusBarTranslucent` / `navigationBarTranslucent`** to the `KeyboardProvider` it mounts. If you relied on Chat forcing that, set it yourself through `keyboardProviderProps`.
+4. **A `KeyboardProvider` mounted by your app is now detected and reused.** In that setup `keyboardProviderProps` no longer applies - configure the provider where you mount it. `disableKeyboardProvider` still opts out entirely.
+
 ### ✨ Features
 - **Row-wide press target for reactions**: the long-press surface now spans the whole message row instead of just the bubble, so pressing the empty space beside a bubble opens the reaction picker - matching Telegram on Android. The message row is full-width now and the 70% width cap moved from the row onto the bubble itself (bubbles beside an avatar therefore get slightly more room).
 - **`isMessageGestureEnabled`**: opt a message's *bubble* out of that surface (accepts a bool or a per-message predicate) for content that must own its touches - e.g. `isMessageGestureEnabled={message => !message.video}`. The surface moves behind the bubble rather than disappearing, so long-pressing beside the bubble still opens the picker and reactions are never lost for that message.
