@@ -6,6 +6,7 @@ import { ChatTheme } from '../Theme'
 import { Icon } from './Icon'
 import { MediaCard } from './MediaCard'
 import { PauseIcon, PlayIcon } from './MediaControls'
+import { getMediaPalette } from './mediaPalette'
 
 // Optional waveform engine. Resolved through a try/catch require so the bundle
 // works whether or not the consumer installed `react-native-audio-api`.
@@ -143,7 +144,14 @@ export function WaveformPlayer ({ uri, position = 'left' }: WaveformPlayerProps)
       const source = ctx.createBufferSource()
       source.buffer = buffer
       source.connect(ctx.destination)
+      // `stop()` also fires `ended`, so a pause would otherwise run the
+      // completion handler and rewind the note to 0:00. Only a source that ran
+      // to its natural end should reset the cursor.
       source.onended = () => {
+        if (sourceRef.current !== source)
+          return
+
+        sourceRef.current = null
         setIsPlaying(false)
         setProgress(0)
         stopRaf()
@@ -193,8 +201,8 @@ export function WaveformPlayer ({ uri, position = 'left' }: WaveformPlayerProps)
         style={styles.playCircle}
       >
         {isPlaying
-          ? <Icon name='pause' color='#fff' size={14} fallback={<PauseIcon color='#fff' size={14} />} />
-          : <Icon name='play' color='#fff' size={14} fallback={<PlayIcon color='#fff' size={14} />} />}
+          ? <Icon name='pause' color={styles.glyphColor.color} size={14} fallback={<PauseIcon color={styles.glyphColor.color} size={14} />} />
+          : <Icon name='play' color={styles.glyphColor.color} size={14} fallback={<PlayIcon color={styles.glyphColor.color} size={14} />} />}
       </Pressable>
       <View style={styles.waveform}>
         {(bars.length ? bars : new Array(BAR_COUNT).fill(0.2)).map((value, index) => (
@@ -214,10 +222,13 @@ export function WaveformPlayer ({ uri, position = 'left' }: WaveformPlayerProps)
 }
 
 const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
-  const inactive = position === 'right' ? theme.colors.outgoingMeta : theme.colors.incomingMeta
-  const metaColor = position === 'right' ? theme.colors.outgoingMeta : theme.colors.incomingMeta
+  const palette = getMediaPalette(theme, position)
 
   return StyleSheet.create({
+    // Carries the glyph color out of JSX and into the stylesheet.
+    glyphColor: {
+      color: palette.glyph,
+    },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -230,7 +241,7 @@ const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: theme.colors.accent,
+      backgroundColor: palette.control,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -247,15 +258,14 @@ const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
       minWidth: 2,
     },
     barPlayed: {
-      backgroundColor: theme.colors.accent,
+      backgroundColor: palette.progress,
     },
     barUnplayed: {
-      backgroundColor: inactive,
-      opacity: 0.5,
+      backgroundColor: palette.track,
     },
     time: {
       fontSize: 12,
-      color: metaColor,
+      color: palette.meta,
       minWidth: 34,
       textAlign: 'right',
     },

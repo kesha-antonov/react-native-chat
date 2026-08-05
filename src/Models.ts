@@ -57,6 +57,12 @@ export interface IMessage {
   /** Render `video` as a Telegram-style round video note (circular, autoplay/muted) instead of a rectangular player. */
   videoNote?: boolean
   audio?: string
+  /**
+   * Length of `audio` / `video` in seconds. Set by the built-in recorders and
+   * used to label a voice note before its file has been decoded, so a bubble can
+   * render its duration without downloading the whole clip first.
+   */
+  duration?: number
   system?: boolean
   sent?: boolean
   received?: boolean
@@ -107,6 +113,20 @@ export interface AudioRecordingProps {
   isEnabled?: boolean
   /** Minimum recording length (ms) below which the take is discarded. Default 800. */
   minDurationMs?: number
+  /**
+   * Maximum recording length (ms); the take is sent automatically when reached.
+   * Matters most for a locked recording, which otherwise runs until the user
+   * sends it. Default 600000 (10 minutes).
+   */
+  maxDurationMs?: number
+  /**
+   * Called when the microphone permission is refused. iOS never re-prompts, so
+   * this is the hook for pointing the user at Settings - without it a denied
+   * permission leaves the mic button silently dead.
+   */
+  onPermissionDenied?: () => void
+  /** Called when a take is dropped for being shorter than `minDurationMs`. */
+  onTooShort?: () => void
   onError?: (error: unknown) => void
 }
 
@@ -118,5 +138,12 @@ export interface VideoRecordingProps {
   isEnabled?: boolean
   /** Max video length in seconds. Default 60. */
   maxDuration?: number
+  /** Minimum video length (ms) below which the take is discarded. Default 800. */
+  minDurationMs?: number
+  /**
+   * Called when the camera (or microphone) permission is refused, so the app can
+   * point the user at Settings instead of leaving a dead button.
+   */
+  onPermissionDenied?: () => void
   onError?: (error: unknown) => void
 }

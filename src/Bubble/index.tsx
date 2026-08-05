@@ -85,6 +85,11 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   }, [messageActions, currentMessage])
   const hasMenu = menuItems.length > 0
 
+  // A pure video note (round video, no text) drops the bubble background so the
+  // circle floats like in Telegram. Its meta row then has no bubble to sit on,
+  // so it moves into a translucent pill over the circle instead.
+  const isVideoNote = !!currentMessage?.videoNote && !!currentMessage?.video && !currentMessage?.text
+
   // Consumers can hand the touches back to natively interactive content
   // (video controls, maps, WebViews) on a per-message basis.
   const isGestureEnabled = useMemo(() => {
@@ -385,8 +390,11 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       const overrideColor = (StyleSheet.flatten(props.tickStyle) as TextStyle | undefined)?.color as
         | string
         | undefined
-      const sentColor = overrideColor ?? (position === 'right' ? theme.colors.ticksSent : theme.colors.incomingMeta)
-      const readColor = overrideColor ?? (position === 'right' ? theme.colors.ticksRead : theme.colors.accent)
+      // A note's ticks sit on a dark pill over the video, so they are white for
+      // both positions unless the consumer overrode the color.
+      const noteColor = isVideoNote ? styles.noteMetaText.color : undefined
+      const sentColor = overrideColor ?? noteColor ?? (position === 'right' ? theme.colors.ticksSent : theme.colors.incomingMeta)
+      const readColor = overrideColor ?? noteColor ?? (position === 'right' ? theme.colors.ticksRead : theme.colors.accent)
 
       return (
         <View style={styles.messageStatusContainer}>
@@ -424,11 +432,21 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       if (props.renderTime)
         return renderComponentOrElement(props.renderTime, timeProps)
 
+      // On a note the meta sits on a dark pill over the video, so it is white
+      // for both positions - the incoming gray would be unreadable there.
+      if (isVideoNote)
+        return (
+          <Time
+            {...timeProps}
+            timeTextStyle={{ left: styles.noteMetaText, right: styles.noteMetaText }}
+          />
+        )
+
       return <Time {...timeProps} />
     }
 
     return null
-  }, [props, currentMessage])
+  }, [props, currentMessage, isVideoNote, styles])
 
   const renderUsername = useCallback(() => {
     const {
@@ -529,10 +547,11 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       <View
         style={[
           styles.bottom,
+          isVideoNote && styles.noteMetaPill,
           bottomContainerStyle?.[position],
         ]}
       >
-        <View style={styles.messageTimeAndStatusContainer}>
+        <View style={[styles.messageTimeAndStatusContainer, isVideoNote && styles.noteMetaInner]}>
           {renderTime()}
           {renderTicks()}
         </View>
@@ -546,11 +565,8 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     renderTime,
     renderTicks,
     styles,
+    isVideoNote,
   ])
-
-  // A pure video note (round video, no text) drops the bubble background so the
-  // circle floats like in Telegram.
-  const isVideoNote = !!currentMessage?.videoNote && !!currentMessage?.video && !currentMessage?.text
 
   const wrapperStyleList = useMemo(() => [
     getStyleWithPosition(styles, 'wrapper', position),

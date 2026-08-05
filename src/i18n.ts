@@ -37,6 +37,10 @@ export interface ChatLabels {
   cameraPermission: string
   /** Shown in the video recorder when no camera device is found. */
   noCamera: string
+  /** Hint under the video recorder's shutter while a take is running. */
+  stopAndSend: string
+  /** Hint under the video recorder's shutter before recording starts. */
+  tapToRecord: string
 }
 
 export const defaultLabels: ChatLabels = {
@@ -55,6 +59,8 @@ export const defaultLabels: ChatLabels = {
   editing: 'Editing',
   cameraPermission: 'Camera permission needed',
   noCamera: 'No camera available',
+  stopAndSend: 'Tap to stop and send',
+  tapToRecord: 'Tap to record',
 }
 
 /** Built-in translations (a starter set). Each is merged over English. */
@@ -75,6 +81,8 @@ export const translations: Record<string, Partial<ChatLabels>> = {
     editing: 'Editando',
     cameraPermission: 'Se necesita permiso de camara',
     noCamera: 'No hay camara disponible',
+    stopAndSend: 'Toca para detener y enviar',
+    tapToRecord: 'Toca para grabar',
   },
   fr: {
     placeholder: 'Ecrire un message...',
@@ -92,6 +100,8 @@ export const translations: Record<string, Partial<ChatLabels>> = {
     editing: 'Modification',
     cameraPermission: 'Autorisation de la camera requise',
     noCamera: 'Aucune camera disponible',
+    stopAndSend: 'Appuyez pour arreter et envoyer',
+    tapToRecord: 'Appuyez pour enregistrer',
   },
   de: {
     placeholder: 'Nachricht schreiben...',
@@ -109,6 +119,8 @@ export const translations: Record<string, Partial<ChatLabels>> = {
     editing: 'Bearbeiten',
     cameraPermission: 'Kameraberechtigung erforderlich',
     noCamera: 'Keine Kamera verfugbar',
+    stopAndSend: 'Tippen zum Beenden und Senden',
+    tapToRecord: 'Zum Aufnehmen tippen',
   },
   ru: {
     placeholder: 'Введите сообщение...',
@@ -126,6 +138,8 @@ export const translations: Record<string, Partial<ChatLabels>> = {
     editing: 'Редактирование',
     cameraPermission: 'Требуется доступ к камере',
     noCamera: 'Камера недоступна',
+    stopAndSend: 'Нажмите, чтобы остановить и отправить',
+    tapToRecord: 'Нажмите, чтобы записать',
   },
 }
 

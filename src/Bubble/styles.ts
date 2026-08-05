@@ -47,6 +47,34 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       backgroundColor: 'transparent',
     },
 
+    // With the bubble background gone, the meta row would render white-on-light.
+    // Telegram floats it in a translucent dark pill over the circle's lower edge.
+    // Positioning shell only: spans the note so the pill can centre on the
+    // circle's lower edge. A corner anchor would fall outside a round note.
+    noteMetaPill: {
+      position: 'absolute',
+      bottom: 10,
+      left: 0,
+      right: 0,
+      justifyContent: 'center',
+      // Overrides `bottom`'s padding, which would otherwise offset the pill.
+      paddingHorizontal: 0,
+      paddingTop: 0,
+      paddingBottom: 0,
+    },
+    // The meta row grows to fill a bubble; on a note it hugs and carries the
+    // translucent pill background itself.
+    noteMetaInner: {
+      flexGrow: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    noteMetaText: {
+      color: '#FFFFFF',
+    },
+
     bottom: {
       flexDirection: 'row',
       alignItems: 'center',

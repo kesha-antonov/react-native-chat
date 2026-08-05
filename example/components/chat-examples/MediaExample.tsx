@@ -15,6 +15,26 @@ const SAMPLE_VIDEO = 'https://download.blender.org/peach/bigbuckbunny_movies/Big
 
 const INITIAL_MESSAGES: IMessage[] = [
   {
+    _id: 'note-out',
+    text: '',
+    createdAt: new Date(Date.now() - 1000 * 20),
+    user: USER,
+    video: SAMPLE_VIDEO,
+    videoNote: true,
+    duration: 8,
+    sent: true,
+    received: true,
+  },
+  {
+    _id: 'note-in',
+    text: '',
+    createdAt: new Date(Date.now() - 1000 * 40),
+    user: BOT,
+    video: SAMPLE_VIDEO,
+    videoNote: true,
+    duration: 8,
+  },
+  {
     _id: 'loc',
     text: '',
     createdAt: new Date(Date.now() - 1000 * 60),

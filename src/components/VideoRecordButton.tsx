@@ -6,7 +6,7 @@ import { IMessage, VideoRecordingProps } from '../Models'
 import { ChatTheme } from '../Theme'
 import { Icon } from './Icon'
 import { CameraIcon } from './MediaControls'
-import { VideoNoteRecorder, isVisionCameraAvailable } from './VideoNoteRecorder'
+import { VideoNoteRecorder, isVisionCameraAvailable, isVisionCameraNativeReady } from './VideoNoteRecorder'
 
 // Optional camera-roll/launcher fallback. Resolved through a try/catch require.
 let imagePicker: any = null
@@ -41,6 +41,11 @@ export interface VideoRecordButtonProps<TMessage extends IMessage = IMessage> {
  * Camera button for video messages. Prefers react-native-vision-camera for a
  * Telegram-style round video note recorder; falls back to expo-image-picker's
  * system camera. Only rendered when one of those is installed.
+ *
+ * Note the two backends produce different messages: the round recorder sends
+ * `{ video, videoNote: true }` (a circular note), while the system-camera
+ * fallback sends a plain `{ video }` full-frame clip, because a rectangular
+ * capture would crop badly into a circle.
  */
 export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
   config,
@@ -59,8 +64,10 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
 
     try {
       const permission = await imagePicker.requestCameraPermissionsAsync()
-      if (!permission?.granted)
+      if (!permission?.granted) {
+        config?.onPermissionDenied?.()
         return
+      }
 
       const mediaTypes = imagePicker.MediaTypeOptions?.Videos ?? ['videos']
 
@@ -78,11 +85,16 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
     }
   }, [config, onSend])
 
+  // Gate on the *native* probe, not the JS require: a binary where the package
+  // is installed but not linked would otherwise open a recorder that can never
+  // capture, instead of falling back to the system camera.
   const handlePress = useCallback(() => {
-    if (isVisionCameraAvailable)
+    if (isVisionCameraNativeReady)
       setIsRecorderOpen(true)
-    else
+    else if (imagePicker?.launchCameraAsync)
       launchPicker()
+    else
+      setIsRecorderOpen(true)
   }, [launchPicker])
 
   return (
@@ -91,6 +103,7 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
         onPress={handlePress}
         accessibilityRole='button'
         accessibilityLabel='record video message'
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={styles.button}
       >
         <Icon name='camera' color={styles.iconColor.color} size={22} fallback={<CameraIcon color={styles.iconColor.color} size={22} />} />

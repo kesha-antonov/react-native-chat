@@ -119,19 +119,23 @@ exports[`Message component should render <Message /> and compare with snapshot 1
                   "paddingBottom": 6,
                   "paddingHorizontal": 12,
                 },
+                false,
                 undefined,
               ]
             }
           >
             <View
               style={
-                {
-                  "alignItems": "center",
-                  "flexDirection": "row",
-                  "flexGrow": 1,
-                  "gap": 3,
-                  "justifyContent": "flex-end",
-                }
+                [
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "flexGrow": 1,
+                    "gap": 3,
+                    "justifyContent": "flex-end",
+                  },
+                  false,
+                ]
               }
             >
               <View>
@@ -316,19 +320,23 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
                   "paddingBottom": 6,
                   "paddingHorizontal": 12,
                 },
+                false,
                 undefined,
               ]
             }
           >
             <View
               style={
-                {
-                  "alignItems": "center",
-                  "flexDirection": "row",
-                  "flexGrow": 1,
-                  "gap": 3,
-                  "justifyContent": "flex-end",
-                }
+                [
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "flexGrow": 1,
+                    "gap": 3,
+                    "justifyContent": "flex-end",
+                  },
+                  false,
+                ]
               }
             >
               <View>
@@ -513,19 +521,23 @@ exports[`Message component should render null if user has no Avatar 1`] = `
                   "paddingBottom": 6,
                   "paddingHorizontal": 12,
                 },
+                false,
                 undefined,
               ]
             }
           >
             <View
               style={
-                {
-                  "alignItems": "center",
-                  "flexDirection": "row",
-                  "flexGrow": 1,
-                  "gap": 3,
-                  "justifyContent": "flex-end",
-                }
+                [
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "flexGrow": 1,
+                    "gap": 3,
+                    "justifyContent": "flex-end",
+                  },
+                  false,
+                ]
               }
             >
               <View>

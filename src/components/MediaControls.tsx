@@ -63,8 +63,8 @@ export const CloseIcon = ({ color = '#fff', size = 18 }: MediaIconProps) => {
   )
 }
 
-/** A chevron drawn with two borders. `direction` points it left or down. */
-export const ChevronIcon = ({ color = '#fff', size = 14, direction = 'left' }: MediaIconProps & { direction?: 'left' | 'down' }) => {
+/** A chevron drawn with two borders. `direction` points it left, down or up. */
+export const ChevronIcon = ({ color = '#fff', size = 14, direction = 'left' }: MediaIconProps & { direction?: 'left' | 'down' | 'up' }) => {
   const styles = useMemo(() => createChevronStyles(color, size, direction), [color, size, direction])
   return <View style={styles.chevron} />
 }
@@ -180,7 +180,15 @@ const createCloseStyles = (color: string, size: number) => {
   })
 }
 
-const createChevronStyles = (color: string, size: number, direction: 'left' | 'down') => {
+// 45deg points the right/bottom border pair down; +90deg (135deg) points it
+// left; -135deg points it up.
+const CHEVRON_ROTATION = {
+  down: '45deg',
+  left: '135deg',
+  up: '-135deg',
+} as const
+
+const createChevronStyles = (color: string, size: number, direction: 'left' | 'down' | 'up') => {
   const thickness = Math.max(1.5, Math.round(size * 0.16))
   return StyleSheet.create({
     chevron: {
@@ -189,8 +197,7 @@ const createChevronStyles = (color: string, size: number, direction: 'left' | 'd
       borderColor: color,
       borderRightWidth: thickness,
       borderBottomWidth: thickness,
-      // 45deg points down; +90deg (135deg) rotates that chevron to point left.
-      transform: [{ rotate: direction === 'down' ? '45deg' : '135deg' }],
+      transform: [{ rotate: CHEVRON_ROTATION[direction] }],
     },
   })
 }

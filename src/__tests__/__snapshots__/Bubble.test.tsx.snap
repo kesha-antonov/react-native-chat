@@ -100,19 +100,23 @@ exports[`should render <Bubble /> and compare with snapshot 1`] = `
               "paddingBottom": 6,
               "paddingHorizontal": 12,
             },
+            false,
             undefined,
           ]
         }
       >
         <View
           style={
-            {
-              "alignItems": "center",
-              "flexDirection": "row",
-              "flexGrow": 1,
-              "gap": 3,
-              "justifyContent": "flex-end",
-            }
+            [
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "flexGrow": 1,
+                "gap": 3,
+                "justifyContent": "flex-end",
+              },
+              false,
+            ]
           }
         >
           <View>

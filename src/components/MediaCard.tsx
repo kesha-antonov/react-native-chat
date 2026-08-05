@@ -6,6 +6,7 @@ import { useThemedStyles } from '../hooks/useTheme'
 import { ChatTheme } from '../Theme'
 import { Icon } from './Icon'
 import { PlayIcon } from './MediaControls'
+import { getMediaPalette } from './mediaPalette'
 
 export interface MediaCardProps {
   kind: 'video' | 'audio'
@@ -48,7 +49,7 @@ export const MediaCard = ({ kind, uri, position = 'left', label, onPress, style 
         style={[styles.videoCard, style]}
       >
         <View style={styles.playCircleLarge}>
-          <Icon name='play' color='#fff' size={20} fallback={<PlayIcon color='#fff' size={20} />} />
+          <Icon name='play' color={styles.glyphColor.color} size={20} fallback={<PlayIcon color={styles.glyphColor.color} size={20} />} />
         </View>
         <Text style={styles.videoLabel} numberOfLines={1}>{label ?? defaultLabel}</Text>
       </Pressable>
@@ -62,7 +63,7 @@ export const MediaCard = ({ kind, uri, position = 'left', label, onPress, style 
       style={[styles.audioRow, style]}
     >
       <View style={styles.playCircle}>
-        <Icon name='play' color='#fff' size={14} fallback={<PlayIcon color='#fff' size={14} />} />
+        <Icon name='play' color={styles.glyphColor.color} size={14} fallback={<PlayIcon color={styles.glyphColor.color} size={14} />} />
       </View>
       <View style={styles.audioTrack} />
       <Text style={styles.audioLabel} numberOfLines={1}>{label ?? defaultLabel}</Text>
@@ -73,8 +74,13 @@ export const MediaCard = ({ kind, uri, position = 'left', label, onPress, style 
 const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
   const overlay = position === 'right' ? theme.colors.outgoingOverlay : theme.colors.reactionBackground
   const textColor = position === 'right' ? theme.colors.outgoingText : theme.colors.incomingText
+  const palette = getMediaPalette(theme, position)
 
   return StyleSheet.create({
+    // Carries the glyph color out of JSX and into the stylesheet.
+    glyphColor: {
+      color: palette.glyph,
+    },
     videoCard: {
       width: 220,
       height: 140,
@@ -93,7 +99,7 @@ const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
       width: 52,
       height: 52,
       borderRadius: 26,
-      backgroundColor: theme.colors.accent,
+      backgroundColor: palette.control,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -109,7 +115,7 @@ const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: theme.colors.accent,
+      backgroundColor: palette.control,
       alignItems: 'center',
       justifyContent: 'center',
     },

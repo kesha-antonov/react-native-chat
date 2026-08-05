@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Icon } from './components/Icon'
 import { MediaCard } from './components/MediaCard'
 import { PauseIcon, PlayIcon } from './components/MediaControls'
+import { getMediaPalette } from './components/mediaPalette'
 import { WaveformPlayer, isWaveformAvailable } from './components/WaveformPlayer'
 import { useThemedStyles } from './hooks/useTheme'
 import { IMessage, MessageAudioProps } from './Models'
@@ -63,8 +64,8 @@ const ExpoAudioPlayer = ({ uri, position }: { uri: string, position: 'left' | 'r
         style={styles.playCircle}
       >
         {isPlaying
-          ? <Icon name='pause' color='#fff' size={14} fallback={<PauseIcon color='#fff' size={14} />} />
-          : <Icon name='play' color='#fff' size={14} fallback={<PlayIcon color='#fff' size={14} />} />}
+          ? <Icon name='pause' color={styles.glyphColor.color} size={14} fallback={<PauseIcon color={styles.glyphColor.color} size={14} />} />
+          : <Icon name='play' color={styles.glyphColor.color} size={14} fallback={<PlayIcon color={styles.glyphColor.color} size={14} />} />}
       </Pressable>
       <View style={styles.track}>
         {/* progress fill width is a runtime value, so it stays inline */}
@@ -100,10 +101,13 @@ export function MessageAudio<TMessage extends IMessage = IMessage> ({
 }
 
 const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
-  const overlay = position === 'right' ? theme.colors.outgoingOverlay : theme.colors.reactionBackground
-  const metaColor = position === 'right' ? theme.colors.outgoingMeta : theme.colors.incomingMeta
+  const palette = getMediaPalette(theme, position)
 
   return StyleSheet.create({
+    // Carries the glyph color out of JSX and into the stylesheet.
+    glyphColor: {
+      color: palette.glyph,
+    },
     audioRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -116,7 +120,7 @@ const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: theme.colors.accent,
+      backgroundColor: palette.control,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -124,17 +128,17 @@ const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
       flex: 1,
       height: 3,
       borderRadius: 2,
-      backgroundColor: overlay,
+      backgroundColor: palette.track,
       overflow: 'hidden',
     },
     trackFill: {
       height: 3,
       borderRadius: 2,
-      backgroundColor: theme.colors.accent,
+      backgroundColor: palette.progress,
     },
     time: {
       fontSize: 12,
-      color: metaColor,
+      color: palette.meta,
       minWidth: 34,
       textAlign: 'right',
     },

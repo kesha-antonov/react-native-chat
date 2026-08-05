@@ -59,6 +59,9 @@ export interface VoiceRecordingState {
   cancelArmed: boolean
 }
 
+/** A release that landed before the recorder finished starting up. */
+type PendingFinish = { cancelled: boolean } | null
+
 export interface VoiceMessageInputHandle {
   /** Discard the in-progress recording (used by the bar's Cancel button). */
   cancel: () => void
@@ -102,8 +105,15 @@ function VoiceMessageInputInner (
   const isRecordingRef = useRef(false)
   const lockedRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // `start` is async (permission -> audio mode -> prepare), so a quick tap can
+  // release the gesture before the recorder is live. These two refs let the
+  // release be remembered and applied once `start` finishes, instead of being
+  // dropped and leaving a recording nothing can stop.
+  const startTokenRef = useRef(0)
+  const pendingFinishRef = useRef<PendingFinish>(null)
 
   const minDurationMs = config?.minDurationMs ?? 800
+  const maxDurationMs = config?.maxDurationMs ?? 600000
 
   const cancelThreshold = voice.cancelThreshold
   const lockThreshold = voice.lockThreshold
@@ -129,22 +139,101 @@ function VoiceMessageInputInner (
     }
   }, [])
 
-  useEffect(() => () => {
+  /** Reads and clears the deferred release, in its own scope so that clearing it
+   * inside `start` doesn't narrow the ref to `null` for the later read. */
+  const takePendingFinish = useCallback((): PendingFinish => {
+    const pending = pendingFinishRef.current
+    pendingFinishRef.current = null
+    return pending
+  }, [])
+
+  // Every gesture-owned shared value, back to rest. This has to run on *end* of
+  // a recording rather than in `onFinalize`, because the locked path returns
+  // from `onFinalize` early - leaving `cancelArmed` latched would make the next
+  // release read as "cancelled" and silently discard that take.
+  const resetGesture = useCallback(() => {
+    translateX.value = withTiming(0, { duration: 150 })
+    translateY.value = withTiming(0, { duration: 150 })
+    cancelArmed.value = 0
+    lockProgress.value = 0
+    lockedSV.value = 0
+  }, [translateX, translateY, cancelArmed, lockProgress, lockedSV])
+
+  // Leaves the audio session as we found it. Recording puts iOS into
+  // PlayAndRecord, which routes playback to the quiet receiver; not restoring it
+  // makes every voice note played afterwards sound muffled.
+  const releaseAudioSession = useCallback(() => {
+    try {
+      expoAudio.setAudioModeAsync?.({ allowsRecording: false, playsInSilentMode: true })
+    } catch {
+      // best-effort; the session is not worth failing a send over
+    }
+  }, [])
+
+  const finish = useCallback(async (cancelled: boolean) => {
+    if (!isRecordingRef.current) {
+      // A release that lands while `start` is still awaiting natives: remember
+      // it so `start` can apply it the moment the recorder is actually live.
+      if (startTokenRef.current > 0)
+        pendingFinishRef.current = { cancelled }
+
+      return
+    }
+
+    isRecordingRef.current = false
+    lockedRef.current = false
+    const duration = Date.now() - startedAtRef.current
+
     clearTimer()
     cancelAnimation(halo)
-  }, [clearTimer, halo])
+    halo.value = 0
+    resetGesture()
+    setIsRecording(false)
+    setIsLocked(false)
+    setCancelArmedState(false)
+
+    try {
+      await recorder.stop()
+      const uri = recorder.uri
+
+      if (cancelled || !uri)
+        return
+
+      if (duration < minDurationMs) {
+        config?.onTooShort?.()
+        return
+      }
+
+      onSend?.({ audio: uri, duration: Math.round(duration / 1000) } as Partial<IMessage>, false)
+    } catch (error) {
+      config?.onError?.(error)
+    } finally {
+      releaseAudioSession()
+    }
+  }, [recorder, minDurationMs, onSend, config, clearTimer, halo, resetGesture, releaseAudioSession])
 
   const start = useCallback(async () => {
-    if (isRecordingRef.current)
+    if (isRecordingRef.current || startTokenRef.current > 0)
       return
+
+    const token = Date.now()
+    startTokenRef.current = token
+    pendingFinishRef.current = null
 
     try {
       const permission = await expoAudio.AudioModule.requestRecordingPermissionsAsync()
-      if (!permission?.granted)
+      if (!permission?.granted) {
+        config?.onPermissionDenied?.()
         return
+      }
 
       await expoAudio.setAudioModeAsync?.({ allowsRecording: true, playsInSilentMode: true })
       await recorder.prepareToRecordAsync()
+
+      // The component may have unmounted while we were awaiting natives.
+      if (startTokenRef.current !== token)
+        return
+
       recorder.record()
 
       startedAtRef.current = Date.now()
@@ -160,42 +249,52 @@ function VoiceMessageInputInner (
 
       clearTimer()
       timerRef.current = setInterval(() => {
-        setElapsed(Date.now() - startedAtRef.current)
+        const ms = Date.now() - startedAtRef.current
+        setElapsed(ms)
+        if (ms >= maxDurationMs)
+          finish(false)
       }, 250)
     } catch (error) {
       config?.onError?.(error)
       isRecordingRef.current = false
       setIsRecording(false)
       clearTimer()
+      releaseAudioSession()
+    } finally {
+      if (startTokenRef.current === token) {
+        startTokenRef.current = 0
+
+        // Apply a release that arrived while we were starting up. Without this
+        // a quick tap leaves a live recording with no control to end it.
+        const pending = takePendingFinish()
+        if (pending)
+          finish(pending.cancelled)
+      }
     }
-  }, [recorder, config, clearTimer, halo])
+  }, [recorder, config, clearTimer, halo, maxDurationMs, finish, releaseAudioSession, takePendingFinish])
 
-  const finish = useCallback(async (cancelled: boolean) => {
-    if (!isRecordingRef.current)
-      return
-
-    isRecordingRef.current = false
-    lockedRef.current = false
-    const duration = Date.now() - startedAtRef.current
-
+  // Tear the recorder down with the component: without this the mic stays hot
+  // (and the iOS recording indicator lit) after navigating away mid-recording,
+  // and the toolbar is left showing a frozen recording bar.
+  useEffect(() => () => {
     clearTimer()
     cancelAnimation(halo)
-    halo.value = 0
-    lockedSV.value = 0
-    setIsRecording(false)
-    setIsLocked(false)
-    setCancelArmedState(false)
+    startTokenRef.current = 0
+    pendingFinishRef.current = null
 
-    try {
-      await recorder.stop()
-      const uri = recorder.uri
-
-      if (!cancelled && uri && duration >= minDurationMs)
-        onSend?.({ audio: uri } as Partial<IMessage>, false)
-    } catch (error) {
-      config?.onError?.(error)
+    if (isRecordingRef.current) {
+      isRecordingRef.current = false
+      try {
+        const stopped = recorder.stop() as unknown as Promise<void> | undefined
+        stopped?.catch?.(() => {})
+      } catch {
+        // already stopped
+      }
     }
-  }, [recorder, minDurationMs, onSend, config, clearTimer, halo, lockedSV])
+
+    releaseAudioSession()
+    onStateChange?.({ active: false, locked: false, elapsed: 0, cancelArmed: false })
+  }, [clearTimer, halo, recorder, releaseAudioSession, onStateChange])
 
   useImperativeHandle(ref, () => ({ cancel: () => finish(true) }), [finish])
 
@@ -234,8 +333,16 @@ function VoiceMessageInputInner (
           }
         })
         .onFinalize(() => {
-          if (lockedSV.value > 0)
+          // Locked: the finger is released but recording continues, so only the
+          // drag offsets go home. `cancelArmed` / `lockProgress` are cleared by
+          // `finish` via resetGesture, so nothing latches into the next take.
+          if (lockedSV.value > 0) {
+            translateX.value = withTiming(0, { duration: 150 })
+            translateY.value = withTiming(0, { duration: 150 })
+            cancelArmed.value = 0
+            lockProgress.value = 0
             return
+          }
 
           const cancelled = cancelArmed.value > 0
           translateX.value = withTiming(0, { duration: 150 })
@@ -278,7 +385,7 @@ function VoiceMessageInputInner (
         <Animated.View style={[styles.lockPill, lockPillStyle]} pointerEvents='none'>
           <Icon name='lock' color={styles.lockColor.color} size={15} fallback={<LockIcon color={styles.lockColor.color} size={15} />} />
           <Animated.View style={lockChevronStyle}>
-            <ChevronIcon color={styles.lockColor.color} size={12} direction='down' />
+            <ChevronIcon color={styles.lockColor.color} size={12} direction='up' />
           </Animated.View>
         </Animated.View>
       )}

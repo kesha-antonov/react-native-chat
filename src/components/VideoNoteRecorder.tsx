@@ -46,11 +46,6 @@ export const isVisionCameraNativeReady = (() => {
   }
 })()
 
-// A short, public sample MP4 used for the simulator POC (no real camera there),
-// so the record -> send flow can be demonstrated end to end.
-const POC_SAMPLE_VIDEO =
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
-
 const ROUND_SIZE = 220
 const RING_STROKE = 4
 const RING_RADIUS = ROUND_SIZE / 2 + 6
@@ -77,10 +72,10 @@ export interface VideoNoteRecorderProps<TMessage extends IMessage = IMessage> {
 }
 
 /**
- * Telegram-style round video note recorder. When react-native-vision-camera is
- * natively available it records the front camera into a circular preview;
- * otherwise (simulator / binary built without the native module) it runs a POC
- * that records a mock note and sends a sample clip, so the flow is demonstrable.
+ * Telegram-style round video note recorder: records the front camera into a
+ * circular preview. When react-native-vision-camera's native module is missing
+ * (a simulator, or a binary built before the dependency was added) it shows an
+ * unavailable state with the shutter disabled rather than fabricating a note.
  * The two paths are separate components so the vision-camera hooks are only ever
  * called when the native module is present (no crash, stable hook order).
  */
@@ -89,7 +84,7 @@ export function VideoNoteRecorder<TMessage extends IMessage = IMessage> (
 ) {
   return isVisionCameraNativeReady
     ? <LiveVideoNote<TMessage> {...props} />
-    : <PocVideoNote<TMessage> {...props} />
+    : <UnavailableVideoNote onClose={props.onClose} />
 }
 
 /** Shared recorder UI: round preview + progress ring + timer + record button. */
@@ -101,6 +96,7 @@ function RecorderChrome ({
   onToggle,
   onClose,
   hint,
+  isDisabled = false,
 }: {
   preview: React.ReactNode
   elapsed: number
@@ -109,6 +105,8 @@ function RecorderChrome ({
   onToggle: () => void
   onClose: () => void
   hint: string
+  /** No camera / no permission: the shutter is inert instead of throwing. */
+  isDisabled?: boolean
 }) {
   const progress = Math.min(1, elapsed / maxMs)
 
@@ -144,9 +142,11 @@ function RecorderChrome ({
 
       <Pressable
         onPress={onToggle}
+        disabled={isDisabled}
         accessibilityRole='button'
+        accessibilityState={{ disabled: isDisabled }}
         accessibilityLabel={isRecording ? 'stop recording' : 'start recording'}
-        style={styles.recordButton}
+        style={[styles.recordButton, isDisabled && styles.recordButtonDisabled]}
       >
         <View style={isRecording ? styles.recordInnerStop : styles.recordInner} />
       </Pressable>
@@ -195,47 +195,27 @@ function useRecordingTimer (maxMs: number, onMax: () => void) {
   return { elapsed, isRecording, begin, end }
 }
 
-/** Simulator / no-native-module path: mock recording, sends a sample clip. */
-function PocVideoNote<TMessage extends IMessage = IMessage> ({
-  config,
-  onClose,
-  onSend,
-}: VideoNoteRecorderProps<TMessage>) {
+/**
+ * No native camera module: an honest dead-end. The shutter is visibly disabled
+ * and nothing can be sent - previously this path fabricated a note from a
+ * hardcoded remote sample clip.
+ */
+function UnavailableVideoNote ({ onClose }: { onClose: () => void }) {
   const labels = useLabels()
-  const maxMs = (config?.maxDuration ?? 60) * 1000
-
-  const finish = useCallback(() => {
-    onSend?.({ video: POC_SAMPLE_VIDEO, videoNote: true } as Partial<TMessage>, false)
-    onClose()
-  }, [onSend, onClose])
-
-  const { elapsed, isRecording, begin, end } = useRecordingTimer(maxMs, () => {
-    end()
-    finish()
-  })
-
-  const onToggle = useCallback(() => {
-    if (isRecording) {
-      end()
-      finish()
-    } else {
-      begin()
-    }
-  }, [isRecording, begin, end, finish])
 
   return (
     <RecorderChrome
-      elapsed={elapsed}
-      maxMs={maxMs}
-      isRecording={isRecording}
-      onToggle={onToggle}
+      elapsed={0}
+      maxMs={1}
+      isRecording={false}
+      isDisabled
+      onToggle={() => {}}
       onClose={onClose}
-      hint={isRecording ? labels.cancel : labels.videoMessage}
+      hint={labels.noCamera}
       preview={(
         <View style={styles.placeholder}>
           <Icon name='camera' color='rgba(255,255,255,0.6)' size={44} fallback={<CameraIcon color='rgba(255,255,255,0.6)' size={44} />} />
           <Text style={styles.placeholderText}>{labels.noCamera}</Text>
-          <Text style={styles.pocBadge}>POC preview</Text>
         </View>
       )}
     />
@@ -256,6 +236,11 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
 
   const cameraRef = useRef<any>(null)
   const maxMs = (config?.maxDuration ?? 60) * 1000
+  const minDurationMs = config?.minDurationMs ?? 800
+  const startedAtRef = useRef(0)
+  // Set once the user abandons the recorder, so a capture callback that lands
+  // afterwards discards its file instead of posting the note they cancelled.
+  const abortedRef = useRef(false)
 
   const micHasPermission = microphone.hasPermission
   const micRequestPermission = microphone.requestPermission
@@ -267,11 +252,26 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
       micRequestPermission?.()
   }, [hasPermission, requestPermission, micHasPermission, micRequestPermission])
 
+  // A permission the user actively refused should surface, not leave a dead UI.
+  const onPermissionDenied = config?.onPermissionDenied
+  useEffect(() => {
+    if (hasPermission === false)
+      onPermissionDenied?.()
+  }, [hasPermission, onPermissionDenied])
+
   const finish = useCallback((uri: string | null) => {
-    if (uri)
-      onSend?.({ video: uri, videoNote: true } as Partial<TMessage>, false)
+    const duration = startedAtRef.current > 0 ? Date.now() - startedAtRef.current : 0
+
+    if (uri && !abortedRef.current && duration >= minDurationMs)
+      onSend?.({
+        video: uri,
+        videoNote: true,
+        duration: Math.round(duration / 1000),
+      } as Partial<TMessage>, false)
+
+    startedAtRef.current = 0
     onClose()
-  }, [onSend, onClose])
+  }, [onSend, onClose, minDurationMs])
 
   const stopRef = useRef<() => void>(() => {})
 
@@ -288,8 +288,17 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   }, [end, config, finish])
   stopRef.current = stopRecording
 
+  // The camera is only usable with both a device and permission; without this
+  // the shutter called startRecording on a null ref, threw, and silently
+  // dismissed the whole sheet.
+  const canRecord = !!device && hasPermission === true
+
   const startRecording = useCallback(() => {
+    if (!canRecord)
+      return
+
     begin()
+    startedAtRef.current = Date.now()
     try {
       cameraRef.current.startRecording({
         onRecordingFinished: (video: { path: string }) => finish(withFileScheme(video.path)),
@@ -302,16 +311,49 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
       config?.onError?.(error)
       finish(null)
     }
-  }, [begin, finish, config])
+  }, [begin, finish, config, canRecord])
+
+  // Abandoning the recorder must stop the capture: otherwise vision-camera keeps
+  // recording into an orphaned file and its completion callback posts the note.
+  const abort = useCallback(() => {
+    abortedRef.current = true
+    end()
+    try {
+      const stopped = cameraRef.current?.stopRecording?.() as Promise<void> | undefined
+      stopped?.catch?.(() => {})
+    } catch {
+      // nothing was recording
+    }
+    onClose()
+  }, [end, onClose])
+
+  // Covers teardown routes that bypass the X button (Android hardware back,
+  // a parent closing the modal): mark aborted and stop the capture.
+  useEffect(() => () => {
+    abortedRef.current = true
+    try {
+      const stopped = cameraRef.current?.stopRecording?.() as Promise<void> | undefined
+      stopped?.catch?.(() => {})
+    } catch {
+      // nothing was recording
+    }
+  }, [])
+
+  const hint = !canRecord
+    ? (device ? labels.cameraPermission : labels.noCamera)
+    : isRecording
+      ? labels.stopAndSend
+      : labels.tapToRecord
 
   return (
     <RecorderChrome
       elapsed={elapsed}
       maxMs={maxMs}
       isRecording={isRecording}
+      isDisabled={!canRecord}
       onToggle={isRecording ? stopRecording : startRecording}
-      onClose={onClose}
-      hint={isRecording ? labels.cancel : labels.videoMessage}
+      onClose={abort}
+      hint={hint}
       preview={
         !device
           ? <Text style={styles.placeholderText}>{labels.noCamera}</Text>
@@ -357,13 +399,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 24,
   },
-  pocBadge: {
-    marginTop: 4,
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    opacity: 0.5,
+  recordButtonDisabled: {
+    opacity: 0.4,
   },
   timer: {
     color: '#fff',
