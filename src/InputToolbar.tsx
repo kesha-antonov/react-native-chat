@@ -217,28 +217,60 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     !hasText &&
     !props.isSendButtonAlwaysVisible
 
+  const showVideo = !!props.videoRecording?.isEnabled && isVideoRecordingAvailable
+
+  // Telegram shares one right-slot control between voice and video: a single tap
+  // switches which one it is, a hold records. Only offered when both are
+  // available - with just one, that control has nothing to toggle to.
+  const [recordMode, setRecordMode] = useState<'voice' | 'video'>('voice')
+  const canToggleMode = showVoice && showVideo
+
+  const toggleRecordMode = useCallback(() => {
+    setRecordMode(current => (current === 'voice' ? 'video' : 'voice'))
+  }, [])
+
   const rightControl = useMemo(() => {
-    if (showVoice)
+    if (showVoice && !(canToggleMode && recordMode === 'video'))
       return (
         <VoiceMessageInput
           ref={voiceRef}
           config={props.audioRecording}
           onSend={onSend as VoiceMessageInputProps['onSend']}
           onStateChange={setVoiceState}
+          onTap={canToggleMode ? toggleRecordMode : undefined}
+        />
+      )
+
+    if (canToggleMode && recordMode === 'video')
+      return (
+        <VideoRecordButton<TMessage>
+          config={props.videoRecording}
+          onSend={onSend}
+          onTap={toggleRecordMode}
+          variant='round'
         />
       )
 
     return sendFragment
-  }, [showVoice, props.audioRecording, onSend, sendFragment])
+  }, [
+    showVoice,
+    canToggleMode,
+    recordMode,
+    toggleRecordMode,
+    props.audioRecording,
+    props.videoRecording,
+    onSend,
+    sendFragment,
+  ])
 
-  // Inset camera button for video messages, shown when enabled and a camera
-  // backend (vision-camera or expo-image-picker) is installed.
+  // Inset camera button inside the field. Dropped once the right-slot control
+  // can toggle to video, so there is only ever one camera entry point.
   const videoFragment = useMemo(() => {
-    if (!props.videoRecording?.isEnabled || !isVideoRecordingAvailable)
+    if (!showVideo || canToggleMode)
       return null
 
     return <VideoRecordButton<TMessage> config={props.videoRecording} onSend={onSend} />
-  }, [props.videoRecording, onSend])
+  }, [showVideo, canToggleMode, props.videoRecording, onSend])
 
   const accessoryFragment = useMemo(() => {
     if (!renderAccessory)

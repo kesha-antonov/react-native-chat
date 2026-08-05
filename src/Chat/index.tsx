@@ -19,6 +19,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { TEST_ID } from '../Constant'
 import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
+import { useKeyboardVerticalOffset } from '../hooks/useKeyboardVerticalOffset'
 import { resolveLabels } from '../i18n'
 import { InputToolbar } from '../InputToolbar'
 import { MessagesContainer, AnimatedList } from '../MessagesContainer'
@@ -251,8 +252,17 @@ function Chat<TMessage extends IMessage = IMessage> (
     [props.text, props.textInputProps]
   )
 
+  // Measures where the chat starts in the window, which is what the
+  // KeyboardAvoidingView needs to keep the toolbar on the keyboard.
+  const keyboardOffset = useKeyboardVerticalOffset()
+  const measureKeyboardOffset = keyboardOffset.onLayout
+
   const onInitialLayoutViewLayout = useCallback(
     (e: LayoutChangeEvent) => {
+      // Runs on every layout, not just the first: a header appearing or the
+      // device rotating moves the chat's top edge.
+      measureKeyboardOffset()
+
       if (isInitialized)
         return
 
@@ -266,7 +276,7 @@ function Chat<TMessage extends IMessage = IMessage> (
       setIsInitialized(true)
       setText(getTextFromProp(initialText))
     },
-    [isInitialized, initialText, notifyInputTextReset, getTextFromProp]
+    [isInitialized, initialText, notifyInputTextReset, getTextFromProp, measureKeyboardOffset]
   )
 
   const inputToolbarFragment = useMemo(() => {
@@ -339,10 +349,12 @@ function Chat<TMessage extends IMessage = IMessage> (
     <ChatContext.Provider value={contextValues}>
       <View
         testID={TEST_ID.WRAPPER}
+        ref={keyboardOffset.ref}
         style={[stylesCommon.fill, styles.contentContainer]}
         onLayout={onInitialLayoutViewLayout}
       >
         <ChatKeyboardAvoidingView
+          keyboardVerticalOffset={keyboardOffset.keyboardVerticalOffset}
           keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}
         >
           <View style={[stylesCommon.fill, !isInitialized && styles.hidden]}>

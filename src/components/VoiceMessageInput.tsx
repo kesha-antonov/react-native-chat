@@ -92,6 +92,11 @@ export interface VoiceMessageInputProps {
   ) => void
   /** Reports recording state up so the toolbar can draw the timer/cancel bar. */
   onStateChange?: (state: VoiceRecordingState) => void
+  /**
+   * Single tap on the mic. When provided, the control switches to tap-to-toggle
+   * (voice <-> video) and only records once the press is held, matching Telegram.
+   */
+  onTap?: () => void
 }
 
 /**
@@ -106,7 +111,7 @@ export interface VoiceMessageInputProps {
  * available, so its hooks always run in a stable order.
  */
 function VoiceMessageInputInner (
-  { config, onSend, onStateChange }: VoiceMessageInputProps,
+  { config, onSend, onStateChange, onTap }: VoiceMessageInputProps,
   ref: React.Ref<VoiceMessageInputHandle>
 ) {
   const styles = useThemedStyles(createStyles)
@@ -335,13 +340,25 @@ function VoiceMessageInputInner (
     setIsLocked(true)
   }, [])
 
+  // Tracks whether the pan actually activated, so a release that follows a plain
+  // tap (mode switch) never runs the recording teardown.
+  const didActivate = useSharedValue(0)
+
   const panGesture = useMemo(
     () =>
       Gesture.Pan()
-        .onBegin(() => {
+        // A quick tap switches the control between voice and video (Telegram),
+        // so recording only begins once the press is clearly a hold. Without
+        // this the tap would start a take and immediately discard it.
+        .activateAfterLongPress(onTap ? 180 : 0)
+        .onStart(() => {
+          didActivate.value = 1
           runOnJS(start)()
         })
         .onUpdate(event => {
+          if (didActivate.value === 0)
+            return
+
           if (lockedSV.value > 0)
             return
 
@@ -365,6 +382,12 @@ function VoiceMessageInputInner (
           }
         })
         .onFinalize(() => {
+          // Never activated: this was a tap, handled by the tap gesture below.
+          if (didActivate.value === 0)
+            return
+
+          didActivate.value = 0
+
           // Locked: the finger is released but recording continues, so only the
           // drag offsets go home. `cancelArmed` / `lockProgress` are cleared by
           // `finish` via resetGesture, so nothing latches into the next take.
@@ -383,8 +406,22 @@ function VoiceMessageInputInner (
           lockProgress.value = 0
           runOnJS(finish)(cancelled)
         }),
-    [start, finish, lock, translateX, translateY, cancelArmed, lockProgress, lockedSV, maxSlide, lockTravel, cancelThreshold, lockThreshold]
+    [start, finish, lock, translateX, translateY, cancelArmed, lockProgress, lockedSV, didActivate, maxSlide, lockTravel, cancelThreshold, lockThreshold, onTap]
   )
+
+  // Tap switches voice <-> video; the pan (hold) records. Race so whichever
+  // recognizes first wins.
+  const micGesture = useMemo(() => {
+    if (!onTap)
+      return panGesture
+
+    return Gesture.Race(
+      Gesture.Tap().maxDuration(200).onEnd(() => {
+        runOnJS(onTap)()
+      }),
+      panGesture
+    )
+  }, [panGesture, onTap])
 
   const micAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
@@ -436,7 +473,7 @@ function VoiceMessageInputInner (
           </Pressable>
         )
         : (
-          <GestureDetector gesture={panGesture}>
+          <GestureDetector gesture={micGesture}>
             <Animated.View
               accessibilityRole='button'
               accessibilityLabel='record voice message'

@@ -35,6 +35,16 @@ export interface VideoRecordButtonProps<TMessage extends IMessage = IMessage> {
     message: Partial<TMessage>,
     shouldResetInputToolbar: boolean
   ) => void
+  /**
+   * Single tap on the button. Set when the control shares the right slot with
+   * the mic: a tap switches back to voice, a hold opens the recorder.
+   */
+  onTap?: () => void
+  /**
+   * `inset` (default) is the small glyph inside the composer field; `round` is
+   * the filled accent circle that occupies the right slot beside it.
+   */
+  variant?: 'inset' | 'round'
 }
 
 /**
@@ -50,6 +60,8 @@ export interface VideoRecordButtonProps<TMessage extends IMessage = IMessage> {
 export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
   config,
   onSend,
+  onTap,
+  variant = 'inset',
 }: VideoRecordButtonProps<TMessage>) {
   const styles = useThemedStyles(createStyles)
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
@@ -97,16 +109,27 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
       setIsRecorderOpen(true)
   }, [launchPicker])
 
+  const isRound = variant === 'round'
+
   return (
     <>
       <Pressable
-        onPress={handlePress}
+        // Sharing the slot with the mic: tap toggles back to voice, a long press
+        // opens the recorder - the same tap/hold split the mic uses.
+        onPress={onTap ?? handlePress}
+        onLongPress={onTap ? handlePress : undefined}
+        delayLongPress={180}
         accessibilityRole='button'
-        accessibilityLabel='record video message'
+        accessibilityLabel={onTap ? 'switch to voice message' : 'record video message'}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        style={styles.button}
+        style={isRound ? styles.roundButton : styles.button}
       >
-        <Icon name='camera' color={styles.iconColor.color} size={22} fallback={<CameraIcon color={styles.iconColor.color} size={22} />} />
+        <Icon
+          name='camera'
+          color={isRound ? '#fff' : styles.iconColor.color}
+          size={22}
+          fallback={<CameraIcon color={isRound ? '#fff' : styles.iconColor.color} size={22} />}
+        />
       </Pressable>
 
       {isVisionCameraAvailable && (
@@ -139,5 +162,15 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   // Carries the themed icon color (StyleSheet keeps it out of JSX).
   iconColor: {
     color: theme.colors.incomingMeta,
+  },
+  // Right-slot form: matches the mic/send circle so the swap doesn't shift the row.
+  roundButton: {
+    width: theme.sendButton.size,
+    height: theme.sendButton.size,
+    borderRadius: theme.radii.sendButton,
+    backgroundColor: theme.colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
 })
