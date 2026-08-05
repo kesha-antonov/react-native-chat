@@ -41,6 +41,10 @@ export interface ChatLabels {
   stopAndSend: string
   /** Hint under the video recorder's shutter before recording starts. */
   tapToRecord: string
+  /** Hint while holding the video shutter. */
+  releaseToSend: string
+  /** Idle hint for the hold-to-record video shutter. */
+  holdToRecord: string
 }
 
 export const defaultLabels: ChatLabels = {
@@ -61,6 +65,8 @@ export const defaultLabels: ChatLabels = {
   noCamera: 'No camera available',
   stopAndSend: 'Tap to stop and send',
   tapToRecord: 'Tap to record',
+  releaseToSend: 'Release to send, slide up to lock',
+  holdToRecord: 'Hold to record',
 }
 
 /** Built-in translations (a starter set). Each is merged over English. */
@@ -83,6 +89,8 @@ export const translations: Record<string, Partial<ChatLabels>> = {
     noCamera: 'No hay camara disponible',
     stopAndSend: 'Toca para detener y enviar',
     tapToRecord: 'Toca para grabar',
+    releaseToSend: 'Suelta para enviar, desliza arriba para bloquear',
+    holdToRecord: 'Manten pulsado para grabar',
   },
   fr: {
     placeholder: 'Ecrire un message...',
@@ -102,6 +110,8 @@ export const translations: Record<string, Partial<ChatLabels>> = {
     noCamera: 'Aucune camera disponible',
     stopAndSend: 'Appuyez pour arreter et envoyer',
     tapToRecord: 'Appuyez pour enregistrer',
+    releaseToSend: 'Relachez pour envoyer, glissez vers le haut pour verrouiller',
+    holdToRecord: 'Maintenez pour enregistrer',
   },
   de: {
     placeholder: 'Nachricht schreiben...',
@@ -121,6 +131,8 @@ export const translations: Record<string, Partial<ChatLabels>> = {
     noCamera: 'Keine Kamera verfugbar',
     stopAndSend: 'Tippen zum Beenden und Senden',
     tapToRecord: 'Zum Aufnehmen tippen',
+    releaseToSend: 'Loslassen zum Senden, nach oben wischen zum Sperren',
+    holdToRecord: 'Zum Aufnehmen gedruckt halten',
   },
   ru: {
     placeholder: 'Введите сообщение...',
@@ -140,6 +152,8 @@ export const translations: Record<string, Partial<ChatLabels>> = {
     noCamera: 'Камера недоступна',
     stopAndSend: 'Нажмите, чтобы остановить и отправить',
     tapToRecord: 'Нажмите, чтобы записать',
+    releaseToSend: 'Отпустите, чтобы отправить, вверх - закрепить',
+    holdToRecord: 'Удерживайте для записи',
   },
 }
 

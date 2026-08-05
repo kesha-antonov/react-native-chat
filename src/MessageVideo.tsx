@@ -1,6 +1,8 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { MediaCard } from './components/MediaCard'
+import { claimPlayback, releasePlayback } from './components/mediaPlayback'
+import { VideoNoteOverlay } from './components/VideoNoteOverlay'
 import { IMessage, MessageVideoProps } from './Models'
 
 // Optional inline player. Resolved through a try/catch require so the bundle
@@ -25,11 +27,13 @@ interface InlinePlayerProps {
   style: StyleProp<ViewStyle>
   videoProps?: object
   isNote?: boolean
+  /** Length in seconds, used for the note's duration pill. */
+  duration?: number
 }
 
 // Only mounted when expo-video resolved, so the hooks below are always called
 // in a stable order.
-const ExpoVideoPlayer = ({ uri, style, videoProps, isNote }: InlinePlayerProps) => {
+const ExpoVideoPlayer = ({ uri, style, videoProps, isNote, duration }: InlinePlayerProps) => {
   const player = expoVideo.useVideoPlayer(uri, (p: any) => {
     // A note holds its first frame muted. It does NOT autoplay: every note in
     // the list would otherwise decode and loop at once, and there would be no
@@ -40,6 +44,53 @@ const ExpoVideoPlayer = ({ uri, style, videoProps, isNote }: InlinePlayerProps) 
   })
   const VideoView = expoVideo.VideoView
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
+  const [progress, setProgress] = useState(0)
+  const playerId = useId()
+  const rafRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null)
+
+  const stopRaf = useCallback(() => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
+  }, [])
+
+  const pause = useCallback(() => {
+    try {
+      player.pause()
+    } catch {
+      // player already torn down
+    }
+    stopRaf()
+    setIsPlaying(false)
+  }, [player, stopRaf])
+
+  // Drives the progress ring. expo-video has no per-frame callback, so the
+  // position is sampled on the display link while playing.
+  const tick = useCallback(() => {
+    const total = player.duration || duration || 0
+    if (total > 0) {
+      const next = Math.min(1, (player.currentTime || 0) / total)
+      setProgress(next)
+
+      if (next >= 1) {
+        stopRaf()
+        releasePlayback(playerId)
+        setIsPlaying(false)
+        setProgress(0)
+        setIsMuted(true)
+        return
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(tick)
+  }, [player, duration, stopRaf, playerId])
+
+  useEffect(() => () => {
+    stopRaf()
+    releasePlayback(playerId)
+  }, [stopRaf, playerId])
 
   // Tap a note to play it with sound, tap again to pause - the round note has no
   // native controls, so this press target is its only affordance.
@@ -48,16 +99,22 @@ const ExpoVideoPlayer = ({ uri, style, videoProps, isNote }: InlinePlayerProps) 
       return
 
     if (isPlaying) {
-      player.pause()
-      setIsPlaying(false)
+      pause()
+      releasePlayback(playerId)
       return
     }
 
     player.muted = false
-    player.currentTime = 0
+    setIsMuted(false)
+    if (progress <= 0)
+      player.currentTime = 0
     player.play()
     setIsPlaying(true)
-  }, [isNote, isPlaying, player])
+    // Starting stops any other note or voice message, as Telegram does.
+    claimPlayback(playerId, pause)
+    stopRaf()
+    rafRef.current = requestAnimationFrame(tick)
+  }, [isNote, isPlaying, player, pause, playerId, tick, stopRaf, progress])
 
   const view = (
     <VideoView
@@ -81,6 +138,13 @@ const ExpoVideoPlayer = ({ uri, style, videoProps, isNote }: InlinePlayerProps) 
       accessibilityLabel={isPlaying ? 'pause video note' : 'play video note'}
     >
       {view}
+      <VideoNoteOverlay
+        size={NOTE_SIZE}
+        progress={progress}
+        duration={duration}
+        isMuted={isMuted}
+        isPlaying={isPlaying}
+      />
     </Pressable>
   )
 }
@@ -111,7 +175,7 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
       ]}
     >
       {isExpoVideoAvailable
-        ? <ExpoVideoPlayer uri={uri} style={[isNote ? styles.note : styles.video, videoStyle]} videoProps={videoProps} isNote={isNote} />
+        ? <ExpoVideoPlayer uri={uri} style={[isNote ? styles.note : styles.video, videoStyle]} videoProps={videoProps} isNote={isNote} duration={currentMessage?.duration} />
         : <MediaCard kind='video' uri={uri} position={position} style={[isNote && styles.note, videoStyle]} />}
     </View>
   )

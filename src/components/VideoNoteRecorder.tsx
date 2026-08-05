@@ -1,10 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { useLabels } from '../hooks/useLabels'
+import { useTheme } from '../hooks/useTheme'
 import { IMessage, VideoRecordingProps } from '../Models'
 import { Icon } from './Icon'
-import { CameraIcon, CloseIcon } from './MediaControls'
+import { CameraIcon, CloseIcon, TrashIcon } from './MediaControls'
 
 // Optional camera. Resolved through a try/catch require so the bundle works
 // whether or not the consumer installed `react-native-vision-camera`.
@@ -47,6 +50,9 @@ export const isVisionCameraNativeReady = (() => {
 })()
 
 const ROUND_SIZE = 220
+// Matches the chat accent; the recorder is a full-bleed dark overlay, so it does
+// not take the rest of its palette from the theme.
+const RING_COLOR = '#3390EC'
 const RING_STROKE = 4
 const RING_RADIUS = ROUND_SIZE / 2 + 6
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
@@ -87,14 +93,25 @@ export function VideoNoteRecorder<TMessage extends IMessage = IMessage> (
     : <UnavailableVideoNote onClose={props.onClose} />
 }
 
-/** Shared recorder UI: round preview + progress ring + timer + record button. */
+/**
+ * Shared recorder UI: round preview + progress ring + timer + shutter.
+ *
+ * The shutter is hold-to-record, with the same three-way gesture as a voice
+ * note - release to send, slide up to lock for hands-free, slide left to
+ * cancel - so the muscle memory carries over between the two recorders.
+ */
 function RecorderChrome ({
   preview,
   elapsed,
   maxMs,
   isRecording,
-  onToggle,
+  isLocked,
+  onStart,
+  onStop,
+  onCancel,
+  onLock,
   onClose,
+  onFlipCamera,
   hint,
   isDisabled = false,
 }: {
@@ -102,19 +119,107 @@ function RecorderChrome ({
   elapsed: number
   maxMs: number
   isRecording: boolean
-  onToggle: () => void
+  isLocked: boolean
+  onStart: () => void
+  onStop: () => void
+  onCancel: () => void
+  /** Slid past the lock threshold: recording continues after the finger lifts. */
+  onLock: () => void
   onClose: () => void
+  /** Omitted when there is no second camera to switch to. */
+  onFlipCamera?: () => void
   hint: string
   /** No camera / no permission: the shutter is inert instead of throwing. */
   isDisabled?: boolean
 }) {
   const progress = Math.min(1, elapsed / maxMs)
+  const { voice } = useTheme()
+
+  const translateX = useSharedValue(0)
+  const translateY = useSharedValue(0)
+  const cancelArmed = useSharedValue(0)
+  const lockedSV = useSharedValue(0)
+  const [isCancelArmed, setIsCancelArmed] = useState(false)
+
+  const cancelThreshold = voice.cancelThreshold
+  const lockThreshold = voice.lockThreshold
+
+  // Keep the shared lock flag in step when the parent locks or resets.
+  useEffect(() => {
+    lockedSV.value = isLocked ? 1 : 0
+    if (!isRecording) {
+      translateX.value = 0
+      translateY.value = 0
+      cancelArmed.value = 0
+      setIsCancelArmed(false)
+    }
+  }, [isLocked, isRecording, lockedSV, translateX, translateY, cancelArmed])
+
+  const shutterGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(!isDisabled)
+        .onBegin(() => {
+          if (lockedSV.value > 0)
+            return
+
+          runOnJS(onStart)()
+        })
+        .onUpdate(event => {
+          if (lockedSV.value > 0)
+            return
+
+          const x = Math.max(-(cancelThreshold + 60), Math.min(0, event.translationX))
+          const y = Math.max(-(lockThreshold + 12), Math.min(0, event.translationY))
+          translateX.value = x
+          translateY.value = y
+
+          const armed = x <= -cancelThreshold ? 1 : 0
+          if (armed !== cancelArmed.value) {
+            cancelArmed.value = armed
+            runOnJS(setIsCancelArmed)(armed > 0)
+          }
+
+          if (-y >= lockThreshold) {
+            lockedSV.value = 1
+            translateX.value = withTiming(0, { duration: 150 })
+            translateY.value = withTiming(0, { duration: 150 })
+            runOnJS(onLock)()
+          }
+        })
+        .onFinalize(() => {
+          // Locked: the finger lifts but recording continues.
+          if (lockedSV.value > 0) {
+            translateX.value = withTiming(0, { duration: 150 })
+            translateY.value = withTiming(0, { duration: 150 })
+            cancelArmed.value = 0
+            return
+          }
+
+          const cancelled = cancelArmed.value > 0
+          translateX.value = withTiming(0, { duration: 150 })
+          translateY.value = withTiming(0, { duration: 150 })
+          cancelArmed.value = 0
+          runOnJS(cancelled ? onCancel : onStop)()
+        }),
+    [isDisabled, onStart, onStop, onCancel, onLock, translateX, translateY, cancelArmed, lockedSV, cancelThreshold, lockThreshold]
+  )
+
+  const shutterStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
+  }))
 
   return (
     <View style={styles.overlay}>
       <Pressable onPress={onClose} style={styles.closeButton} accessibilityLabel='close'>
         <Icon name='close' color='#fff' size={22} fallback={<CloseIcon color='#fff' size={22} />} />
       </Pressable>
+
+      {onFlipCamera && (
+        <Pressable onPress={onFlipCamera} style={styles.flipButton} accessibilityLabel='switch camera'>
+          <Icon name='camera' color='#fff' size={22} fallback={<CameraIcon color='#fff' size={22} />} />
+        </Pressable>
+      )}
 
       <View style={styles.ringWrapper}>
         {SvgCircle && (
@@ -124,7 +229,7 @@ function RecorderChrome ({
               cx={RING_BOX / 2}
               cy={RING_BOX / 2}
               r={RING_RADIUS}
-              stroke='#3390EC'
+              stroke={RING_COLOR}
               strokeWidth={RING_STROKE}
               fill='none'
               strokeLinecap='round'
@@ -140,16 +245,47 @@ function RecorderChrome ({
 
       <Text style={styles.timer}>{formatElapsed(elapsed)} / {formatElapsed(maxMs)}</Text>
 
-      <Pressable
-        onPress={onToggle}
-        disabled={isDisabled}
-        accessibilityRole='button'
-        accessibilityState={{ disabled: isDisabled }}
-        accessibilityLabel={isRecording ? 'stop recording' : 'start recording'}
-        style={[styles.recordButton, isDisabled && styles.recordButtonDisabled]}
-      >
-        <View style={isRecording ? styles.recordInnerStop : styles.recordInner} />
-      </Pressable>
+      <View style={styles.shutterRow}>
+        {isLocked && (
+          <Pressable
+            onPress={onCancel}
+            accessibilityRole='button'
+            accessibilityLabel='delete recording'
+            style={styles.sideButton}
+          >
+            <Icon name='trash' color='#fff' size={22} fallback={<TrashIcon color='#fff' size={22} />} />
+          </Pressable>
+        )}
+
+        {isLocked
+          ? (
+            <Pressable
+              onPress={onStop}
+              accessibilityRole='button'
+              accessibilityLabel='stop recording'
+              style={styles.recordButton}
+            >
+              <View style={styles.recordInnerStop} />
+            </Pressable>
+          )
+          : (
+            <GestureDetector gesture={shutterGesture}>
+              <Animated.View
+                accessibilityRole='button'
+                accessibilityState={{ disabled: isDisabled }}
+                accessibilityLabel={isRecording ? 'stop recording' : 'start recording'}
+                style={[
+                  styles.recordButton,
+                  isDisabled && styles.recordButtonDisabled,
+                  isCancelArmed && styles.recordButtonCancelArmed,
+                  shutterStyle,
+                ]}
+              >
+                <View style={isRecording ? styles.recordInnerStop : styles.recordInner} />
+              </Animated.View>
+            </GestureDetector>
+          )}
+      </View>
 
       <Text style={styles.hint}>{hint}</Text>
     </View>
@@ -208,8 +344,12 @@ function UnavailableVideoNote ({ onClose }: { onClose: () => void }) {
       elapsed={0}
       maxMs={1}
       isRecording={false}
+      isLocked={false}
       isDisabled
-      onToggle={() => {}}
+      onStart={() => {}}
+      onStop={() => {}}
+      onCancel={onClose}
+      onLock={() => {}}
       onClose={onClose}
       hint={labels.noCamera}
       preview={(
@@ -230,7 +370,10 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
 }: VideoNoteRecorderProps<TMessage>) {
   const labels = useLabels()
   const Camera = visionCamera.Camera
-  const device = visionCamera.useCameraDevice('front')
+  // Telegram lets you flip to the rear camera; a note starts on the front one.
+  const [facing, setFacing] = useState<'front' | 'back'>('front')
+  const device = visionCamera.useCameraDevice(facing)
+  const otherDevice = visionCamera.useCameraDevice(facing === 'front' ? 'back' : 'front')
   const { hasPermission, requestPermission } = visionCamera.useCameraPermission()
   const microphone = visionCamera.useMicrophonePermission?.() ?? { hasPermission: true, requestPermission: async () => true }
 
@@ -339,20 +482,62 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
     }
   }, [])
 
+  // Locking mirrors the voice recorder: slide up while holding the shutter and
+  // recording continues hands-free until Send or the trash is pressed.
+  const [isLocked, setIsLocked] = useState(false)
+
+  const onShutterStart = useCallback(() => {
+    if (isRecording)
+      return
+
+    startRecording()
+  }, [isRecording, startRecording])
+
+  const onShutterStop = useCallback(() => {
+    setIsLocked(false)
+    stopRecording()
+  }, [stopRecording])
+
+  const onShutterCancel = useCallback(() => {
+    setIsLocked(false)
+    abortedRef.current = true
+    end()
+    try {
+      const stopped = cameraRef.current?.stopRecording?.() as Promise<void> | undefined
+      stopped?.catch?.(() => {})
+    } catch {
+      // nothing was recording
+    }
+    // Reset so the recorder stays open for another take, as Telegram does.
+    abortedRef.current = false
+    startedAtRef.current = 0
+  }, [end])
+
+  const flipCamera = useCallback(() => {
+    setFacing(current => (current === 'front' ? 'back' : 'front'))
+  }, [])
+
   const hint = !canRecord
     ? (device ? labels.cameraPermission : labels.noCamera)
-    : isRecording
+    : isLocked
       ? labels.stopAndSend
-      : labels.tapToRecord
+      : isRecording
+        ? labels.releaseToSend
+        : labels.holdToRecord
 
   return (
     <RecorderChrome
       elapsed={elapsed}
       maxMs={maxMs}
       isRecording={isRecording}
+      isLocked={isLocked}
       isDisabled={!canRecord}
-      onToggle={isRecording ? stopRecording : startRecording}
+      onStart={onShutterStart}
+      onStop={onShutterStop}
+      onCancel={onShutterCancel}
+      onLock={() => setIsLocked(true)}
       onClose={abort}
+      onFlipCamera={otherDevice ? flipCamera : undefined}
       hint={hint}
       preview={
         !device
@@ -401,6 +586,30 @@ const styles = StyleSheet.create({
   },
   recordButtonDisabled: {
     opacity: 0.4,
+  },
+  // Slid past the cancel threshold: the shutter reads as destructive.
+  recordButtonCancelArmed: {
+    borderColor: '#E74C3C',
+  },
+  shutterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  sideButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flipButton: {
+    position: 'absolute',
+    top: 48,
+    left: 24,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   timer: {
     color: '#fff',

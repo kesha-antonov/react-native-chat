@@ -92,7 +92,7 @@ export function MessageAudio<TMessage extends IMessage = IMessage> ({
   return (
     <View style={[styles.container, containerStyle]}>
       {isWaveformAvailable
-        ? <WaveformPlayer uri={uri} position={position} />
+        ? <WaveformPlayer uri={uri} position={position} duration={currentMessage?.duration} />
         : isExpoAudioAvailable
           ? <ExpoAudioPlayer uri={uri} position={position} />
           : <MediaCard kind='audio' uri={uri} position={position} style={audioStyle} />}

@@ -49,14 +49,14 @@ export const createBubbleStyles = (theme: ChatTheme) => {
 
     // With the bubble background gone, the meta row would render white-on-light.
     // Telegram floats it in a translucent dark pill over the circle's lower edge.
-    // Positioning shell only: spans the note so the pill can centre on the
-    // circle's lower edge. A corner anchor would fall outside a round note.
+    // Positioning shell only. Anchored to the note's bounding-box corner, which
+    // on a circle sits just outside the shape - where Telegram puts the
+    // timestamp, clear of the duration pill centred on the circle itself.
     noteMetaPill: {
       position: 'absolute',
-      bottom: 10,
-      left: 0,
+      bottom: 2,
       right: 0,
-      justifyContent: 'center',
+      justifyContent: 'flex-end',
       // Overrides `bottom`'s padding, which would otherwise offset the pill.
       paddingHorizontal: 0,
       paddingTop: 0,

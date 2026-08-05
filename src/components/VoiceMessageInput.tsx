@@ -10,14 +10,12 @@ import React, {
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
-  Easing,
   ReduceMotion,
   cancelAnimation,
   interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withTiming,
 } from 'react-native-reanimated'
 
@@ -57,6 +55,25 @@ export interface VoiceRecordingState {
   locked: boolean
   elapsed: number
   cancelArmed: boolean
+  /**
+   * Recent microphone amplitudes, 0..1, oldest first. Drives the live waveform
+   * the toolbar draws while a recording is locked.
+   */
+  levels: number[]
+}
+
+/** How many amplitude samples the live waveform keeps. */
+const LEVEL_HISTORY = 48
+/** Metering floor in dB; anything quieter reads as silence. */
+const METERING_FLOOR_DB = -60
+
+/** Map an expo-audio metering value (dB) onto a 0..1 bar height. */
+const normalizeMetering = (db: number | undefined) => {
+  if (db == null || !Number.isFinite(db))
+    return 0
+
+  const clamped = Math.max(METERING_FLOOR_DB, Math.min(0, db))
+  return (clamped - METERING_FLOOR_DB) / -METERING_FLOOR_DB
 }
 
 /** A release that landed before the recorder finished starting up. */
@@ -94,12 +111,19 @@ function VoiceMessageInputInner (
 ) {
   const styles = useThemedStyles(createStyles)
   const { voice } = useTheme()
-  const recorder = expoAudio.useAudioRecorder(expoAudio.RecordingPresets.HIGH_QUALITY)
+  // Metering drives the live waveform and the amplitude halo, so it has to be
+  // switched on with the preset - it is off by default.
+  const recorderOptions = useMemo(
+    () => ({ ...expoAudio.RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true }),
+    []
+  )
+  const recorder = expoAudio.useAudioRecorder(recorderOptions)
 
   const [isRecording, setIsRecording] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [cancelArmedState, setCancelArmedState] = useState(false)
+  const [levels, setLevels] = useState<number[]>([])
 
   const startedAtRef = useRef(0)
   const isRecordingRef = useRef(false)
@@ -129,8 +153,8 @@ function VoiceMessageInputInner (
 
   // Surface recording state to the toolbar (timer/cancel bar live there).
   useEffect(() => {
-    onStateChange?.({ active: isRecording, locked: isLocked, elapsed, cancelArmed: cancelArmedState })
-  }, [onStateChange, isRecording, isLocked, elapsed, cancelArmedState])
+    onStateChange?.({ active: isRecording, locked: isLocked, elapsed, cancelArmed: cancelArmedState, levels })
+  }, [onStateChange, isRecording, isLocked, elapsed, cancelArmedState, levels])
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -239,21 +263,29 @@ function VoiceMessageInputInner (
       startedAtRef.current = Date.now()
       isRecordingRef.current = true
       setElapsed(0)
+      setLevels([])
       setIsRecording(true)
 
-      halo.value = withRepeat(
-        withTiming(1, { duration: 1100, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.System }),
-        -1,
-        false
-      )
-
       clearTimer()
+      // 100ms keeps the live waveform moving at roughly Telegram's rate while
+      // staying cheap; the elapsed label only needs whole seconds.
       timerRef.current = setInterval(() => {
         const ms = Date.now() - startedAtRef.current
         setElapsed(ms)
+
+        // The halo tracks real loudness rather than pulsing on a fixed loop.
+        const level = normalizeMetering(recorder.getStatus?.()?.metering)
+        halo.value = withTiming(level, { duration: 120, reduceMotion: ReduceMotion.System })
+        setLevels(previous => {
+          const next = previous.length >= LEVEL_HISTORY
+            ? previous.slice(previous.length - LEVEL_HISTORY + 1)
+            : previous
+          return [...next, level]
+        })
+
         if (ms >= maxDurationMs)
           finish(false)
-      }, 250)
+      }, 100)
     } catch (error) {
       config?.onError?.(error)
       isRecordingRef.current = false
@@ -293,7 +325,7 @@ function VoiceMessageInputInner (
     }
 
     releaseAudioSession()
-    onStateChange?.({ active: false, locked: false, elapsed: 0, cancelArmed: false })
+    onStateChange?.({ active: false, locked: false, elapsed: 0, cancelArmed: false, levels: [] })
   }, [clearTimer, halo, recorder, releaseAudioSession, onStateChange])
 
   useImperativeHandle(ref, () => ({ cancel: () => finish(true) }), [finish])
@@ -358,9 +390,11 @@ function VoiceMessageInputInner (
     transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
   }))
 
+  // `halo` now carries loudness (0..1) rather than a looping sweep, so the ring
+  // swells with the voice like Telegram's blob instead of pulsing on a timer.
   const haloAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(halo.value, [0, 1], [0.34, 0]),
-    transform: [{ scale: interpolate(halo.value, [0, 1], [1, 2.3]) }],
+    opacity: interpolate(halo.value, [0, 1], [0.12, 0.4]),
+    transform: [{ scale: interpolate(halo.value, [0, 1], [1.05, 2.1]) }],
   }))
 
   // Lock pill above the mic: the up-chevron rises and fades toward the lock as
@@ -420,6 +454,9 @@ export const VoiceMessageInput = forwardRef(VoiceMessageInputInner)
 
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
   container: {
+    // Matches Send's wrapper so the mic and the send button share a baseline -
+    // otherwise the control jumps 4pt the moment the first character is typed.
+    minHeight: theme.composer.minHeight,
     justifyContent: 'center',
     alignItems: 'center',
   },

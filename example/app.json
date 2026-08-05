@@ -58,7 +58,8 @@
           "microphonePermissionText": "$(PRODUCT_NAME) needs microphone access to record video messages.",
           "enableFrameProcessors": false
         }
-      ]
+      ],
+      "react-native-audio-api"
     ],
     "experiments": {
       "typedRoutes": true,

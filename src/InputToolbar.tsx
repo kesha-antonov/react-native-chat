@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Actions, ActionsProps } from './Actions'
 import { AttachmentAction } from './components/AttachmentSheet'
 import { Icon } from './components/Icon'
-import { ChevronIcon, EmojiIcon } from './components/MediaControls'
+import { ChevronIcon, EmojiIcon, TrashIcon } from './components/MediaControls'
 import { ReplyPreview, ReplyPreviewProps } from './components/ReplyPreview'
 import { VideoRecordButton, isVideoRecordingAvailable } from './components/VideoRecordButton'
 import {
@@ -183,7 +183,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   // gesture); it reports up here so the bar - timer on the left, pulsating
   // "slide to cancel" hint across the field - can span the full input row.
   const [voiceState, setVoiceState] = useState<VoiceRecordingState>({
-    active: false, locked: false, elapsed: 0, cancelArmed: false,
+    active: false, locked: false, elapsed: 0, cancelArmed: false, levels: [],
   })
   const voiceRef = useRef<VoiceMessageInputHandle>(null)
   const recPulse = useSharedValue(0)
@@ -285,15 +285,36 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
               <Text style={styles.recTimer}>{formatElapsed(voiceState.elapsed)}</Text>
               {voiceState.locked
                 ? (
-                  <Pressable
-                    style={styles.recCancelWrap}
-                    hitSlop={8}
-                    onPress={() => voiceRef.current?.cancel()}
-                    accessibilityRole='button'
-                    accessibilityLabel='cancel recording'
-                  >
-                    <Text style={styles.recCancelText}>{labels.cancel}</Text>
-                  </Pressable>
+                  // Locked: Telegram shows a trash target and a live waveform in
+                  // place of the slide-to-cancel hint, with send on the right.
+                  <>
+                    <Pressable
+                      style={styles.recTrash}
+                      hitSlop={8}
+                      onPress={() => voiceRef.current?.cancel()}
+                      accessibilityRole='button'
+                      accessibilityLabel='delete recording'
+                    >
+                      <Icon
+                        name='trash'
+                        color={styles.recTrashColor.color}
+                        size={20}
+                        fallback={<TrashIcon color={styles.recTrashColor.color} size={20} />}
+                      />
+                    </Pressable>
+                    <View style={styles.recLevels}>
+                      {voiceState.levels.map((level, index) => (
+                        <View
+                          key={index}
+                          style={[
+                            styles.recLevelBar,
+                            // Per-sample runtime height, so it stays inline.
+                            { height: 2 + level * 18 },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </>
                 )
                 : (
                   <Animated.View style={[styles.recHintWrap, recHintStyle]} pointerEvents='none'>
@@ -376,14 +397,29 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   recHintColor: {
     color: theme.colors.placeholder,
   },
-  recCancelWrap: {
-    flex: 1,
-    alignItems: 'flex-end',
+  // Locked state: a real delete target (44pt) instead of a text link.
+  recTrash: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  recCancelText: {
-    fontSize: 15,
-    fontWeight: '600',
+  recTrashColor: {
     color: theme.colors.error,
+  },
+  // Live mic amplitudes, newest on the right - Telegram's locked-state waveform.
+  recLevels: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    height: 22,
+    gap: 1,
+  },
+  recLevelBar: {
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: theme.colors.accent,
   },
   // The field is the bar: one rounded pill holding the inset controls + the
   // text field. Only the send/mic button lives outside it.
