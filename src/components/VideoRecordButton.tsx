@@ -135,7 +135,10 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
       {isVisionCameraAvailable && (
         <Modal
           visible={isRecorderOpen}
-          animationType='slide'
+          // Transparent + fade so the recorder's scrim dims the conversation
+          // rather than replacing it, which is what Telegram shows.
+          transparent
+          animationType='fade'
           onRequestClose={() => setIsRecorderOpen(false)}
           statusBarTranslucent
         >

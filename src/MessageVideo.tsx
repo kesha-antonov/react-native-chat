@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import { Pressable, StyleProp, StyleSheet, View, ViewStyle, useWindowDimensions } from 'react-native'
 import { MediaCard } from './components/MediaCard'
 import { claimPlayback, releasePlayback } from './components/mediaPlayback'
-import { VideoNoteOverlay } from './components/VideoNoteOverlay'
+import { VideoNoteMeta, VideoNoteOverlay } from './components/VideoNoteOverlay'
 import { IMessage, MessageVideoProps } from './Models'
 
 // Optional inline player. Resolved through a try/catch require so the bundle
@@ -19,21 +19,24 @@ try {
 
 const isExpoVideoAvailable = !!(expoVideo?.VideoView && expoVideo?.useVideoPlayer)
 
-// Diameter of a Telegram-style round video note.
-const NOTE_SIZE = 200
+// A Telegram round note is sized from the screen, not a fixed puck.
+const NOTE_WIDTH_RATIO = 0.62
+const MAX_NOTE_SIZE = 260
 
 interface InlinePlayerProps {
   uri: string
   style: StyleProp<ViewStyle>
   videoProps?: object
   isNote?: boolean
-  /** Length in seconds, used for the note's duration pill. */
+  /** Length in seconds, shown under the note. */
   duration?: number
+  /** Diameter of the round note, derived from the screen width. */
+  noteSize: number
 }
 
 // Only mounted when expo-video resolved, so the hooks below are always called
 // in a stable order.
-const ExpoVideoPlayer = ({ uri, style, videoProps, isNote, duration }: InlinePlayerProps) => {
+const ExpoVideoPlayer = ({ uri, style, videoProps, isNote, duration, noteSize }: InlinePlayerProps) => {
   const player = expoVideo.useVideoPlayer(uri, (p: any) => {
     // A note holds its first frame muted. It does NOT autoplay: every note in
     // the list would otherwise decode and loop at once, and there would be no
@@ -46,6 +49,8 @@ const ExpoVideoPlayer = ({ uri, style, videoProps, isNote, duration }: InlinePla
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [progress, setProgress] = useState(0)
+  // A note counts as watched once it has been played through at least once.
+  const [isWatched, setIsWatched] = useState(false)
   const playerId = useId()
   const rafRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null)
 
@@ -80,6 +85,7 @@ const ExpoVideoPlayer = ({ uri, style, videoProps, isNote, duration }: InlinePla
         setIsPlaying(false)
         setProgress(0)
         setIsMuted(true)
+        setIsWatched(true)
         return
       }
     }
@@ -132,20 +138,23 @@ const ExpoVideoPlayer = ({ uri, style, videoProps, isNote, duration }: InlinePla
     return view
 
   return (
-    <Pressable
-      onPress={togglePlayback}
-      accessibilityRole='button'
-      accessibilityLabel={isPlaying ? 'pause video note' : 'play video note'}
-    >
-      {view}
-      <VideoNoteOverlay
-        size={NOTE_SIZE}
-        progress={progress}
-        duration={duration}
-        isMuted={isMuted}
-        isPlaying={isPlaying}
-      />
-    </Pressable>
+    <View>
+      <Pressable
+        onPress={togglePlayback}
+        accessibilityRole='button'
+        accessibilityLabel={isPlaying ? 'pause video note' : 'play video note'}
+      >
+        {view}
+        <VideoNoteOverlay
+          size={noteSize}
+          progress={progress}
+          isMuted={isMuted}
+          isPlaying={isPlaying}
+        />
+      </Pressable>
+      {/* Telegram puts the length under the circle, on the chat background. */}
+      <VideoNoteMeta duration={duration} isWatched={isWatched} />
+    </View>
   )
 }
 
@@ -156,12 +165,15 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
   videoStyle,
   videoProps,
 }: Partial<MessageVideoProps<TMessage>>) {
+  const { width } = useWindowDimensions()
+  const noteSize = Math.min(width * NOTE_WIDTH_RATIO, MAX_NOTE_SIZE)
   const uri = currentMessage?.video
 
   if (!uri)
     return null
 
   const isNote = !!currentMessage?.videoNote
+  const noteStyle = { width: noteSize, height: noteSize, borderRadius: noteSize / 2 }
 
   return (
     <View
@@ -175,8 +187,17 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
       ]}
     >
       {isExpoVideoAvailable
-        ? <ExpoVideoPlayer uri={uri} style={[isNote ? styles.note : styles.video, videoStyle]} videoProps={videoProps} isNote={isNote} duration={currentMessage?.duration} />
-        : <MediaCard kind='video' uri={uri} position={position} style={[isNote && styles.note, videoStyle]} />}
+        ? (
+          <ExpoVideoPlayer
+            uri={uri}
+            style={[isNote ? [styles.note, noteStyle] : styles.video, videoStyle]}
+            videoProps={videoProps}
+            isNote={isNote}
+            duration={currentMessage?.duration}
+            noteSize={noteSize}
+          />
+        )
+        : <MediaCard kind='video' uri={uri} position={position} style={[isNote && noteStyle, videoStyle]} />}
     </View>
   )
 }
@@ -185,9 +206,10 @@ const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
   },
-  // A round note floats without bubble chrome (the Bubble strips its background).
+  // A round note floats without bubble chrome (the Bubble strips its
+  // background). It must not clip: the duration sits below the circle.
   noteContainer: {
-    borderRadius: NOTE_SIZE / 2,
+    overflow: 'visible',
   },
   noteLeft: {
     alignSelf: 'flex-start',
@@ -205,9 +227,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   note: {
-    width: NOTE_SIZE,
-    height: NOTE_SIZE,
-    borderRadius: NOTE_SIZE / 2,
     backgroundColor: '#000',
   },
 })

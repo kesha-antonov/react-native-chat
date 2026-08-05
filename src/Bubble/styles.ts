@@ -62,17 +62,14 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       paddingTop: 0,
       paddingBottom: 0,
     },
-    // The meta row grows to fill a bubble; on a note it hugs and carries the
-    // translucent pill background itself.
+    // The meta row grows to fill a bubble; on a note it just hugs. It sits on
+    // the chat background beside the duration now, not over the video, so it
+    // needs no pill behind it.
     noteMetaInner: {
       flexGrow: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.4)',
-      borderRadius: 10,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
     },
     noteMetaText: {
-      color: '#FFFFFF',
+      color: colors.incomingMeta,
     },
 
     bottom: {

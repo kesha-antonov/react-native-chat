@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
@@ -7,7 +7,8 @@ import { useLabels } from '../hooks/useLabels'
 import { useTheme } from '../hooks/useTheme'
 import { IMessage, VideoRecordingProps } from '../Models'
 import { Icon } from './Icon'
-import { CameraIcon, CloseIcon, TrashIcon } from './MediaControls'
+import { CameraIcon, CloseIcon, FlashIcon, FlipCameraIcon, PauseIcon, PlayIcon } from './MediaControls'
+import { SendIcon } from './SendIcon'
 
 // Optional camera. Resolved through a try/catch require so the bundle works
 // whether or not the consumer installed `react-native-vision-camera`.
@@ -49,23 +50,28 @@ export const isVisionCameraNativeReady = (() => {
   }
 })()
 
-const ROUND_SIZE = 220
-// Matches the chat accent; the recorder is a full-bleed dark overlay, so it does
-// not take the rest of its palette from the theme.
-const RING_COLOR = '#3390EC'
-const RING_STROKE = 4
-const RING_RADIUS = ROUND_SIZE / 2 + 6
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
-const RING_BOX = (RING_RADIUS + RING_STROKE) * 2
+// The preview fills most of the screen width, as Telegram's does.
+const NOTE_WIDTH_RATIO = 0.88
+const MAX_ROUND_SIZE = 360
+/** Gap between the circle's edge and the progress arc. */
+const RING_GAP = 10
+const RING_STROKE = 3
+/** Vertical space the bottom controls occupy, kept clear of the preview. */
+const CONTROLS_HEIGHT = 170
 
 const withFileScheme = (path: string) =>
   path.startsWith('file://') || path.startsWith('http') ? path : `file://${path}`
 
-const formatElapsed = (ms: number) => {
-  const total = Math.floor(ms / 1000)
-  const mins = Math.floor(total / 60)
-  const secs = total % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
+/**
+ * `m:ss,t` with tenths, like Telegram's recording bar - the moving decimal is
+ * what tells you the recorder is actually live.
+ */
+const formatElapsedTenths = (ms: number) => {
+  const tenthsTotal = Math.floor(ms / 100)
+  const tenths = tenthsTotal % 10
+  const secs = Math.floor(tenthsTotal / 10) % 60
+  const mins = Math.floor(tenthsTotal / 600)
+  return `${mins}:${secs.toString().padStart(2, '0')},${tenths}`
 }
 
 export interface VideoNoteRecorderProps<TMessage extends IMessage = IMessage> {
@@ -112,6 +118,11 @@ function RecorderChrome ({
   onLock,
   onClose,
   onFlipCamera,
+  onToggleTorch,
+  isTorchOn = false,
+  onTogglePause,
+  isPaused = false,
+  cancelLabel,
   hint,
   isDisabled = false,
 }: {
@@ -128,12 +139,26 @@ function RecorderChrome ({
   onClose: () => void
   /** Omitted when there is no second camera to switch to. */
   onFlipCamera?: () => void
+  /** Omitted when the active camera has no torch (typically the front one). */
+  onToggleTorch?: () => void
+  isTorchOn?: boolean
+  /** Omitted when the backend cannot pause mid-take. */
+  onTogglePause?: () => void
+  isPaused?: boolean
+  /** Localized CANCEL label for the recording bar. */
+  cancelLabel: string
   hint: string
   /** No camera / no permission: the shutter is inert instead of throwing. */
   isDisabled?: boolean
 }) {
   const progress = Math.min(1, elapsed / maxMs)
   const { voice } = useTheme()
+  // Telegram's preview is most of the screen width, not a fixed 220pt puck.
+  const { width } = useWindowDimensions()
+  const roundSize = Math.min(width * NOTE_WIDTH_RATIO, MAX_ROUND_SIZE)
+  const ringRadius = roundSize / 2 + RING_GAP
+  const ringCircumference = 2 * Math.PI * ringRadius
+  const ringBox = (ringRadius + RING_STROKE) * 2
 
   const translateX = useSharedValue(0)
   const translateY = useSharedValue(0)
@@ -211,83 +236,134 @@ function RecorderChrome ({
 
   return (
     <View style={styles.overlay}>
-      <Pressable onPress={onClose} style={styles.closeButton} accessibilityLabel='close'>
-        <Icon name='close' color='#fff' size={22} fallback={<CloseIcon color='#fff' size={22} />} />
-      </Pressable>
-
-      {onFlipCamera && (
-        <Pressable onPress={onFlipCamera} style={styles.flipButton} accessibilityLabel='switch camera'>
-          <Icon name='camera' color='#fff' size={22} fallback={<CameraIcon color='#fff' size={22} />} />
+      {/* Explicit close only. A tap-anywhere scrim would swallow the release of
+          the very press that opened the recorder, closing it instantly. */}
+      {!isRecording && (
+        <Pressable onPress={onClose} style={styles.closeButton} accessibilityLabel='close'>
+          <CloseIcon color='#fff' size={22} />
         </Pressable>
       )}
 
-      <View style={styles.ringWrapper}>
-        {SvgCircle && (
-          <Svg width={RING_BOX} height={RING_BOX} style={StyleSheet.absoluteFill} pointerEvents='none'>
-            <SvgCircle cx={RING_BOX / 2} cy={RING_BOX / 2} r={RING_RADIUS} stroke='rgba(255,255,255,0.25)' strokeWidth={RING_STROKE} fill='none' />
+      <View style={[styles.ringWrapper, { width: ringBox, height: ringBox }]} pointerEvents='box-none'>
+        {SvgCircle && progress > 0 && (
+          <Svg width={ringBox} height={ringBox} style={StyleSheet.absoluteFill} pointerEvents='none'>
+            {/* No track behind it: Telegram draws only the elapsed arc. */}
             <SvgCircle
-              cx={RING_BOX / 2}
-              cy={RING_BOX / 2}
-              r={RING_RADIUS}
-              stroke={RING_COLOR}
+              cx={ringBox / 2}
+              cy={ringBox / 2}
+              r={ringRadius}
+              stroke='#FFFFFF'
               strokeWidth={RING_STROKE}
               fill='none'
               strokeLinecap='round'
-              strokeDasharray={RING_CIRCUMFERENCE}
-              strokeDashoffset={RING_CIRCUMFERENCE * (1 - progress)}
-              transform={`rotate(-90 ${RING_BOX / 2} ${RING_BOX / 2})`}
+              strokeDasharray={ringCircumference}
+              strokeDashoffset={ringCircumference * (1 - progress)}
+              transform={`rotate(-90 ${ringBox / 2} ${ringBox / 2})`}
             />
           </Svg>
         )}
 
-        <View style={styles.round}>{preview}</View>
+        <View style={[styles.round, { width: roundSize, height: roundSize, borderRadius: roundSize / 2 }]}>
+          {preview}
+        </View>
       </View>
 
-      <Text style={styles.timer}>{formatElapsed(elapsed)} / {formatElapsed(maxMs)}</Text>
-
-      <View style={styles.shutterRow}>
-        {isLocked && (
-          <Pressable
-            onPress={onCancel}
-            accessibilityRole='button'
-            accessibilityLabel='delete recording'
-            style={styles.sideButton}
-          >
-            <Icon name='trash' color='#fff' size={22} fallback={<TrashIcon color='#fff' size={22} />} />
-          </Pressable>
-        )}
-
-        {isLocked
-          ? (
-            <Pressable
-              onPress={onStop}
-              accessibilityRole='button'
-              accessibilityLabel='stop recording'
-              style={styles.recordButton}
-            >
-              <View style={styles.recordInnerStop} />
-            </Pressable>
-          )
-          : (
-            <GestureDetector gesture={shutterGesture}>
-              <Animated.View
+      <View style={styles.controls} pointerEvents='box-none'>
+        <View style={styles.controlsRow} pointerEvents='box-none'>
+          {/* Camera flip and torch share one pill on the left, as in Telegram.
+              With neither available the pill would be an empty white blob. */}
+          <View style={(onFlipCamera || onToggleTorch) ? styles.utilityPill : undefined}>
+            {onFlipCamera && (
+              <Pressable
+                onPress={onFlipCamera}
+                hitSlop={8}
                 accessibilityRole='button'
-                accessibilityState={{ disabled: isDisabled }}
-                accessibilityLabel={isRecording ? 'stop recording' : 'start recording'}
-                style={[
-                  styles.recordButton,
-                  isDisabled && styles.recordButtonDisabled,
-                  isCancelArmed && styles.recordButtonCancelArmed,
-                  shutterStyle,
-                ]}
+                accessibilityLabel='switch camera'
+                style={styles.utilityButton}
               >
-                <View style={isRecording ? styles.recordInnerStop : styles.recordInner} />
-              </Animated.View>
-            </GestureDetector>
-          )}
-      </View>
+                <FlipCameraIcon color={styles.utilityColor.color} size={22} />
+              </Pressable>
+            )}
+            {onToggleTorch && (
+              <Pressable
+                onPress={onToggleTorch}
+                hitSlop={8}
+                accessibilityRole='button'
+                accessibilityState={{ selected: isTorchOn }}
+                accessibilityLabel='flash'
+                style={styles.utilityButton}
+              >
+                <FlashIcon color={isTorchOn ? '#F5A623' : styles.utilityColor.color} size={22} />
+              </Pressable>
+            )}
+          </View>
 
-      <Text style={styles.hint}>{hint}</Text>
+          {isRecording && onTogglePause && (
+            <Pressable
+              onPress={onTogglePause}
+              accessibilityRole='button'
+              accessibilityLabel={isPaused ? 'resume recording' : 'pause recording'}
+              style={styles.pauseButton}
+            >
+              {isPaused
+                ? <PlayIcon color={styles.utilityColor.color} size={16} />
+                : <PauseIcon color={styles.utilityColor.color} size={16} />}
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.bottomRow} pointerEvents='box-none'>
+          {isRecording
+            ? (
+              <>
+                <View style={styles.statusBar}>
+                  <View style={styles.recDot} />
+                  <Text style={styles.statusTime}>{formatElapsedTenths(elapsed)}</Text>
+                  <Pressable
+                    onPress={onCancel}
+                    hitSlop={8}
+                    accessibilityRole='button'
+                    accessibilityLabel='cancel recording'
+                    style={styles.cancelWrap}
+                  >
+                    <Text style={styles.cancelText}>{cancelLabel}</Text>
+                  </Pressable>
+                  {/* Balances the timer so CANCEL sits centred in the bar. */}
+                  <View style={styles.statusSpacer} />
+                </View>
+
+                <Pressable
+                  onPress={onStop}
+                  accessibilityRole='button'
+                  accessibilityLabel='send video message'
+                  style={styles.sendButton}
+                >
+                  <SendIcon color='#fff' size={24} />
+                </Pressable>
+              </>
+            )
+            : (
+              <View style={styles.shutterRow} pointerEvents='box-none'>
+                <GestureDetector gesture={shutterGesture}>
+                  <Animated.View
+                    accessibilityRole='button'
+                    accessibilityState={{ disabled: isDisabled }}
+                    accessibilityLabel='start recording'
+                    style={[
+                      styles.recordButton,
+                      isDisabled && styles.recordButtonDisabled,
+                      isCancelArmed && styles.recordButtonCancelArmed,
+                      shutterStyle,
+                    ]}
+                  >
+                    <View style={styles.recordInner} />
+                  </Animated.View>
+                </GestureDetector>
+                <Text style={styles.hint}>{hint}</Text>
+              </View>
+            )}
+        </View>
+      </View>
     </View>
   )
 }
@@ -328,7 +404,31 @@ function useRecordingTimer (maxMs: number, onMax: () => void) {
     setIsRecording(false)
   }, [clear])
 
-  return { elapsed, isRecording, begin, end }
+  // Pausing freezes the clock; resuming shifts the start point forward by the
+  // paused span so the elapsed time still matches the recorded footage.
+  const pausedAtRef = useRef(0)
+
+  const pause = useCallback(() => {
+    pausedAtRef.current = Date.now()
+    clear()
+  }, [clear])
+
+  const resume = useCallback(() => {
+    if (pausedAtRef.current > 0) {
+      startedAtRef.current += Date.now() - pausedAtRef.current
+      pausedAtRef.current = 0
+    }
+
+    clear()
+    timerRef.current = setInterval(() => {
+      const ms = Date.now() - startedAtRef.current
+      setElapsed(ms)
+      if (ms >= maxMs)
+        onMaxRef.current()
+    }, 100)
+  }, [clear, maxMs])
+
+  return { elapsed, isRecording, begin, end, pause, resume }
 }
 
 /**
@@ -351,6 +451,7 @@ function UnavailableVideoNote ({ onClose }: { onClose: () => void }) {
       onCancel={onClose}
       onLock={() => {}}
       onClose={onClose}
+      cancelLabel={labels.cancel}
       hint={labels.noCamera}
       preview={(
         <View style={styles.placeholder}>
@@ -418,7 +519,7 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
 
   const stopRef = useRef<() => void>(() => {})
 
-  const { elapsed, isRecording, begin, end } = useRecordingTimer(maxMs, () => stopRef.current())
+  const { elapsed, isRecording, begin, end, pause, resume } = useRecordingTimer(maxMs, () => stopRef.current())
 
   const stopRecording = useCallback(async () => {
     end()
@@ -485,6 +586,8 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   // Locking mirrors the voice recorder: slide up while holding the shutter and
   // recording continues hands-free until Send or the trash is pressed.
   const [isLocked, setIsLocked] = useState(false)
+  const [isTorchOn, setIsTorchOn] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
 
   const onShutterStart = useCallback(() => {
     if (isRecording)
@@ -517,6 +620,30 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
     setFacing(current => (current === 'front' ? 'back' : 'front'))
   }, [])
 
+  const toggleTorch = useCallback(() => {
+    setIsTorchOn(current => !current)
+  }, [])
+
+  // vision-camera exposes pause/resume only on some versions; probe the ref
+  // rather than assume, so the control is hidden when it cannot work.
+  const canPause = typeof cameraRef.current?.pauseRecording === 'function'
+
+  const togglePause = useCallback(async () => {
+    try {
+      if (isPaused) {
+        await cameraRef.current?.resumeRecording?.()
+        setIsPaused(false)
+        resume()
+      } else {
+        await cameraRef.current?.pauseRecording?.()
+        setIsPaused(true)
+        pause()
+      }
+    } catch (error) {
+      config?.onError?.(error)
+    }
+  }, [isPaused, config, pause, resume])
+
   const hint = !canRecord
     ? (device ? labels.cameraPermission : labels.noCamera)
     : isLocked
@@ -538,12 +665,27 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
       onLock={() => setIsLocked(true)}
       onClose={abort}
       onFlipCamera={otherDevice ? flipCamera : undefined}
+      onToggleTorch={device?.hasTorch ? toggleTorch : undefined}
+      isTorchOn={isTorchOn}
+      onTogglePause={isRecording && canPause ? togglePause : undefined}
+      isPaused={isPaused}
+      cancelLabel={labels.cancel}
       hint={hint}
       preview={
         !device
           ? <Text style={styles.placeholderText}>{labels.noCamera}</Text>
           : hasPermission
-            ? <Camera ref={cameraRef} style={StyleSheet.absoluteFill} device={device} isActive video audio={microphone.hasPermission} />
+            ? (
+              <Camera
+                ref={cameraRef}
+                style={StyleSheet.absoluteFill}
+                device={device}
+                isActive
+                video
+                audio={microphone.hasPermission}
+                torch={isTorchOn ? 'on' : 'off'}
+              />
+            )
             : <Text style={styles.placeholderText}>{labels.cameraPermission}</Text>
       }
     />
@@ -551,22 +693,21 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
 }
 
 const styles = StyleSheet.create({
+  // Dim, not black: Telegram keeps the conversation visible behind the recorder.
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.92)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     alignItems: 'center',
     justifyContent: 'center',
+    // Reserve the control strip so the circle centres in the space above it
+    // rather than sitting under the shutter and the status bar.
+    paddingBottom: CONTROLS_HEIGHT,
   },
   ringWrapper: {
-    width: RING_BOX,
-    height: RING_BOX,
     alignItems: 'center',
     justifyContent: 'center',
   },
   round: {
-    width: ROUND_SIZE,
-    height: ROUND_SIZE,
-    borderRadius: ROUND_SIZE / 2,
     overflow: 'hidden',
     backgroundColor: '#111',
     alignItems: 'center',
@@ -584,41 +725,103 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 24,
   },
-  recordButtonDisabled: {
-    opacity: 0.4,
+  // Everything below the circle, pinned to the bottom of the screen.
+  controls: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 28,
+    gap: 12,
   },
-  // Slid past the cancel threshold: the shutter reads as destructive.
-  recordButtonCancelArmed: {
-    borderColor: '#E74C3C',
-  },
-  shutterRow: {
+  controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 24,
+    justifyContent: 'space-between',
   },
-  sideButton: {
-    width: 44,
-    height: 44,
+  // White pill holding the flip / flash controls.
+  utilityPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  utilityButton: {
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  flipButton: {
-    position: 'absolute',
-    top: 48,
-    left: 24,
-    width: 44,
-    height: 44,
+  utilityColor: {
+    color: '#1C1C1E',
+  },
+  pauseButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  timer: {
-    color: '#fff',
-    fontSize: 16,
-    marginTop: 24,
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  // Red dot + tenths timer + centred CANCEL, in one white bar.
+  statusBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    paddingHorizontal: 16,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  recDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#FF3B30',
+    marginRight: 10,
+  },
+  statusTime: {
+    width: 56,
+    fontSize: 15,
+    color: '#1C1C1E',
     fontVariant: ['tabular-nums'],
   },
+  cancelWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  cancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    color: '#3390EC',
+  },
+  // Mirrors `statusTime` so CANCEL is centred against the bar, not the free space.
+  statusSpacer: {
+    width: 56,
+  },
+  sendButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#3390EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Pre-recording state: the hold-to-record shutter and its hint.
+  shutterRow: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 12,
+  },
   recordButton: {
-    marginTop: 24,
     width: 72,
     height: 72,
     borderRadius: 36,
@@ -633,26 +836,26 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     backgroundColor: '#E74C3C',
   },
-  recordInnerStop: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: '#E74C3C',
+  recordButtonDisabled: {
+    opacity: 0.4,
+  },
+  // Slid past the cancel threshold: the shutter reads as destructive.
+  recordButtonCancelArmed: {
+    borderColor: '#E74C3C',
   },
   closeButton: {
     position: 'absolute',
-    top: 48,
-    right: 24,
-    width: 40,
-    height: 40,
+    top: 56,
+    right: 20,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   hint: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 24,
-    marginTop: 16,
   },
 })

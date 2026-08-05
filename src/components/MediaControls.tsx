@@ -320,6 +320,102 @@ export const LockIcon = ({ color = '#fff', size = 16 }: MediaIconProps) => {
   )
 }
 
+/** Camera-flip: a camera body with a circular arrow around it. */
+export const FlipCameraIcon = ({ color = '#fff', size = 22 }: MediaIconProps) => {
+  const styles = useMemo(() => createFlipStyles(color, size), [color, size])
+  return (
+    <View style={styles.wrapper}>
+      <View style={styles.ring} />
+      <View style={styles.arrow} />
+      <View style={styles.lens} />
+    </View>
+  )
+}
+
+/** A lightning bolt, drawn as two offset triangles. */
+export const FlashIcon = ({ color = '#fff', size = 22 }: MediaIconProps) => {
+  const styles = useMemo(() => createFlashStyles(color, size), [color, size])
+  return (
+    <View style={styles.wrapper}>
+      <View style={styles.top} />
+      <View style={styles.bottom} />
+    </View>
+  )
+}
+
+const createFlipStyles = (color: string, size: number) => {
+  const t = Math.max(1.5, Math.round(size * 0.09))
+  return StyleSheet.create({
+    wrapper: {
+      width: size,
+      height: size,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // Open ring: the gap plus the arrow head reads as "rotate".
+    ring: {
+      position: 'absolute',
+      width: size * 0.82,
+      height: size * 0.82,
+      borderRadius: size * 0.41,
+      borderWidth: t,
+      borderColor: color,
+      borderRightColor: 'transparent',
+    },
+    arrow: {
+      position: 'absolute',
+      top: size * 0.06,
+      right: size * 0.1,
+      width: 0,
+      height: 0,
+      borderLeftWidth: t * 1.6,
+      borderRightWidth: t * 1.6,
+      borderBottomWidth: t * 2.2,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderBottomColor: color,
+      transform: [{ rotate: '135deg' }],
+    },
+    lens: {
+      width: size * 0.26,
+      height: size * 0.26,
+      borderRadius: size * 0.13,
+      backgroundColor: color,
+    },
+  })
+}
+
+const createFlashStyles = (color: string, size: number) => StyleSheet.create({
+  wrapper: {
+    width: size,
+    height: size,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  top: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: size * 0.2,
+    borderRightWidth: size * 0.12,
+    borderBottomWidth: size * 0.4,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: color,
+    transform: [{ translateX: size * 0.04 }],
+  },
+  bottom: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: size * 0.12,
+    borderRightWidth: size * 0.2,
+    borderTopWidth: size * 0.4,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: color,
+    transform: [{ translateX: -size * 0.04 }],
+  },
+})
+
 /** A trash can (lid bar + body). */
 export const TrashIcon = ({ color = '#fff', size = 18 }: MediaIconProps) => {
   const styles = useMemo(() => createTrashStyles(color, size), [color, size])
