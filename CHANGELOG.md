@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-08-06
+
 ### ✨ Features
 - **Modern, Telegram-inspired redesign** of the default look: azure accent (replacing the old Messenger blue), softer 18px bubbles with grouped corners, inline 12px time with vector delivery ticks, rounded composer with an accent send-button, translucent day-separator pill, sender name at the top of a group, and a softened scroll-to-bottom button.
 - **Theme system + dark mode**: new `ChatTheme` with `colors` / `radii` / `spacing` / `typography` / `avatar` / `sendButton` tokens, plus `defaultLightTheme` / `defaultDarkTheme`. Override any subset via the `theme` and `darkTheme` props on `<Chat>`; the resolved theme is shared through context and switches at runtime with the color scheme. Explicit per-component style props still win.
@@ -24,6 +26,43 @@
 - **Reply/edit banner**: the reply preview is now a flush banner inside the bar (shared background + hairline) with a leading reply glyph, and supports an `edit` mode (pencil glyph) via `mode`.
 - New overridable icons: `emoji`, `paperclip`, `reply`, `pencil`, `lock`, `trash` (drawn fallbacks; override via the `icons` prop).
 - **Localization (i18n)** for UI strings: a `labels` prop on `<Chat>` overrides any string, and built-in translations ship for `en`/`es`/`fr`/`de`/`ru` (selected by the existing `locale` prop). All previously hardcoded strings (composer placeholder, send, cancel, load earlier, today, voice/video/location labels, slide-to-cancel, reply/edit banner, camera permission) now route through it. Exposed the `ChatLabels` type, `defaultLabels`, `translations`, `resolveLabels`, and the `useLabels` hook.
+- **Voice note playback, fully interactive**: drag-to-scrub and tap-to-seek on the waveform, a playback-speed pill (1x / 1.5x / 2x), a disabled control while the file decodes, and a bar count derived from the measured width instead of a fixed 40 (which overflowed its row). `IMessage.duration` labels a note before its file has decoded.
+- **Only one thing plays at a time**: a shared playback registry stops whatever else is playing when a voice note or round video note starts, the way Telegram behaves. Previously every bubble owned an independent player.
+- **Round video notes redesigned after Telegram**: sized from the screen rather than a fixed puck, with a circular progress ring, a duration + unwatched dot rendered under the circle on the chat background, a mute badge while silent, and a stop target while playing.
+- **Video note recorder redesigned after Telegram**: the conversation dims behind the recorder instead of being replaced by near-black, the preview fills most of the screen width, the progress arc is a thin white stroke with no track, camera flip and torch share a pill, a pause control appears mid-take, and the recording bar carries a red dot, an `m:ss,t` timer with tenths and a centred CANCEL beside a large send button.
+- **Hold-to-record video notes**: the shutter now uses the same three-way gesture as a voice note - hold to record, slide up to lock, slide left to cancel - so the muscle memory carries between the two recorders.
+- **One control for both recorders**: when voice and video are both enabled, a single tap swaps the right-slot control between mic and camera and a hold records, matching Telegram. The inset camera button inside the field is dropped in that case so there is only one camera entry point.
+- **Locked voice recording gets real controls**: a 44pt trash target and a live waveform driven by the microphone's metering, replacing the "Cancel" text link. The amplitude halo now tracks measured loudness instead of pulsing on a timer.
+- **`isMultiline`** on `<Chat>`: `true` (default) keeps the return key inserting a newline; `false` turns it into Send, which is what a single-line composer should do. The composer previously had no submit handler at all, so the return key could never send.
+- New `AudioRecordingProps` options - `maxDurationMs`, `onPermissionDenied`, `onTooShort` - and `VideoRecordingProps` gains `minDurationMs` and `onPermissionDenied`, so a denied permission or a discarded take is no longer silent.
+
+### 🐛 Bug Fixes
+Voice recorder:
+- **A quick tap left a recording nothing could stop.** `start` awaits three native calls, so a release could land before the recorder was live; `finish` then bailed and `start` went hot with no gesture in progress. Measured on a simulator: a 40ms tap produced a timer at 0:26 and climbing, with the composer replaced by the recording bar and no control on screen that ended it. The release is now remembered and applied once the recorder is actually running.
+- **A locked recording silently discarded the *next* take.** `onFinalize` returned early on the locked path, leaving the `cancelArmed` shared value latched, so the following motionless release read as "cancelled" and sent nothing with no explanation.
+- **The recorder was never stopped on unmount**, leaving the microphone hot (and the iOS recording indicator lit) after navigating away, with the toolbar stuck showing a frozen bar.
+- **The audio session was left in PlayAndRecord**, routing output to the receiver and muffling every voice note played after recording one.
+- **A refused microphone permission returned silently**, leaving a permanently dead button on iOS, which never re-prompts.
+- The lock pill's chevron pointed **down** while the lock gesture is up.
+
+Video note recorder:
+- **The shutter stayed live with no camera device**, so pressing it called `startRecording` on a null ref, threw, and dismissed the entire sheet with no message - what you get on any simulator.
+- **Closing mid-recording never stopped the camera.** vision-camera kept recording into an orphaned file and its completion callback could post the note the user had just cancelled.
+- The hint read **"Cancel" directly under a button that sends**.
+- **Removed the POC path** that sent a hardcoded, Google-hosted sample MP4 as the user's own video note whenever the native module was not linked.
+
+Playback:
+- **The waveform never worked.** `ctx.decodeAudioDataSource(uri)` does not exist in `react-native-audio-api` 0.13; every voice note threw during decode, was swallowed by the catch, and silently degraded to a tappable card. Now calls `decodeAudioData`, falling back to the old name for older versions.
+- **The play control was invisible on outgoing bubbles**: `colors.accent` and `colors.outgoingBubble` are the same azure in the default light theme, so the circle vanished into the bubble at 1:1 contrast. A shared, position-aware media palette now inverts the control on the sender's side.
+- **A round note's timestamp and ticks rendered white on the light chat background**, because the note strips its bubble background while the meta row kept the outgoing palette.
+- **Pausing a voice note rewound it to 0:00** - `source.stop()` also fires `ended`, so pause ran the completion handler.
+- **Round notes autoplayed muted on a loop from mount**, so every note in a list played at once and none could ever be heard. They now hold their first frame and play with sound on tap.
+- **Incoming round notes were pinned to the right edge** by a hardcoded `alignSelf`.
+
+Chat and composer:
+- **The input toolbar could sit behind the keyboard.** `useKeyboardVerticalOffset` read the nearest `SafeAreaProvider` frame, but react-native-safe-area-context seeds a nested provider from its parent - so with an app-level provider (the documented setup, and what expo-router does) the offset stayed 0 however far down the screen the chat started. It is now measured from the chat container itself with `measureInWindow`.
+- **Every chat mount visibly jumped.** The same nested-provider seeding made the toolbar render once with the window's insets and again with the measured ones - bottom 34 -> 0 on an iPhone. Chat's provider is now seeded with zero insets, so the first frame matches what a chat inside a navigator settles on.
+- **The composer never grew with its content** - not on a newline, and not on wrapping text either. It sized itself from `onContentSizeChange` into an explicit height with `scrollEnabled` false until already at maximum, and the two conditions deadlocked: the handler fired once at mount and never again. It now auto-sizes between `minHeight` and `maxHeight`.
 
 ### ⚠️ Breaking / Migration
 - **Removed `@expo/react-native-action-sheet` as a dependency.** The library no longer bundles or wraps an action sheet. The `actionSheet` prop and `context.actionSheet()` remain as an escape hatch but default to a no-op - if you relied on the built-in action sheet (e.g. calling `context.actionSheet()` in a custom `onLongPressMessage`), either pass your own `actionSheet` implementation (install `@expo/react-native-action-sheet` yourself and wrap your tree in `ActionSheetProvider`) or adopt the new `messageActions` context menu. The composer "+" actions need no change - they now use the built-in themed `AttachmentSheet`.
@@ -43,6 +82,9 @@
 
 ### 📦 Dependencies
 - Added optional `peerDependencies` (all gated by `peerDependenciesMeta.optional`, nothing is required): `expo-video`, `expo-audio`, `expo-image-picker`, `react-native-audio-api`, `react-native-vision-camera`, `react-native-streamdown`, `react-native-svg` (used for the Lucide send glyph; falls back to a drawn icon when absent).
+
+### 📦 Dependencies (example app)
+- The example app moves to **Expo SDK 57** (React Native 0.86.2, React 19.2.3, gesture-handler 2.32, reanimated 4.5.3, worklets 0.10.3), and the library's own toolchain now mirrors it rather than drifting behind. Adds `react-native-audio-api` so the waveform path is actually exercised.
 
 ### 🛠️ Tooling
 - Migrated the library and the example app to **Yarn 4** (corepack-driven `packageManager`, `nodeLinker: node-modules`, Berry lockfiles). CI now enables corepack and uses `yarn install --immutable`.
