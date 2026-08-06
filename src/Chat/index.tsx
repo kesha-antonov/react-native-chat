@@ -15,12 +15,11 @@ import dayjs from 'dayjs'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { TEST_ID } from '../Constant'
 import { normalizeColorScheme } from '../hooks/useColorScheme'
 import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
-import { useHasSafeAreaProvider } from '../hooks/useHasSafeAreaProvider'
 import { useKeyboardVerticalOffset } from '../hooks/useKeyboardVerticalOffset'
 import { resolveLabels } from '../i18n'
 import { InputToolbar } from '../InputToolbar'
@@ -34,6 +33,12 @@ import styles from './styles'
 import { ChatProps } from './types'
 
 dayjs.extend(localizedFormat)
+
+/** Seed for Chat's own SafeAreaProvider - real frame, but no insets claimed yet. */
+const INITIAL_SAFE_AREA_METRICS = {
+  frame: initialWindowMetrics?.frame ?? { x: 0, y: 0, width: 0, height: 0 },
+  insets: { top: 0, left: 0, right: 0, bottom: 0 },
+}
 
 function Chat<TMessage extends IMessage = IMessage> (
   props: ChatProps<TMessage>
@@ -383,11 +388,6 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
   // Apps are meant to mount `KeyboardProvider` once, at the root. Nesting a second one
   // breaks keyboard handling on Android, so we only provide one when the app has none.
   const hasKeyboardProvider = useHasKeyboardProvider()
-  // Apps normally mount `SafeAreaProvider` once at the root. Nesting a second one
-  // makes every chat mount visibly jump: the nested provider renders first with the
-  // parent's insets and only then with its own measured ones.
-  const hasSafeAreaProvider = useHasSafeAreaProvider()
-
   const chat = <Chat<TMessage> {...rest} />
 
   const withKeyboardProvider = (
@@ -412,9 +412,22 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
 
   return (
     <GestureHandlerRootView style={styles.fill}>
-      {hasSafeAreaProvider
-        ? withKeyboardProvider
-        : <SafeAreaProvider>{withKeyboardProvider}</SafeAreaProvider>}
+      {/*
+        Chat measures its *own* insets rather than reusing the app's. Reusing them
+        double-pads: a navigator has usually already inset the screen, so the
+        window's bottom inset is consumed before the chat even renders.
+
+        The provider is seeded with zero insets on purpose. Without `initialMetrics`
+        react-native-safe-area-context seeds a nested provider from its parent, so
+        the first frame used the window's insets and the second the measured ones -
+        bottom 34 -> 0 on an iPhone, which is the jump you see on every mount.
+        Seeding zero matches what a chat inside a navigator settles on, so nothing
+        moves; a genuinely full-screen chat grows into its inset on the next frame
+        instead of collapsing out of one.
+      */}
+      <SafeAreaProvider initialMetrics={INITIAL_SAFE_AREA_METRICS}>
+        {withKeyboardProvider}
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   )
 }
