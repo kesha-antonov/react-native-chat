@@ -25,6 +25,13 @@
   </a>
 </p>
 
+<p align="center">
+  <strong>Coming from <code>react-native-gifted-chat</code>?</strong> This is a drop-in replacement -
+  same <code>IMessage</code>, same props, a few renamed exports.
+  <br/>
+  <a href="docs/MIGRATION.md">Migrate in one command with the codemod →</a>
+</p>
+
 > 🚧 **v4.3.0 is in active development (WIP)** on the [`4.3.0`](https://github.com/kesha-antonov/react-native-chat/tree/4.3.0) branch - a Telegram-inspired redesign with a theme system + dark mode, localization (i18n), an icon override registry, Telegram-style voice notes, round video notes, location/media messages, markdown replies, and a long-press context menu. See that branch for the latest work.
 
 ---
