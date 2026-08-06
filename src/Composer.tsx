@@ -9,12 +9,28 @@ import { TextInput } from 'react-native-gesture-handler'
 import { useColorScheme } from './hooks/useColorScheme'
 import { useLabels } from './hooks/useLabels'
 import { useTheme, useThemedStyles } from './hooks/useTheme'
+import { IMessage } from './Models'
 import { ChatTheme } from './Theme'
 
 export interface ComposerProps {
   composerHeight?: number
   text?: string
   textInputProps?: Partial<TextInputProps>
+  /**
+   * Whether the field accepts multiple lines.
+   *
+   * `true` (default) keeps the return key inserting a newline - send with the
+   * send button. `false` turns the return key into Send, which is what a
+   * single-line composer should do. Previously the field was always multiline
+   * with no submit handler, so the return key could never send at all.
+   */
+  isMultiline?: boolean
+  /** Allow sending an empty message (media-only sends). */
+  isTextOptional?: boolean
+  onSend?(
+    messages: Partial<IMessage> | Partial<IMessage>[],
+    shouldResetInputToolbar: boolean,
+  ): void
 }
 
 // Static text-input metrics. lineHeight matches typography.message.lineHeight
@@ -29,6 +45,9 @@ const TEXT_INPUT_METRICS = {
 export function Composer ({
   text = '',
   textInputProps,
+  isMultiline = true,
+  isTextOptional = false,
+  onSend,
 }: ComposerProps): React.ReactElement {
   const colorScheme = useColorScheme()
   const theme = useTheme()
@@ -62,6 +81,14 @@ export function Composer ({
 
   const atMax = height >= maxHeight
 
+  // Single-line mode: the return key sends, mirroring the send button exactly.
+  const handleSubmitEditing = useCallback(() => {
+    const trimmedText = text.trim()
+
+    if (onSend && (trimmedText.length || isTextOptional))
+      onSend({ text: trimmedText } as Partial<IMessage>, true)
+  }, [text, onSend, isTextOptional])
+
   return (
     <View style={styles.field}>
       <TextInput
@@ -73,10 +100,18 @@ export function Composer ({
         enablesReturnKeyAutomatically
         underlineColorAndroid='transparent'
         keyboardAppearance={isDark ? 'dark' : 'default'}
-        multiline
+        multiline={isMultiline}
         scrollEnabled={atMax}
         placeholder={placeholder}
         onContentSizeChange={handleContentSizeChange}
+        {...(isMultiline
+          ? null
+          : {
+            returnKeyType: 'send' as const,
+            onSubmitEditing: handleSubmitEditing,
+            // Keep the keyboard up after sending, the way a chat should behave.
+            submitBehavior: 'submit' as const,
+          })}
         {...textInputProps}
         style={[styles.textInput, stylesWeb.textInput, { height }, textInputProps?.style]}
       />

@@ -68,6 +68,11 @@ export interface InputToolbarProps<TMessage extends IMessage> {
   text?: string
   /** Show an emoji button inset on the left of the field; called on press. */
   onPressEmoji?: () => void
+  /**
+   * Whether the composer accepts multiple lines. `true` (default) keeps the
+   * return key inserting a newline; `false` turns it into Send.
+   */
+  isMultiline?: boolean
 }
 
 type OnSend<TMessage extends IMessage> = (

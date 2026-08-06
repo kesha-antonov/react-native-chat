@@ -196,6 +196,11 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   isMessageGestureEnabled?: boolean | ((message: TMessage) => boolean)
   /** Show an emoji button inset on the left of the composer field; called on press */
   onPressEmoji?: () => void
+  /**
+   * Whether the composer accepts multiple lines. `true` (default) keeps the
+   * return key inserting a newline; `false` turns it into Send.
+   */
+  isMultiline?: boolean
   /** Telegram-style hold-to-record voice messages (needs optional expo-audio) */
   audioRecording?: AudioRecordingProps
   /** Record-and-send video messages from the camera (needs optional expo-image-picker) */

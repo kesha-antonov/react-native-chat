@@ -386,6 +386,7 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`initialText`** _(String)_ - Initial text to display in the input field
 - **`isSendButtonAlwaysVisible`** _(Bool)_ - Always show send button in input text composer; default `false`, show only when text input is not empty
 - **`isTextOptional`** _(Bool)_ - Allow sending messages without text (useful for media-only messages); default `false`. Use with `isSendButtonAlwaysVisible` for media attachments.
+- **`isMultiline`** _(Bool)_ - Whether the composer accepts multiple lines; default `true`. With `true` the return key inserts a newline and you send with the send button. Set `false` for a single-line composer whose **return key sends the message** (the keyboard's return key becomes "send" and stays open afterwards).
 - **`renderInputToolbar`** _(Component | Function)_ - Custom message composer container
 - **`renderComposer`** _(Component | Function)_ - Custom text input message composer
 - **`renderSend`** _(Component | Function)_ - Custom send button; you can pass children to the original `Send` component quite easily, for example, to use a custom icon ([example](https://github.com/kesha-antonov/react-native-chat/pull/487))
