@@ -65,12 +65,10 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
           handlerType="NativeViewGestureHandler"
           keyboardAppearance="default"
           multiline={true}
-          onContentSizeChange={[Function]}
           onGestureHandlerEvent={[Function]}
           onGestureHandlerStateChange={[Function]}
           placeholder="Type a message..."
           placeholderTextColor="#8E8E93"
-          scrollEnabled={false}
           style={
             [
               {
@@ -85,7 +83,8 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
                 "outlineStyle": "none",
               },
               {
-                "height": 44,
+                "maxHeight": 120,
+                "minHeight": 44,
               },
               undefined,
             ]

@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback } from 'react'
 import {
   StyleSheet,
-  TextInputContentSizeChangeEvent,
   TextInputProps,
   View,
 } from 'react-native'
@@ -62,25 +61,6 @@ export function Composer ({
   // padding); it grows from there up to maxHeight.
   const ONE_LINE = theme.composer.minHeight
 
-  const [height, setHeight] = useState<number>(ONE_LINE)
-
-  // Grow with content up to maxHeight, then scroll internally. Works on native
-  // (previously only web capped growth), so a long paste no longer pushes the
-  // whole bar up the screen.
-  const handleContentSizeChange = useCallback((e: TextInputContentSizeChangeEvent) => {
-    const contentHeight = e.nativeEvent.contentSize.height
-    setHeight(Math.min(maxHeight, Math.max(ONE_LINE, contentHeight)))
-  }, [maxHeight, ONE_LINE])
-
-  // Reset to a single line once the text is cleared (e.g. after sending), so the
-  // field doesn't stay expanded at the height of the previous multiline message.
-  useEffect(() => {
-    if (text.length === 0)
-      setHeight(ONE_LINE)
-  }, [text, ONE_LINE])
-
-  const atMax = height >= maxHeight
-
   // Single-line mode: the return key sends, mirroring the send button exactly.
   const handleSubmitEditing = useCallback(() => {
     const trimmedText = text.trim()
@@ -101,9 +81,7 @@ export function Composer ({
         underlineColorAndroid='transparent'
         keyboardAppearance={isDark ? 'dark' : 'default'}
         multiline={isMultiline}
-        scrollEnabled={atMax}
         placeholder={placeholder}
-        onContentSizeChange={handleContentSizeChange}
         {...(isMultiline
           ? null
           : {
@@ -113,7 +91,12 @@ export function Composer ({
             submitBehavior: 'submit' as const,
           })}
         {...textInputProps}
-        style={[styles.textInput, stylesWeb.textInput, { height }, textInputProps?.style]}
+        style={[
+          styles.textInput,
+          stylesWeb.textInput,
+          { minHeight: ONE_LINE, maxHeight },
+          textInputProps?.style,
+        ]}
       />
     </View>
   )
