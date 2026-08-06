@@ -18,6 +18,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { TEST_ID } from '../Constant'
+import { normalizeColorScheme } from '../hooks/useColorScheme'
 import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
 import { useHasSafeAreaProvider } from '../hooks/useHasSafeAreaProvider'
 import { useKeyboardVerticalOffset } from '../hooks/useKeyboardVerticalOffset'
@@ -75,7 +76,10 @@ function Chat<TMessage extends IMessage = IMessage> (
   const replyPreviewTextStyle = reply?.previewStyle?.textStyle
 
   const systemColorScheme = useColorScheme()
-  const colorScheme = colorSchemeProp !== undefined ? colorSchemeProp : systemColorScheme
+  // RN 0.86 can report 'unspecified'; normalize it away before it reaches the theme.
+  const colorScheme = normalizeColorScheme(
+    colorSchemeProp !== undefined ? colorSchemeProp : systemColorScheme
+  )
 
   // Resolve the theme once per change so its identity is stable; this is what
   // makes on-the-fly theme / color-scheme switching propagate to every memoized

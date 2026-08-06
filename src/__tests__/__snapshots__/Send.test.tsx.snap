@@ -42,8 +42,71 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
     onResponderTerminate={[Function]}
     onResponderTerminationRequest={[Function]}
     onStartShouldSetResponder={[Function]}
+    style={
+      [
+        {
+          "justifyContent": "center",
+        },
+        {
+          "opacity": 1,
+        },
+        {
+          "pointerEvents": "none",
+        },
+      ]
+    }
     testID="GC_SEND_TOUCHABLE"
-  />
+  >
+    <View
+      style={
+        [
+          {
+            "alignItems": "center",
+            "backgroundColor": "#3390EC",
+            "borderRadius": 18,
+            "height": 36,
+            "justifyContent": "center",
+            "width": 36,
+          },
+          {
+            "backgroundColor": "#8E8E93",
+          },
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "height": 18,
+            "justifyContent": "center",
+            "transform": [
+              {
+                "rotate": "-45deg",
+              },
+            ],
+            "width": 18,
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "borderBottomColor": "transparent",
+              "borderBottomWidth": 7.38,
+              "borderLeftColor": "#fff",
+              "borderLeftWidth": 14.76,
+              "borderTopColor": "transparent",
+              "borderTopWidth": 7.38,
+              "height": 0,
+              "marginLeft": 2.88,
+              "width": 0,
+            }
+          }
+        />
+      </View>
+    </View>
+  </View>
 </View>
 `;
 
@@ -89,8 +152,71 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
     onResponderTerminate={[Function]}
     onResponderTerminationRequest={[Function]}
     onStartShouldSetResponder={[Function]}
+    style={
+      [
+        {
+          "justifyContent": "center",
+        },
+        {
+          "opacity": 1,
+        },
+        {
+          "pointerEvents": "none",
+        },
+      ]
+    }
     testID="GC_SEND_TOUCHABLE"
-  />
+  >
+    <View
+      style={
+        [
+          {
+            "alignItems": "center",
+            "backgroundColor": "#3390EC",
+            "borderRadius": 18,
+            "height": 36,
+            "justifyContent": "center",
+            "width": 36,
+          },
+          {
+            "backgroundColor": "#8E8E93",
+          },
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "height": 18,
+            "justifyContent": "center",
+            "transform": [
+              {
+                "rotate": "-45deg",
+              },
+            ],
+            "width": 18,
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "borderBottomColor": "transparent",
+              "borderBottomWidth": 7.38,
+              "borderLeftColor": "#fff",
+              "borderLeftWidth": 14.76,
+              "borderTopColor": "transparent",
+              "borderTopWidth": 7.38,
+              "height": 0,
+              "marginLeft": 2.88,
+              "width": 0,
+            }
+          }
+        />
+      </View>
+    </View>
+  </View>
 </View>
 `;
 
@@ -136,7 +262,68 @@ exports[`Send should render <Send /> where there is input and compare with snaps
     onResponderTerminate={[Function]}
     onResponderTerminationRequest={[Function]}
     onStartShouldSetResponder={[Function]}
+    style={
+      [
+        {
+          "justifyContent": "center",
+        },
+        {
+          "opacity": 1,
+        },
+        {
+          "pointerEvents": "none",
+        },
+      ]
+    }
     testID="GC_SEND_TOUCHABLE"
-  />
+  >
+    <View
+      style={
+        [
+          {
+            "alignItems": "center",
+            "backgroundColor": "#3390EC",
+            "borderRadius": 18,
+            "height": 36,
+            "justifyContent": "center",
+            "width": 36,
+          },
+          false,
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "height": 18,
+            "justifyContent": "center",
+            "transform": [
+              {
+                "rotate": "-45deg",
+              },
+            ],
+            "width": 18,
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "borderBottomColor": "transparent",
+              "borderBottomWidth": 7.38,
+              "borderLeftColor": "#fff",
+              "borderLeftWidth": 14.76,
+              "borderTopColor": "transparent",
+              "borderTopWidth": 7.38,
+              "height": 0,
+              "marginLeft": 2.88,
+              "width": 0,
+            }
+          }
+        />
+      </View>
+    </View>
+  </View>
 </View>
 `;

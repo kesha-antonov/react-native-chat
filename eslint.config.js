@@ -198,11 +198,14 @@ export default [
             ['parent', 'sibling'],
             'index',
           ],
-          customGroups: {
-            value: {
-              react: ['^react$', '^react-native$'],
+          // perfectionist v5 takes customGroups as an array of group definitions;
+          // the v4 `{ value: { name: [...] } }` object form is rejected outright.
+          customGroups: [
+            {
+              groupName: 'react',
+              elementNamePattern: ['^react$', '^react-native$'],
             },
-          },
+          ],
           newlinesBetween: 'ignore',
         },
       ],
@@ -374,11 +377,14 @@ export default [
             ['parent', 'sibling'],
             'index',
           ],
-          customGroups: {
-            value: {
-              react: ['^react$', '^react-native$'],
+          // perfectionist v5 takes customGroups as an array of group definitions;
+          // the v4 `{ value: { name: [...] } }` object form is rejected outright.
+          customGroups: [
+            {
+              groupName: 'react',
+              elementNamePattern: ['^react$', '^react-native$'],
             },
-          },
+          ],
           newlinesBetween: 'ignore',
         },
       ],
