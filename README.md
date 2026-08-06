@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/4.3.0/media/streaming-demo.gif" alt="Streaming AI reply rendering markdown token by token" />
+  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/streaming-demo.gif" alt="Streaming AI reply rendering markdown token by token" />
 </p>
 
 <p align="center">
@@ -31,8 +31,6 @@
   <br/>
   <a href="docs/MIGRATION.md">Migrate in one command with the codemod →</a>
 </p>
-
-> 🚧 **v4.3.0 is in active development (WIP)** on the [`4.3.0`](https://github.com/kesha-antonov/react-native-chat/tree/4.3.0) branch - a Telegram-inspired redesign with a theme system + dark mode, localization (i18n), an icon override registry, Telegram-style voice notes, round video notes, location/media messages, markdown replies, and a long-press context menu. See that branch for the latest work.
 
 ---
 
