@@ -19,6 +19,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { TEST_ID } from '../Constant'
 import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
+import { useHasSafeAreaProvider } from '../hooks/useHasSafeAreaProvider'
 import { useKeyboardVerticalOffset } from '../hooks/useKeyboardVerticalOffset'
 import { resolveLabels } from '../i18n'
 import { InputToolbar } from '../InputToolbar'
@@ -378,28 +379,38 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
   // Apps are meant to mount `KeyboardProvider` once, at the root. Nesting a second one
   // breaks keyboard handling on Android, so we only provide one when the app has none.
   const hasKeyboardProvider = useHasKeyboardProvider()
+  // Apps normally mount `SafeAreaProvider` once at the root. Nesting a second one
+  // makes every chat mount visibly jump: the nested provider renders first with the
+  // parent's insets and only then with its own measured ones.
+  const hasSafeAreaProvider = useHasSafeAreaProvider()
 
   const chat = <Chat<TMessage> {...rest} />
 
+  const withKeyboardProvider = (
+    <>
+      {disableKeyboardProvider || hasKeyboardProvider
+        ? chat
+        : (
+      // No `statusBarTranslucent` / `navigationBarTranslucent` here on purpose.
+      // On Android those tell the provider that the app already draws behind the
+      // system bars, and it answers by zeroing the *activity* content view's
+      // margins - a window-level change it never undoes, so a chat screen would
+      // leave the whole app under the navigation bar after you navigate away
+      // (#2755). react-native-keyboard-controller turns both on by itself when
+      // the app really is edge-to-edge, so forcing them only ever mismatches a
+      // window that is not. Override via `keyboardProviderProps` if needed.
+          <KeyboardProvider {...keyboardProviderProps}>
+            {chat}
+          </KeyboardProvider>
+        )}
+    </>
+  )
+
   return (
     <GestureHandlerRootView style={styles.fill}>
-      <SafeAreaProvider>
-        {disableKeyboardProvider || hasKeyboardProvider
-          ? chat
-          : (
-            // No `statusBarTranslucent` / `navigationBarTranslucent` here on purpose.
-            // On Android those tell the provider that the app already draws behind the
-            // system bars, and it answers by zeroing the *activity* content view's
-            // margins - a window-level change it never undoes, so a chat screen would
-            // leave the whole app under the navigation bar after you navigate away
-            // (#2755). react-native-keyboard-controller turns both on by itself when
-            // the app really is edge-to-edge, so forcing them only ever mismatches a
-            // window that is not. Override via `keyboardProviderProps` if needed.
-            <KeyboardProvider {...keyboardProviderProps}>
-              {chat}
-            </KeyboardProvider>
-          )}
-      </SafeAreaProvider>
+      {hasSafeAreaProvider
+        ? withKeyboardProvider
+        : <SafeAreaProvider>{withKeyboardProvider}</SafeAreaProvider>}
     </GestureHandlerRootView>
   )
 }

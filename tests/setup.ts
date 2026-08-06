@@ -7,15 +7,21 @@ jest.mock('react-native-reanimated', () =>
 )
 
 jest.mock('react-native-safe-area-context', () => {
+  const React = require('react')
   const inset = { top: 0, right: 0, bottom: 0, left: 0 }
+
+  // A real context, defaulting to `null` exactly as the library does when no
+  // provider is mounted - Chat's provider detection reads it directly, so a
+  // plain stub object would make that check untestable.
+  const SafeAreaInsetsContext = React.createContext(null)
+
   return {
     // Marks the mock as an ES module so `import * as` hands tests the very object the
     // source imports from, rather than a copy Babel's interop would spy on in vain.
     __esModule: true,
-    SafeAreaProvider: ({ children }: any) => children,
-    SafeAreaInsetsContext: {
-      Consumer: ({ children }: any) => children(inset),
-    },
+    SafeAreaProvider: ({ children }: any) =>
+      React.createElement(SafeAreaInsetsContext.Provider, { value: inset }, children),
+    SafeAreaInsetsContext,
     useSafeAreaInsets: () => inset,
     useSafeAreaFrame: () => ({ x: 0, y: 0, width: 390, height: 844 }),
   }
