@@ -16,6 +16,10 @@
 </p>
 
 <p align="center">
+  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/4.3.0/media/streaming-demo.gif" alt="Streaming AI reply rendering markdown token by token" />
+</p>
+
+<p align="center">
   <a href="https://snack.expo.dev/@kesha-antonov/react-native-chat-playground" target="_blank">
     <img src="https://img.shields.io/badge/▶️_Try_in_Browser-4630EB?style=for-the-badge&logo=expo&logoColor=white" alt="Try Chat on Expo Snack"/>
   </a>
