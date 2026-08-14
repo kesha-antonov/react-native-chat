@@ -382,12 +382,22 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
   const {
     keyboardProviderProps,
     disableKeyboardProvider = false,
+    disableGestureHandlerRootView = false,
     ...rest
   } = props
 
   // Apps are meant to mount `KeyboardProvider` once, at the root. Nesting a second one
   // breaks keyboard handling on Android, so we only provide one when the app has none.
-  const hasKeyboardProvider = useHasKeyboardProvider()
+  //
+  // Locked in on mount rather than read fresh every render: Chat is often portaled in
+  // and out of the tree (a bottom sheet, a conditional screen), and if this ever flipped
+  // on a later render, `chat` below would move from being a direct child of the fragment
+  // to a child of `KeyboardProvider` (or back) - a structural change React can only handle
+  // by unmounting and remounting the whole subtree. That kind of surprise remount, with a
+  // shared element reused across both branches, is exactly the shape of hazard reported in
+  // #17 alongside a rare Fabric/Yoga layout assertion; locking the choice removes it even
+  // though it wasn't confirmed as that bug's root cause.
+  const [hasKeyboardProvider] = useState(useHasKeyboardProvider())
   const chat = <Chat<TMessage> {...rest} />
 
   const withKeyboardProvider = (
@@ -410,24 +420,35 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
     </>
   )
 
+  const content = (
+    // Chat measures its *own* insets rather than reusing the app's. Reusing them
+    // double-pads: a navigator has usually already inset the screen, so the
+    // window's bottom inset is consumed before the chat even renders.
+    //
+    // The provider is seeded with zero insets on purpose. Without `initialMetrics`
+    // react-native-safe-area-context seeds a nested provider from its parent, so
+    // the first frame used the window's insets and the second the measured ones -
+    // bottom 34 -> 0 on an iPhone, which is the jump you see on every mount.
+    // Seeding zero matches what a chat inside a navigator settles on, so nothing
+    // moves; a genuinely full-screen chat grows into its inset on the next frame
+    // instead of collapsing out of one.
+    <SafeAreaProvider initialMetrics={INITIAL_SAFE_AREA_METRICS}>
+      {withKeyboardProvider}
+    </SafeAreaProvider>
+  )
+
+  // Apps are meant to mount `GestureHandlerRootView` once, at the root, same as
+  // `KeyboardProvider` above - a nested one changes the native view hierarchy around
+  // the composer for no benefit. Unlike `KeyboardProvider`, this can't be auto-detected:
+  // `react-native-gesture-handler` doesn't publicly expose whether one is already
+  // mounted above, so an app that has its own (directly, or via something like a bottom
+  // sheet library) needs to opt out explicitly.
+  if (disableGestureHandlerRootView)
+    return <View style={styles.fill}>{content}</View>
+
   return (
     <GestureHandlerRootView style={styles.fill}>
-      {/*
-        Chat measures its *own* insets rather than reusing the app's. Reusing them
-        double-pads: a navigator has usually already inset the screen, so the
-        window's bottom inset is consumed before the chat even renders.
-
-        The provider is seeded with zero insets on purpose. Without `initialMetrics`
-        react-native-safe-area-context seeds a nested provider from its parent, so
-        the first frame used the window's insets and the second the measured ones -
-        bottom 34 -> 0 on an iPhone, which is the jump you see on every mount.
-        Seeding zero matches what a chat inside a navigator settles on, so nothing
-        moves; a genuinely full-screen chat grows into its inset on the next frame
-        instead of collapsing out of one.
-      */}
-      <SafeAreaProvider initialMetrics={INITIAL_SAFE_AREA_METRICS}>
-        {withKeyboardProvider}
-      </SafeAreaProvider>
+      {content}
     </GestureHandlerRootView>
   )
 }

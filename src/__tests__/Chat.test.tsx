@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardContext } from 'react-native-keyboard-controller'
 import * as SafeAreaContext from 'react-native-safe-area-context'
 
@@ -201,4 +202,28 @@ it('still lets `keyboardProviderProps` set the translucency explicitly', () => {
 
   expect(provider.props.statusBarTranslucent).toBe(true)
   expect(provider.props.navigationBarTranslucent).toBe(true)
+})
+
+it('mounts its own GestureHandlerRootView when the app has none', () => {
+  const { UNSAFE_getAllByType } = render(
+    <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />
+  )
+
+  expect(UNSAFE_getAllByType(GestureHandlerRootView)).toHaveLength(1)
+})
+
+it('skips the GestureHandlerRootView when `disableGestureHandlerRootView` is set (#17)', () => {
+  // An app that already mounts its own (directly, or via something like a bottom sheet
+  // library) can't be auto-detected the way `KeyboardProvider` is - gesture-handler
+  // doesn't expose that publicly - so this has to be an explicit opt-out.
+  const { UNSAFE_queryAllByType } = render(
+    <Chat
+      messages={messages}
+      onSend={() => {}}
+      user={{ _id: 1 }}
+      disableGestureHandlerRootView
+    />
+  )
+
+  expect(UNSAFE_queryAllByType(GestureHandlerRootView)).toHaveLength(0)
 })

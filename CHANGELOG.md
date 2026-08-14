@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### 🐛 Fixes
+- **New `disableGestureHandlerRootView` prop** to skip the `GestureHandlerRootView` Chat mounts around itself, for apps that already mount one (directly, or via something like a bottom sheet library). A nested one can't be auto-detected the way `KeyboardProvider` is - `react-native-gesture-handler` doesn't expose that publicly - so this is an explicit opt-out. Reported alongside a rare Fabric/Yoga layout assertion on iOS that gets more likely with a nested root view ([#17](https://github.com/kesha-antonov/react-native-chat/issues/17)).
+- Locked in the "reuse the app's `KeyboardProvider`?" decision on mount instead of re-reading it every render, so `Chat` can no longer be re-parented between a `KeyboardProvider` and a bare fragment mid-lifetime - a structural change React can only handle by unmounting and remounting the whole subtree ([#17](https://github.com/kesha-antonov/react-native-chat/issues/17)).
+
 ## [4.3.0] - 2026-08-06
 
 ### ✨ Features

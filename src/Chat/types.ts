@@ -174,6 +174,16 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   disableKeyboardProvider?: boolean
   /** Props for KeyboardAvoidingView. Use `keyboardVerticalOffset` to account for headers or iOS predictive text bar (~44pt). */
   keyboardAvoidingViewProps?: KeyboardAvoidingViewProps
+  /**
+   * Skip the `GestureHandlerRootView` Chat mounts around itself. Unlike
+   * `KeyboardProvider`, an existing `GestureHandlerRootView` can't be detected from
+   * here - `react-native-gesture-handler` doesn't expose that publicly - so enable
+   * this yourself when your app (or a library it uses, e.g. a bottom sheet) already
+   * mounts one at the root. Nesting a second one is not just redundant: it changes
+   * the native view hierarchy around the composer, which has been observed to make
+   * a rare Fabric/Yoga layout assertion on iOS more likely (#17). Default is `false`.
+   */
+  disableGestureHandlerRootView?: boolean
   /** Enable animated day label that appears on scroll; default is true */
   isDayAnimationEnabled?: boolean
 
