@@ -7,6 +7,9 @@
 - Locked in the "reuse the app's `KeyboardProvider`?" decision on mount instead of re-reading it every render, so `Chat` can no longer be re-parented between a `KeyboardProvider` and a bare fragment mid-lifetime - a structural change React can only handle by unmounting and remounting the whole subtree ([#17](https://github.com/kesha-antonov/react-native-chat/issues/17)).
 - The input toolbar no longer briefly renders at offset 0 when the chat mounts with the keyboard already up and isn't full-screen (e.g. below a navigation header). It now stays hidden until the real on-screen position has been measured, instead of revealing as soon as the layout event that kicked off that measurement fires ([#12](https://github.com/kesha-antonov/react-native-chat/issues/12)).
 
+### 🔧 Deprecations
+- **`minComposerHeight`, `maxComposerHeight`, `minInputToolbarHeight`** are now marked `@deprecated`. None of the three has ever been read anywhere - they're vestigial from `react-native-gifted-chat` - so setting them has always silently done nothing. Use `textInputProps.style` to constrain the composer instead. They'll be removed in `5.0.0` ([#14](https://github.com/kesha-antonov/react-native-chat/issues/14)).
+
 ## [4.3.0] - 2026-08-06
 
 ### ✨ Features

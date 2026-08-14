@@ -78,7 +78,11 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   isAvatarOnTop?: boolean
   /* Extra props to be passed to the <Image> component created by the default renderMessageImage */
   imageProps?: MessageImageProps<TMessage>
-  /* Minimum height of the input toolbar; default is 44 */
+  /**
+   * @deprecated Not read anywhere - the input toolbar has no height floor. Use
+   * `textInputProps.style` to constrain the composer instead. Will be removed
+   * in 5.0.0. See https://github.com/kesha-antonov/react-native-chat/issues/14
+   */
   minInputToolbarHeight?: number
   /*  Extra props to be passed to the <TextInput>. See https://reactnative.dev/docs/textinput */
   textInputProps?: Partial<React.ComponentProps<typeof TextInput>>
@@ -86,9 +90,18 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   isSendButtonAlwaysVisible?: boolean
   /* Image style */
   imageStyle?: StyleProp<ViewStyle>
-  /* composer min Height */
+  /**
+   * @deprecated Not read anywhere - `Composer` derives its minimum from its own
+   * stylesheet and grows via `onContentSizeChange`. Use `textInputProps.style`
+   * to constrain the composer instead. Will be removed in 5.0.0.
+   * See https://github.com/kesha-antonov/react-native-chat/issues/14
+   */
   minComposerHeight?: number
-  /* composer min Height */
+  /**
+   * @deprecated Not read anywhere. Use `textInputProps.style` to constrain the
+   * composer instead. Will be removed in 5.0.0.
+   * See https://github.com/kesha-antonov/react-native-chat/issues/14
+   */
   maxComposerHeight?: number
   actions?: AttachmentAction[]
   actionSheetOptionTintColor?: string
