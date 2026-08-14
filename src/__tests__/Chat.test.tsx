@@ -1,5 +1,6 @@
 import React from 'react'
-import { render, fireEvent } from '@testing-library/react-native'
+import { View } from 'react-native'
+import { act, render, fireEvent } from '@testing-library/react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardContext } from 'react-native-keyboard-controller'
 import * as SafeAreaContext from 'react-native-safe-area-context'
@@ -61,6 +62,43 @@ it('preserves the default `text` prop on initial render (#603)', () => {
 
   // The composer must show the provided default text, not a cleared value.
   expect(getByDisplayValue('test')).toBeTruthy()
+})
+
+it('keeps the toolbar hidden until the keyboard offset is actually measured (#12)', () => {
+  // Leaves the native measurement pending instead of resolving it, so we can
+  // inspect the state in between the layout event and the measurement landing.
+  let resolveMeasurement: ((x: number, y: number) => void) | undefined
+
+  const measureInWindow = jest
+    .spyOn(View.prototype as unknown as { measureInWindow: unknown }, 'measureInWindow' as never)
+    .mockImplementation(((callback: (x: number, y: number) => void) => {
+      resolveMeasurement = callback
+    }) as never)
+
+  try {
+    const { getByTestId } = render(
+      <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />
+    )
+
+    fireEvent(getByTestId('GC_WRAPPER'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } },
+    })
+
+    // The layout event fired, but the native measurement it kicked off has not
+    // resolved yet - the toolbar must stay hidden rather than paint at the
+    // pre-measurement seed (offset 0), which is wrong for any chat that is not
+    // full-screen.
+    expect(getByTestId('GC_CONTENT').props.style).toContainEqual({ opacity: 0 })
+
+    act(() => {
+      resolveMeasurement?.(0, 96)
+    })
+
+    // Once the real offset has landed, the toolbar is revealed.
+    expect(getByTestId('GC_CONTENT').props.style).not.toContainEqual({ opacity: 0 })
+  } finally {
+    measureInWindow.mockRestore()
+  }
 })
 
 it('should render <Chat/> with light colorScheme and compare with snapshot', () => {

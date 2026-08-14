@@ -43,6 +43,7 @@ exports[`should render <Chat/> and compare with snapshot 1`] = `
               },
             ]
           }
+          testID="GC_CONTENT"
         />
       </View>
     </View>
@@ -93,6 +94,7 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
               },
             ]
           }
+          testID="GC_CONTENT"
         />
       </View>
     </View>
@@ -143,6 +145,7 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
               },
             ]
           }
+          testID="GC_CONTENT"
         />
       </View>
     </View>

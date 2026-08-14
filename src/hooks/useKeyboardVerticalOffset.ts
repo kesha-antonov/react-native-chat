@@ -22,6 +22,17 @@ import { useSafeAreaFrame } from 'react-native-safe-area-context'
  * So the offset is measured from the chat container itself, in window
  * coordinates, and the safe-area frame is kept only as the pre-measurement
  * seed. Attach `onLayout`/`ref` to the view that wraps the chat.
+ *
+ * `isMeasured` reports whether that real measurement has landed yet, as opposed
+ * to `keyboardVerticalOffset` still being the seed. It exists because the seed
+ * can be wrong, not just imprecise: Chat mounts its own `SafeAreaProvider`
+ * seeded with the *window's* frame (`y = 0`), so a chat nested below a header
+ * briefly reports offset 0 - correct for a full-screen chat, wrong for this one -
+ * until `measureInWindow`'s native round trip resolves. Reveal the toolbar only
+ * once `isMeasured` is true so it never paints at that wrong offset, which
+ * otherwise showed as the toolbar sitting under the keyboard for a frame when
+ * the keyboard was already up as the chat mounted.
+ * See https://github.com/kesha-antonov/react-native-chat/issues/12
  */
 export function useKeyboardVerticalOffset () {
   const frameY = useSafeAreaFrame().y
@@ -42,5 +53,6 @@ export function useKeyboardVerticalOffset () {
     ref,
     onLayout,
     keyboardVerticalOffset: measured ?? frameY,
+    isMeasured: measured !== null,
   }
 }

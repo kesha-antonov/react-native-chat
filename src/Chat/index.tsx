@@ -267,6 +267,12 @@ function Chat<TMessage extends IMessage = IMessage> (
   const keyboardOffset = useKeyboardVerticalOffset()
   const measureKeyboardOffset = keyboardOffset.onLayout
 
+  // Reveal only once the real offset has been measured, not just once the layout
+  // event that kicked off measuring it has fired - `isInitialized` alone let the
+  // toolbar paint for a frame at the pre-measurement seed, which is offset 0 for
+  // any chat that isn't full-screen. See `useKeyboardVerticalOffset` (#12).
+  const isReady = isInitialized && keyboardOffset.isMeasured
+
   const onInitialLayoutViewLayout = useCallback(
     (e: LayoutChangeEvent) => {
       // Runs on every layout, not just the first: a header appearing or the
@@ -367,11 +373,11 @@ function Chat<TMessage extends IMessage = IMessage> (
           keyboardVerticalOffset={keyboardOffset.keyboardVerticalOffset}
           keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}
         >
-          <View style={[stylesCommon.fill, !isInitialized && styles.hidden]}>
+          <View testID={TEST_ID.CONTENT} style={[stylesCommon.fill, !isReady && styles.hidden]}>
             {renderMessages}
             {inputToolbarFragment}
           </View>
-          {!isInitialized && renderComponentOrElement(renderLoading, {})}
+          {!isReady && renderComponentOrElement(renderLoading, {})}
         </ChatKeyboardAvoidingView>
       </View>
     </ChatContext.Provider>
