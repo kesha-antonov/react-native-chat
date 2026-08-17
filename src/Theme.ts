@@ -77,13 +77,24 @@ export interface ChatThemeRadii {
   dayPill: number
 }
 
+export interface ChatThemeHorizontalEdge {
+  left: number
+  right: number
+}
+
 export interface ChatThemeSpacing {
   bubblePaddingV: number
   bubblePaddingH: number
   withinGroup: number
   betweenGroups: number
-  screenEdge: number
+  /** Horizontal inset applied to the input bar and its accessories (e.g. the reply preview). */
+  screenEdge: ChatThemeHorizontalEdge
+  /** Vertical padding of the input bar's primary row (around the composer/actions). */
+  inputToolbarPaddingV: number
 }
+
+/** Accepted shape for a `screenEdge` override: a single value for both sides, or either side individually. */
+export type ChatThemeScreenEdgeOverride = number | Partial<ChatThemeHorizontalEdge>
 
 export interface ChatThemeTextStyle {
   fontSize: number
@@ -142,7 +153,7 @@ export interface ChatTheme {
 export type PartialChatTheme = {
   colors?: Partial<ChatThemeColors>
   radii?: Partial<ChatThemeRadii>
-  spacing?: Partial<ChatThemeSpacing>
+  spacing?: Partial<Omit<ChatThemeSpacing, 'screenEdge'>> & { screenEdge?: ChatThemeScreenEdgeOverride }
   typography?: Partial<Record<keyof ChatThemeTypography, Partial<ChatThemeTextStyle>>>
   avatar?: Partial<ChatThemeAvatar>
   sendButton?: Partial<{ size: number }>
@@ -179,7 +190,8 @@ const sharedSpacing: ChatThemeSpacing = {
   bubblePaddingH: 12,
   withinGroup: 2,
   betweenGroups: 8,
-  screenEdge: 8,
+  screenEdge: { left: 8, right: 8 },
+  inputToolbarPaddingV: 8,
 }
 
 const sharedTypography: ChatThemeTypography = {
@@ -290,10 +302,15 @@ export function mergeTheme (base: ChatTheme, override?: PartialChatTheme): ChatT
     for (const key of Object.keys(override.typography) as Array<keyof ChatThemeTypography>)
       mergedTypography[key] = { ...base.typography[key], ...override.typography[key] }
 
+  const overrideScreenEdge = override.spacing?.screenEdge
+  const mergedScreenEdge: ChatThemeHorizontalEdge = typeof overrideScreenEdge === 'number'
+    ? { left: overrideScreenEdge, right: overrideScreenEdge }
+    : { ...base.spacing.screenEdge, ...overrideScreenEdge }
+
   return {
     colors: { ...base.colors, ...override.colors },
     radii: { ...base.radii, ...override.radii },
-    spacing: { ...base.spacing, ...override.spacing },
+    spacing: { ...base.spacing, ...override.spacing, screenEdge: mergedScreenEdge },
     typography: mergedTypography,
     avatar: { ...base.avatar, ...override.avatar },
     sendButton: { ...base.sendButton, ...override.sendButton },

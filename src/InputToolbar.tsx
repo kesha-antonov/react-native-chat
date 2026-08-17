@@ -387,9 +387,10 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   primary: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingVertical: 8,
-    paddingHorizontal: theme.spacing.screenEdge,
-    gap: theme.spacing.screenEdge,
+    paddingVertical: theme.spacing.inputToolbarPaddingV,
+    paddingLeft: theme.spacing.screenEdge.left,
+    paddingRight: theme.spacing.screenEdge.right,
+    gap: theme.spacing.screenEdge.left,
     // positioned parent for the voice recorder's overlay bar
     position: 'relative',
   },

@@ -25,7 +25,8 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
           "borderBottomWidth": 0.5,
           "flexDirection": "row",
           "overflow": "hidden",
-          "paddingHorizontal": 8,
+          "paddingLeft": 8,
+          "paddingRight": 8,
         },
         undefined,
       ]
@@ -260,7 +261,8 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
           "borderBottomWidth": 0.5,
           "flexDirection": "row",
           "overflow": "hidden",
-          "paddingHorizontal": 8,
+          "paddingLeft": 8,
+          "paddingRight": 8,
         },
         undefined,
       ]
