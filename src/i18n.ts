@@ -1,7 +1,9 @@
 /**
- * UI string localization for the chat. Date/time localization is handled
- * separately by Day.js via the `locale` prop; this covers the static UI labels
- * (composer placeholder, buttons, recording hint, media/location labels, etc.).
+ * UI string localization for the chat. Date/time localization (month/day names, calendar
+ * formats) is handled separately by Day.js via the `locale` prop - dayjsLocales.ts bundles the
+ * matching dayjs locale for every language translated below, so keep the two in sync (enforced
+ * by dayjsLocales.test.ts). This file covers the static UI labels (composer placeholder,
+ * buttons, recording hint, media/location labels, etc.).
  *
  * Provide overrides through the `labels` prop on `Chat`, or rely on the built-in
  * translations selected by the `locale` prop. Labels resolve as:

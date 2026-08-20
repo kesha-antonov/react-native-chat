@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import dayjs from 'dayjs'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
+import '../dayjsLocales'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context'
