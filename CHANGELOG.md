@@ -2,10 +2,18 @@
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-08-20
+
+### ✨ Features
+- **Right-to-left (RTL) layout support.** `Chat` now auto-detects right-to-left languages (Arabic, Hebrew, Persian, Urdu, and a few others) from the `locale` prop and mirrors the chat accordingly: message bubble side, avatar side and spacing, bubble corner radii, the input toolbar's control order, and the voice-message slide-to-cancel gesture direction. Override the auto-detection with the new `forceRTL` prop. Every consumer-facing `LeftRightStyle` override (bubble colors, per-message style overrides) still resolves by message ownership ("my messages" vs. "theirs"), not by which physical side a message happens to render on. New `useIsRTL()` hook, plus `isRTLLocale` / `mirrorPosition` exports.
+- **11 more built-in languages.** Chinese, Arabic, Portuguese, Japanese, Korean, Italian, Turkish, Hindi, Dutch, Polish, and Indonesian join the existing English/Spanish/French/German/Russian translations, bringing built-in `locale` coverage to 15 languages. (Each now lives in its own file under `src/locales/`, with a single source of truth that a locale missing its bundled `dayjs` locale data fails to typecheck against, instead of only failing a runtime test.)
+
 ### 🐛 Fixes
 - **New `disableGestureHandlerRootView` prop** to skip the `GestureHandlerRootView` Chat mounts around itself, for apps that already mount one (directly, or via something like a bottom sheet library). A nested one can't be auto-detected the way `KeyboardProvider` is - `react-native-gesture-handler` doesn't expose that publicly - so this is an explicit opt-out. Reported alongside a rare Fabric/Yoga layout assertion on iOS that gets more likely with a nested root view ([#17](https://github.com/kesha-antonov/react-native-chat/issues/17)).
 - Locked in the "reuse the app's `KeyboardProvider`?" decision on mount instead of re-reading it every render, so `Chat` can no longer be re-parented between a `KeyboardProvider` and a bare fragment mid-lifetime - a structural change React can only handle by unmounting and remounting the whole subtree ([#17](https://github.com/kesha-antonov/react-native-chat/issues/17)).
 - The input toolbar no longer briefly renders at offset 0 when the chat mounts with the keyboard already up and isn't full-screen (e.g. below a navigation header). It now stays hidden until the real on-screen position has been measured, instead of revealing as soon as the layout event that kicked off that measurement fires ([#12](https://github.com/kesha-antonov/react-native-chat/issues/12)).
+- **`theme.spacing.inputToolbarPaddingV`** themes the input bar's vertical padding, and `theme.spacing.screenEdge` now accepts independent `left`/`right` values (a single number still works, for backward compatibility) ([#18](https://github.com/kesha-antonov/react-native-chat/issues/18)).
+- **Day/Time month and day names now actually localize.** They previously fell back to English silently whenever the *host app's* `dayjs` instance had registered the locale rather than this library's own - easy to hit in any workspace/monorepo where more than one physical copy of `dayjs` ends up installed. This library's own `dayjs` instance now always carries the locale data for every language it ships translations for.
 
 ### 🔧 Deprecations
 - **`minComposerHeight`, `maxComposerHeight`, `minInputToolbarHeight`** are now marked `@deprecated`. None of the three has ever been read anywhere - they're vestigial from `react-native-gifted-chat` - so setting them has always silently done nothing. Use `textInputProps.style` to constrain the composer instead. They'll be removed in `5.0.0` ([#14](https://github.com/kesha-antonov/react-native-chat/issues/14)).
