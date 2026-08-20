@@ -1,14 +1,17 @@
 /**
  * UI string localization for the chat. Date/time localization (month/day names, calendar
  * formats) is handled separately by Day.js via the `locale` prop - dayjsLocales.ts bundles the
- * matching dayjs locale for every language translated below, so keep the two in sync (enforced
- * by dayjsLocales.test.ts). This file covers the static UI labels (composer placeholder,
- * buttons, recording hint, media/location labels, etc.).
+ * matching dayjs locale for every language translated here, kept in sync via the
+ * `SupportedLocale` type in ./locales (compile time) and dayjsLocales.test.ts (runtime). This
+ * file covers the static UI labels (composer placeholder, buttons, recording hint, media/
+ * location labels, etc.); the actual per-language strings live one-per-file under `src/locales/`.
  *
  * Provide overrides through the `labels` prop on `Chat`, or rely on the built-in
  * translations selected by the `locale` prop. Labels resolve as:
  *   labels (prop)  >  translations[locale]  >  defaultLabels (English)
  */
+import { matchSupportedLocale, translations } from './locales'
+
 export interface ChatLabels {
   /** Composer placeholder. */
   placeholder: string
@@ -71,93 +74,11 @@ export const defaultLabels: ChatLabels = {
   holdToRecord: 'Hold to record',
 }
 
-/** Built-in translations (a starter set). Each is merged over English. */
-export const translations: Record<string, Partial<ChatLabels>> = {
-  es: {
-    placeholder: 'Escribe un mensaje...',
-    send: 'Enviar',
-    cancel: 'Cancelar',
-    loadEarlier: 'Cargar mensajes anteriores',
-    today: 'Hoy',
-    video: 'Video',
-    voiceMessage: 'Mensaje de voz',
-    videoMessage: 'Mensaje de video',
-    location: 'Ubicacion',
-    openLocationAccessibility: 'Abrir ubicacion en mapas',
-    slideToCancel: 'desliza para cancelar',
-    replyingTo: 'Respondiendo a {name}',
-    editing: 'Editando',
-    cameraPermission: 'Se necesita permiso de camara',
-    noCamera: 'No hay camara disponible',
-    stopAndSend: 'Toca para detener y enviar',
-    tapToRecord: 'Toca para grabar',
-    releaseToSend: 'Suelta para enviar, desliza arriba para bloquear',
-    holdToRecord: 'Manten pulsado para grabar',
-  },
-  fr: {
-    placeholder: 'Ecrire un message...',
-    send: 'Envoyer',
-    cancel: 'Annuler',
-    loadEarlier: 'Charger les messages precedents',
-    today: 'Aujourd\'hui',
-    video: 'Video',
-    voiceMessage: 'Message vocal',
-    videoMessage: 'Message vidéo',
-    location: 'Position',
-    openLocationAccessibility: 'Ouvrir la position dans les cartes',
-    slideToCancel: 'glisser pour annuler',
-    replyingTo: 'Reponse a {name}',
-    editing: 'Modification',
-    cameraPermission: 'Autorisation de la camera requise',
-    noCamera: 'Aucune camera disponible',
-    stopAndSend: 'Appuyez pour arreter et envoyer',
-    tapToRecord: 'Appuyez pour enregistrer',
-    releaseToSend: 'Relachez pour envoyer, glissez vers le haut pour verrouiller',
-    holdToRecord: 'Maintenez pour enregistrer',
-  },
-  de: {
-    placeholder: 'Nachricht schreiben...',
-    send: 'Senden',
-    cancel: 'Abbrechen',
-    loadEarlier: 'Fruhere Nachrichten laden',
-    today: 'Heute',
-    video: 'Video',
-    voiceMessage: 'Sprachnachricht',
-    videoMessage: 'Videonachricht',
-    location: 'Standort',
-    openLocationAccessibility: 'Standort in Karten offnen',
-    slideToCancel: 'zum Abbrechen wischen',
-    replyingTo: 'Antwort an {name}',
-    editing: 'Bearbeiten',
-    cameraPermission: 'Kameraberechtigung erforderlich',
-    noCamera: 'Keine Kamera verfugbar',
-    stopAndSend: 'Tippen zum Beenden und Senden',
-    tapToRecord: 'Zum Aufnehmen tippen',
-    releaseToSend: 'Loslassen zum Senden, nach oben wischen zum Sperren',
-    holdToRecord: 'Zum Aufnehmen gedruckt halten',
-  },
-  ru: {
-    placeholder: 'Введите сообщение...',
-    send: 'Отправить',
-    cancel: 'Отмена',
-    loadEarlier: 'Загрузить предыдущие сообщения',
-    today: 'Сегодня',
-    video: 'Видео',
-    voiceMessage: 'Голосовое сообщение',
-    videoMessage: 'Видеосообщение',
-    location: 'Местоположение',
-    openLocationAccessibility: 'Открыть местоположение на картах',
-    slideToCancel: 'смахните для отмены',
-    replyingTo: 'Ответ {name}',
-    editing: 'Редактирование',
-    cameraPermission: 'Требуется доступ к камере',
-    noCamera: 'Камера недоступна',
-    stopAndSend: 'Нажмите, чтобы остановить и отправить',
-    tapToRecord: 'Нажмите, чтобы записать',
-    releaseToSend: 'Отпустите, чтобы отправить, вверх - закрепить',
-    holdToRecord: 'Удерживайте для записи',
-  },
-}
+/**
+ * Built-in translations (a starter set), one language per file under `src/locales/`. Re-exported
+ * here so `import { translations } from 'react-native-chat'` keeps working.
+ */
+export { translations }
 
 /**
  * Resolve the active labels: the `labels` override on top of the built-in
@@ -167,8 +88,8 @@ export function resolveLabels (
   locale?: string,
   labels?: Partial<ChatLabels>
 ): ChatLabels {
-  const localeKey = locale?.split('-')[0]?.toLowerCase()
-  const translated = localeKey ? translations[localeKey] : undefined
+  const matched = matchSupportedLocale(locale)
+  const translated = matched ? translations[matched] : undefined
   return { ...defaultLabels, ...translated, ...labels }
 }
 
