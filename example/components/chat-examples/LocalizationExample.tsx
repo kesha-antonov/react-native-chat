@@ -8,7 +8,7 @@ const BOT = { _id: 2, name: 'Bot' }
 
 const INITIAL_MESSAGES: IMessage[] = [
   { _id: 2, text: 'Pick a language above - the composer placeholder, send button and other UI strings update instantly.', createdAt: new Date(Date.now() - 1000 * 30), user: BOT },
-  { _id: 1, text: 'The library ships translations for en, es, fr, de and ru, and you can override any string via the `labels` prop.', createdAt: new Date(Date.now() - 1000 * 60), user: BOT },
+  { _id: 1, text: 'The library ships 15 built-in translations, and you can override any string via the `labels` prop. Arabic also switches the whole chat to right-to-left layout.', createdAt: new Date(Date.now() - 1000 * 60), user: BOT },
 ]
 
 const LOCALES: Array<{ id: string, label: string }> = [
@@ -17,6 +17,9 @@ const LOCALES: Array<{ id: string, label: string }> = [
   { id: 'fr', label: 'Francais' },
   { id: 'de', label: 'Deutsch' },
   { id: 'ru', label: 'Русский' },
+  { id: 'zh', label: '中文' },
+  { id: 'ja', label: '日本語' },
+  { id: 'ar', label: 'العربية (RTL)' },
 ]
 
 export default function LocalizationExample () {

@@ -19,6 +19,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
+import { useIsRTL } from '../hooks/useIsRTL'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { AudioRecordingProps, IMessage } from '../Models'
 import { ChatTheme } from '../Theme'
@@ -144,9 +145,13 @@ function VoiceMessageInputInner (
   const minDurationMs = config?.minDurationMs ?? 800
   const maxDurationMs = config?.maxDurationMs ?? 600000
 
+  const isRTL = useIsRTL()
   const cancelThreshold = voice.cancelThreshold
   const lockThreshold = voice.lockThreshold
-  const maxSlide = -(cancelThreshold + 60)
+  // LTR: slide left to cancel (negative translationX). RTL: mirrored, slide
+  // right (positive translationX) - matches the flipped hint chevron/toolbar.
+  const cancelSign = isRTL ? 1 : -1
+  const maxSlide = cancelSign * (cancelThreshold + 60)
   const lockTravel = lockThreshold + 12
 
   const translateX = useSharedValue(0)
@@ -362,13 +367,15 @@ function VoiceMessageInputInner (
           if (lockedSV.value > 0)
             return
 
-          const x = Math.max(maxSlide, Math.min(0, event.translationX))
+          const x = cancelSign === -1
+            ? Math.max(maxSlide, Math.min(0, event.translationX))
+            : Math.min(maxSlide, Math.max(0, event.translationX))
           const y = Math.max(-lockTravel, Math.min(0, event.translationY))
           translateX.value = x
           translateY.value = y
           lockProgress.value = Math.min(1, -y / lockThreshold)
 
-          const armed = x <= -cancelThreshold ? 1 : 0
+          const armed = (cancelSign === -1 ? x <= -cancelThreshold : x >= cancelThreshold) ? 1 : 0
           if (armed !== cancelArmed.value) {
             cancelArmed.value = armed
             runOnJS(setCancelArmedState)(armed > 0)
@@ -406,7 +413,7 @@ function VoiceMessageInputInner (
           lockProgress.value = 0
           runOnJS(finish)(cancelled)
         }),
-    [start, finish, lock, translateX, translateY, cancelArmed, lockProgress, lockedSV, didActivate, maxSlide, lockTravel, cancelThreshold, lockThreshold, onTap]
+    [start, finish, lock, translateX, translateY, cancelArmed, lockProgress, lockedSV, didActivate, maxSlide, cancelSign, lockTravel, cancelThreshold, lockThreshold, onTap]
   )
 
   // Tap switches voice <-> video; the pan (hold) records. Race so whichever

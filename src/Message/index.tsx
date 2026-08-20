@@ -5,9 +5,11 @@ import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated
 
 import { Avatar } from '../Avatar'
 import { Bubble } from '../Bubble'
+import { useIsRTL } from '../hooks/useIsRTL'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { IMessage } from '../Models'
 import { SwipeToReplyProps } from '../Reply'
+import { mirrorPosition } from '../rtl'
 import { getStyleWithPosition } from '../styles'
 import { SystemMessage } from '../SystemMessage'
 import { ChatTheme } from '../Theme'
@@ -79,6 +81,11 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
   const swipeToReplyActionContainerStyle = swipeToReply?.actionContainerStyle
 
   const theme = useTheme()
+  const isRTL = useIsRTL()
+  // Only for the row's own layout (which side the avatar/bubble render on) -
+  // `containerStyle?.[position]` stays keyed by the real, unmirrored `position`
+  // below, since that is "my message vs. theirs", not a physical screen side.
+  const visualPosition = mirrorPosition(position, isRTL)
 
   const swipeableRef = useRef<SwipeableMethods>(null)
 
@@ -181,20 +188,21 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
     return (
       <View
         style={[
-          getStyleWithPosition(styles, 'container', position),
+          getStyleWithPosition(styles, 'container', visualPosition),
           { marginBottom: sameUser ? theme.spacing.withinGroup : theme.spacing.betweenGroups },
           containerStyle?.[position],
         ]}
       >
-        {position === 'left' && renderAvatar()}
+        {visualPosition === 'left' && renderAvatar()}
         {renderBubble()}
-        {position === 'right' && renderAvatar()}
+        {visualPosition === 'right' && renderAvatar()}
       </View>
     )
   }, [
     currentMessage?.system,
     renderSystemMessage,
     position,
+    visualPosition,
     sameUser,
     theme,
     containerStyle,

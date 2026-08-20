@@ -6,6 +6,7 @@ import {
 } from 'react-native'
 import { TextInput } from 'react-native-gesture-handler'
 import { useColorScheme } from './hooks/useColorScheme'
+import { useIsRTL } from './hooks/useIsRTL'
 import { useLabels } from './hooks/useLabels'
 import { useTheme, useThemedStyles } from './hooks/useTheme'
 import { IMessage } from './Models'
@@ -53,6 +54,7 @@ export function Composer ({
   const labels = useLabels()
   const styles = useThemedStyles(createStyles)
   const isDark = colorScheme === 'dark'
+  const isRTL = useIsRTL()
 
   const maxHeight = theme.composer.maxHeight
   const placeholder = textInputProps?.placeholder ?? labels.placeholder
@@ -95,6 +97,9 @@ export function Composer ({
           styles.textInput,
           stylesWeb.textInput,
           { minHeight: ONE_LINE, maxHeight },
+          // Otherwise an empty RTL-locale field has nothing to auto-detect
+          // direction from: the caret and placeholder would default to LTR.
+          isRTL && { writingDirection: 'rtl', textAlign: 'right' },
           textInputProps?.style,
         ]}
       />

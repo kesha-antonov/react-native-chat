@@ -26,6 +26,7 @@ import { resolveLabels } from '../i18n'
 import { InputToolbar } from '../InputToolbar'
 import { MessagesContainer, AnimatedList } from '../MessagesContainer'
 import { IMessage, ReplyMessage } from '../Models'
+import { isRTLLocale } from '../rtl'
 import stylesCommon from '../styles'
 import { resolveTheme } from '../Theme'
 import { renderComponentOrElement } from '../utils'
@@ -57,6 +58,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     user = {},
     onSend,
     locale = 'en',
+    forceRTL,
     colorScheme: colorSchemeProp,
     theme,
     darkTheme,
@@ -98,6 +100,11 @@ function Chat<TMessage extends IMessage = IMessage> (
   const resolvedLabels = useMemo(
     () => resolveLabels(locale, labels),
     [locale, labels]
+  )
+
+  const isRTL = useMemo(
+    () => forceRTL ?? isRTLLocale(locale),
+    [forceRTL, locale]
   )
 
   const messagesContainerRef = useMemo(
@@ -349,12 +356,13 @@ function Chat<TMessage extends IMessage = IMessage> (
           showActionSheetWithOptions: () => {},
         })),
       getLocale: () => locale,
+      getIsRTL: () => isRTL,
       getColorScheme: () => colorScheme,
       getTheme: () => resolvedTheme,
       getIcons: () => icons,
       getLabels: () => resolvedLabels,
     }),
-    [actionSheet, locale, colorScheme, resolvedTheme, icons, resolvedLabels]
+    [actionSheet, locale, isRTL, colorScheme, resolvedTheme, icons, resolvedLabels]
   )
 
   useEffect(() => {

@@ -11,7 +11,7 @@ export const ar: Partial<ChatLabels> = {
   videoMessage: 'رسالة فيديو',
   location: 'الموقع',
   openLocationAccessibility: 'فتح الموقع في الخرائط',
-  slideToCancel: 'اسحب لليسار للإلغاء...',
+  slideToCancel: 'اسحب لليمين للإلغاء...',
   replyingTo: 'الرد على {name}',
   editing: 'تعديل',
   cameraPermission: 'مطلوب إذن الكاميرا',

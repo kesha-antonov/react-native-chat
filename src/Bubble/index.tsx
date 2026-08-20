@@ -20,6 +20,7 @@ import { ContextMenu } from '../components/ContextMenu'
 import { Icon } from '../components/Icon'
 import { MessageReply } from '../components/MessageReply'
 import { PendingClock, Ticks } from '../components/Ticks'
+import { useIsRTL } from '../hooks/useIsRTL'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { MessageAudio } from '../MessageAudio'
 import { MessageImage } from '../MessageImage'
@@ -29,6 +30,7 @@ import { MessageVideo } from '../MessageVideo'
 import { IMessage } from '../Models'
 import { QuickReplies } from '../QuickReplies'
 import { DEFAULT_REACTION_EMOJIS, MessageReactions, ReactionPicker } from '../Reactions'
+import { mirrorPosition } from '../rtl'
 import { getStyleWithPosition } from '../styles'
 import { Time } from '../Time'
 import { isSameUser, isSameDay, renderComponentOrElement } from '../utils'
@@ -75,6 +77,11 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const context = useChatContext()
   const theme = useTheme()
   const styles = useThemedStyles(createBubbleStyles)
+  const isRTL = useIsRTL()
+  // Only for physical layout (alignment, corner radii) - `wrapper`'s background
+  // color and every `xStyle?.[position]` consumer override below stay keyed by
+  // the real, unmirrored `position` ("my bubble vs. theirs"), not screen side.
+  const visualPosition = mirrorPosition(position, isRTL)
 
   // Resolve the long-press context-menu actions for this message.
   const menuItems = useMemo(() => {
@@ -195,7 +202,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       isSameDay(currentMessage, nextMessage)
     )
       return [
-        getStyleWithPosition(styles, 'containerToNext', position),
+        getStyleWithPosition(styles, 'containerToNext', visualPosition),
         containerToNextStyle?.[position],
       ]
 
@@ -204,6 +211,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     currentMessage,
     nextMessage,
     position,
+    visualPosition,
     containerToNextStyle,
     styles,
   ])
@@ -217,7 +225,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       isSameDay(currentMessage, previousMessage)
     )
       return [
-        getStyleWithPosition(styles, 'containerToPrevious', position),
+        getStyleWithPosition(styles, 'containerToPrevious', visualPosition),
         containerToPreviousStyle?.[position],
       ]
 
@@ -226,6 +234,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     currentMessage,
     previousMessage,
     position,
+    visualPosition,
     containerToPreviousStyle,
     styles,
   ])
@@ -577,13 +586,13 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   ], [position, styledBubbleToNext, styledBubbleToPrevious, wrapperStyle, styles, isVideoNote])
 
   const containerStyleList = useMemo(() => [
-    getStyleWithPosition(styles, 'container', position),
+    getStyleWithPosition(styles, 'container', visualPosition),
     containerStyle?.[position],
-  ], [styles, position, containerStyle])
+  ], [styles, position, visualPosition, containerStyle])
 
   const rowSurfaceStyle = useMemo(
-    () => getStyleWithPosition(styles, 'rowSurface', position),
-    [styles, position]
+    () => getStyleWithPosition(styles, 'rowSurface', visualPosition),
+    [styles, visualPosition]
   )
 
   const renderReactionsDisplay = useCallback(() => {

@@ -54,6 +54,12 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   user?: User
   /*  Locale to localize the dates */
   locale?: string
+  /**
+   * Force right-to-left layout on or off. Defaults to auto-detecting from `locale` (Arabic,
+   * Hebrew, Persian, Urdu, and a few others). Set this to override the guess - e.g. `true` for
+   * an RTL language not in the auto-detected set, or `false` to keep LTR layout for one of them.
+   */
+  forceRTL?: boolean
   /* Force color scheme (light/dark); default is undefined (uses system color scheme) */
   colorScheme?: 'light' | 'dark'
   /* Override the modern default light theme tokens (deep-merged over defaults) */

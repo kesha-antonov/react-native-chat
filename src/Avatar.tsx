@@ -7,8 +7,10 @@ import {
   ViewStyle,
 } from 'react-native'
 import { ChatAvatar } from './ChatAvatar'
+import { useIsRTL } from './hooks/useIsRTL'
 import { useThemedStyles } from './hooks/useTheme'
 import { IMessage, LeftRightStyle, User } from './Models'
+import { mirrorPosition } from './rtl'
 import { ChatTheme } from './Theme'
 import { isSameUser, isSameDay } from './utils'
 
@@ -80,6 +82,10 @@ export function Avatar<TMessage extends IMessage = IMessage> (
   } = props
 
   const styles = useThemedStyles(createStyles)
+  const isRTL = useIsRTL()
+  // Built-in margin only - `containerStyle`/`imageStyle` overrides below stay keyed by the
+  // real, unmirrored `position` ("my avatar vs. theirs"), not by physical screen side.
+  const visualPosition = mirrorPosition(position, isRTL)
 
   const messageToCompare = isAvatarOnTop ? previousMessage : nextMessage
 
@@ -102,7 +108,7 @@ export function Avatar<TMessage extends IMessage = IMessage> (
       return (
         <ChatAvatar
           avatarStyle={[
-            styles[position].image,
+            styles[visualPosition].image,
             imageStyle?.[position],
           ]}
           user={currentMessage.user}
@@ -118,6 +124,7 @@ export function Avatar<TMessage extends IMessage = IMessage> (
     isAvatarVisibleForEveryMessage,
     containerStyle,
     position,
+    visualPosition,
     currentMessage,
     previousMessage,
     nextMessage,
@@ -140,13 +147,13 @@ export function Avatar<TMessage extends IMessage = IMessage> (
     return (
       <View
         style={[
-          styles[position].container,
+          styles[visualPosition].container,
           containerStyle?.[position],
         ]}
       >
         <ChatAvatar
           avatarStyle={[
-            styles[position].image,
+            styles[visualPosition].image,
             imageStyle?.[position],
           ]}
         />
@@ -156,8 +163,8 @@ export function Avatar<TMessage extends IMessage = IMessage> (
   return (
     <View
       style={[
-        styles[position].container,
-        isAvatarOnTop && styles[position].onTop,
+        styles[visualPosition].container,
+        isAvatarOnTop && styles[visualPosition].onTop,
         containerStyle?.[position],
       ]}
     >

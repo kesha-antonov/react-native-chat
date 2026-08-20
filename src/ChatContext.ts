@@ -28,6 +28,8 @@ export interface IChatContext {
     ) => void
   }
   getLocale(): string
+  /** Whether the chat is laying out right-to-left (see `forceRTL` / `locale` on `Chat`). */
+  getIsRTL?(): boolean
   getColorScheme(): ColorSchemeName | null | undefined
   /**
    * The fully-resolved theme for the current color scheme (defaults merged with
@@ -44,6 +46,7 @@ export interface IChatContext {
 
 export const ChatContext = createContext<IChatContext>({
   getLocale: () => 'en',
+  getIsRTL: () => false,
   actionSheet: () => ({
     showActionSheetWithOptions: () => {},
   }),

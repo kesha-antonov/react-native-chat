@@ -28,24 +28,28 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
           "paddingVertical": 8,
           "position": "relative",
         },
+        false,
         undefined,
       ]
     }
   >
     <View
       style={
-        {
-          "alignItems": "flex-end",
-          "backgroundColor": "#F2F2F7",
-          "borderColor": "transparent",
-          "borderRadius": 18,
-          "borderWidth": 0.5,
-          "flex": 1,
-          "flexDirection": "row",
-          "gap": 6,
-          "minHeight": 44,
-          "paddingHorizontal": 12,
-        }
+        [
+          {
+            "alignItems": "flex-end",
+            "backgroundColor": "#F2F2F7",
+            "borderColor": "transparent",
+            "borderRadius": 18,
+            "borderWidth": 0.5,
+            "flex": 1,
+            "flexDirection": "row",
+            "gap": 6,
+            "minHeight": 44,
+            "paddingHorizontal": 12,
+          },
+          false,
+        ]
       }
     >
       <View
@@ -87,6 +91,7 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
                 "maxHeight": 120,
                 "minHeight": 44,
               },
+              false,
               undefined,
             ]
           }

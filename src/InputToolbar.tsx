@@ -27,6 +27,7 @@ import {
   isVoiceRecordingAvailable,
 } from './components/VoiceMessageInput'
 import { Composer, ComposerProps } from './Composer'
+import { useIsRTL } from './hooks/useIsRTL'
 import { useLabels } from './hooks/useLabels'
 import { useThemedStyles } from './hooks/useTheme'
 import { AudioRecordingProps, IMessage, ReplyMessage, VideoRecordingProps } from './Models'
@@ -103,6 +104,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
 
   const styles = useThemedStyles(createStyles)
   const insets = useSafeAreaInsets()
+  const isRTL = useIsRTL()
 
   const containerStyles = useMemo(() => [
     styles.container,
@@ -114,8 +116,14 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
 
   const primaryStyles = useMemo(() => [
     styles.primary,
+    isRTL && styles.rowReverse,
     props.primaryStyle,
-  ], [styles, props.primaryStyle])
+  ], [styles, isRTL, props.primaryStyle])
+
+  const fieldGroupStyles = useMemo(() => [
+    styles.fieldGroup,
+    isRTL && styles.rowReverse,
+  ], [styles, isRTL])
 
   const actionsFragment = useMemo(() => {
     const actionsProps = {
@@ -317,9 +325,9 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
       <View style={primaryStyles}>
         {voiceState.active
           ? (
-            <View style={styles.recordingBar}>
+            <View style={[styles.recordingBar, isRTL && styles.rowReverse]}>
               <Animated.View style={[styles.recDot, recDotStyle]} />
-              <Text style={styles.recTimer}>{formatElapsed(voiceState.elapsed)}</Text>
+              <Text style={[styles.recTimer, isRTL ? styles.recTimerRTL : styles.recTimerLTR]}>{formatElapsed(voiceState.elapsed)}</Text>
               {voiceState.locked
                 ? (
                   // Locked: Telegram shows a trash target and a live waveform in
@@ -355,7 +363,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
                 )
                 : (
                   <Animated.View style={[styles.recHintWrap, recHintStyle]} pointerEvents='none'>
-                    <ChevronIcon color={styles.recHintColor.color} size={14} direction='left' />
+                    <ChevronIcon color={styles.recHintColor.color} size={14} direction={isRTL ? 'right' : 'left'} />
                     <Text style={[styles.recHint, voiceState.cancelArmed && styles.recHintArmed]}>
                       {labels.slideToCancel}
                     </Text>
@@ -364,7 +372,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
             </View>
           )
           : (
-            <View style={styles.fieldGroup}>
+            <View style={fieldGroupStyles}>
               {emojiFragment}
               {composerFragment}
               {actionsFragment}
@@ -394,8 +402,16 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     // positioned parent for the voice recorder's overlay bar
     position: 'relative',
   },
+  // Mirrors `primary`/`fieldGroup`/`recordingBar` for RTL. All three space their
+  // children with `gap` rather than manual margins, so reversing direction is
+  // enough - no per-child left/right swap needed (recTimer's margin is the one
+  // exception, since it sits inside `recordingBar` without its own gap - see
+  // recTimerLTR/recTimerRTL below).
+  rowReverse: {
+    flexDirection: 'row-reverse',
+  },
   // While recording, the field is replaced by a bar: a blinking red dot and the
-  // timer on the left, then the pulsating "slide to cancel" hint (or a Cancel
+  // timer on one side, then the pulsating "slide to cancel" hint (or a Cancel
   // button once locked). Sized like the field so the row height does not jump.
   recordingBar: {
     flex: 1,
@@ -411,11 +427,18 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     backgroundColor: theme.colors.error,
   },
   recTimer: {
-    marginLeft: 8,
     fontSize: 15,
     color: theme.colors.inputText,
     fontVariant: ['tabular-nums'],
     minWidth: 44,
+  },
+  // recTimer has no shared `gap` with recDot to fall back on, so the gap
+  // between them needs to swap sides explicitly when the row reverses.
+  recTimerLTR: {
+    marginLeft: 8,
+  },
+  recTimerRTL: {
+    marginRight: 8,
   },
   recHintWrap: {
     flex: 1,
