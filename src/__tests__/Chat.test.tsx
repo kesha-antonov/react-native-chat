@@ -205,9 +205,9 @@ it('lets `keyboardAvoidingViewProps` override the measured offset', () => {
   expect(findKeyboardVerticalOffset(toJSON())).toBe(64)
 })
 
-it('skips the KeyboardProvider when `disableKeyboardProvider` is set', () => {
+it('skips the KeyboardProvider when `enableKeyboardProvider` is false', () => {
   const { toJSON } = render(
-    <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} disableKeyboardProvider />
+    <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} enableKeyboardProvider={false} />
   )
 
   expect(findKeyboardProviders(toJSON())).toHaveLength(0)
@@ -250,7 +250,7 @@ it('mounts its own GestureHandlerRootView when the app has none', () => {
   expect(UNSAFE_getAllByType(GestureHandlerRootView)).toHaveLength(1)
 })
 
-it('skips the GestureHandlerRootView when `disableGestureHandlerRootView` is set (#17)', () => {
+it('skips the GestureHandlerRootView when `enableGestureHandlerRootView` is false (#17)', () => {
   // An app that already mounts its own (directly, or via something like a bottom sheet
   // library) can't be auto-detected the way `KeyboardProvider` is - gesture-handler
   // doesn't expose that publicly - so this has to be an explicit opt-out.
@@ -259,7 +259,7 @@ it('skips the GestureHandlerRootView when `disableGestureHandlerRootView` is set
       messages={messages}
       onSend={() => {}}
       user={{ _id: 1 }}
-      disableGestureHandlerRootView
+      enableGestureHandlerRootView={false}
     />
   )
 

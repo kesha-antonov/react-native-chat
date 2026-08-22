@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 💥 Breaking
+- **`disableKeyboardProvider` → `enableKeyboardProvider`, `disableGestureHandlerRootView` → `enableGestureHandlerRootView`.** Both were opt-out flags with inverted (double-negative) naming - `disableX = false` to get the default. Renamed to positive, opt-in flags (default `true`, matching the previous default behavior); pass `false` to get the old opt-out effect. `enableGestureHandlerRootView` only shipped in 4.4.0, two days ago, so this is a straight rename rather than a deprecated alias.
+
+### 🐛 Fixes
+- Pinned `collapsable={false}` on the view wrapping the message list and composer. Its only paint prop (`opacity`) is conditional on the chat's ready state, so on every mount that view's Fabric shadow-node flattening eligibility flipped once, right after becoming ready - restructuring the Yoga tree directly above the composer on the same cycle a remounted `Chat` first accepts a keystroke. That matches the timing of the Fabric/Yoga layout assertion still being reported against [#17](https://github.com/kesha-antonov/react-native-chat/issues/17) even with `enableGestureHandlerRootView={false}` set; upstream (facebook/react-native#48203, #52349) remains unresolved, so this narrows one concrete trigger rather than closing out the underlying RN bug.
+
 ## [4.4.0] - 2026-08-20
 
 ### ✨ Features

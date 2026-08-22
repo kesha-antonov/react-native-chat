@@ -33,6 +33,7 @@ exports[`should render <Chat/> and compare with snapshot 1`] = `
         }
       >
         <View
+          collapsable={false}
           style={
             [
               {
@@ -84,6 +85,7 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
         }
       >
         <View
+          collapsable={false}
           style={
             [
               {
@@ -135,6 +137,7 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
         }
       >
         <View
+          collapsable={false}
           style={
             [
               {

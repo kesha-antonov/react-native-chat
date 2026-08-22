@@ -382,7 +382,22 @@ function Chat<TMessage extends IMessage = IMessage> (
           keyboardVerticalOffset={keyboardOffset.keyboardVerticalOffset}
           keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}
         >
-          <View testID={TEST_ID.CONTENT} style={[stylesCommon.fill, !isReady && styles.hidden]}>
+          {/*
+            collapsable={false}: `opacity` is the only paint prop this view ever
+            carries, and it's conditional on `isReady` - a plain `{flex:1}` view is
+            eligible for Fabric's shadow-node flattening, but one with `opacity`
+            isn't, so every mount flips this view's flattening eligibility exactly
+            once, right after `isReady` turns true. That flip restructures the
+            Yoga tree directly above the composer on the same mount cycle a
+            remounted `Chat` first accepts a keystroke, matching the crash in #17
+            (`YGNodeGetOwner(childYogaNode) == &yogaNode_`). Pinning collapsable
+            keeps this node's shadow-tree identity stable across the flip.
+          */}
+          <View
+            testID={TEST_ID.CONTENT}
+            collapsable={false}
+            style={[stylesCommon.fill, !isReady && styles.hidden]}
+          >
             {renderMessages}
             {inputToolbarFragment}
           </View>
@@ -396,8 +411,8 @@ function Chat<TMessage extends IMessage = IMessage> (
 function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMessage>) {
   const {
     keyboardProviderProps,
-    disableKeyboardProvider = false,
-    disableGestureHandlerRootView = false,
+    enableKeyboardProvider = true,
+    enableGestureHandlerRootView = true,
     ...rest
   } = props
 
@@ -417,7 +432,7 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
 
   const withKeyboardProvider = (
     <>
-      {disableKeyboardProvider || hasKeyboardProvider
+      {!enableKeyboardProvider || hasKeyboardProvider
         ? chat
         : (
       // No `statusBarTranslucent` / `navigationBarTranslucent` here on purpose.
@@ -458,7 +473,7 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
   // `react-native-gesture-handler` doesn't publicly expose whether one is already
   // mounted above, so an app that has its own (directly, or via something like a bottom
   // sheet library) needs to opt out explicitly.
-  if (disableGestureHandlerRootView)
+  if (!enableGestureHandlerRootView)
     return <View style={styles.fill}>{content}</View>
 
   return (

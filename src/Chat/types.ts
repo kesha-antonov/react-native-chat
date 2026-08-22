@@ -183,26 +183,27 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   renderQuickReplySend?: () => React.ReactNode
   keyboardProviderProps?: React.ComponentProps<typeof KeyboardProvider>
   /**
-   * Skip rendering the built-in `KeyboardProvider` wrapper.
-   * Enable this when your app already mounts its own `KeyboardProvider`
+   * Render the built-in `KeyboardProvider` wrapper.
+   * Turn this off when your app already mounts its own `KeyboardProvider`
    * (e.g. once at the root), or when the default `statusBarTranslucent` /
    * `navigationBarTranslucent` edge-to-edge behavior causes layout shift,
    * flicker on mount, or a header/content jump on Android/Expo.
-   * Default is `false`.
+   * Default is `true`.
    */
-  disableKeyboardProvider?: boolean
+  enableKeyboardProvider?: boolean
   /** Props for KeyboardAvoidingView. Use `keyboardVerticalOffset` to account for headers or iOS predictive text bar (~44pt). */
   keyboardAvoidingViewProps?: KeyboardAvoidingViewProps
   /**
-   * Skip the `GestureHandlerRootView` Chat mounts around itself. Unlike
+   * Render the `GestureHandlerRootView` Chat mounts around itself. Unlike
    * `KeyboardProvider`, an existing `GestureHandlerRootView` can't be detected from
-   * here - `react-native-gesture-handler` doesn't expose that publicly - so enable
-   * this yourself when your app (or a library it uses, e.g. a bottom sheet) already
-   * mounts one at the root. Nesting a second one is not just redundant: it changes
-   * the native view hierarchy around the composer, which has been observed to make
-   * a rare Fabric/Yoga layout assertion on iOS more likely (#17). Default is `false`.
+   * here - `react-native-gesture-handler` doesn't expose that publicly - so turn
+   * this off yourself when your app (or a library it uses, e.g. a bottom sheet)
+   * already mounts one at the root. Nesting a second one is not just redundant: it
+   * changes the native view hierarchy around the composer, which has been observed
+   * to make a rare Fabric/Yoga layout assertion on iOS more likely (#17). Default is
+   * `true`.
    */
-  disableGestureHandlerRootView?: boolean
+  enableGestureHandlerRootView?: boolean
   /** Enable animated day label that appears on scroll; default is true */
   isDayAnimationEnabled?: boolean
 
