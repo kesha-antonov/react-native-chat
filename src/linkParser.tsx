@@ -39,43 +39,80 @@ interface LinkParserProps {
   TextComponent?: React.ComponentType<any>
 }
 
-const DEFAULT_MATCHERS: LinkMatcher[] = [
-  {
-    type: 'url',
-    pattern: /(?:https?:\/\/(?:www\.)?|www\.)[^\s]+|(?<![A-Za-z0-9_.@])(?![A-Za-z0-9._%+-]*@)[a-zA-Z0-9][a-zA-Z0-9-]*\.(?!@)[a-zA-Z]{2,}(?![A-Za-z0-9._%+-]*@)(?:\/[^\s]*)?/gi,
-    getLinkUrl: (text: string) => {
-      if (!/^https?:\/\//i.test(text))
-        return `http://${text}`
+let DEFAULT_MATCHER_URL : LinkMatcher | null = null
 
-      return text
-    },
-  },
-  {
-    type: 'email',
-    pattern: /(?<![A-Za-z0-9])([a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,
-    getLinkUrl: (text: string) => `mailto:${text}`,
-  },
-  {
-    type: 'phone',
-    pattern: /(?<![A-Za-z0-9_])(?:\+?\d{1,3}[\s.\-]?)?\(?\d{1,4}\)?[\s.\-]?\d{1,4}[\s.\-]?\d{1,9}(?![A-Za-z0-9_]|\.[a-z]{2,4})/gi,
-    getLinkUrl: (text: string) => {
-      const cleaned = text.replace(/[\s.()\-]/g, '')
-      return `tel:${cleaned}`
-    },
-  },
-  {
-    type: 'hashtag',
-    pattern: /#[\w]+/g,
-    getLinkUrl: (text: string) => text,
-    baseUrl: undefined,
-  },
-  {
-    type: 'mention',
-    pattern: /(?<![a-zA-Z0-9._%+-])@[\w-]+/g,
-    getLinkUrl: (text: string) => text,
-    baseUrl: undefined,
-  },
-]
+function getDefaultMatcherURL() : LinkMatcher {
+  if (!DEFAULT_MATCHER_URL)
+    DEFAULT_MATCHER_URL = {
+      type: 'url',
+      pattern: new RegExp('(?:https?:\\/\\/(?:www\\.)?|www\\.)[^\\s]+|(?<![A-Za-z0-9_.@])(?![A-Za-z0-9._%+-]*@)[a-zA-Z0-9][a-zA-Z0-9-]*\\.(?!@)[a-zA-Z]{2,}(?![A-Za-z0-9._%+-]*@)(?:\\/[^\\s]*)?', 'gi'),
+      getLinkUrl: (text: string) => {
+        if (!/^https?:\/\//i.test(text))
+          return `http://${text}`
+
+        return text
+      },
+    }
+
+  return DEFAULT_MATCHER_URL
+}
+
+let DEFAULT_MATCHER_EMAIL : LinkMatcher | null = null
+
+function getDefaultMatcherEmail() : LinkMatcher {
+  if (!DEFAULT_MATCHER_EMAIL)
+    DEFAULT_MATCHER_EMAIL = {
+      type: 'email',
+      pattern: new RegExp('(?<![A-Za-z0-9])([a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})', 'gi'),
+      getLinkUrl: (text: string) => `mailto:${text}`,
+    }
+
+  return DEFAULT_MATCHER_EMAIL
+}
+
+let DEFAULT_MATCHER_PHONE : LinkMatcher | null = null
+
+function getDefaultMatcherPhone() : LinkMatcher {
+  if (!DEFAULT_MATCHER_PHONE)
+    DEFAULT_MATCHER_PHONE = {
+      type: 'phone',
+      pattern: new RegExp('(?<![A-Za-z0-9_])(?:\\+?\\d{1,3}[\\s.\\-]?)?\\(?\\d{1,4}\\)?[\\s.\\-]?\\d{1,4}[\\s.\\-]?\\d{1,9}(?![A-Za-z0-9_]|\\.[a-z]{2,4})', 'gi'),
+      getLinkUrl: (text: string) => {
+        const cleaned = text.replace(/[\s.()\-]/g, '')
+        return `tel:${cleaned}`
+      },
+    }
+
+  return DEFAULT_MATCHER_PHONE
+}
+
+let DEFAULT_MATCHER_HASHTAG : LinkMatcher | null = null
+
+function getDefaultMatcherHashtag() : LinkMatcher {
+  if (!DEFAULT_MATCHER_HASHTAG)
+    DEFAULT_MATCHER_HASHTAG = {
+      type: 'hashtag',
+      pattern: new RegExp('#[\\w]+', 'g'),
+      getLinkUrl: (text: string) => text,
+      baseUrl: undefined,
+    }
+
+  return DEFAULT_MATCHER_HASHTAG
+}
+
+let DEFAULT_MATCHER_MENTION : LinkMatcher | null = null
+
+function getDefaultMatcherMention() : LinkMatcher {
+  if (!DEFAULT_MATCHER_MENTION)
+    DEFAULT_MATCHER_MENTION = {
+      type: 'mention',
+      pattern: new RegExp('(?<![a-zA-Z0-9._%+-])@[\\w-]+', 'g'),
+      getLinkUrl: (text: string) => text,
+      baseUrl: undefined,
+    }
+
+  return DEFAULT_MATCHER_MENTION
+}
 
 function parseLinks(text: string, matchers: LinkMatcher[]): ParsedLink[] {
   const links: ParsedLink[] = []
@@ -155,16 +192,16 @@ export function LinkParser({
 
   // Add default matchers based on flags
   if (url && !customMatchers?.some(m => m.type === 'url'))
-    activeMatchers.push(DEFAULT_MATCHERS.find(m => m.type === 'url')!)
+    activeMatchers.push(getDefaultMatcherURL())
 
   if (email && !customMatchers?.some(m => m.type === 'email'))
-    activeMatchers.push(DEFAULT_MATCHERS.find(m => m.type === 'email')!)
+    activeMatchers.push(getDefaultMatcherEmail())
 
   if (phone && !customMatchers?.some(m => m.type === 'phone'))
-    activeMatchers.push(DEFAULT_MATCHERS.find(m => m.type === 'phone')!)
+    activeMatchers.push(getDefaultMatcherPhone())
 
   if (hashtag && !customMatchers?.some(m => m.type === 'hashtag')) {
-    const hashtagMatcher = { ...DEFAULT_MATCHERS.find(m => m.type === 'hashtag')! }
+    const hashtagMatcher = { ...getDefaultMatcherHashtag() }
     if (hashtagUrl) {
       hashtagMatcher.baseUrl = hashtagUrl
       const baseUrl = hashtagUrl.endsWith('/') ? hashtagUrl : `${hashtagUrl}/`
@@ -174,7 +211,7 @@ export function LinkParser({
   }
 
   if (mention && !customMatchers?.some(m => m.type === 'mention')) {
-    const mentionMatcher = { ...DEFAULT_MATCHERS.find(m => m.type === 'mention')! }
+    const mentionMatcher = { ...getDefaultMatcherMention() }
     if (mentionUrl) {
       mentionMatcher.baseUrl = mentionUrl
       const baseUrl = mentionUrl.endsWith('/') ? mentionUrl : `${mentionUrl}/`
