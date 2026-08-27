@@ -1,0 +1,175 @@
+# @kesha-antonov/react-native-chat
+
+> Chat UI for React Native, Expo and Web. A maintained continuation of
+> `react-native-gifted-chat` with the same `IMessage` model and prop names, plus dark mode
+> and theming, streaming (AI) messages, emoji reactions, swipe-to-reply, and inline
+> video/audio/location messages. TypeScript-first; no native code of its own.
+
+This file is a condensed integration guide for AI agents. Full docs: [README](https://github.com/kesha-antonov/react-native-chat#readme).
+
+## Install
+
+Required peers - all four must be installed and configured:
+
+```bash
+npx expo install @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
+```
+
+Bare React Native: use `yarn add` / `npm install --save` with the same list, then
+`npx pod-install`, then add Reanimated's Babel plugin to `babel.config.js`
+(`plugins: ['react-native-worklets/plugin']` for Reanimated 4, `'react-native-reanimated/plugin'` for 3).
+
+Requires React Native >= 0.70, iOS >= 13.4, Android API 21+, Expo SDK 50+.
+
+## Minimal working example
+
+```tsx
+import { useCallback, useState } from 'react'
+import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+
+export function ChatScreen () {
+  const [messages, setMessages] = useState<IMessage[]>([
+    {
+      _id: 1,
+      text: 'Hello developer',
+      createdAt: new Date(),
+      user: { _id: 2, name: 'John Doe' },
+    },
+  ])
+
+  const onSend = useCallback((newMessages: IMessage[] = []) => {
+    setMessages(previous => Chat.append(previous, newMessages))
+  }, [])
+
+  return <Chat messages={messages} onSend={onSend} user={{ _id: 1 }} />
+}
+```
+
+`Chat` fills its parent, so give it a `flex: 1` container. It mounts its own
+`GestureHandlerRootView` and `KeyboardProvider` unless the app already provides them.
+
+## Data model
+
+```ts
+interface IMessage {
+  _id: string | number
+  text: string
+  createdAt: Date | number
+  user: { _id: string | number, name?: string, avatar?: string | number | (() => React.ReactNode) }
+  image?: string
+  video?: string
+  audio?: string
+  system?: boolean          // renders as a centered system notice
+  sent?: boolean            // ✓
+  received?: boolean        // ✓✓
+  pending?: boolean         // 🕓
+  streaming?: boolean       // shows a typing caret while tokens arrive
+  quickReplies?: { type: 'radio' | 'checkbox', values: { title: string, value: string }[], keepIt?: boolean }
+  replyMessage?: { _id: string | number, text: string, user: User, image?: string, audio?: string }
+  reactions?: { emoji: string, userIds: (string | number)[] }[]
+  location?: { latitude: number, longitude: number }
+}
+```
+
+Messages are newest-first by default (`isInverted` defaults to `true`). `Chat.append(previous, newMessages)`
+prepends correctly for that ordering.
+
+## Props you will reach for first
+
+- `messages`, `user`, `onSend` - required
+- `text` + `textInputProps.onChangeText` - only if you control the composer text externally
+- `theme` / `darkTheme` - deep-merged token overrides (`colors`, `radii`, `spacing`, `typography`, …)
+- `colorScheme` - `'light' | 'dark'` to force a scheme; omit to follow the system
+- `locale` + `labels` - 15 built-in translations (es, fr, de, ru, zh, ar, pt, ja, ko, it, tr, hi, nl, pl, id; English is the default, `pt-BR` falls back to `pt`) and per-string overrides
+- `renderBubble`, `renderMessageText`, `renderAvatar`, `renderInputToolbar`, … - override any component
+- `isTyping` - typing indicator
+- `loadEarlierMessagesProps` - `{ isAvailable, onPress, isLoading, isInfiniteScrollEnabled }`
+- `isScrollToBottomEnabled`, `listProps`, `isFlashListEnabled`
+
+## Optional features and the peers they need
+
+Each is inert until you install its peer and turn it on - nothing is forced on the user.
+
+| Feature | Enable with | Extra peer dependency |
+| --- | --- | --- |
+| Inline video playback | `IMessage.video` | `expo-video` |
+| Inline audio playback | `IMessage.audio` | `expo-audio` |
+| Voice notes (hold to record) | `audioRecording={{ isEnabled: true }}` | `expo-audio`, plus `react-native-audio-api` for the waveform |
+| Video messages (camera notes) | `videoRecording={{ isEnabled: true }}` | `react-native-vision-camera`, or `expo-image-picker` |
+| Location messages | `IMessage.location` | none |
+| Emoji reactions | `reactions={{ isEnabled: true, onReactionPress }}` | none |
+| Long-press action menu | `messageActions={[{ label, onPress }]}` | none |
+| Rich markdown for AI replies | `messageTextProps={{ markdown: true }}` | none (built-in), `react-native-streamdown` upgrades it |
+| Recycling list for huge histories | `isFlashListEnabled` | `@shopify/flash-list` |
+| Custom icons | `icons={{ send: … }}` | `react-native-svg` for the built-in Lucide glyphs |
+
+## Streaming (AI) replies
+
+```tsx
+import { Chat, IMessage, useStreamingMessages } from '@kesha-antonov/react-native-chat'
+
+const { messages, append, startStream, isStreaming, stop } = useStreamingMessages<IMessage>()
+
+const onSend = useCallback((newMessages: IMessage[] = []) => {
+  append(newMessages[0])
+  const stream = startStream({ user: { _id: 2, name: 'Assistant' } })
+
+  runModel(newMessages[0].text, {
+    signal: stream.signal,                // aborts when stop() is called
+    onToken: token => stream.push(token), // batched, one render per frame
+    onDone: () => stream.done(),
+  })
+}, [append, startStream])
+```
+
+Tokens are batched with `requestAnimationFrame`, and only the streaming bubble re-renders.
+The send button becomes a Stop control while `isStreaming`.
+
+## Emoji reactions
+
+Reaction state is owned by the app, so it works with any backend. `onReactionPress` fires for
+both the picker and a pill tap; you implement the toggle:
+
+```tsx
+<Chat
+  reactions={{
+    isEnabled: true,
+    onReactionPress: (message, emoji) => toggleReaction(message._id, emoji),
+  }}
+  {...props}
+/>
+```
+
+## Coming from react-native-gifted-chat
+
+Same props, same `IMessage`. Swap the package and rename: `GiftedChat` → `Chat`,
+`GiftedAvatar` → `ChatAvatar`, `GiftedChatContext` → `ChatContext`. Everything else -
+`IMessage`, `User`, `useChatContext` - is unchanged. A codemod is in
+[docs/MIGRATION.md](https://github.com/kesha-antonov/react-native-chat/blob/main/docs/MIGRATION.md).
+
+## Common mistakes
+
+- **Unstable render props.** Each row is `React.memo`'d with a comparator that
+  reference-compares every prop except the message. An inline `renderBubble={props => …}` or
+  `reactions={{ … }}` re-renders every row on every parent render - wrap them in `useCallback` /
+  `useMemo`.
+- **Mutating messages in place.** The comparator detects updates by value, so always build new
+  arrays and objects.
+- **Setting `keyboardVerticalOffset` by hand.** Chat measures its own position on screen; a
+  manual value replaces the measured one and usually leaves the toolbar floating. Pass one only
+  to add deliberate extra space.
+- **Nesting a second `GestureHandlerRootView`.** If the app already mounts one (directly or via
+  a bottom-sheet library), set `enableGestureHandlerRootView={false}` - it cannot be
+  auto-detected. An existing `KeyboardProvider` *is* detected and reused automatically.
+- **Expecting `actionSheet()` to work out of the box.** The bundled
+  `@expo/react-native-action-sheet` dependency was removed; prefer `messageActions`, or supply
+  your own `actionSheet` implementation.
+- **Forgetting the container.** `<Chat>` needs a parent with `flex: 1`.
+
+## Links
+
+- [README](https://github.com/kesha-antonov/react-native-chat#readme) - full props reference and guides
+- [Migration guide](https://github.com/kesha-antonov/react-native-chat/blob/main/docs/MIGRATION.md)
+- [Streaming guide](https://github.com/kesha-antonov/react-native-chat/blob/main/docs/STREAMING.md)
+- [Example app](https://github.com/kesha-antonov/react-native-chat/tree/main/example)
+- [Expo Snack playground](https://snack.expo.dev/@kesha-antonov/react-native-chat-playground)

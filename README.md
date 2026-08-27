@@ -199,6 +199,10 @@ Overridable names: `send`, `mic`, `camera`, `play`, `pause`, `check`, `checkAll`
 
 ---
 
+> **Using an AI coding agent?** [`llms.txt`](llms.txt) is a condensed integration guide for
+> agents adding this library to an app, and [`AGENTS.md`](AGENTS.md) covers working inside
+> this repository.
+
 ## 📖 Table of Contents
 
 - [Quick start](#quick-start)
@@ -1061,7 +1065,7 @@ Also exported: `defaultLightTheme`, `defaultDarkTheme`, and the `ChatTheme` / `P
 <details>
 <summary><strong>Built-in translations and label overrides</strong></summary>
 
-All built-in UI strings (composer placeholder, send/cancel, load earlier, today, voice/video/location labels, slide-to-cancel, reply/edit banner, camera-permission text) route through a label table. Built-in translations ship for `en`, `es`, `fr`, `de`, and `ru`, selected by the existing `locale` prop. Override any individual string with `labels`:
+All built-in UI strings (composer placeholder, send/cancel, load earlier, today, voice/video/location labels, slide-to-cancel, reply/edit banner, camera-permission text) route through a label table. Built-in translations ship for `es`, `fr`, `de`, `ru`, `zh`, `ar`, `pt`, `ja`, `ko`, `it`, `tr`, `hi`, `nl`, `pl` and `id`, with English as the default, selected by the existing `locale` prop. A regional tag falls back to its base language, so `pt-BR` resolves to `pt`. Override any individual string with `labels`:
 
 ```tsx
 <Chat

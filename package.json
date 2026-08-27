@@ -45,7 +45,8 @@
     "access": "public"
   },
   "files": [
-    "lib"
+    "lib",
+    "llms.txt"
   ],
   "scripts": {
     "typecheck": "yarn tsc --noEmit",
