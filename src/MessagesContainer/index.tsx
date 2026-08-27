@@ -491,6 +491,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     return Cell
   }, [trackDayPosition])
 
+  // The handlers-object form is not an inline function, so the rule cannot read its
+  // captures - the dependency array at the end of this call is maintained by hand.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
       scrolledY.value = event.contentOffset.y

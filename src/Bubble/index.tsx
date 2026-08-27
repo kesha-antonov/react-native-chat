@@ -423,6 +423,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     props,
     currentMessage,
     position,
+    isVideoNote,
     theme,
     styles,
   ])

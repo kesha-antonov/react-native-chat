@@ -17,5 +17,8 @@ export function useUpdateLayoutEffect (
       isInitialMount.current = false
     else
       effect()
+  // `dependencies` is this hook's own parameter - the caller owns the list, so there is
+  // nothing static to verify here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies)
 }

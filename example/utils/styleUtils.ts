@@ -8,7 +8,7 @@
 export function getColorSchemeStyle<
   T extends Record<string, unknown>,
   B extends string,
-  C extends string,
+  C extends string
 > (styles: T, baseName: B, colorScheme: C) {
   const key = `${baseName}_${colorScheme}`
 

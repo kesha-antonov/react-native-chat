@@ -7,7 +7,6 @@ import {
   Message,
   MessageText,
   IMessage,
-  User,
   AvatarProps,
   BubbleProps,
   SystemMessageProps,
