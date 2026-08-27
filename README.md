@@ -68,15 +68,27 @@ That is the whole setup - everything below is optional.
 
 ## ✨ Features
 
-| | | |
-| --- | --- | --- |
-| 🌗 [Dark mode & theming](#theming--dark-mode) | 🤖 [Streaming AI messages](#streaming-ai-messages) | 😀 [Emoji reactions](#emoji-reactions) |
-| 🎥 [Video & audio messages](#-whats-new-vs-react-native-gifted-chat) | 🎙️ [Voice & video recording](#-whats-new-vs-react-native-gifted-chat) | 📍 [Location messages](#-whats-new-vs-react-native-gifted-chat) |
-| ↩️ [Swipe to reply](#reply-to-messages) | 📋 [Long-press actions](#message-actions-long-press-context-menu) | ⚡ [Quick replies](#quick-replies) |
-| 🔗 [Smart link parsing](#smart-link-parsing) | 👤 [Avatars](#avatars) | ✍️ [Typing indicator](#typing-indicator) |
-| ⏮️ [Load earlier messages](#load-earlier-messages) | ⬇️ [Scroll to bottom](#scroll-to-bottom) | ✅ [Message status](#message-status) |
-| 💬 [System messages](#system-messages) | 🌍 [Localized dates & i18n](#localization-i18n) | ⌨️ [Keyboard handling](#keyboard--layout) |
-| 🎨 [Fully customizable](#-props-reference) | 📱 [Expo](#-installation) & 🌐 [Web](#web-react-native-web) | 📝 [TypeScript](#typescript) |
+- 🌗 **[Dark mode & theming](#theming--dark-mode)** - full light/dark token system, switchable at runtime
+- 🤖 **[Streaming AI messages](#streaming-ai-messages)** - token-by-token replies with a typing caret and stop control
+- 😀 **[Emoji reactions](#emoji-reactions)** - long-press picker and reaction pills
+- 🎥 **[Video & audio messages](#-whats-new-vs-react-native-gifted-chat)** - real inline playback, with a tappable fallback
+- 🎙️ **[Voice & video recording](#-whats-new-vs-react-native-gifted-chat)** - Telegram-style hold-to-record notes (opt-in)
+- 📍 **[Location messages](#-whats-new-vs-react-native-gifted-chat)** - map card that opens the system maps app
+- ↩️ **[Swipe to reply](#reply-to-messages)** - reply preview and message threading
+- 📋 **[Long-press actions](#message-actions-long-press-context-menu)** - themed context menu anchored to the bubble
+- ⚡ **[Quick replies](#quick-replies)** - bot-style reply buttons
+- 🔗 **[Smart link parsing](#smart-link-parsing)** - URLs, emails, phones, hashtags, mentions
+- 👤 **[Avatars](#avatars)** - user initials or custom images
+- ✍️ **[Typing indicator](#typing-indicator)** - show when someone is typing
+- ⏮️ **[Load earlier messages](#load-earlier-messages)** - pagination and infinite scroll
+- ⬇️ **[Scroll to bottom](#scroll-to-bottom)** - quick jump back to the latest
+- ✅ **[Message status](#message-status)** - ticks for sent, delivered and read
+- 💬 **[System messages](#system-messages)** - in-line notifications
+- 🌍 **[Localized dates & i18n](#localization-i18n)** - Day.js dates, translated UI strings
+- ⌨️ **[Keyboard handling](#keyboard--layout)** - smart avoidance on every platform
+- 🎨 **[Fully customizable](#-props-reference)** - override any component with your own
+- 📱 **[Expo](#-installation)** & 🌐 **[Web](#web-react-native-web)** - works with Expo and react-native-web
+- 📝 **[TypeScript](#typescript)** - complete definitions, generic over your message type
 
 Actively maintained, New Architecture ready, built for the latest Reanimated / Gesture Handler.
 
