@@ -12,7 +12,7 @@
 <h1 align="center">React Native Chat</h1>
 
 <p align="center">
-  The most complete chat UI for React Native & Web
+  The most complete chat UI for React Native &amp; Web
 </p>
 
 <p align="center">
@@ -34,33 +34,51 @@
 
 ---
 
+## Quick start
+
+```bash
+npx expo install @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
+```
+
+```jsx
+import { useCallback, useState } from 'react'
+import { Chat } from '@kesha-antonov/react-native-chat'
+
+export function Example () {
+  const [messages, setMessages] = useState([
+    {
+      _id: 1,
+      text: 'Hello developer',
+      createdAt: new Date(),
+      user: { _id: 2, name: 'John Doe', avatar: 'https://placeimg.com/140/140/any' },
+    },
+  ])
+
+  const onSend = useCallback((newMessages = []) => {
+    setMessages(previous => Chat.append(previous, newMessages))
+  }, [])
+
+  return <Chat messages={messages} onSend={onSend} user={{ _id: 1 }} />
+}
+```
+
+That is the whole setup - everything below is optional.
+
+---
+
 ## ✨ Features
 
-> Actively maintained, New Architecture ready, and built for the latest Reanimated/Gesture Handler. A modern, themeable, drop-in successor to `react-native-gifted-chat`. **[See what is new ▸](#-whats-new-vs-react-native-gifted-chat)**
+| | | |
+| --- | --- | --- |
+| 🌗 [Dark mode & theming](#theming--dark-mode) | 🤖 [Streaming AI messages](#streaming-ai-messages) | 😀 [Emoji reactions](#emoji-reactions) |
+| 🎥 [Video & audio messages](#-whats-new-vs-react-native-gifted-chat) | 🎙️ [Voice & video recording](#-whats-new-vs-react-native-gifted-chat) | 📍 [Location messages](#-whats-new-vs-react-native-gifted-chat) |
+| ↩️ [Swipe to reply](#reply-to-messages) | 📋 [Long-press actions](#message-actions-long-press-context-menu) | ⚡ [Quick replies](#quick-replies) |
+| 🔗 [Smart link parsing](#smart-link-parsing) | 👤 [Avatars](#avatars) | ✍️ [Typing indicator](#typing-indicator) |
+| ⏮️ [Load earlier messages](#load-earlier-messages) | ⬇️ [Scroll to bottom](#scroll-to-bottom) | ✅ [Message status](#message-status) |
+| 💬 [System messages](#system-messages) | 🌍 [Localized dates & i18n](#localization-i18n) | ⌨️ [Keyboard handling](#keyboard--layout) |
+| 🎨 [Fully customizable](#-props-reference) | 📱 [Expo](#-installation) & 🌐 [Web](#web-react-native-web) | 📝 [TypeScript](#typescript) |
 
-- 🌗 **[Modern UI, Dark Mode & Theming](#-whats-new-vs-react-native-gifted-chat)** - A clean, modern default look with a full light/dark theme system, runtime theme switching, and every token overridable
-- 🤖 **[Streaming (AI) Messages](#streaming-ai-messages)** - Token-by-token streamed replies with a typing cursor and stop control
-- 🎥 **[Video & Audio Messages](#-whats-new-vs-react-native-gifted-chat)** - Real inline playback (optional `expo-video` / `expo-audio`) with a graceful tappable fallback - no more "implement it yourself"
-- 🎙️ **[Voice & Video Recording](#-whats-new-vs-react-native-gifted-chat)** - Telegram-style hold-to-record voice notes and camera video messages (optional, opt-in)
-- 📍 **[Location Messages](#-whats-new-vs-react-native-gifted-chat)** - Map card that opens the system maps app on tap
-- 🎨 **[Fully Customizable](#-props-reference)** - Override any component with your own implementation
-- 📎 **[Composer Actions](#actions--action-sheet)** - Attach photos, files, or trigger custom actions
-- ↩️ **[Reply to Messages](#reply-to-messages)** - Swipe-to-reply with reply preview and message threading
-- ⏮️ **[Load Earlier Messages](#load-earlier-messages)** - Infinite scroll with pagination support
-- 📋 **[Copy to Clipboard](#copy-to-clipboard)** - Long-press messages to copy text
-- 🔗 **[Smart Link Parsing](#smart-link-parsing)** - Auto-detect URLs, emails, phone numbers, hashtags, mentions
-- 👤 **[Avatars](#avatars)** - User initials or custom avatar images
-- 🌍 **[Localized Dates](#date--time)** - Full i18n support via Day.js
-- ⌨️ **[Keyboard Handling](#keyboard--layout)** - Smart keyboard avoidance for all platforms
-- 💬 **[System Messages](#system-messages)** - Display system notifications in chat
-- ⚡ **[Quick Replies](#quick-replies)** - Bot-style quick reply buttons
-- 😀 **[Emoji Reactions](#emoji-reactions)** - Long-press to react, with reaction pills and an optional full emoji browser
-- ✍️ **[Typing Indicator](#typing-indicator)** - Show when users are typing
-- ✅ **[Message Status](#message-status)** - Tick indicators for sent/delivered/read states
-- ⬇️ **[Scroll to Bottom](#scroll-to-bottom)** - Quick navigation button
-- 🌐 **[Web Support](#web-react-native-web)** - Works with react-native-web
-- 📱 **[Expo Support](#expo-projects)** - Easy integration with Expo projects
-- 📝 **[TypeScript](#typescript)** - Complete TypeScript definitions included
+Actively maintained, New Architecture ready, built for the latest Reanimated / Gesture Handler.
 
 <p align="center">
   <img width="200" src="https://github.com/user-attachments/assets/c9da88f5-0b20-471c-8cd7-373bdb767517" />
@@ -74,9 +92,10 @@
 
 ## 🆕 What's new vs react-native-gifted-chat
 
-This library is kept in sync with upstream [`react-native-gifted-chat`](https://github.com/FaridSafi/react-native-gifted-chat)'s latest `master`, so you **keep everything it already has** - New Architecture support, the animated sticky day header, Reanimated 3/4, Gesture Handler, TypeScript - and the same `IMessage` model and prop names. **Moving over is a package swap plus a rename** (see [Migrating](#-migrating-from-react-native-gifted-chat)).
+Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/FaridSafi/react-native-gifted-chat)'s latest `master`, so you **keep everything it already has** - and the same `IMessage` model and prop names. Everything added here is **non-breaking and opt-in**; the media and recording features only activate once you install their optional peer deps.
 
-On top of that, this fork adds the features people kept asking upstream for, plus a modern look out of the box:
+<details>
+<summary><strong>Side-by-side comparison</strong></summary>
 
 | Added in this fork | react-native-gifted-chat | @kesha-antonov/react-native-chat |
 | --- | :---: | :---: |
@@ -92,9 +111,12 @@ On top of that, this fork adds the features people kept asking upstream for, plu
 | **Location messages** | ❌ ignored | ✅ map card → opens system maps |
 | Bubble tails + tighter message grouping | flat bubbles | ✅ |
 
-Everything new is **non-breaking and opt-in**: keep passing the same props you do today and you simply get the modern look and the extra features for free. The media/recording features only activate when you install their optional peer deps and enable them - nobody is forced to add a single dependency.
+</details>
 
 ### Theming in one line
+
+<details>
+<summary><strong>Override any token, light and dark</strong></summary>
 
 ```jsx
 // Modern defaults out of the box, or override any token (light + dark):
@@ -105,7 +127,12 @@ Everything new is **non-breaking and opt-in**: keep passing the same props you d
 />
 ```
 
+</details>
+
 ### Voice, video and location
+
+<details>
+<summary><strong>Opt-in recording and media playback</strong></summary>
 
 ```jsx
 <Chat
@@ -121,9 +148,14 @@ Everything new is **non-breaking and opt-in**: keep passing the same props you d
 npx expo install expo-video expo-audio expo-image-picker
 ```
 
+</details>
+
 ### Custom icons (e.g. Lucide)
 
-Built-in icons are the official [Lucide](https://lucide.dev) glyphs, rendered via the optional `react-native-svg` peer when it is installed, or drawn with `View`s (no dependency) otherwise. Override any of them via the `icons` prop - for example with [`lucide-react-native`](https://lucide.dev/) - and the built-in icon is used for anything you don't override:
+<details>
+<summary><strong>Override any built-in icon</strong></summary>
+
+Built-in icons are the official [Lucide](https://lucide.dev) glyphs, rendered via the optional `react-native-svg` peer when it is installed, or drawn with `View`s (no dependency) otherwise. Override any of them via the `icons` prop - the built-in icon is used for anything you don't override:
 
 ```tsx
 import { Send, Mic } from 'lucide-react-native'
@@ -138,6 +170,8 @@ import { Send, Mic } from 'lucide-react-native'
 ```
 
 Overridable names: `send`, `mic`, `camera`, `play`, `pause`, `check`, `checkAll`, `clock`, `pin`, `plus`, `close`, `chevronLeft`, `chevronDown`, `emoji`, `paperclip`, `reply`, `pencil`, `lock`, `trash`.
+
+</details>
 
 ---
 
@@ -155,33 +189,29 @@ Overridable names: `send`, `mic`, `camera`, `play`, `pause`, `check`, `checkAll`
 
 ## 📖 Table of Contents
 
-- [Features](#-features)
-- [What's new vs react-native-gifted-chat](#-whats-new-vs-react-native-gifted-chat)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
-- [Migrating from react-native-gifted-chat](#-migrating-from-react-native-gifted-chat)
-- [Usage](#-usage)
-- [Props Reference](#-props-reference)
-- [Data Structure](#-data-structure)
-- [Platform Notes](#-platform-notes)
-- [Performance](#-performance)
-- [Example App](#-example-app)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [Authors](#-authors)
-- [License](#-license)
+[Requirements](#-requirements) ·
+[Installation](#-installation) ·
+[Migrating](#-migrating-from-react-native-gifted-chat) ·
+[Usage](#-usage) ·
+[Data Structure](#-data-structure) ·
+[Props Reference](#-props-reference) ·
+[Guides](#-guides) ·
+[Platform Notes](#-platform-notes) ·
+[Performance](#-performance) ·
+[Testing](#-testing) ·
+[Example App](#-example-app) ·
+[Troubleshooting](#-troubleshooting) ·
+[Contributing](#-contributing) ·
+[Authors](#-authors) ·
+[License](#-license)
 
 ---
 
 ## 📋 Requirements
 
-| Requirement | Version |
-|-------------|---------|
-| React Native | >= 0.70.0 |
-| iOS | >= 13.4 |
-| Android | API 21+ (Android 5.0) |
-| Expo | SDK 50+ |
-| TypeScript | >= 5.0 (optional) |
+| React Native | iOS | Android | Expo | TypeScript |
+|---|---|---|---|---|
+| >= 0.70.0 | >= 13.4 | API 21+ (5.0) | SDK 50+ | >= 5.0 (optional) |
 
 ---
 
@@ -195,33 +225,37 @@ npx expo install @kesha-antonov/react-native-chat react-native-reanimated react-
 
 ### Bare React Native Projects
 
-**Step 1:** Install the packages
+<details>
+<summary><strong>Three steps</strong></summary>
 
-Using yarn:
+**1.** Install the packages:
+
 ```bash
 yarn add @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
 ```
 
-Using npm:
 ```bash
 npm install --save @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
 ```
 
-**Step 2:** Install iOS pods
+**2.** Install iOS pods:
 
 ```bash
 npx pod-install
 ```
 
-**Step 3:** Configure react-native-reanimated
+**3.** Add Reanimated's Babel plugin, following the [react-native-reanimated installation guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/#step-2-add-reanimateds-babel-plugin).
 
-Follow the [react-native-reanimated installation guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/#step-2-add-reanimateds-babel-plugin) to add the Babel plugin.
+</details>
 
 ---
 
 ## 🔄 Migrating from react-native-gifted-chat
 
-This library is a rebranded continuation of [`react-native-gifted-chat`](https://github.com/FaridSafi/react-native-gifted-chat), built from its latest `master`. **The API, props, and `IMessage` model are unchanged** - migrating is a package swap plus renaming the `GiftedChat*` identifiers.
+**The API, props, and `IMessage` model are unchanged** - migrating is a package swap plus renaming the `GiftedChat*` identifiers. Full guide with a codemod: **[docs/MIGRATION.md](docs/MIGRATION.md)**.
+
+<details>
+<summary><strong>What to rename</strong></summary>
 
 ```bash
 yarn remove react-native-gifted-chat
@@ -236,7 +270,7 @@ yarn add @kesha-antonov/react-native-chat
 | `GiftedChatContext` | `ChatContext` |
 | `IMessage`, `User`, `useChatContext`, … | unchanged |
 
-See the full guide (codemod included) in **[docs/MIGRATION.md](docs/MIGRATION.md)**.
+</details>
 
 ---
 
@@ -244,47 +278,7 @@ See the full guide (codemod included) in **[docs/MIGRATION.md](docs/MIGRATION.md
 
 ### Basic Example
 
-```jsx
-import React, { useState, useCallback, useEffect } from 'react'
-import { Chat } from '@kesha-antonov/react-native-chat'
-
-export function Example() {
-  const [messages, setMessages] = useState([])
-
-  useEffect(() => {
-    setMessages([
-      {
-        _id: 1,
-        text: 'Hello developer',
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: 'John Doe',
-          avatar: 'https://placeimg.com/140/140/any',
-        },
-      },
-    ])
-  }, [])
-
-  const onSend = useCallback((messages = []) => {
-    setMessages(previousMessages =>
-      Chat.append(previousMessages, messages),
-    )
-  }, [])
-
-  return (
-    <Chat
-      messages={messages}
-      onSend={messages => onSend(messages)}
-      user={{
-        _id: 1,
-      }}
-    />
-  )
-}
-```
-
-> **💡 Tip:** Check out more examples in the [`example`](example) directory including Slack-style messages, quick replies, and custom components.
+See [Quick start](#quick-start) above for the minimal setup. More examples - Slack-style messages, quick replies, custom components - live in the [`example`](example) directory.
 
 ---
 
@@ -293,7 +287,7 @@ export function Example() {
 Messages, system messages, and quick replies follow the structure defined in [Models.ts](src/Models.ts).
 
 <details>
-<summary><strong>Message Object Structure</strong></summary>
+<summary><strong>Message object structure</strong></summary>
 
 ```typescript
 interface IMessage {
@@ -345,6 +339,11 @@ interface User {
 
 ## 📖 Props Reference
 
+Every group below is collapsed - open the one you need.
+
+<details>
+<summary><strong>Core configuration, refs &amp; theming</strong></summary>
+
 ### Core Configuration
 
 - **`messages`** _(Array)_ - Messages to display
@@ -362,6 +361,11 @@ interface User {
 
 - **`messagesContainerRef`** _(FlatList ref)_ - Ref to the flatlist
 - **`textInputRef`** _(TextInput ref)_ - Ref to the text input
+
+</details>
+
+<details>
+<summary><strong>Keyboard &amp; layout</strong></summary>
 
 ### Keyboard & Layout
 
@@ -390,6 +394,11 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 
 > **Upgrading from 4.1.0 or earlier:** the default used to be `insets.top`, which could not account for a navigation header - so most apps passed `useHeaderHeight()` to compensate. That is no longer needed; drop it and let Chat measure, or the toolbar will float above the keyboard by the header height.
 
+</details>
+
+<details>
+<summary><strong>Text input, composer &amp; actions</strong></summary>
+
 ### Text Input & Composer
 
 - **`text`** _(String)_ - Input text; default is `undefined`, but if specified, it will override Chat's internal state. Useful for managing text state outside of Chat (e.g. with Redux). Don't forget to implement `textInputProps.onChangeText` to update the text state.
@@ -415,6 +424,11 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`onPressActionButton`** _(Function)_ - Callback when the "+" button is pressed (if set, the built-in `AttachmentSheet` is not shown)
 - **`actionSheet`** _(Function)_ - Escape hatch for a custom system action sheet. **The bundled `@expo/react-native-action-sheet` dependency was removed**, so `context.actionSheet()` defaults to a no-op; pass your own implementation (with `ActionSheetProvider` in your tree) if you relied on it.
 - **`actionSheetOptionTintColor`** _(String)_ - Tint color for action labels in the attachment sheet
+
+</details>
+
+<details>
+<summary><strong>Messages, container &amp; bubbles</strong></summary>
 
 ### Messages & Message Container
 
@@ -443,20 +457,16 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`imageProps`** _(Object)_ - Extra props to be passed to the [`<Image>`](https://reactnative.dev/docs/image) component created by the default `renderMessageImage`
 - **`imageStyle`** _(Object)_ - Custom style for message images
 - **`videoProps`** _(Object)_ - Extra props to be passed to the video component created by the required `renderMessageVideo`
-- **`messageTextProps`** _(Object)_ - Extra props to be passed to the MessageText component. Useful for customizing link parsing behavior, text styles, and matchers. Supports the following props:
+- **`messageTextProps`** _(Object)_ - Extra props to be passed to the MessageText component. Useful for customizing link parsing behavior, text styles, and matchers:
   - `matchers` - Custom matchers for linking message content (like URLs, phone numbers, hashtags, mentions)
   - `linkStyle` - Custom style for links
-  - `email` - Enable/disable email parsing (default: true)
-  - `phone` - Enable/disable phone number parsing (default: true)
-  - `url` - Enable/disable URL parsing (default: true)
-  - `hashtag` - Enable/disable hashtag parsing (default: false)
-  - `mention` - Enable/disable mention parsing (default: false)
-  - `hashtagUrl` - Base URL for hashtags (e.g., 'https://x.com/hashtag')
-  - `mentionUrl` - Base URL for mentions (e.g., 'https://x.com')
+  - `email` / `phone` / `url` - Enable/disable parsing (default: true)
+  - `hashtag` / `mention` - Enable/disable parsing (default: false)
+  - `hashtagUrl` / `mentionUrl` - Base URLs (e.g. `'https://x.com/hashtag'`)
   - `stripPrefix` - Strip 'http://' or 'https://' from URL display (default: false)
   - `TextComponent` - Custom Text component to use (e.g., from react-native-gesture-handler)
 
-Example:
+A custom matcher, replacing the default phone linking with an action sheet:
 
 ```tsx
 <Chat
@@ -504,7 +514,12 @@ Example:
 />
 ```
 
-See full example in [LinksExample](example/components/chat-examples/LinksExample.tsx)
+See the full example in [LinksExample](example/components/chat-examples/LinksExample.tsx).
+
+</details>
+
+<details>
+<summary><strong>Avatars, username, date &amp; time, system messages</strong></summary>
 
 ### Avatars
 
@@ -546,17 +561,20 @@ See full example in [LinksExample](example/components/chat-examples/LinksExample
 
 - **`renderSystemMessage`** _(Component | Function)_ - Custom system message
 
+</details>
+
+<details>
+<summary><strong>Load earlier, typing indicator, quick replies, scroll to bottom</strong></summary>
+
 ### Load Earlier Messages
 
-- **`loadEarlierMessagesProps`** _(Object)_ - Props to pass to the LoadEarlierMessages component. The button is only visible when `isAvailable` is `true`. Supports the following props:
+- **`loadEarlierMessagesProps`** _(Object)_ - Props to pass to the LoadEarlierMessages component. The button is only visible when `isAvailable` is `true`:
   - `isAvailable` - Controls button visibility (default: false)
   - `onPress` - Callback when button is pressed
   - `isLoading` - Display loading indicator (default: false)
   - `isInfiniteScrollEnabled` - Enable infinite scroll up when reaching the top of messages container, automatically calls `onPress` (not yet supported for web)
   - `label` - Override the default "Load earlier messages" text
-  - `containerStyle` - Custom style for the button container
-  - `wrapperStyle` - Custom style for the button wrapper
-  - `textStyle` - Custom style for the button text
+  - `containerStyle` / `wrapperStyle` / `textStyle` - Custom styles for the button
   - `activityIndicatorStyle` - Custom style for the loading indicator
   - `activityIndicatorColor` - Color of the loading indicator (default: 'white')
   - `activityIndicatorSize` - Size of the loading indicator (default: 'small')
@@ -564,14 +582,14 @@ See full example in [LinksExample](example/components/chat-examples/LinksExample
 
 ### Typing Indicator
 
-- **`isTyping`** _(Bool)_ - Typing Indicator state; default `false`. If you use`renderFooter` it will override this.
+- **`isTyping`** _(Bool)_ - Typing Indicator state; default `false`. If you use `renderFooter` it will override this.
 - **`renderTypingIndicator`** _(Component | Function)_ - Custom typing indicator component
 - **`typingIndicatorStyle`** _(StyleProp<ViewStyle>)_ - Custom style for the TypingIndicator component.
-- **`renderFooter`** _(Component | Function)_ - Custom footer component on the ListView, e.g. `'User is typing...'`; see [CustomizedFeaturesExample.tsx](example/components/chat-examples/CustomizedFeaturesExample.tsx) for an example. Overrides default typing indicator that triggers when `isTyping` is true.
+- **`renderFooter`** _(Component | Function)_ - Custom footer component on the ListView, e.g. `'User is typing...'`; see [CustomizedRenderingExample.tsx](example/components/chat-examples/CustomizedRenderingExample.tsx) for an example. Overrides default typing indicator that triggers when `isTyping` is true.
 
 ### Quick Replies
 
-See [Quick Replies example in messages.ts](example/example-expo/data/messages.ts)
+See the [quick replies example in messages.ts](example/example-expo/data/messages.ts).
 
 - **`onQuickReply`** _(Function)_ - Callback when sending a quick reply (to backend server)
 - **`renderQuickReplies`** _(Function)_ - Custom all quick reply view
@@ -580,11 +598,26 @@ See [Quick Replies example in messages.ts](example/example-expo/data/messages.ts
 - **`quickReplyContainerStyle`** _(StyleProp<ViewStyle>)_ - Custom container style for quick replies
 - **`renderQuickReplySend`** _(Function)_ - Custom quick reply **send** view
 
+### Scroll to Bottom
+
+- **`isScrollToBottomEnabled`** _(Bool)_ - Enables the scroll to bottom Component (Default is false)
+- **`scrollToBottomComponent`** _(Function)_ - Custom Scroll To Bottom Component container
+- **`scrollToBottomOffset`** _(Integer)_ - Custom Height Offset upon which to begin showing Scroll To Bottom Component (Default is 200)
+- **`scrollToBottomStyle`** _(Object)_ - Custom style for Scroll To Bottom wrapper (position, bottom, right, etc.)
+- **`scrollToBottomContentStyle`** _(Object)_ - Custom style for Scroll To Bottom content (size, background, shadow, etc.)
+
+</details>
+
+---
+
+## 🧩 Guides
+
 ### Reply to Messages
 
-React Native Chat supports swipe-to-reply functionality out of the box. When enabled, users can swipe on a message to reply to it, displaying a reply preview in the input toolbar and the replied message above the new message bubble.
+<details>
+<summary><strong>Swipe-to-reply, reply preview and threading</strong></summary>
 
-> **Note:** This feature uses `ReanimatedSwipeable` from `react-native-gesture-handler` and `react-native-reanimated` for smooth, performant animations.
+Swipe on a message to reply to it, showing a reply preview in the input toolbar and the replied message above the new bubble. Uses `ReanimatedSwipeable` from `react-native-gesture-handler` plus `react-native-reanimated`.
 
 #### Basic Usage
 
@@ -603,8 +636,6 @@ React Native Chat supports swipe-to-reply functionality out of the box. When ena
 ```
 
 #### Reply Props (Grouped)
-
-The `reply` prop accepts an object with the following structure:
 
 ```typescript
 interface ReplyProps<TMessage> {
@@ -652,8 +683,6 @@ interface ReplyProps<TMessage> {
 
 #### ReplyMessage Structure
 
-When a message has a reply, it includes a `replyMessage` property:
-
 ```typescript
 interface ReplyMessage {
   _id: string | number
@@ -695,22 +724,14 @@ const [replyMessage, setReplyMessage] = useState<ReplyMessage | null>(null)
 
 #### Smooth Animations
 
-The reply preview automatically animates when:
-- **Appearing**: Smoothly expands from zero height with fade-in effect
-- **Disappearing**: Smoothly collapses with fade-out effect
-- **Content changes**: Smoothly transitions when replying to a different message
+The reply preview animates automatically - it expands from zero height with a fade-in when it appears, collapses with a fade-out when cleared, and transitions smoothly when you reply to a different message. These use `react-native-reanimated` for 60fps performance.
 
-These animations use `react-native-reanimated` for 60fps performance.
-
-### Scroll to Bottom
-
-- **`isScrollToBottomEnabled`** _(Bool)_ - Enables the scroll to bottom Component (Default is false)
-- **`scrollToBottomComponent`** _(Function)_ - Custom Scroll To Bottom Component container
-- **`scrollToBottomOffset`** _(Integer)_ - Custom Height Offset upon which to begin showing Scroll To Bottom Component (Default is 200)
-- **`scrollToBottomStyle`** _(Object)_ - Custom style for Scroll To Bottom wrapper (position, bottom, right, etc.)
-- **`scrollToBottomContentStyle`** _(Object)_ - Custom style for Scroll To Bottom content (size, background, shadow, etc.)
+</details>
 
 ### Maintaining Scroll Position (AI Chatbots)
+
+<details>
+<summary><strong>Keep the reading position while long answers stream in</strong></summary>
 
 For AI chat interfaces where long responses arrive and you don't want to disrupt the user's reading position, use [`maintainVisibleContentPosition`](https://reactnative.dev/docs/scrollview#maintainvisiblecontentposition) via `listProps`:
 
@@ -749,15 +770,20 @@ const [isScrolledUp, setIsScrolledUp] = useState(false)
 />
 ```
 
+</details>
+
 ### Streaming (AI) Messages
 
-Render AI assistant replies token-by-token. The library batches incoming chunks with `requestAnimationFrame` (one render per frame, only the streaming bubble re-renders) and shows a blinking caret while a message is still streaming.
+Render AI assistant replies token-by-token. Incoming chunks are batched with `requestAnimationFrame` (one render per frame, only the streaming bubble re-renders) and a blinking caret shows while a message is still streaming.
 
 <p align="center">
   <img width="250" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/ai-streaming-markdown.png" alt="AI reply streaming token-by-token and rendering as markdown, with a blinking caret and a Stop button in the composer" />
 </p>
 
-> The reply above streams in token-by-token (note the caret `▋`) and renders as **markdown** - bold, italics, lists, inline and fenced code - while the composer's send button turns into a **Stop** control mid-stream. See [Markdown rendering for AI replies](#markdown-rendering-for-ai-replies) to enable markdown.
+<details>
+<summary><strong>useStreamingMessages, stop control and a full example</strong></summary>
+
+The reply above streams in token-by-token (note the caret `▋`) and renders as **markdown** - bold, italics, lists, inline and fenced code - while the composer's send button turns into a **Stop** control mid-stream. See [Markdown rendering for AI replies](#markdown-rendering-for-ai-replies) to enable markdown.
 
 - **`IMessage.streaming`** - flag a message as streaming (shows the caret)
 - **`useStreamingMessages(...)`** - owns the message list, rAF-batches `push()`, and supports stop via `AbortController`. It returns `{ messages, setMessages, append, startStream, isStreaming, stop }`; `setMessages` is there for anything the hook does not cover, so you can patch a message with a plain `map`.
@@ -786,7 +812,12 @@ function Bot () {
 
 See **[docs/STREAMING.md](./docs/STREAMING.md)** for the full hook API and a real Claude streaming adapter (via a backend proxy). A runnable demo lives in `example/components/chat-examples/AIBotExample.tsx`.
 
+</details>
+
 #### Markdown rendering for AI replies
+
+<details>
+<summary><strong>Built-in renderer, or react-native-streamdown</strong></summary>
 
 AI/LLM replies are usually markdown (bold, lists, fenced code). Enable markdown with `messageTextProps={{ markdown: true }}` (streamed messages auto-render as markdown unless you pass `markdown={false}`):
 
@@ -813,9 +844,11 @@ There are two renderers and you get the best available one automatically:
   <Chat messageTextProps={{ markdown: true, markdownProps: { /* ... */ } }} {...props} />
   ```
 
+</details>
+
 ### Emoji Reactions
 
-Long-press a message to open a quick emoji picker; selected reactions render as pills below the bubble and toggle on tap. The core ships a lightweight quick picker (built on `react-native-gesture-handler` and `react-native-reanimated`, no extra dependencies). A full emoji browser is optional and demonstrated in the example app via the `renderReactionPicker` override.
+Long-press a message to open a quick emoji picker; selected reactions render as pills below the bubble and toggle on tap. The quick picker ships in the core with no extra dependencies; a full emoji browser is optional via the `renderReactionPicker` override.
 
 <p align="center">
   <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-picker.png" />
@@ -824,6 +857,9 @@ Long-press a message to open a quick emoji picker; selected reactions render as 
   &nbsp;&nbsp;
   <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-emoji-browser.png" />
 </p>
+
+<details>
+<summary><strong>Wiring up the toggle, and the full prop list</strong></summary>
 
 Store reactions on each message as a `reactions` array, then enable the feature and handle the toggle. Reaction state is owned by you, so it works with any backend:
 
@@ -874,8 +910,6 @@ const handleReactionPress = useCallback((message: IChatMessage, emoji: string) =
 
 #### Reactions Props (Grouped)
 
-The `reactions` prop accepts:
-
 - **`isEnabled`** _(Bool)_ - Enable emoji reactions (default `false`)
 - **`emojis`** _(String[])_ - Emojis shown in the quick picker (default `['👍', '❤️', '😂', '😮', '😢', '👎']`)
 - **`onReactionPress`** _(Function)_ - `(message, emoji) => void` called when an emoji is selected or a pill is tapped. Toggle logic is left to you
@@ -884,7 +918,12 @@ The `reactions` prop accepts:
 - **`containerStyle`**, **`reactionStyle`**, **`reactionActiveStyle`**, **`reactionTextStyle`**, **`reactionCountStyle`** - Styles for the reaction pills
 - **`pickerContainerStyle`**, **`pickerEmojiStyle`** - Styles for the quick picker
 
+</details>
+
 ### Smart Link Parsing
+
+<details>
+<summary><strong>URLs, emails, phones, hashtags and mentions</strong></summary>
 
 Message text is automatically scanned for URLs, emails, and phone numbers; hashtags and mentions are opt-in. Configure it via `messageTextProps`:
 
@@ -909,9 +948,14 @@ Message text is automatically scanned for URLs, emails, and phone numbers; hasht
 
 For full control, pass custom `matchers` (`{ type, pattern, getLinkUrl?, getLinkText?, renderLink?, onPress? }[]`) to add or override patterns. See the Links example in the [example app](#-example-app).
 
+</details>
+
 ### Message actions (long-press context menu)
 
-Long-press a message to open a floating, themed **context menu** (Telegram style) anchored to the bubble. Provide the actions via `messageActions` - an array, or a function of the message - each `{ label, icon?, onPress, destructive? }`. When reactions are enabled, a reactions row is shown on top of the menu automatically.
+<details>
+<summary><strong>Telegram-style floating menu</strong></summary>
+
+Long-press a message to open a floating, themed context menu anchored to the bubble. Provide the actions via `messageActions` - an array, or a function of the message - each `{ label, icon?, onPress, destructive? }`. When reactions are enabled, a reactions row is shown on top of the menu automatically.
 
 ```tsx
 import { setStringAsync } from 'expo-clipboard'
@@ -925,7 +969,14 @@ import { Copy, Trash2 } from 'lucide-react-native' // optional icons
 />
 ```
 
+> **Note:** This library no longer depends on `@expo/react-native-action-sheet`. Prefer `messageActions` above. If you specifically want a native action sheet, install it yourself, wrap your tree in `ActionSheetProvider`, and either call `useActionSheet()` in your own `onLongPressMessage` or pass an `actionSheet` prop - the `actionSheet` prop / `context.actionSheet()` escape hatch still works when you provide an implementation. The composer "+" actions use the built-in themed `AttachmentSheet` and need no setup.
+
+</details>
+
 ### Interactive content inside bubbles (video players, maps)
+
+<details>
+<summary><strong>Keeping native controls tappable</strong></summary>
 
 When `reactions` or `messageActions` are enabled, the long-press surface spans the **whole message row** - the bubble *and* the empty space beside it, the way Telegram behaves on Android. (A tap gesture is added on top only when `onPressMessage` is set.) Those recognizers do not cancel touches on native subviews, so a `react-native-video` / `expo-video` player rendered through `renderMessageVideo` keeps its native `controls` interactive.
 
@@ -940,9 +991,12 @@ If a message must own every touch that lands on it, set `isMessageGestureEnabled
 />
 ```
 
-> **Note:** This library no longer depends on `@expo/react-native-action-sheet`. Prefer `messageActions` above. If you specifically want a native action sheet, install it yourself, wrap your tree in `ActionSheetProvider`, and either call `useActionSheet()` in your own `onLongPressMessage` or pass an `actionSheet` prop - the `actionSheet` prop / `context.actionSheet()` escape hatch still works when you provide an implementation. The composer "+" actions use the built-in themed `AttachmentSheet` and need no setup.
+</details>
 
 ### Theming & Dark Mode
+
+<details>
+<summary><strong>Token groups, runtime switching and themed components</strong></summary>
 
 The chat ships with a modern default look and a full token-based theme. Override any subset of tokens via `theme` (light) and `darkTheme` (dark); your overrides are deep-merged over `defaultLightTheme` / `defaultDarkTheme`, and the resolved theme switches at runtime with the color scheme (system, or forced via `colorScheme`). Explicit per-component style props still win over the theme.
 
@@ -975,7 +1029,12 @@ const MyBadge = () => {
 
 Also exported: `defaultLightTheme`, `defaultDarkTheme`, and the `ChatTheme` / `PartialChatTheme` types.
 
+</details>
+
 ### Localization (i18n)
+
+<details>
+<summary><strong>Built-in translations and label overrides</strong></summary>
 
 All built-in UI strings (composer placeholder, send/cancel, load earlier, today, voice/video/location labels, slide-to-cancel, reply/edit banner, camera-permission text) route through a label table. Built-in translations ship for `en`, `es`, `fr`, `de`, and `ru`, selected by the existing `locale` prop. Override any individual string with `labels`:
 
@@ -989,7 +1048,12 @@ All built-in UI strings (composer placeholder, send/cancel, load earlier, today,
 
 Exported helpers: `ChatLabels` (type), `defaultLabels`, `translations`, `resolveLabels`, and the `useLabels` hook for reading the resolved labels in custom components.
 
+</details>
+
 ### Message Status
+
+<details>
+<summary><strong>Tick indicators for sent / delivered / read</strong></summary>
 
 Set `sent`, `received`, or `pending` on a message to show its delivery status. By default these render as tick indicators next to the timestamp (`✓` sent, `✓✓` received, `🕓` pending):
 
@@ -1013,7 +1077,12 @@ Customize the indicators with `renderTicks` (full override) or `tickStyle` (styl
 />
 ```
 
+</details>
+
 ### TypeScript
+
+<details>
+<summary><strong>Generic over your own message type</strong></summary>
 
 Chat ships complete type definitions and is generic over your message type. Extend `IMessage` to add custom fields and everything stays typed end to end:
 
@@ -1031,8 +1100,7 @@ interface MyMessage extends IMessage {
 />
 ```
 
----
-
+</details>
 
 ---
 
@@ -1102,9 +1170,7 @@ module.exports = function override(config, env) {
 
 ## ⚡ Performance
 
-The chat is built for long lists, but a few habits on your side unlock the most:
-
-**Memoize your render props and config.** Each message row is wrapped in `React.memo` with a comparator that deep-compares the message and reference-compares every other prop. So an unchanged row only skips a re-render when the props you pass it are referentially stable. If you pass inline functions or objects, that row re-renders on every parent render:
+The chat is built for long lists. The one habit that matters most: **memoize your render props and config**, because each message row is `React.memo`'d with a comparator that deep-compares the message and reference-compares everything else - so an inline function or object re-renders that row on every parent render.
 
 ```jsx
 // ❌ New reference every render - the row can't skip
@@ -1113,12 +1179,14 @@ The chat is built for long lists, but a few habits on your side unlock the most:
 // ✅ Stable references - unchanged rows skip re-renders
 const renderBubble = useCallback(props => <MyBubble {...props} />, [])
 const reactions = useMemo(() => ({ isEnabled: true, onReactionPress }), [onReactionPress])
-const messageActions = useCallback(message => [{ label: 'Copy', onPress: () => copy(message.text) }], [copy])
 
-<Chat renderBubble={renderBubble} reactions={reactions} messageActions={messageActions} />
+<Chat renderBubble={renderBubble} reactions={reactions} />
 ```
 
-This applies to all render props (`renderBubble`, `renderMessageText`, `renderAvatar`, ...), the `reactions` / `audioRecording` / `videoRecording` / `messageActions` config objects, and any style objects.
+<details>
+<summary><strong>Immutability, context props and virtualization tuning</strong></summary>
+
+The memoization advice applies to all render props (`renderBubble`, `renderMessageText`, `renderAvatar`, ...), the `reactions` / `audioRecording` / `videoRecording` / `messageActions` config objects, and any style objects.
 
 **Keep messages immutable.** Update messages by creating new arrays/objects (e.g. `Chat.append(...)`), never by mutating an existing message in place - the row comparator relies on value changes to detect updates.
 
@@ -1130,7 +1198,12 @@ This applies to all render props (`renderBubble`, `renderMessageText`, `renderAv
 <Chat listProps={{ windowSize: 7, removeClippedSubviews: true }} {...props} />
 ```
 
+</details>
+
 ### FlashList (opt-in)
+
+<details>
+<summary><strong>Recycling rows on very long histories</strong></summary>
 
 On long histories `FlatList` can log `VirtualizedList: You have a large list that is slow to update`. [FlashList](https://shopify.github.io/flash-list/) v2 recycles rows instead of keeping them mounted, which removes that class of stall. It is supported as an **optional** dependency - install it yourself and flip one prop:
 
@@ -1165,6 +1238,8 @@ Notes:
 - `FlatList`-only knobs (`windowSize`, `maxToRenderPerBatch`, `initialNumToRender`, `updateCellsBatchingPeriod`, `removeClippedSubviews`) are not forwarded to FlashList - it sizes its own render window.
 - If `@shopify/flash-list` is not installed, the prop is ignored, a warning is logged, and `FlatList` is used.
 
+</details>
+
 ---
 
 ## 🧪 Testing
@@ -1197,33 +1272,22 @@ fireEvent(loadingWrapper, 'layout', {
 
 ## 📦 Example App
 
-The repository includes a comprehensive example app demonstrating all features:
+<details>
+<summary><strong>Running the demo locally</strong></summary>
+
+The repository includes a comprehensive example app demonstrating all features - basic chat, custom bubbles and avatars, swipe-to-reply, quick replies, typing indicators, attachment actions, link parsing with custom matchers, and web compatibility.
 
 ```bash
-# Clone and install
 git clone https://github.com/kesha-antonov/react-native-chat.git
 cd react-native-chat/example
 yarn install
 
-# Run on iOS
-npx expo run:ios
-
-# Run on Android
-npx expo run:android
-
-# Run on Web
-npx expo start --web
+npx expo run:ios       # iOS
+npx expo run:android   # Android
+npx expo start --web   # Web
 ```
 
-The example app showcases:
-- 💬 Basic chat functionality
-- 🎨 Custom message bubbles and avatars
-- ↩️ Reply to messages with swipe gesture
-- ⚡ Quick replies (bot-style)
-- ✍️ Typing indicators
-- 📎 Attachment actions
-- 🔗 Link parsing and custom matchers
-- 🌐 Web compatibility
+</details>
 
 ---
 
@@ -1277,37 +1341,24 @@ See [this issue](https://github.com/kesha-antonov/react-native-chat/issues/298) 
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Install dependencies (`yarn install`)
-4. Make your changes
-5. Run tests (`yarn test`)
-6. Run linting (`yarn lint`)
-7. Build the library (`yarn build`)
-8. Commit your changes (`git commit -m 'Add amazing feature'`)
-9. Push to the branch (`git push origin feature/amazing-feature`)
-10. Open a Pull Request
+Contributions are welcome - fork, branch, and open a Pull Request.
 
 ### Development Setup
 
+<details>
+<summary><strong>Commands</strong></summary>
+
 ```bash
-# Install dependencies
-yarn install
-
-# Build the library
-yarn build
-
-# Run tests
-yarn test
-
-# Run linting
-yarn lint
-
-# Full validation
-yarn prepublishOnly
+yarn install          # install dependencies
+yarn build            # build the library
+yarn test             # run tests
+yarn lint             # run linting
+yarn prepublishOnly   # full validation
 ```
+
+Before opening a PR, please make sure `yarn test`, `yarn lint` and `yarn build` all pass.
+
+</details>
 
 ---
 
