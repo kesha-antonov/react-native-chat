@@ -189,21 +189,34 @@ Overridable names: `send`, `mic`, `camera`, `play`, `pause`, `check`, `checkAll`
 
 ## 📖 Table of Contents
 
-[Requirements](#-requirements) ·
-[Installation](#-installation) ·
-[Migrating](#-migrating-from-react-native-gifted-chat) ·
-[Usage](#-usage) ·
-[Data Structure](#-data-structure) ·
-[Props Reference](#-props-reference) ·
-[Guides](#-guides) ·
-[Platform Notes](#-platform-notes) ·
-[Performance](#-performance) ·
-[Testing](#-testing) ·
-[Example App](#-example-app) ·
-[Troubleshooting](#-troubleshooting) ·
-[Contributing](#-contributing) ·
-[Authors](#-authors) ·
-[License](#-license)
+- [Quick start](#quick-start)
+- [Features](#-features)
+- [What's new vs react-native-gifted-chat](#-whats-new-vs-react-native-gifted-chat)
+- [Requirements](#-requirements)
+- [Installation](#-installation)
+- [Migrating from react-native-gifted-chat](#-migrating-from-react-native-gifted-chat)
+- [Usage](#-usage)
+- [Data Structure](#-data-structure)
+- [Props Reference](#-props-reference)
+- [Guides](#-guides)
+  - [Reply to Messages](#reply-to-messages)
+  - [Maintaining Scroll Position (AI Chatbots)](#maintaining-scroll-position-ai-chatbots)
+  - [Streaming (AI) Messages](#streaming-ai-messages)
+  - [Emoji Reactions](#emoji-reactions)
+  - [Smart Link Parsing](#smart-link-parsing)
+  - [Message actions](#message-actions-long-press-context-menu)
+  - [Theming & Dark Mode](#theming--dark-mode)
+  - [Localization (i18n)](#localization-i18n)
+  - [Message Status](#message-status)
+  - [TypeScript](#typescript)
+- [Platform Notes](#-platform-notes)
+- [Performance](#-performance)
+- [Testing](#-testing)
+- [Example App](#-example-app)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [Authors](#-authors)
+- [License](#-license)
 
 ---
 
