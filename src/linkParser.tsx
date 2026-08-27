@@ -14,6 +14,20 @@ export interface ParsedLink {
 export interface LinkMatcher {
   type: LinkType
   pattern: RegExp
+  /**
+   * Character class the match must NOT be preceded by. Portable stand-in for a
+   * lookbehind assertion `(?<!...)`, which JavaScriptCore on iOS/Safari < 16.4
+   * rejects while parsing the file, taking the whole app down with
+   * "SyntaxError: Invalid regular expression: invalid group specifier name".
+   * A rejected match does not end the scan: it resumes one character further
+   * along, exactly as a lookbehind would.
+   */
+  notPrecededBy?: RegExp
+  /**
+   * Limits `notPrecededBy` to matches in which this capture group took part, so
+   * a pattern can guard a single one of its alternatives.
+   */
+  notPrecededByGroup?: number
   getLinkUrl?: (text: string) => string
   getLinkText?: (text: string) => string
   baseUrl?: string
@@ -42,7 +56,11 @@ interface LinkParserProps {
 const DEFAULT_MATCHERS: LinkMatcher[] = [
   {
     type: 'url',
-    pattern: /(?:https?:\/\/(?:www\.)?|www\.)[^\s]+|(?<![A-Za-z0-9_.@])(?![A-Za-z0-9._%+-]*@)[a-zA-Z0-9][a-zA-Z0-9-]*\.(?!@)[a-zA-Z]{2,}(?![A-Za-z0-9._%+-]*@)(?:\/[^\s]*)?/gi,
+    // The bare-domain alternative is captured so `notPrecededBy` applies to it
+    // alone, leaving scheme/www links matchable anywhere.
+    pattern: /(?:https?:\/\/(?:www\.)?|www\.)[^\s]+|((?![A-Za-z0-9._%+-]*@)[a-zA-Z0-9][a-zA-Z0-9-]*\.(?!@)[a-zA-Z]{2,}(?![A-Za-z0-9._%+-]*@)(?:\/[^\s]*)?)/gi,
+    notPrecededBy: /[A-Za-z0-9_.@]/,
+    notPrecededByGroup: 1,
     getLinkUrl: (text: string) => {
       if (!/^https?:\/\//i.test(text))
         return `http://${text}`
@@ -52,12 +70,14 @@ const DEFAULT_MATCHERS: LinkMatcher[] = [
   },
   {
     type: 'email',
-    pattern: /(?<![A-Za-z0-9])([a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,
+    pattern: /([a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,
+    notPrecededBy: /[A-Za-z0-9]/,
     getLinkUrl: (text: string) => `mailto:${text}`,
   },
   {
     type: 'phone',
-    pattern: /(?<![A-Za-z0-9_])(?:\+?\d{1,3}[\s.\-]?)?\(?\d{1,4}\)?[\s.\-]?\d{1,4}[\s.\-]?\d{1,9}(?![A-Za-z0-9_]|\.[a-z]{2,4})/gi,
+    pattern: /(?:\+?\d{1,3}[\s.\-]?)?\(?\d{1,4}\)?[\s.\-]?\d{1,4}[\s.\-]?\d{1,9}(?![A-Za-z0-9_]|\.[a-z]{2,4})/gi,
+    notPrecededBy: /[A-Za-z0-9_]/,
     getLinkUrl: (text: string) => {
       const cleaned = text.replace(/[\s.()\-]/g, '')
       return `tel:${cleaned}`
@@ -71,17 +91,59 @@ const DEFAULT_MATCHERS: LinkMatcher[] = [
   },
   {
     type: 'mention',
-    pattern: /(?<![a-zA-Z0-9._%+-])@[\w-]+/g,
+    pattern: /@[\w-]+/g,
+    notPrecededBy: /[a-zA-Z0-9._%+-]/,
     getLinkUrl: (text: string) => text,
     baseUrl: undefined,
   },
 ]
 
+/**
+ * Runs `matcher.pattern` over `text`, honouring `matcher.notPrecededBy`.
+ *
+ * The pattern is cloned so a matcher shared between renders never carries
+ * `lastIndex` state around, which is what `String.prototype.matchAll` does too.
+ * When the preceding character is rejected the scan restarts at
+ * `match.index + 1` rather than after the match, so a start position ruled out
+ * here can still be part of a match found one character later - the same
+ * behaviour a lookbehind assertion gives.
+ */
+function execMatches(text: string, matcher: LinkMatcher): RegExpExecArray[] {
+  const { pattern, notPrecededBy, notPrecededByGroup } = matcher
+  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`
+  const regex = new RegExp(pattern.source, flags)
+  // Dropped `g` here as well: `test` on a global regex advances lastIndex and
+  // would skip every other rejection.
+  const boundary = notPrecededBy
+    ? new RegExp(notPrecededBy.source, notPrecededBy.flags.replace(/[gy]/g, ''))
+    : undefined
+  const matches: RegExpExecArray[] = []
+
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(text)) !== null) {
+    const guarded = notPrecededByGroup === undefined || match[notPrecededByGroup] !== undefined
+
+    if (boundary && guarded && match.index > 0 && boundary.test(text[match.index - 1])) {
+      regex.lastIndex = match.index + 1
+      continue
+    }
+
+    matches.push(match)
+
+    // Zero-length matches would otherwise spin forever.
+    if (match[0].length === 0)
+      regex.lastIndex += 1
+
+  }
+
+  return matches
+}
+
 function parseLinks(text: string, matchers: LinkMatcher[]): ParsedLink[] {
   const links: ParsedLink[] = []
 
   matchers.forEach(matcher => {
-    const matches = text.matchAll(matcher.pattern)
+    const matches = execMatches(text, matcher)
     for (const match of matches)
       if (match.index !== undefined) {
         const matchText = match[0]
