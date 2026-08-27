@@ -36,7 +36,7 @@ export const RenderActions = React.memo((props: ActionsProps) => {
   return (
     <Actions
       {...props}
-      containerStyle={{
+      wrapperStyle={{
         width: 44,
         height: 44,
         alignItems: 'center',
@@ -53,15 +53,21 @@ export const RenderActions = React.memo((props: ActionsProps) => {
           }}
         />
       )}
-      options={{
-        'Choose From Library': () => {
-          console.log('Choose From Library')
+      actions={[
+        {
+          title: 'Choose From Library',
+          action: () => {
+            console.log('Choose From Library')
+          },
         },
-        Cancel: () => {
-          console.log('Cancel')
+        {
+          title: 'Cancel',
+          action: () => {
+            console.log('Cancel')
+          },
         },
-      }}
-      optionTintColor={isDark ? '#ffffff' : '#222B45'}
+      ]}
+      actionSheetOptionTintColor={isDark ? '#ffffff' : '#222B45'}
     />
   )
 })
@@ -93,7 +99,6 @@ export const RenderComposer = React.memo((props: ComposerProps) => {
 export const RenderSend = React.memo((props: SendProps<IMessage>) => (
   <Send
     {...props}
-    isDisabled={!props.text}
     containerStyle={{
       width: 44,
       height: 44,

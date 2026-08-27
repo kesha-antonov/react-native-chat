@@ -68,7 +68,8 @@ export default function BasicExample () {
           style: getColorSchemeStyle(styles, 'composer', colorScheme),
         }}
         messageTextProps={{
-          hashtag: 'twitter',
+          hashtag: true,
+          hashtagUrl: 'https://twitter.com/hashtag/',
         }}
         isScrollToBottomEnabled
       />

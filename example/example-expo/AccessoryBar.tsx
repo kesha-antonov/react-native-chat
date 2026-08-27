@@ -3,7 +3,7 @@ import { StyleSheet, View, useColorScheme } from 'react-native'
 import { MaterialIcons } from '@expo/vector-icons'
 import { RectButton } from 'react-native-gesture-handler'
 
-import { IMessage, User } from '../../src'
+import { IMessage, User } from '@kesha-antonov/react-native-chat'
 import {
   getLocationAsync,
   pickImageAsync,

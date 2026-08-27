@@ -5,7 +5,7 @@ const date1 = dayjs()
 const date2 = date1.clone().subtract(1, 'day')
 const date3 = date2.clone().subtract(1, 'week')
 
-const messages: IMessage[] = [
+const baseMessages: Omit<IMessage, '_id'>[] = [
   {
     text: '',
     createdAt: date3.toDate(),
@@ -185,7 +185,9 @@ const messages: IMessage[] = [
     sent: true,
     received: true,
   },
-].map((message, index) => ({
+]
+
+const messages: IMessage[] = baseMessages.map((message, index) => ({
   ...message,
   _id: index + 1,
 })).reverse()

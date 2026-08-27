@@ -9,6 +9,7 @@
     "start:ios": "npx expo start --ios --dev-client --clear",
     "start:web": "npx expo start --web --clear",
     "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
     "fresh": "yarn start --reset-cache",
     "installDevBuild:ios": "expo run:ios",
     "installDevBuild:android": "expo run:android",

@@ -5,7 +5,9 @@ import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { SymbolWeight, SymbolViewProps } from 'expo-symbols'
 
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>
+// `SymbolViewProps['name']` also admits a per-platform object, which cannot be used as a
+// key - keep just the plain SF Symbol names.
+type SFSymbolName = Extract<SymbolViewProps['name'], string>
 type IconSymbolName = keyof typeof MAPPING
 
 /**
@@ -18,7 +20,7 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-} as IconMapping
+} satisfies Partial<Record<SFSymbolName, ComponentProps<typeof MaterialIcons>['name']>>
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.

@@ -50,8 +50,7 @@ export const renderBubble = (props: BubbleProps<IMessage>) => (
 export const renderSystemMessage = (props: SystemMessageProps<IMessage>) => (
   <SystemMessage
     {...props}
-    containerStyle={{ backgroundColor: 'pink' }}
-    wrapperStyle={{ borderWidth: 10, borderColor: 'white' }}
+    containerStyle={{ backgroundColor: 'pink', borderWidth: 10, borderColor: 'white' }}
     textStyle={{ color: 'crimson', fontWeight: '900' }}
   />
 )
@@ -86,15 +85,11 @@ export const renderMessageText = (props: MessageTextProps<IMessage>) => (
   />
 )
 
-interface CustomViewProps {
-  user: User
-}
-
-export const renderCustomView = ({ user }: CustomViewProps) => (
+export const renderCustomView = ({ user }: BubbleProps<IMessage>) => (
   <View style={{ minHeight: 20, alignItems: 'center' }}>
     <Text>
       Current user:
-      {user.name}
+      {user?.name}
     </Text>
     <Text>From CustomView</Text>
   </View>

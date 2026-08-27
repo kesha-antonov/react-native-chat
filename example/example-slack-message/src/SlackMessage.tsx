@@ -2,28 +2,15 @@ import React, { useCallback, useMemo } from 'react'
 import {
   View,
   StyleSheet,
-  StyleProp,
-  ViewStyle,
 } from 'react-native'
 
 import { Avatar, Day, utils } from '@kesha-antonov/react-native-chat'
-import type { DayProps, BubbleProps, AvatarProps, IMessage } from '@kesha-antonov/react-native-chat'
+import type { DayProps, IMessage, MessageProps } from '@kesha-antonov/react-native-chat'
 import Bubble from './SlackBubble'
 
 const { isSameUser, isSameDay } = utils
 
-interface Props {
-  renderAvatar?: (props: AvatarProps<IMessage>) => void
-  renderBubble?: (props: BubbleProps<IMessage>) => void
-  renderDay?: (props: DayProps) => void
-  currentMessage: any
-  nextMessage?: any
-  previousMessage?: any
-  containerStyle?: {
-    left: StyleProp<ViewStyle>
-    right: StyleProp<ViewStyle>
-  }
-}
+type Props = MessageProps<IMessage>
 
 const Message = (props: Props) => {
   const {
@@ -31,21 +18,23 @@ const Message = (props: Props) => {
     nextMessage,
     previousMessage,
     containerStyle,
+    user,
   } = props
 
-  const getInnerComponentProps = useCallback(() => {
-    return {
-      ...props,
-      position: 'left',
-      isSameUser,
-      isSameDay,
-      containerStyle: props.containerStyle?.left,
-    }
-  }, [props])
+  // Slack-style messages always sit on the left. Only the fields every child actually
+  // declares are passed along - spreading the whole message blob into `Day`, `Bubble` and
+  // `Avatar` alike collides on the props they each shape differently.
+  const innerProps = useMemo(() => ({
+    position: 'left' as const,
+    currentMessage,
+    nextMessage,
+    previousMessage,
+    user,
+  }), [currentMessage, nextMessage, previousMessage, user])
 
   const renderDay = useCallback(() => {
     if (currentMessage.createdAt) {
-      const dayProps = getInnerComponentProps()
+      const dayProps: DayProps = { createdAt: currentMessage.createdAt }
 
       if (props.renderDay)
         return props.renderDay(dayProps)
@@ -54,16 +43,19 @@ const Message = (props: Props) => {
     }
 
     return null
-  }, [currentMessage.createdAt, getInnerComponentProps, props])
+  }, [currentMessage.createdAt, props])
 
   const renderBubble = useCallback(() => {
-    const bubbleProps = getInnerComponentProps()
+    const bubbleProps = {
+      ...innerProps,
+      containerStyle: { left: containerStyle?.left },
+    }
 
     if (props.renderBubble)
       return props.renderBubble(bubbleProps)
 
     return <Bubble {...bubbleProps} />
-  }, [getInnerComponentProps, props])
+  }, [innerProps, containerStyle, props])
 
   const renderAvatar = useCallback(() => {
     let extraStyle
@@ -74,20 +66,16 @@ const Message = (props: Props) => {
       // Set the invisible avatar height to 0, but keep the width, padding, etc.
       extraStyle = { height: 0 }
 
-    const avatarProps = getInnerComponentProps()
+    const avatarProps = {
+      ...innerProps,
+      imageStyle: { left: [styles.slackAvatar, extraStyle] },
+    }
 
     if (props.renderAvatar)
       return props.renderAvatar(avatarProps)
 
-    return (
-      <Avatar
-        {...avatarProps}
-        imageStyle={{
-          left: [styles.slackAvatar, avatarProps.imageStyle, extraStyle],
-        }}
-      />
-    )
-  }, [currentMessage, previousMessage, getInnerComponentProps, props])
+    return <Avatar {...avatarProps} />
+  }, [currentMessage, previousMessage, innerProps, props])
 
   const marginBottom = useMemo(() =>
     isSameUser(
@@ -105,7 +93,7 @@ const Message = (props: Props) => {
         style={[
           styles.container,
           { marginBottom },
-          containerStyle,
+          containerStyle?.left,
         ]}
       >
         {renderAvatar()}

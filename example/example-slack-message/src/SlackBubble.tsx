@@ -7,6 +7,7 @@ import {
   StyleProp,
   ViewStyle,
   TextStyle,
+  ImageStyle,
 } from 'react-native'
 import { useActionSheet } from '@expo/react-native-action-sheet'
 import {
@@ -24,7 +25,7 @@ import { RectButton } from 'react-native-gesture-handler'
 const { isSameUser, isSameDay } = utils
 
 interface Props {
-  touchableProps: object
+  touchableProps?: object
   onLongPress?: (context: unknown, currentMessage: object) => void
   renderMessageImage?: (props: Props) => React.ReactNode
   renderMessageText?: (props: Props) => React.ReactNode
@@ -33,9 +34,9 @@ interface Props {
   renderTime?: (props: Props) => React.ReactNode
   renderTicks?: (currentMessage: IMessage) => React.ReactNode
   currentMessage: IMessage
-  nextMessage: IMessage
-  previousMessage: IMessage
-  user: User
+  nextMessage?: IMessage
+  previousMessage?: IMessage
+  user?: User
   containerStyle?: {
     left?: StyleProp<ViewStyle>
     right?: StyleProp<ViewStyle>
@@ -44,18 +45,18 @@ interface Props {
     left?: StyleProp<ViewStyle>
     right?: StyleProp<ViewStyle>
   }
-  messageTextStyle: StyleProp<TextStyle>
-  usernameStyle: StyleProp<TextStyle>
-  tickStyle: StyleProp<TextStyle>
-  containerToNextStyle: {
-    left: StyleProp<ViewStyle>
-    right: StyleProp<ViewStyle>
+  messageTextStyle?: StyleProp<TextStyle>
+  usernameStyle?: StyleProp<TextStyle>
+  tickStyle?: StyleProp<TextStyle>
+  containerToNextStyle?: {
+    left?: StyleProp<ViewStyle>
+    right?: StyleProp<ViewStyle>
   }
-  containerToPreviousStyle: {
-    left: StyleProp<ViewStyle>
-    right: StyleProp<ViewStyle>
+  containerToPreviousStyle?: {
+    left?: StyleProp<ViewStyle>
+    right?: StyleProp<ViewStyle>
   }
-  imageStyle?: StyleProp<ViewStyle>
+  imageStyle?: StyleProp<ImageStyle>
   textStyle?: StyleProp<TextStyle>
   position: 'left' | 'right'
 }
@@ -136,14 +137,14 @@ const Bubble = (props: Props) => {
 
       return (
         <MessageImage
-          {...props}
+          currentMessage={currentMessage}
           imageStyle={[styles.slackImage, props.imageStyle]}
         />
       )
     }
 
     return null
-  }, [currentMessage.image, props])
+  }, [currentMessage, props])
 
   const renderTicks = useCallback(() => {
     const { currentMessage } = props
@@ -151,7 +152,7 @@ const Bubble = (props: Props) => {
     if (props.renderTicks)
       return props.renderTicks(currentMessage)
 
-    if (currentMessage.user._id !== user._id)
+    if (currentMessage.user._id !== user?._id)
       return null
 
     if (currentMessage.sent || currentMessage.received)
@@ -175,7 +176,7 @@ const Bubble = (props: Props) => {
       )
 
     return null
-  }, [props, tickStyle, user._id])
+  }, [props, tickStyle, user?._id])
 
   const renderUsername = useCallback(() => {
     const username = currentMessage.user.name
@@ -206,9 +207,10 @@ const Bubble = (props: Props) => {
 
       return (
         <Time
-          {...props}
+          position={position}
+          currentMessage={currentMessage}
           containerStyle={{ left: [styles.timeContainer] }}
-          textStyle={{
+          timeTextStyle={{
             left: [
               styles.standardFont,
               styles.headerItem,
@@ -221,7 +223,7 @@ const Bubble = (props: Props) => {
     }
 
     return null
-  }, [currentMessage.createdAt, props])
+  }, [currentMessage, position, props])
 
   const isSameThread = useMemo(() =>
     isSameUser(currentMessage, previousMessage) &&

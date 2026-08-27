@@ -1,6 +1,6 @@
 import { IMessage } from '@kesha-antonov/react-native-chat'
 
-const messages: IMessage[] = [
+const baseMessages: Omit<IMessage, '_id'>[] = [
   {
     text: `Hello this is an example of the ParsedText, links like http://www.google.com or http://www.facebook.com are clickable and phone number 444-555-6666 can call too.
         But you can also do more with this package, for example Bob will change style and David too. foo@gmail.com
@@ -102,7 +102,9 @@ const messages: IMessage[] = [
       _id: 0,
     },
   },
-].map((message, index) => ({
+]
+
+const messages: IMessage[] = baseMessages.map((message, index) => ({
   ...message,
   _id: index + 1,
 })).reverse()

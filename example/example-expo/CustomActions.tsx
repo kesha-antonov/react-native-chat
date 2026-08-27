@@ -10,7 +10,7 @@ import {
 } from 'react-native'
 import { useActionSheet } from '@expo/react-native-action-sheet'
 import { RectButton } from 'react-native-gesture-handler'
-import { IMessage, User } from '../../src'
+import { IMessage, User } from '@kesha-antonov/react-native-chat'
 import {
   getLocationAsync,
   pickImageAsync,

@@ -18,6 +18,9 @@ const CustomView = ({
 
     const { location } = currentMessage
 
+    if (location == null)
+      return
+
     const url = Platform.select({
       ios: `http://maps.apple.com/?ll=${location.latitude},${location.longitude}`,
       default: `http://maps.google.com/?q=${location.latitude},${location.longitude}`,
@@ -30,7 +33,7 @@ const CustomView = ({
 
       alert('Opening the map is not supported.')
     } catch (e) {
-      alert(e.message)
+      alert(e instanceof Error ? e.message : String(e))
     }
   }, [currentMessage])
 

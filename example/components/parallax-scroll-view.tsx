@@ -24,7 +24,7 @@ export default function ParallaxScrollView ({
   headerBackgroundColor,
 }: Props) {
   const backgroundColor = useThemeColor({}, 'background')
-  const colorScheme = useColorScheme() ?? 'light'
+  const colorScheme = useColorScheme()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const scrollRef = useAnimatedRef<Animated.ScrollView>()
   const scrollOffset = useScrollOffset(scrollRef)
