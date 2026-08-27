@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import {
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -9,6 +10,7 @@ import { ActionSheetProvider, useActionSheet } from '@expo/react-native-action-s
 import { MaterialIcons } from '@expo/vector-icons'
 import dayjs from 'dayjs'
 import * as ImagePicker from 'expo-image-picker'
+import * as Linking from 'expo-linking'
 import { getCurrentPositionAsync, requestForegroundPermissionsAsync } from 'expo-location'
 import { RectButton } from 'react-native-gesture-handler'
 import { Chat } from '@kesha-antonov/react-native-chat'
@@ -52,7 +54,7 @@ const initialMessages: IMessage[] = [
     },
   },
   {
-    text: 'This is a quick reply. Do you love Chat? (checkbox)',
+    text: 'This is a quick reply. Do you love React Native Chat? (checkbox)',
     createdAt: date3.toDate(),
     quickReplies: {
       type: 'checkbox',
@@ -77,7 +79,7 @@ const initialMessages: IMessage[] = [
     },
   },
   {
-    text: 'This is a quick reply. Do you love Chat? (radio) KEEP IT',
+    text: 'This is a quick reply. Do you love React Native Chat? (radio) KEEP IT',
     createdAt: date3.toDate(),
     quickReplies: {
       type: 'radio',
@@ -177,6 +179,8 @@ const initialMessages: IMessage[] = [
       _id: 1,
       name: 'Developer',
     },
+    sent: true,
+    received: true,
   },
   {
     text: '#awesome 3',
@@ -185,6 +189,28 @@ const initialMessages: IMessage[] = [
       _id: 1,
       name: 'Developer',
     },
+    sent: true,
+    received: true,
+  },
+  {
+    text: 'Hi',
+    createdAt: date1.toDate(),
+    user: {
+      _id: 1,
+      name: 'Developer',
+    },
+    sent: true,
+    received: true,
+  },
+  {
+    text: '👋',
+    createdAt: date1.toDate(),
+    user: {
+      _id: 1,
+      name: 'Developer',
+    },
+    sent: true,
+    received: true,
   },
 ].map((message, index) => ({
   ...message,
@@ -388,7 +414,8 @@ const CustomActions = ({
 
 const customActionsStyles = StyleSheet.create({
   container: {
-    paddingHorizontal: 8,
+    paddingLeft: 8,
+    paddingRight: 4,
     paddingVertical: 7,
   },
   wrapper: {
@@ -523,7 +550,6 @@ const Button = ({
 
 const accessoryBarStyles = StyleSheet.create({
   container: {
-    height: 44,
     backgroundColor: 'white',
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -545,45 +571,78 @@ const accessoryBarStyles = StyleSheet.create({
 interface CustomViewProps {
   currentMessage: IMessage
   containerStyle?: any
+  mapViewStyle?: any
 }
 
-const CustomView = ({ currentMessage, containerStyle }: CustomViewProps) => {
-  const handlePress = useCallback(() => {
-    alert('Opening the map is not supported in this demo.')
-  }, [])
+const CustomView = ({ currentMessage, containerStyle, mapViewStyle }: CustomViewProps) => {
+  const openMapAsync = useCallback(async () => {
+    if (Platform.OS === 'web') {
+      alert('Opening the map is not supported.')
+      return
+    }
 
-  if (currentMessage.location)
+    const { location } = currentMessage
+
+    const url = Platform.select({
+      ios: `http://maps.apple.com/?ll=${location.latitude},${location.longitude}`,
+      default: `http://maps.google.com/?q=${location.latitude},${location.longitude}`,
+    })
+
+    try {
+      const supported = await Linking.canOpenURL(url)
+      if (supported)
+        return Linking.openURL(url)
+
+      alert('Opening the map is not supported.')
+    } catch (e) {
+      alert(e.message)
+    }
+  }, [currentMessage])
+
+  if (currentMessage.location) {
+    const { latitude, longitude } = currentMessage.location
+
+    // Dependency-free location card (no native map dependency). Tap to open the
+    // coordinates in the system Maps app.
     return (
-      <RectButton onPress={handlePress}>
-        <View style={[customViewStyles.container, containerStyle]}>
-          <MaterialIcons name='location-on' size={24} color='tomato' />
-          <Text style={customViewStyles.text}>
-            Location: {currentMessage.location.latitude.toFixed(4)}, {currentMessage.location.longitude.toFixed(4)}
+      <RectButton style={containerStyle} onPress={openMapAsync}>
+        <View style={[customViewStyles.mapView, mapViewStyle]}>
+          <Text style={customViewStyles.pin}>📍</Text>
+          <Text style={customViewStyles.coords}>
+            {latitude.toFixed(5)}, {longitude.toFixed(5)}
           </Text>
+          <Text style={customViewStyles.hint}>Tap to open in Maps</Text>
         </View>
       </RectButton>
     )
+  }
 
   return null
 }
 
 const customViewStyles = StyleSheet.create({
-  container: {
+  mapView: {
     width: 150,
     height: 100,
     borderRadius: 13,
-    margin: 3,
-    backgroundColor: '#f0f0f0',
-    padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    margin: 3,
+    backgroundColor: '#3390EC',
   },
-  text: {
-    color: 'tomato',
-    fontWeight: 'bold',
+  pin: {
+    fontSize: 26,
+    marginBottom: 2,
+  },
+  coords: {
+    color: '#fff',
+    fontWeight: '600',
     fontSize: 12,
-    marginTop: 5,
-    textAlign: 'center',
+  },
+  hint: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 10,
+    marginTop: 2,
   },
 })
 
@@ -659,6 +718,10 @@ function ChatExample() {
         textInputProps={{
           style: getColorSchemeStyle(styles, 'composer', colorScheme),
         }}
+        messageTextProps={{
+          hashtag: 'twitter',
+        }}
+        isScrollToBottomEnabled
       />
     </View>
   )

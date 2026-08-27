@@ -24,16 +24,17 @@ Add these dependencies to your Expo Snack or project:
 ```json
 {
   "dependencies": {
-    "react-native-chat": "*",
+    "@kesha-antonov/react-native-chat": "*",
     "react-native-gesture-handler": "*",
     "react-native-safe-area-context": "*",
     "react-native-reanimated": "*",
+    "react-native-worklets": "*",
+    "react-native-keyboard-controller": "*",
     "@expo/react-native-action-sheet": "*",
     "@expo/vector-icons": "*",
     "expo-image-picker": "*",
     "expo-location": "*",
     "expo-linking": "*",
-    "react-native-maps": "*",
     "dayjs": "*"
   }
 }
@@ -44,6 +45,18 @@ Add these dependencies to your Expo Snack or project:
 1. Click on the "Dependencies" tab in the left sidebar
 2. Search for and add each dependency listed above
 3. Wait for the dependencies to install
+
+### Peer-dependency warnings
+
+Snack's dependency checker doesn't understand `peerDependenciesMeta.optional`, so it
+will nag about every peer dependency `@kesha-antonov/react-native-chat` declares -
+even ones this example doesn't use, like `@lodev09/react-native-true-sheet`,
+`@shopify/flash-list`, `expo-audio`, `expo-device`, `expo-video`,
+`react-native-audio-api`, `react-native-streamdown`, `react-native-svg`, and
+`react-native-vision-camera`. These power optional features (voice messages, video
+notes, markdown rendering, reactions sheets, etc.) that this demo doesn't exercise.
+Add them too if you want the warnings gone, or ignore them - the app runs fine
+without them.
 
 ## ✨ Features Demonstrated
 
@@ -173,11 +186,10 @@ If dependencies fail to install in Expo Snack:
 3. Try using a different browser
 4. Check Expo Snack status at [status.expo.dev](https://status.expo.dev)
 
-### Maps Not Displaying
-Maps may not work on web or some simulators:
-1. Use a physical device for best results
-2. On Android emulator, enable Google Play Services
-3. On iOS simulator, maps should work by default
+### Location Card Doesn't Open Maps
+The location message renders a dependency-free coordinates card. Tapping it opens the coordinates in the system Maps app (Apple Maps on iOS, Google Maps elsewhere) via `expo-linking`:
+1. This requires a physical device or a simulator/emulator with a Maps app installed
+2. On web, opening the system Maps app is not supported and shows an alert instead
 
 ## 📖 Code Structure
 
