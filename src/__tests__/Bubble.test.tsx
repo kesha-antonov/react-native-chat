@@ -20,8 +20,8 @@ jest.mock('react-native-gesture-handler', () => {
 
 const REACTIONS = { isEnabled: true, onReactionPress: jest.fn() }
 
-it('should render <Bubble /> and compare with snapshot', () => {
-  const { toJSON } = render(
+it('should render <Bubble /> and compare with snapshot', async () => {
+  const { toJSON } = await render(
     <Bubble
       user={{ _id: 1 }}
       currentMessage={DEFAULT_TEST_MESSAGE}
@@ -33,8 +33,8 @@ it('should render <Bubble /> and compare with snapshot', () => {
 })
 
 describe('bubble gestures', () => {
-  it('covers the bubble with the row gesture when reactions are enabled', () => {
-    const { getByTestId } = render(
+  it('covers the bubble with the row gesture when reactions are enabled', async () => {
+    const { getByTestId } = await render(
       <Bubble
         user={{ _id: 1 }}
         currentMessage={DEFAULT_TEST_MESSAGE}
@@ -47,8 +47,8 @@ describe('bubble gestures', () => {
     expect(within(detector).queryByText(DEFAULT_TEST_MESSAGE.text)).not.toBeNull()
   })
 
-  it('keeps the row gesture but drops the bubble when isMessageGestureEnabled is false', () => {
-    const { getByTestId, queryByText } = render(
+  it('keeps the row gesture but drops the bubble when isMessageGestureEnabled is false', async () => {
+    const { getByTestId, queryByText } = await render(
       <Bubble
         user={{ _id: 1 }}
         currentMessage={DEFAULT_TEST_MESSAGE}
@@ -65,11 +65,11 @@ describe('bubble gestures', () => {
     expect(queryByText(DEFAULT_TEST_MESSAGE.text)).not.toBeNull()
   })
 
-  it('accepts a per-message isMessageGestureEnabled predicate', () => {
+  it('accepts a per-message isMessageGestureEnabled predicate', async () => {
     const videoMessage = { ...DEFAULT_TEST_MESSAGE, video: 'https://example.com/v.mp4' }
     const isMessageGestureEnabled = (message: typeof videoMessage) => !message.video
 
-    const { getByTestId, rerender } = render(
+    const { getByTestId, rerender } = await render(
       <Bubble
         user={{ _id: 1 }}
         currentMessage={videoMessage}
@@ -81,7 +81,7 @@ describe('bubble gestures', () => {
 
     expect(within(getByTestId('bubble-gesture-detector')).queryByText(DEFAULT_TEST_MESSAGE.text)).toBeNull()
 
-    rerender(
+    await rerender(
       <Bubble
         user={{ _id: 1 }}
         currentMessage={DEFAULT_TEST_MESSAGE}
@@ -96,11 +96,11 @@ describe('bubble gestures', () => {
 
   // Regression: gesture recognizers cancelled touches on native subviews, so
   // video controls rendered through renderMessageVideo were dead (#1).
-  it('does not cancel touches in native subviews', () => {
+  it('does not cancel touches in native subviews', async () => {
     const tapSpy = jest.spyOn(Gesture, 'Tap')
     const longPressSpy = jest.spyOn(Gesture, 'LongPress')
 
-    render(
+    await render(
       <Bubble
         user={{ _id: 1 }}
         currentMessage={DEFAULT_TEST_MESSAGE}
@@ -117,10 +117,10 @@ describe('bubble gestures', () => {
     longPressSpy.mockRestore()
   })
 
-  it('only composes the tap gesture when onPressMessage is provided', () => {
+  it('only composes the tap gesture when onPressMessage is provided', async () => {
     const exclusiveSpy = jest.spyOn(Gesture, 'Exclusive')
 
-    render(
+    await render(
       <Bubble
         user={{ _id: 1 }}
         currentMessage={DEFAULT_TEST_MESSAGE}
@@ -131,7 +131,7 @@ describe('bubble gestures', () => {
 
     expect(exclusiveSpy).not.toHaveBeenCalled()
 
-    render(
+    await render(
       <Bubble
         user={{ _id: 1 }}
         currentMessage={DEFAULT_TEST_MESSAGE}

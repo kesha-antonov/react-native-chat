@@ -12,6 +12,8 @@ exports[`should render <Avatar /> and compare with snapshot 1`] = `
     ]
   }
 >
-  renderAvatar
+  <Text>
+    renderAvatar
+  </Text>
 </View>
 `;

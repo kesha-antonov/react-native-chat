@@ -9,16 +9,16 @@ jest.mock('@shopify/flash-list', () => {
   throw new Error('Cannot find module @shopify/flash-list')
 })
 
-it('falls back to FlatList and warns when @shopify/flash-list is missing', () => {
+it('falls back to FlatList and warns when @shopify/flash-list is missing', async () => {
   const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
 
-  expect(() => render(
+  await expect(render(
     <MessagesContainer
       messages={[DEFAULT_TEST_MESSAGE]}
       user={{ _id: 1 }}
       isFlashListEnabled
     />
-  )).not.toThrow()
+  )).resolves.toBeDefined()
 
   expect(logSpy.mock.calls.some(call => call.join(' ').includes('@shopify/flash-list'))).toBe(true)
 

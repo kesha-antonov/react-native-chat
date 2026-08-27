@@ -49,7 +49,6 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-asset",
-      "react-native-enriched-markdown",
       [
         "react-native-vision-camera",
         {

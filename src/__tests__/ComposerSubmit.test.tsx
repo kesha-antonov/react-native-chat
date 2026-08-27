@@ -5,9 +5,9 @@ import { Composer } from '../Composer'
 
 const PLACEHOLDER = 'Type a message...'
 
-it('sends on the return key when multiline is disabled', () => {
+it('sends on the return key when multiline is disabled', async () => {
   const onSend = jest.fn()
-  const { getByTestId } = render(
+  const { getByTestId } = await render(
     <Composer text='hello' isMultiline={false} onSend={onSend} />
   )
 
@@ -15,14 +15,14 @@ it('sends on the return key when multiline is disabled', () => {
   expect(input.props.multiline).toBe(false)
   expect(input.props.returnKeyType).toBe('send')
 
-  fireEvent(input, 'submitEditing')
+  await fireEvent(input, 'submitEditing')
 
   expect(onSend).toHaveBeenCalledWith({ text: 'hello' }, true)
 })
 
-it('leaves the return key alone when multiline is enabled (default)', () => {
+it('leaves the return key alone when multiline is enabled (default)', async () => {
   const onSend = jest.fn()
-  const { getByTestId } = render(<Composer text='hello' onSend={onSend} />)
+  const { getByTestId } = await render(<Composer text='hello' onSend={onSend} />)
 
   const input = getByTestId(PLACEHOLDER)
   expect(input.props.multiline).toBe(true)
@@ -31,24 +31,24 @@ it('leaves the return key alone when multiline is enabled (default)', () => {
   expect(input.props.onSubmitEditing).toBeUndefined()
 })
 
-it('does not send blank text', () => {
+it('does not send blank text', async () => {
   const onSend = jest.fn()
-  const { getByTestId } = render(
+  const { getByTestId } = await render(
     <Composer text='   ' isMultiline={false} onSend={onSend} />
   )
 
-  fireEvent(getByTestId(PLACEHOLDER), 'submitEditing')
+  await fireEvent(getByTestId(PLACEHOLDER), 'submitEditing')
 
   expect(onSend).not.toHaveBeenCalled()
 })
 
-it('sends blank text when isTextOptional is set', () => {
+it('sends blank text when isTextOptional is set', async () => {
   const onSend = jest.fn()
-  const { getByTestId } = render(
+  const { getByTestId } = await render(
     <Composer text='' isMultiline={false} isTextOptional onSend={onSend} />
   )
 
-  fireEvent(getByTestId(PLACEHOLDER), 'submitEditing')
+  await fireEvent(getByTestId(PLACEHOLDER), 'submitEditing')
 
   expect(onSend).toHaveBeenCalledWith({ text: '' }, true)
 })

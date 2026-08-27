@@ -27,16 +27,16 @@ beforeEach(() => {
   mockFlashListProps.length = 0
 })
 
-it('renders FlatList by default', () => {
-  const { queryByTestId } = render(
+it('renders FlatList by default', async () => {
+  const { queryByTestId } = await render(
     <MessagesContainer messages={MESSAGES} user={{ _id: 1 }} />
   )
 
   expect(queryByTestId('flash-list')).toBeNull()
 })
 
-it('renders FlashList when isFlashListEnabled is set', () => {
-  const { queryByTestId } = render(
+it('renders FlashList when isFlashListEnabled is set', async () => {
+  const { queryByTestId } = await render(
     <MessagesContainer messages={MESSAGES} user={{ _id: 1 }} isFlashListEnabled />
   )
 
@@ -45,22 +45,22 @@ it('renders FlashList when isFlashListEnabled is set', () => {
   expect(mockFlashListProps[0]!.inverted).toBe(true)
 })
 
-it('starts rendering from the bottom only for non-inverted lists', () => {
-  render(
+it('starts rendering from the bottom only for non-inverted lists', async () => {
+  await render(
     <MessagesContainer messages={MESSAGES} user={{ _id: 1 }} isFlashListEnabled />
   )
   expect(mockFlashListProps[0]!.maintainVisibleContentPosition.startRenderingFromBottom).toBe(false)
 
   mockFlashListProps.length = 0
 
-  render(
+  await render(
     <MessagesContainer messages={MESSAGES} user={{ _id: 1 }} isFlashListEnabled isInverted={false} />
   )
   expect(mockFlashListProps[0]!.maintainVisibleContentPosition.startRenderingFromBottom).toBe(true)
 })
 
-it('lets listProps override the FlashList defaults', () => {
-  render(
+it('lets listProps override the FlashList defaults', async () => {
+  await render(
     <MessagesContainer
       messages={MESSAGES}
       user={{ _id: 1 }}
@@ -72,8 +72,8 @@ it('lets listProps override the FlashList defaults', () => {
   expect(mockFlashListProps[0]!.maintainVisibleContentPosition).toEqual({ disabled: true })
 })
 
-it('does not pass FlatList-only virtualization props to FlashList', () => {
-  render(
+it('does not pass FlatList-only virtualization props to FlashList', async () => {
+  await render(
     <MessagesContainer messages={MESSAGES} user={{ _id: 1 }} isFlashListEnabled />
   )
 

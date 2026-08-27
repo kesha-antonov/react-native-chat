@@ -19,7 +19,7 @@ const layoutEvent = {
   nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 724 } },
 } as never
 
-it('falls back to the safe-area frame before the container has been measured', () => {
+it('falls back to the safe-area frame before the container has been measured', async () => {
   // A chat below a navigation header, in an app whose own SafeAreaProvider does
   // report the offset: the frame is a usable seed until the measurement lands.
   const frame = jest
@@ -27,7 +27,7 @@ it('falls back to the safe-area frame before the container has been measured', (
     .mockReturnValue({ x: 0, y: 120, width: 390, height: 724 })
 
   try {
-    const { getByText } = render(<Probe />)
+    const { getByText } = await render(<Probe />)
 
     expect(getByText('120')).toBeTruthy()
   } finally {
@@ -35,13 +35,13 @@ it('falls back to the safe-area frame before the container has been measured', (
   }
 })
 
-it('is 0 for a full-screen chat', () => {
-  const { getByText } = render(<Probe />)
+it('is 0 for a full-screen chat', async () => {
+  const { getByText } = await render(<Probe />)
 
   expect(getByText('0')).toBeTruthy()
 })
 
-it('prefers the measured window position over the safe-area frame (#11)', () => {
+it('prefers the measured window position over the safe-area frame (#11)', async () => {
   // The regression this guards: when the host app mounts its own
   // SafeAreaProvider, a nested provider is seeded from the parent and reports
   // y = 0 however far down the screen the chat actually starts. Measuring the
@@ -58,9 +58,9 @@ it('prefers the measured window position over the safe-area frame (#11)', () => 
     }) as never)
 
   try {
-    const { getByTestId, getByText } = render(<Probe />)
+    const { getByTestId, getByText } = await render(<Probe />)
 
-    act(() => {
+    await act(() => {
       getByTestId('container').props.onLayout(layoutEvent)
     })
 

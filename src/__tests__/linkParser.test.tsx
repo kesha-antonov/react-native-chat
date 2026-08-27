@@ -28,8 +28,8 @@ function pressableTexts (json: any): string[] {
   return found
 }
 
-function links (text: string, props: Record<string, unknown> = {}): string[] {
-  const { toJSON } = render(
+async function links (text: string, props: Record<string, unknown> = {}): Promise<string[]> {
+  const { toJSON } = await render(
     <LinkParser text={text} stripPrefix={false} TextComponent={Text} {...props} />
   )
   return pressableTexts(toJSON())
@@ -51,47 +51,47 @@ describe('LinkParser patterns', () => {
     expect(code).not.toMatch(/\(\?<[=!]/)
   })
 
-  it('links urls with and without a scheme', () => {
-    expect(links('Check https://example.com now')).toEqual(['https://example.com'])
-    expect(links('visit www.example.com please')).toEqual(['www.example.com'])
-    expect(links(' www.foo.com')).toEqual(['www.foo.com'])
-    expect(links('go to example.com')).toEqual(['example.com'])
+  it('links urls with and without a scheme', async () => {
+    expect(await links('Check https://example.com now')).toEqual(['https://example.com'])
+    expect(await links('visit www.example.com please')).toEqual(['www.example.com'])
+    expect(await links(' www.foo.com')).toEqual(['www.foo.com'])
+    expect(await links('go to example.com')).toEqual(['example.com'])
     // A bare multi-label domain still stops at the second dot, as it always
     // has - the crash fix deliberately left matching behaviour untouched.
-    expect(links('sub.domain.co.uk/path')).toEqual(['sub.domain'])
+    expect(await links('sub.domain.co.uk/path')).toEqual(['sub.domain'])
   })
 
-  it('links emails without also linking their domain', () => {
-    expect(links('mail me at john.doe@example.com ok')).toEqual(['john.doe@example.com'])
-    expect(links('foo@bar.co and baz@qux.io')).toEqual(['foo@bar.co', 'baz@qux.io'])
+  it('links emails without also linking their domain', async () => {
+    expect(await links('mail me at john.doe@example.com ok')).toEqual(['john.doe@example.com'])
+    expect(await links('foo@bar.co and baz@qux.io')).toEqual(['foo@bar.co', 'baz@qux.io'])
   })
 
-  it('does not link a domain glued to a word or an email', () => {
-    expect(links('@example.com')).toEqual([])
-    expect(links('xhttp://a.com')).toEqual(['http://a.com'])
+  it('does not link a domain glued to a word or an email', async () => {
+    expect(await links('@example.com')).toEqual([])
+    expect(await links('xhttp://a.com')).toEqual(['http://a.com'])
   })
 
-  it('links phone numbers but not version strings', () => {
-    expect(links('call +1 (555) 123-4567 now')).toEqual(['+1 (555) 123-4567'])
+  it('links phone numbers but not version strings', async () => {
+    expect(await links('call +1 (555) 123-4567 now')).toEqual(['+1 (555) 123-4567'])
     // Long-standing quirk, kept as-is: a dotted version reads as a number.
-    expect(links('Version 1.2.3 released', { phone: true, url: false })).toEqual(['1.2.3'])
-    expect(links('abc123 and 12ab')).toEqual([])
+    expect(await links('Version 1.2.3 released', { phone: true, url: false })).toEqual(['1.2.3'])
+    expect(await links('abc123 and 12ab')).toEqual([])
   })
 
-  it('links hashtags and mentions when enabled', () => {
-    expect(links('#hashtag and #another_one', { hashtag: true })).toEqual([
+  it('links hashtags and mentions when enabled', async () => {
+    expect(await links('#hashtag and #another_one', { hashtag: true })).toEqual([
       '#hashtag',
       '#another_one',
     ])
-    expect(links('@mention and @user-name', { mention: true })).toEqual([
+    expect(await links('@mention and @user-name', { mention: true })).toEqual([
       '@mention',
       '@user-name',
     ])
     // A mention glued to a word - or the local part of an email - is not one.
-    expect(links('write me@ex.com', { mention: true })).toEqual(['me@ex.com'])
+    expect(await links('write me@ex.com', { mention: true })).toEqual(['me@ex.com'])
   })
 
-  it('honours notPrecededBy on custom matchers', () => {
+  it('honours notPrecededBy on custom matchers', async () => {
     const matcher: LinkMatcher = {
       type: 'url',
       pattern: /cat/g,
@@ -99,10 +99,10 @@ describe('LinkParser patterns', () => {
       getLinkUrl: (text: string) => `https://example.com/${text}`,
     }
 
-    expect(links('cat bobcat cat', { matchers: [matcher] })).toEqual(['cat', 'cat'])
+    expect(await links('cat bobcat cat', { matchers: [matcher] })).toEqual(['cat', 'cat'])
   })
 
-  it('rescans from the next character when a match is rejected', () => {
+  it('rescans from the next character when a match is rejected', async () => {
     // "abc" is rejected at index 1, yet "bc" still matches at index 2 - what a
     // real /(?<!x)a?bc/ produces. Merely skipping the rejected match would
     // resume past it and find nothing.
@@ -113,14 +113,14 @@ describe('LinkParser patterns', () => {
       getLinkUrl: (text: string) => text,
     }
 
-    expect(links('xabc', { matchers: [matcher] })).toEqual(['bc'])
+    expect(await links('xabc', { matchers: [matcher] })).toEqual(['bc'])
     expect([...'xabc'.matchAll(/(?<!x)a?bc/g)].map(m => m[0])).toEqual(['bc'])
   })
 
-  it('does not leak regex state between renders', () => {
+  it('does not leak regex state between renders', async () => {
     const text = 'a.com and b.com'
-    expect(links(text)).toEqual(['a.com', 'b.com'])
-    expect(links(text)).toEqual(['a.com', 'b.com'])
-    expect(links(text)).toEqual(['a.com', 'b.com'])
+    expect(await links(text)).toEqual(['a.com', 'b.com'])
+    expect(await links(text)).toEqual(['a.com', 'b.com'])
+    expect(await links(text)).toEqual(['a.com', 'b.com'])
   })
 })

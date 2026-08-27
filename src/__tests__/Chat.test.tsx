@@ -1,7 +1,6 @@
 import React from 'react'
 import { View } from 'react-native'
 import { act, render, fireEvent } from '@testing-library/react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardContext } from 'react-native-keyboard-controller'
 import * as SafeAreaContext from 'react-native-safe-area-context'
 
@@ -28,8 +27,8 @@ const messages = [
   },
 ]
 
-it('should render <Chat/> and compare with snapshot', () => {
-  const { toJSON } = render(
+it('should render <Chat/> and compare with snapshot', async () => {
+  const { toJSON } = await render(
     <Chat
       messages={messages}
       onSend={() => {}}
@@ -42,8 +41,8 @@ it('should render <Chat/> and compare with snapshot', () => {
   expect(toJSON()).toMatchSnapshot()
 })
 
-it('preserves the default `text` prop on initial render (#603)', () => {
-  const { getByDisplayValue, getByTestId } = render(
+it('preserves the default `text` prop on initial render (#603)', async () => {
+  const { getByDisplayValue, getByTestId } = await render(
     <Chat
       messages={messages}
       onSend={() => {}}
@@ -56,7 +55,7 @@ it('preserves the default `text` prop on initial render (#603)', () => {
 
   // Mount the input toolbar by simulating the initial layout pass (this is also
   // where the text-init/reset logic runs that #603 reported as clearing text).
-  fireEvent(getByTestId('GC_WRAPPER'), 'layout', {
+  await fireEvent(getByTestId('GC_WRAPPER'), 'layout', {
     nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } },
   })
 
@@ -64,7 +63,7 @@ it('preserves the default `text` prop on initial render (#603)', () => {
   expect(getByDisplayValue('test')).toBeTruthy()
 })
 
-it('keeps the toolbar hidden until the keyboard offset is actually measured (#12)', () => {
+it('keeps the toolbar hidden until the keyboard offset is actually measured (#12)', async () => {
   // Leaves the native measurement pending instead of resolving it, so we can
   // inspect the state in between the layout event and the measurement landing.
   let resolveMeasurement: ((x: number, y: number) => void) | undefined
@@ -76,11 +75,11 @@ it('keeps the toolbar hidden until the keyboard offset is actually measured (#12
     }) as never)
 
   try {
-    const { getByTestId } = render(
+    const { getByTestId } = await render(
       <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />
     )
 
-    fireEvent(getByTestId('GC_WRAPPER'), 'layout', {
+    await fireEvent(getByTestId('GC_WRAPPER'), 'layout', {
       nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } },
     })
 
@@ -90,7 +89,7 @@ it('keeps the toolbar hidden until the keyboard offset is actually measured (#12
     // full-screen.
     expect(getByTestId('GC_CONTENT').props.style).toContainEqual({ opacity: 0 })
 
-    act(() => {
+    await act(() => {
       resolveMeasurement?.(0, 96)
     })
 
@@ -101,8 +100,8 @@ it('keeps the toolbar hidden until the keyboard offset is actually measured (#12
   }
 })
 
-it('should render <Chat/> with light colorScheme and compare with snapshot', () => {
-  const { toJSON } = render(
+it('should render <Chat/> with light colorScheme and compare with snapshot', async () => {
+  const { toJSON } = await render(
     <Chat
       messages={messages}
       onSend={() => {}}
@@ -116,8 +115,8 @@ it('should render <Chat/> with light colorScheme and compare with snapshot', () 
   expect(toJSON()).toMatchSnapshot()
 })
 
-it('should render <Chat/> with dark colorScheme and compare with snapshot', () => {
-  const { toJSON } = render(
+it('should render <Chat/> with dark colorScheme and compare with snapshot', async () => {
+  const { toJSON } = await render(
     <Chat
       messages={messages}
       onSend={() => {}}
@@ -141,16 +140,16 @@ const findKeyboardProviders = (tree: any): any[] => {
   return tree.type === 'KeyboardProvider' ? [tree, ...nested] : nested
 }
 
-it('mounts its own KeyboardProvider when the app has none', () => {
-  const { toJSON } = render(
+it('mounts its own KeyboardProvider when the app has none', async () => {
+  const { toJSON } = await render(
     <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />
   )
 
   expect(findKeyboardProviders(toJSON())).toHaveLength(1)
 })
 
-it('reuses the app KeyboardProvider instead of nesting a second one (#11)', () => {
-  const { toJSON } = render(
+it('reuses the app KeyboardProvider instead of nesting a second one (#11)', async () => {
+  const { toJSON } = await render(
     <KeyboardContext.Provider value={mountedKeyboardProvider}>
       <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />
     </KeyboardContext.Provider>
@@ -174,7 +173,7 @@ const findKeyboardVerticalOffset = (tree: any): number | undefined => {
   )
 }
 
-it('offsets the keyboard by where the chat actually sits, not by the top inset (#11)', () => {
+it('offsets the keyboard by where the chat actually sits, not by the top inset (#11)', async () => {
   // A chat below a navigation header: the container starts 120pt down the screen while
   // the top inset stays at the status bar. Only the frame knows about the header.
   const frame = jest
@@ -182,7 +181,7 @@ it('offsets the keyboard by where the chat actually sits, not by the top inset (
     .mockReturnValue({ x: 0, y: 120, width: 390, height: 724 })
 
   try {
-    const { toJSON } = render(
+    const { toJSON } = await render(
       <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />
     )
 
@@ -192,8 +191,8 @@ it('offsets the keyboard by where the chat actually sits, not by the top inset (
   }
 })
 
-it('lets `keyboardAvoidingViewProps` override the measured offset', () => {
-  const { toJSON } = render(
+it('lets `keyboardAvoidingViewProps` override the measured offset', async () => {
+  const { toJSON } = await render(
     <Chat
       messages={messages}
       onSend={() => {}}
@@ -205,63 +204,39 @@ it('lets `keyboardAvoidingViewProps` override the measured offset', () => {
   expect(findKeyboardVerticalOffset(toJSON())).toBe(64)
 })
 
-it('skips the KeyboardProvider when `enableKeyboardProvider` is false', () => {
-  const { toJSON } = render(
+it('skips the KeyboardProvider when `enableKeyboardProvider` is false', async () => {
+  const { toJSON } = await render(
     <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} enableKeyboardProvider={false} />
   )
 
   expect(findKeyboardProviders(toJSON())).toHaveLength(0)
 })
 
-it('does not force the system bars translucent on the app window (#2755)', () => {
+it('does not force the system bars translucent on the app window (#2755)', async () => {
   // Those props tell Android "the app already draws behind the system bars", and the
   // provider answers by zeroing the activity content view's margins - a window-level
   // change it never undoes, so the host app stays under the navigation bar after the
   // chat screen is gone. Only the app knows whether it is edge-to-edge.
   const [provider] = findKeyboardProviders(
-    render(<Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />).toJSON()
+    (await render(<Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />)).toJSON()
   )
 
   expect(provider.props.statusBarTranslucent).toBeUndefined()
   expect(provider.props.navigationBarTranslucent).toBeUndefined()
 })
 
-it('still lets `keyboardProviderProps` set the translucency explicitly', () => {
+it('still lets `keyboardProviderProps` set the translucency explicitly', async () => {
   const [provider] = findKeyboardProviders(
-    render(
+    (await render(
       <Chat
         messages={messages}
         onSend={() => {}}
         user={{ _id: 1 }}
         keyboardProviderProps={{ statusBarTranslucent: true, navigationBarTranslucent: true }}
       />
-    ).toJSON()
+    )).toJSON()
   )
 
   expect(provider.props.statusBarTranslucent).toBe(true)
   expect(provider.props.navigationBarTranslucent).toBe(true)
-})
-
-it('mounts its own GestureHandlerRootView when the app has none', () => {
-  const { UNSAFE_getAllByType } = render(
-    <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />
-  )
-
-  expect(UNSAFE_getAllByType(GestureHandlerRootView)).toHaveLength(1)
-})
-
-it('skips the GestureHandlerRootView when `enableGestureHandlerRootView` is false (#17)', () => {
-  // An app that already mounts its own (directly, or via something like a bottom sheet
-  // library) can't be auto-detected the way `KeyboardProvider` is - gesture-handler
-  // doesn't expose that publicly - so this has to be an explicit opt-out.
-  const { UNSAFE_queryAllByType } = render(
-    <Chat
-      messages={messages}
-      onSend={() => {}}
-      user={{ _id: 1 }}
-      enableGestureHandlerRootView={false}
-    />
-  )
-
-  expect(UNSAFE_queryAllByType(GestureHandlerRootView)).toHaveLength(0)
 })

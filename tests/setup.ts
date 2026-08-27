@@ -2,9 +2,19 @@ jest.mock('react-native-worklets', () =>
   require('react-native-worklets/lib/module/mock')
 )
 
-jest.mock('react-native-reanimated', () =>
-  require('react-native-reanimated/mock')
-)
+jest.mock('react-native-reanimated', () => {
+  // Reanimated deliberately selects its JS-only module under Jest, but since 4.6 the native
+  // initializer unconditionally installs a CSS event handler - and that module's
+  // `setCSSEventHandler` throws. Loading the library's own mock crashes on the way in, so
+  // neutralise the one method first. Nothing here animates via CSS, so a noop is enough.
+  const {
+    createJSReanimatedModule,
+  } = require('react-native-reanimated/src/ReanimatedModule/js-reanimated/JSReanimated')
+
+  Object.getPrototypeOf(createJSReanimatedModule()).setCSSEventHandler = () => {}
+
+  return require('react-native-reanimated/mock')
+})
 
 jest.mock('react-native-safe-area-context', () => {
   const React = require('react')
