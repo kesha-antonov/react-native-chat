@@ -1192,8 +1192,6 @@ The published files are ES modules with JSX left in place, and the component use
 
 In Next.js that is `transpilePackages` in `next.config.js`; in a plain webpack setup it means widening the `babel-loader` rule's `exclude` so these packages are included.
 
-`create-react-app` is deprecated and no longer covers this - the old `react-app-rewired` + `config-overrides.js` recipe that used to be documented here predates Reanimated and does not make the library work. Prefer Expo web, or a bundler you can configure as above.
-
 </details>
 
 ---
