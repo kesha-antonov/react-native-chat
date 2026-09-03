@@ -122,4 +122,8 @@ interface ViewLayout {
   height: number
 }
 
-export type DaysPositions = { [key: string]: ViewLayout & { createdAt: number } }
+// `dayKey` is the local calendar day as a sortable integer (YYYYMMDD-ish). It is
+// computed once, on the JS side, where a Date is already in hand - the worklet that
+// compares entries runs on every cell layout, and constructing Dates there to compare
+// them allocated two objects per entry per layout.
+export type DaysPositions = { [key: string]: ViewLayout & { createdAt: number, dayKey: number } }

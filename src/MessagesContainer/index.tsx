@@ -8,7 +8,7 @@ import {
   ViewStyle,
   Platform } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
-import Animated, { runOnJS, ScrollEvent, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { runOnJS, ScrollEvent, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { Icon } from '../components/Icon'
 import { useIsKeyboardVisible } from '../hooks/useIsKeyboardVisible'
 import { useThemedStyles } from '../hooks/useTheme'
@@ -17,7 +17,7 @@ import { warning } from '../logging'
 import { IMessage } from '../Models'
 import stylesCommon from '../styles'
 import { TypingIndicator } from '../TypingIndicator'
-import { isSameDay, useCallbackThrottled } from '../utils'
+import { isSameDay } from '../utils'
 import { DayAnimated } from './components/DayAnimated'
 import { Item } from './components/Item'
 import { ItemProps } from './components/Item/types'
@@ -151,18 +151,29 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     return null
   }, [loadEarlierMessagesProps, renderLoadEarlierProp])
 
-  const changeScrollToBottomVisibility: (isVisible: boolean) => void = useCallbackThrottled((isVisible: boolean) => {
-    if (isScrollingDown.value && isVisible)
-      return
+  // Whether the scroll-to-bottom button should be showing. Written from the scroll
+  // worklet (UI thread) and from `doScrollToBottom` (JS); the reaction below is the
+  // single place that reacts to it changing, so the JS thread is only involved on a
+  // genuine transition rather than on every scroll frame.
+  const isScrollToBottomShown = useSharedValue(false)
 
-    if (isVisible)
-      setIsScrollToBottomVisible(true)
+  useAnimatedReaction(
+    () => isScrollToBottomShown.value,
+    (isVisible, previous) => {
+      if (isVisible === previous)
+        return
 
-    scrollToBottomOpacity.value = withTiming(isVisible ? 1 : 0, { duration: 250 }, isFinished => {
-      if (isFinished && !isVisible)
-        runOnJS(setIsScrollToBottomVisible)(false)
-    })
-  }, [scrollToBottomOpacity, isScrollingDown], 50)
+      // Mount the button before fading it in; unmount only once it has faded out.
+      if (isVisible)
+        runOnJS(setIsScrollToBottomVisible)(true)
+
+      scrollToBottomOpacity.value = withTiming(isVisible ? 1 : 0, { duration: 250 }, isFinished => {
+        if (isFinished && !isVisible)
+          runOnJS(setIsScrollToBottomVisible)(false)
+      })
+    },
+    [isScrollToBottomShown, scrollToBottomOpacity]
+  )
 
   const scrollTo = useCallback((options: { animated?: boolean, offset: number }) => {
     if (options)
@@ -171,43 +182,22 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   const doScrollToBottom = useCallback((animated: boolean = true) => {
     isScrollingDown.value = true
-    changeScrollToBottomVisibility(false)
+    isScrollToBottomShown.value = false
 
     if (isInverted)
       scrollTo({ offset: 0, animated })
     else if (forwardRef?.current)
       forwardRef.current.scrollToEnd({ animated })
-  }, [forwardRef, isInverted, scrollTo, isScrollingDown, changeScrollToBottomVisibility])
+  }, [forwardRef, isInverted, scrollTo, isScrollingDown, isScrollToBottomShown])
 
-  const handleOnScroll = useCallback((event: ScrollEvent) => {
+  // The only part of scroll handling that genuinely needs the JS thread: handing the
+  // event to a consumer's own `onScroll`. Everything else is shared-value arithmetic
+  // and stays in the worklet below.
+  const notifyConsumerScroll = useCallback((event: ScrollEvent) => {
     listPropsOnScrollProp?.(event)
+  }, [listPropsOnScrollProp])
 
-    const {
-      contentOffset: { y: contentOffsetY },
-      contentSize: { height: contentSizeHeight },
-      layoutMeasurement: { height: layoutMeasurementHeight },
-    } = event
-
-    isScrollingDown.value =
-      (isInverted && lastScrolledY.value > contentOffsetY) ||
-      (!isInverted && lastScrolledY.value < contentOffsetY)
-
-    lastScrolledY.value = contentOffsetY
-    contentHeight.value = contentSizeHeight
-
-    if (isInverted)
-      if (contentOffsetY > scrollToBottomOffset!)
-        changeScrollToBottomVisibility(true)
-      else
-        changeScrollToBottomVisibility(false)
-    else if (
-      contentOffsetY < scrollToBottomOffset! &&
-      contentSizeHeight - layoutMeasurementHeight > scrollToBottomOffset!
-    )
-      changeScrollToBottomVisibility(false)
-    else
-      changeScrollToBottomVisibility(false)
-  }, [isInverted, scrollToBottomOffset, changeScrollToBottomVisibility, isScrollingDown, lastScrolledY, contentHeight, listPropsOnScrollProp])
+  const hasConsumerOnScroll = !!listPropsOnScrollProp
 
   // Auto-scroll to the newest message when it arrives in a non-inverted list.
   // Inverted lists keep the newest message visible on their own, but a
@@ -427,31 +417,29 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     const id = message._id.toString()
     const { y, height } = layout
 
+    // Both the timestamp and the calendar-day key are resolved here, on the JS thread,
+    // so the worklet below never has to build a Date to decide whether two entries fall
+    // on the same day - it runs on every cell layout, which is constant during a
+    // recycling scroll.
+    const date = new Date(message.createdAt)
     const newValue = {
       y,
       height,
-      createdAt: new Date(message.createdAt).getTime(),
+      createdAt: date.getTime(),
+      dayKey: date.getFullYear() * 10000 + date.getMonth() * 100 + date.getDate(),
     }
 
     daysPositions.modify(value => {
       'worklet'
 
-      const isSameDay = (date1: number, date2: number) => {
-        const d1 = new Date(date1)
-        const d2 = new Date(date2)
-
-        return (
-          d1.getDate() === d2.getDate() &&
-          d1.getMonth() === d2.getMonth() &&
-          d1.getFullYear() === d2.getFullYear()
-        )
-      }
-
-      for (const [key, item] of Object.entries(value))
-        if (isSameDay(newValue.createdAt, item.createdAt) && (isInverted ? item.y <= newValue.y : item.y >= newValue.y)) {
+      // A plain for-in avoids the array `Object.entries` would allocate per layout.
+      for (const key in value) {
+        const item = value[key]
+        if (item.dayKey === newValue.dayKey && (isInverted ? item.y <= newValue.y : item.y >= newValue.y)) {
           delete value[key]
           break
         }
+      }
 
       // @ts-expect-error: https://docs.swmansion.com/react-native-reanimated/docs/core/useSharedValue#remarks
       value[id] = newValue
@@ -506,9 +494,37 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
-      scrolledY.value = event.contentOffset.y
+      const y = event.contentOffset.y
+      const contentSizeHeight = event.contentSize.height
+      const layoutHeight = event.layoutMeasurement.height
 
-      runOnJS(handleOnScroll)(event)
+      scrolledY.value = y
+
+      isScrollingDown.value = isInverted
+        ? lastScrolledY.value > y
+        : lastScrolledY.value < y
+
+      lastScrolledY.value = y
+      contentHeight.value = contentSizeHeight
+
+      // How far the viewport sits from the newest message. An inverted list counts
+      // that straight from the offset (0 is the bottom); a normal list measures the
+      // gap left below the viewport.
+      const distanceFromNewest = isInverted
+        ? y
+        : contentSizeHeight - layoutHeight - y
+
+      let next = distanceFromNewest > scrollToBottomOffset!
+
+      // Don't pop the button up while the user is already on their way back down -
+      // it would appear only to be dismissed a moment later.
+      if (next && isScrollingDown.value)
+        next = isScrollToBottomShown.value
+
+      isScrollToBottomShown.value = next
+
+      if (hasConsumerOnScroll)
+        runOnJS(notifyConsumerScroll)(event)
     },
     onBeginDrag: () => {
       isScrollActive.value = true
@@ -524,7 +540,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     onMomentumEnd: () => {
       isScrollActive.value = false
     },
-  }, [handleOnScroll, isScrollActive])
+  }, [isScrollActive, isInverted, scrollToBottomOffset, hasConsumerOnScroll, notifyConsumerScroll, isScrollingDown, lastScrolledY, contentHeight, isScrollToBottomShown, scrolledY])
 
   // removes unrendered days positions when messages are added/removed
   useEffect(() => {
