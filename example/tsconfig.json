@@ -11,6 +11,13 @@
       ],
       "react-native/*": [
         "./node_modules/react-native/*"
+      ],
+      // Deep icon imports (see MediaExample.tsx) bypass the `lucide-react-native` barrel so
+      // Metro, which cannot tree-shake, stops bundling all ~1600 icons. Metro resolves those
+      // physical paths fine; TypeScript can't, because the package only declares them through
+      // its `exports` map and this project turns package exports off. Point TS at the types.
+      "lucide-react-native/dist/esm/icons/*.mjs": [
+        "./node_modules/lucide-react-native/dist/types/icons/*.d.ts"
       ]
     }
   },
