@@ -53,17 +53,13 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
     new Date(props.currentMessage.createdAt).getTime()
   , [props.currentMessage.createdAt])
 
-  // On-screen Y of this day's separator. Infinity (treated as below the pin, i.e.
-  // visible) until the day has been measured.
-  const separatorScreenTop = useDerivedValue(() => {
-    'worklet'
-
-    const day = findDayPosition(daysPositions.value, createdAt)
-    if (!day)
-      return Infinity
-
-    return dayPositionScreenTop(listHeight.value + scrolledY.value, day)
-  }, [daysPositions, listHeight, scrolledY, createdAt])
+  // This day's measured position. Deliberately derived from `daysPositions` alone and
+  // NOT from `scrolledY`: the lookup is an O(days) scan that allocates (Object.values),
+  // and reading scroll here would re-run it once per mounted row on every frame. Cell
+  // layout is the only thing that can change the answer, so that is what it tracks.
+  const dayPosition = useDerivedValue(() =>
+    findDayPosition(daysPositions.value, createdAt)
+  , [daysPositions, createdAt])
 
   const style = useAnimatedStyle(() => {
     // The inline separator is the in-conversation date marker. It is shown while its
@@ -76,13 +72,20 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
     // the worklet picks the new stuck day instantly but the header's text only
     // updates ~1 frame later on the JS thread; until it does, this inline separator
     // stays up and shows the correct date, so the header never flashes the old one.
-    const belowHandoff = separatorScreenTop.value > DAY_HANDOFF_OFFSET
+    // Only the arithmetic is per-frame; the lookup it needs was resolved at layout.
+    // Infinity (treated as below the pin, i.e. visible) until the day is measured.
+    const day = dayPosition.value
+    const separatorScreenTop = day
+      ? dayPositionScreenTop(listHeight.value + scrolledY.value, day)
+      : Infinity
+
+    const belowHandoff = separatorScreenTop > DAY_HANDOFF_OFFSET
     const headerShowsThisDay = floatingRenderedDate != null && floatingRenderedDate.value === createdAt
 
     return {
       opacity: belowHandoff || !headerShowsThisDay ? 1 : 0,
     }
-  }, [separatorScreenTop, floatingRenderedDate, createdAt])
+  }, [dayPosition, listHeight, scrolledY, floatingRenderedDate, createdAt])
 
   return (
     <Animated.View style={style}>
