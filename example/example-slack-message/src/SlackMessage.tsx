@@ -4,8 +4,8 @@ import {
   StyleSheet,
 } from 'react-native'
 
-import { Avatar, Day, utils } from '@kesha-antonov/react-native-chat'
-import type { DayProps, IMessage, MessageProps } from '@kesha-antonov/react-native-chat'
+import { Avatar, utils } from '@kesha-antonov/react-native-chat'
+import type { IMessage, MessageProps } from '@kesha-antonov/react-native-chat'
 import Bubble from './SlackBubble'
 
 const { isSameUser, isSameDay } = utils
@@ -22,8 +22,12 @@ const Message = (props: Props) => {
   } = props
 
   // Slack-style messages always sit on the left. Only the fields every child actually
-  // declares are passed along - spreading the whole message blob into `Day`, `Bubble` and
+  // declares are passed along - spreading the whole message blob into `Bubble` and
   // `Avatar` alike collides on the props they each shape differently.
+  //
+  // No day separator is rendered here: the list already renders one per day change
+  // around whatever `renderMessage` returns, so doing it again would print a pill
+  // above every single message.
   const innerProps = useMemo(() => ({
     position: 'left' as const,
     currentMessage,
@@ -31,19 +35,6 @@ const Message = (props: Props) => {
     previousMessage,
     user,
   }), [currentMessage, nextMessage, previousMessage, user])
-
-  const renderDay = useCallback(() => {
-    if (currentMessage.createdAt) {
-      const dayProps: DayProps = { createdAt: currentMessage.createdAt }
-
-      if (props.renderDay)
-        return props.renderDay(dayProps)
-
-      return <Day {...dayProps} />
-    }
-
-    return null
-  }, [currentMessage.createdAt, props])
 
   const renderBubble = useCallback(() => {
     const bubbleProps = {
@@ -87,18 +78,15 @@ const Message = (props: Props) => {
   , [currentMessage, nextMessage])
 
   return (
-    <View>
-      {renderDay()}
-      <View
-        style={[
-          styles.container,
-          { marginBottom },
-          containerStyle?.left,
-        ]}
-      >
-        {renderAvatar()}
-        {renderBubble()}
-      </View>
+    <View
+      style={[
+        styles.container,
+        { marginBottom },
+        containerStyle?.left,
+      ]}
+    >
+      {renderAvatar()}
+      {renderBubble()}
     </View>
   )
 }

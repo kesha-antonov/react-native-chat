@@ -49,7 +49,7 @@ export const RenderActions = React.memo((props: ActionsProps) => {
         <Image
           style={{ width: 32, height: 32 }}
           source={{
-            uri: 'https://placeimg.com/32/32/any',
+            uri: 'https://picsum.photos/32/32',
           }}
         />
       )}
@@ -110,7 +110,7 @@ export const RenderSend = React.memo((props: SendProps<IMessage>) => (
     <Image
       style={{ width: 32, height: 32 }}
       source={{
-        uri: 'https://placeimg.com/32/32/any',
+        uri: 'https://picsum.photos/32/32',
       }}
     />
   </Send>

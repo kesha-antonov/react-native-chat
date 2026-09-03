@@ -10,7 +10,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     text: '',
     createdAt: date3.toDate(),
     audio:
-      'https://file-examples.com/wp-content/uploads/2017/11/file_example_MP3_700KB.mp3',
+      'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     user: {
       _id: 2,
       name: 'John Doe',

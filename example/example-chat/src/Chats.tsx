@@ -34,7 +34,7 @@ const Chats = () => {
       user={{
         _id: 1,
         name: 'Aaron',
-        avatar: 'https://placeimg.com/150/150/any',
+        avatar: 'https://picsum.photos/150/150',
       }}
       isAlignedTop
       isSendButtonAlwaysVisible

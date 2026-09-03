@@ -168,15 +168,21 @@ const LinksExample: React.FC = () => {
       getLinkText: (text: string): string => {
         return text
       },
+      // The pattern above is deliberately loose - it has to catch the many shapes a
+      // phone number is written in. That also means it matches things that merely look
+      // like one (ISO dates such as 2025-12-25, house numbers), so libphonenumber-js
+      // has the final say: anything it rejects renders as ordinary text rather than as
+      // a dead link. Styling it as a disabled link instead would still expose it to
+      // screen readers as a link and invite a tap that does nothing.
       renderLink: (text: string, url: string, index: number) => {
-        const validPhoneNumber = getValidPhoneNumber(text)
-        const isDisabled = !validPhoneNumber || !url
+        if (!getValidPhoneNumber(text) || !url)
+          return <Text key={index}>{text}</Text>
 
         return (
           <Text
             key={index}
-            style={[styles.link, isDisabled && styles.linkDisabled]}
-            onPress={() => !isDisabled && handlePressPhoneNumber(url)}
+            style={styles.link}
+            onPress={() => handlePressPhoneNumber(url)}
           >
             {text}
           </Text>
@@ -222,8 +228,5 @@ const styles = StyleSheet.create({
   },
   link: {
     textDecorationLine: 'underline',
-  },
-  linkDisabled: {
-    textDecorationLine: 'none',
   },
 })

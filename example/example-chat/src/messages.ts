@@ -10,7 +10,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 1,
       name: 'John Doe',
-      avatar: 'https://placeimg.com/140/140/any',
+      avatar: 'https://picsum.photos/140/140',
     },
   },
   {
@@ -19,7 +19,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 2,
       name: 'John Doe',
-      avatar: 'https://placeimg.com/140/140/any',
+      avatar: 'https://picsum.photos/140/140',
     },
   },
   {
@@ -28,7 +28,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 2,
       name: 'John Doe',
-      avatar: 'https://placeimg.com/140/140/any',
+      avatar: 'https://picsum.photos/140/140',
     },
     quickReplies: {
       type: 'checkbox', // or 'radio',
@@ -54,7 +54,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 2,
       name: 'John Doe',
-      avatar: 'https://placeimg.com/140/140/any',
+      avatar: 'https://picsum.photos/140/140',
     },
     quickReplies: {
       type: 'radio', // or 'checkbox',
@@ -81,9 +81,9 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 1,
       name: 'John Doe',
-      avatar: 'https://placeimg.com/140/140/any',
+      avatar: 'https://picsum.photos/140/140',
     },
-    image: 'https://placeimg.com/960/540/any',
+    image: 'https://picsum.photos/960/540',
   },
   {
     text: 'Hello developer',
@@ -91,7 +91,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 2,
       name: 'John Doe',
-      avatar: 'https://placeimg.com/140/140/any',
+      avatar: 'https://picsum.photos/140/140',
     },
   },
   {
