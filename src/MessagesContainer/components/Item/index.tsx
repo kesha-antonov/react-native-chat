@@ -58,8 +58,7 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
   // and reading scroll here would re-run it once per mounted row on every frame. Cell
   // layout is the only thing that can change the answer, so that is what it tracks.
   const dayPosition = useDerivedValue(() =>
-    findDayPosition(daysPositions.value, createdAt)
-  , [daysPositions, createdAt])
+    findDayPosition(daysPositions.value, createdAt))
 
   const style = useAnimatedStyle(() => {
     // The inline separator is the in-conversation date marker. It is shown while its
@@ -85,7 +84,7 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
     return {
       opacity: belowHandoff || !headerShowsThisDay ? 1 : 0,
     }
-  }, [dayPosition, listHeight, scrolledY, floatingRenderedDate, createdAt])
+  })
 
   return (
     <Animated.View style={style}>

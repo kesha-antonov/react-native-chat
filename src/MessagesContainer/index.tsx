@@ -111,7 +111,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false)
   const scrollToBottomStyleAnim = useAnimatedStyle(() => ({
     opacity: scrollToBottomOpacity.value,
-  }), [scrollToBottomOpacity])
+  }))
 
   const daysPositions = useSharedValue<DaysPositions>({})
   const listHeight = useSharedValue(0)
@@ -171,9 +171,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         if (isFinished && !isVisible)
           runOnJS(setIsScrollToBottomVisible)(false)
       })
-    },
-    [isScrollToBottomShown, scrollToBottomOpacity]
-  )
+    })
 
   const scrollTo = useCallback((options: { animated?: boolean, offset: number }) => {
     if (options)
