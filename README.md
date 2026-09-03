@@ -1194,6 +1194,34 @@ In Next.js that is `transpilePackages` in `next.config.js`; in a plain webpack s
 
 </details>
 
+### React Strict DOM
+
+<details>
+<summary><strong>Works inside an RSD tree - verified on iOS and Expo web</strong></summary>
+
+Chat drops into a [React Strict DOM](https://github.com/facebook/react-strict-dom) app unchanged. RSD's native build renders through React Native, so `<Chat>` is just another RN subtree:
+
+```tsx
+import { css, html } from 'react-strict-dom'
+import { Chat } from '@kesha-antonov/react-native-chat'
+
+const styles = css.create({
+  root: { display: 'flex', flexDirection: 'column', height: '100%' },
+})
+
+<html.div data-layoutconformance='strict' style={styles.root}>
+  <Chat messages={messages} onSend={onSend} user={user} />
+</html.div>
+```
+
+Three things to know:
+
+- **Web needs `react-native-web`.** RSD's web build contains no React Native code at all, so Chat does not resolve there on its own. Expo web gives you `react-native-web` already, so RSD (real DOM) and Chat (RNW's DOM output) render side by side in one tree. A Vite or Next.js RSD app has to add the alias and transpile step from the section above
+- **Metro needs `unstable_enablePackageExports: true`.** RSD publishes only an `exports` map with no `main`, so with package exports off it fails to resolve. This is the default on recent Expo SDKs
+- **StyleX styles do not reach Chat.** It takes React Native style objects and its own `theme` prop, not `css.create` output. On native, `compat.native` is the bridge if you want RSD to drive a wrapper around it
+
+</details>
+
 ---
 
 ## ⚡ Performance
