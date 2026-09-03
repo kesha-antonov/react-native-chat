@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Text, TextStyle, StyleProp, Linking } from 'react-native'
 
 export type LinkType = 'url' | 'email' | 'phone' | 'mention' | 'hashtag'
@@ -108,15 +108,45 @@ const DEFAULT_MATCHERS: LinkMatcher[] = [
  * here can still be part of a match found one character later - the same
  * behaviour a lookbehind assertion gives.
  */
+// Compiling a RegExp is the expensive half of parsing, and every pattern here is a
+// constant - only `lastIndex` varies per call, and that is reset on checkout. Without
+// this, each message re-compiled the whole matcher set on every render of its text.
+// Keyed on the source RegExp object so custom matchers benefit too, as long as the
+// consumer keeps their pattern stable.
+const globalPatternCache = new WeakMap<RegExp, RegExp>()
+const boundaryPatternCache = new WeakMap<RegExp, RegExp>()
+
+function globalPattern(pattern: RegExp): RegExp {
+  let compiled = globalPatternCache.get(pattern)
+
+  if (!compiled) {
+    const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`
+    compiled = new RegExp(pattern.source, flags)
+    globalPatternCache.set(pattern, compiled)
+  }
+
+  // Reused across calls, so the cursor has to be rewound rather than assumed at 0.
+  compiled.lastIndex = 0
+  return compiled
+}
+
+function boundaryPattern(notPrecededBy: RegExp): RegExp {
+  let compiled = boundaryPatternCache.get(notPrecededBy)
+
+  if (!compiled) {
+    // Dropped `g` here as well: `test` on a global regex advances lastIndex and
+    // would skip every other rejection.
+    compiled = new RegExp(notPrecededBy.source, notPrecededBy.flags.replace(/[gy]/g, ''))
+    boundaryPatternCache.set(notPrecededBy, compiled)
+  }
+
+  return compiled
+}
+
 function execMatches(text: string, matcher: LinkMatcher): RegExpExecArray[] {
   const { pattern, notPrecededBy, notPrecededByGroup } = matcher
-  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`
-  const regex = new RegExp(pattern.source, flags)
-  // Dropped `g` here as well: `test` on a global regex advances lastIndex and
-  // would skip every other rejection.
-  const boundary = notPrecededBy
-    ? new RegExp(notPrecededBy.source, notPrecededBy.flags.replace(/[gy]/g, ''))
-    : undefined
+  const regex = globalPattern(pattern)
+  const boundary = notPrecededBy ? boundaryPattern(notPrecededBy) : undefined
   const matches: RegExpExecArray[] = []
 
   let match: RegExpExecArray | null
@@ -208,45 +238,50 @@ export function LinkParser({
   textStyle,
   TextComponent = Text,
 }: LinkParserProps): React.ReactElement {
-  const activeMatchers: LinkMatcher[] = []
+  // Parsing is the expensive part of rendering a message body - matcher assembly plus a
+  // scan per matcher - and it depends only on the text and the matcher configuration.
+  // Left in the render body it re-ran on every render of every message.
+  const { links, activeMatchers } = useMemo(() => {
+    const activeMatchers: LinkMatcher[] = []
 
-  // Add custom matchers first (they take precedence)
-  if (customMatchers)
-    activeMatchers.push(...customMatchers)
+    // Add custom matchers first (they take precedence)
+    if (customMatchers)
+      activeMatchers.push(...customMatchers)
 
 
-  // Add default matchers based on flags
-  if (url && !customMatchers?.some(m => m.type === 'url'))
-    activeMatchers.push(DEFAULT_MATCHERS.find(m => m.type === 'url')!)
+    // Add default matchers based on flags
+    if (url && !customMatchers?.some(m => m.type === 'url'))
+      activeMatchers.push(DEFAULT_MATCHERS.find(m => m.type === 'url')!)
 
-  if (email && !customMatchers?.some(m => m.type === 'email'))
-    activeMatchers.push(DEFAULT_MATCHERS.find(m => m.type === 'email')!)
+    if (email && !customMatchers?.some(m => m.type === 'email'))
+      activeMatchers.push(DEFAULT_MATCHERS.find(m => m.type === 'email')!)
 
-  if (phone && !customMatchers?.some(m => m.type === 'phone'))
-    activeMatchers.push(DEFAULT_MATCHERS.find(m => m.type === 'phone')!)
+    if (phone && !customMatchers?.some(m => m.type === 'phone'))
+      activeMatchers.push(DEFAULT_MATCHERS.find(m => m.type === 'phone')!)
 
-  if (hashtag && !customMatchers?.some(m => m.type === 'hashtag')) {
-    const hashtagMatcher = { ...DEFAULT_MATCHERS.find(m => m.type === 'hashtag')! }
-    if (hashtagUrl) {
-      hashtagMatcher.baseUrl = hashtagUrl
-      const baseUrl = hashtagUrl.endsWith('/') ? hashtagUrl : `${hashtagUrl}/`
-      hashtagMatcher.getLinkUrl = (text: string) => `${baseUrl}${text.substring(1)}`
+    if (hashtag && !customMatchers?.some(m => m.type === 'hashtag')) {
+      const hashtagMatcher = { ...DEFAULT_MATCHERS.find(m => m.type === 'hashtag')! }
+      if (hashtagUrl) {
+        hashtagMatcher.baseUrl = hashtagUrl
+        const baseUrl = hashtagUrl.endsWith('/') ? hashtagUrl : `${hashtagUrl}/`
+        hashtagMatcher.getLinkUrl = (text: string) => `${baseUrl}${text.substring(1)}`
+      }
+      activeMatchers.push(hashtagMatcher)
     }
-    activeMatchers.push(hashtagMatcher)
-  }
 
-  if (mention && !customMatchers?.some(m => m.type === 'mention')) {
-    const mentionMatcher = { ...DEFAULT_MATCHERS.find(m => m.type === 'mention')! }
-    if (mentionUrl) {
-      mentionMatcher.baseUrl = mentionUrl
-      const baseUrl = mentionUrl.endsWith('/') ? mentionUrl : `${mentionUrl}/`
-      mentionMatcher.getLinkUrl = (text: string) => `${baseUrl}${text.substring(1)}`
+    if (mention && !customMatchers?.some(m => m.type === 'mention')) {
+      const mentionMatcher = { ...DEFAULT_MATCHERS.find(m => m.type === 'mention')! }
+      if (mentionUrl) {
+        mentionMatcher.baseUrl = mentionUrl
+        const baseUrl = mentionUrl.endsWith('/') ? mentionUrl : `${mentionUrl}/`
+        mentionMatcher.getLinkUrl = (text: string) => `${baseUrl}${text.substring(1)}`
+      }
+      activeMatchers.push(mentionMatcher)
     }
-    activeMatchers.push(mentionMatcher)
-  }
 
 
-  const links = removeOverlaps(parseLinks(text, activeMatchers))
+    return { activeMatchers, links: removeOverlaps(parseLinks(text, activeMatchers)) }
+  }, [text, customMatchers, url, email, phone, hashtag, mention, hashtagUrl, mentionUrl])
 
   if (links.length === 0)
     return <TextComponent style={textStyle}>{text}</TextComponent>
