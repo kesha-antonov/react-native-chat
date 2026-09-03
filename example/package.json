@@ -52,7 +52,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
-    "react-native-audio-api": "^0.13.3",
+    "react-native-audio-api": "patch:react-native-audio-api@npm%3A0.13.3#~/.yarn/patches/react-native-audio-api-npm-0.13.3-fa6dc6e5a4.patch",
     "react-native-emoji-chooser": "^0.1.11",
     "react-native-enriched-markdown": "^1.0.2",
     "react-native-gesture-handler": "2.32.0",
@@ -86,5 +86,8 @@
     "react-native-enriched-markdown": {
       "built": true
     }
+  },
+  "resolutions": {
+    "expo-modules-core@npm:~57.0.13": "patch:expo-modules-core@npm%3A57.0.13#~/.yarn/patches/expo-modules-core-npm-57.0.13-a9a5cb7828.patch"
   }
 }

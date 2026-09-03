@@ -5289,7 +5289,7 @@ __metadata:
     react: "npm:19.2.3"
     react-dom: "npm:19.2.3"
     react-native: "npm:0.86.3"
-    react-native-audio-api: "npm:^0.13.3"
+    react-native-audio-api: "patch:react-native-audio-api@npm%3A0.13.3#~/.yarn/patches/react-native-audio-api-npm-0.13.3-fa6dc6e5a4.patch"
     react-native-emoji-chooser: "npm:^0.1.11"
     react-native-enriched-markdown: "npm:^1.0.2"
     react-native-gesture-handler: "npm:2.32.0"
@@ -5513,7 +5513,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-modules-core@npm:~57.0.13":
+"expo-modules-core@npm:57.0.13":
   version: 57.0.13
   resolution: "expo-modules-core@npm:57.0.13"
   dependencies:
@@ -5528,6 +5528,24 @@ __metadata:
     react-native-worklets:
       optional: true
   checksum: 10c0/caa0d4750da8f2d7605bd9f1aaa938de03af956d45c5f39864f96f8eb08d58258e9366aafa887eda476a83bcceddccdf546ba5121df366b7e93a08b9027e7e53
+  languageName: node
+  linkType: hard
+
+"expo-modules-core@patch:expo-modules-core@npm%3A57.0.13#~/.yarn/patches/expo-modules-core-npm-57.0.13-a9a5cb7828.patch":
+  version: 57.0.13
+  resolution: "expo-modules-core@patch:expo-modules-core@npm%3A57.0.13#~/.yarn/patches/expo-modules-core-npm-57.0.13-a9a5cb7828.patch::version=57.0.13&hash=3a0290"
+  dependencies:
+    "@expo/expo-modules-macros-plugin": "npm:0.6.1"
+    expo-modules-jsi: "npm:~57.0.5"
+    invariant: "npm:^2.2.4"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-worklets: ^0.7.4 || ^0.8.0 || ^0.9.0 || ^0.10.0
+  peerDependenciesMeta:
+    react-native-worklets:
+      optional: true
+  checksum: 10c0/6bfdc02f266f4074a91b290cf59790968c66a25273b5c66f9d7db0dfd10b4b964ca34476cdceaaaff029aeb985c56978ebb6cb16d40370dbdc5105c764114838
   languageName: node
   linkType: hard
 
@@ -8454,7 +8472,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-audio-api@npm:^0.13.3":
+"react-native-audio-api@npm:0.13.3":
   version: 0.13.3
   resolution: "react-native-audio-api@npm:0.13.3"
   dependencies:
@@ -8469,6 +8487,24 @@ __metadata:
   bin:
     setup-rn-audio-api-web: scripts/setup-rn-audio-api-web.js
   checksum: 10c0/a2bd1f7fd1f7cd2a8efc6706a89c7c5bf64a6a420e90193ae7224311cd626ecca61a340217485ce107bf159f3eec0606680d84ebf385bf2a2a32d538e2e26b1c
+  languageName: node
+  linkType: hard
+
+"react-native-audio-api@patch:react-native-audio-api@npm%3A0.13.3#~/.yarn/patches/react-native-audio-api-npm-0.13.3-fa6dc6e5a4.patch":
+  version: 0.13.3
+  resolution: "react-native-audio-api@patch:react-native-audio-api@npm%3A0.13.3#~/.yarn/patches/react-native-audio-api-npm-0.13.3-fa6dc6e5a4.patch::version=0.13.3&hash=53f831"
+  dependencies:
+    semver: "npm:^7.7.3"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-worklets: ">= 0.6.0"
+  peerDependenciesMeta:
+    react-native-worklets:
+      optional: true
+  bin:
+    setup-rn-audio-api-web: scripts/setup-rn-audio-api-web.js
+  checksum: 10c0/333eb3164050fa49a2b1d979164f646ed5d4266ae2d39a84b28af288f9f5c3c581a637fd1e3905a1e1dd5f3113d236adcabaa29914745fc437b8ca602147cbe6
   languageName: node
   linkType: hard
 
