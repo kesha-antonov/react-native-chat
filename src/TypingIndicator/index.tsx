@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react'
 import { View } from 'react-native'
 import Animated, {
+  cancelAnimation,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -53,6 +54,11 @@ const DotsAnimation = () => {
       0,
       true
     )
+
+    // `withRepeat(..., 0)` never ends on its own, so without this the animation keeps
+    // driving the shared value after the indicator unmounts. Same cleanup as
+    // StreamingCursor and Ticks.
+    return () => cancelAnimation(dot1)
   }, [dot1, topY, bottomY, duration])
 
   useEffect(() => {
@@ -66,6 +72,8 @@ const DotsAnimation = () => {
         true
       )
     )
+
+    return () => cancelAnimation(dot2)
   }, [dot2, topY, bottomY, duration])
 
   useEffect(() => {
@@ -79,6 +87,8 @@ const DotsAnimation = () => {
         true
       )
     )
+
+    return () => cancelAnimation(dot3)
   }, [dot3, topY, bottomY, duration])
 
   return (

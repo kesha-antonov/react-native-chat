@@ -212,6 +212,10 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
       cancelAnimation(recPulse)
       recPulse.value = 0
     }
+
+    // The `-1` repeat never settles, so unmounting mid-recording (navigating away, the
+    // chat being torn down) would otherwise leave it running.
+    return () => cancelAnimation(recPulse)
   }, [voiceState.active, recPulse])
 
   const recDotStyle = useAnimatedStyle(() => ({

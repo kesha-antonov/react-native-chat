@@ -385,10 +385,15 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       !isInverted &&
       messages?.length &&
       isScrollToBottomEnabled
-    )
-      setTimeout(() => {
+    ) {
+      // Layout fires repeatedly (keyboard, rotation, content growth), so this is
+      // re-armed rather than stacked, and cancelled on unmount - otherwise every
+      // layout left a 500ms timer holding this closure.
+      clearTimeout(initialScrollTimeout.current)
+      initialScrollTimeout.current = setTimeout(() => {
         doScrollToBottom(false)
       }, 500)
+    }
 
     // listProps.onLayout may be a SharedValue in Reanimated types, but we only accept functions
     const onLayoutProp = listProps?.onLayout as ((event: LayoutChangeEvent) => void) | undefined
@@ -406,6 +411,11 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [loadEarlierMessagesProps])
 
   const keyExtractor = useCallback((item: unknown) => (item as TMessage)._id.toString(), [])
+
+  const initialScrollTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => {
+    clearTimeout(initialScrollTimeout.current)
+  }, [])
 
   // Records where each message sits in the content so the floating day header
   // knows which day is currently on screen. Shared by both cell renderers.
