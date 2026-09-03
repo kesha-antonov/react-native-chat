@@ -1165,33 +1165,34 @@ For **Expo**, you can append `KeyboardAvoidingView` after Chat (Android only):
 
 ### Web (react-native-web)
 
-<details>
-<summary><strong>With create-react-app</strong></summary>
+Install the web renderer alongside the library:
 
-1. Install react-app-rewired: `yarn add -D react-app-rewired`
-2. Create `config-overrides.js`:
-
-```js
-module.exports = function override(config, env) {
-  config.module.rules.push({
-    test: /\.js$/,
-    exclude: /node_modules[/\\](?!react-native-chat)/,
-    use: {
-      loader: 'babel-loader',
-      options: {
-        babelrc: false,
-        configFile: false,
-        presets: [
-          ['@babel/preset-env', { useBuiltIns: 'usage' }],
-          '@babel/preset-react',
-        ],
-        plugins: ['@babel/plugin-proposal-class-properties'],
-      },
-    },
-  })
-  return config
-}
+```bash
+yarn add react-native-web react-dom
 ```
+
+<details>
+<summary><strong>Expo / Metro (recommended) - no extra config</strong></summary>
+
+```bash
+npx expo start --web
+```
+
+Nothing else to set up. Metro runs Babel over `node_modules`, so this package's JSX and its Reanimated worklets get transpiled the same way your own code does. The [example app](#-example-app) runs on web exactly like this.
+
+</details>
+
+<details>
+<summary><strong>Other bundlers (webpack, Vite, Next.js) - the package must be transpiled</strong></summary>
+
+The published files are ES modules with JSX left in place, and the component uses Reanimated worklets, which need `react-native-reanimated/plugin` to run. Bundlers that skip `node_modules` when transpiling - webpack's `babel-loader` does by default - will choke on that. So outside Metro you need to:
+
+1. Alias `react-native` to `react-native-web` and let the resolver pick up `.web.js` / `.web.tsx` extensions
+2. Run `@kesha-antonov/react-native-chat` - and the React Native packages it depends on - through Babel with `@react-native/babel-preset` and `react-native-reanimated/plugin`, instead of excluding all of `node_modules`
+
+In Next.js that is `transpilePackages` in `next.config.js`; in a plain webpack setup it means widening the `babel-loader` rule's `exclude` so these packages are included.
+
+`create-react-app` is deprecated and no longer covers this - the old `react-app-rewired` + `config-overrides.js` recipe that used to be documented here predates Reanimated and does not make the library work. Prefer Expo web, or a bundler you can configure as above.
 
 </details>
 
