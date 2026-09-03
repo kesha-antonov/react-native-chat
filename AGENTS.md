@@ -52,7 +52,7 @@ src/                     library source - the only thing published (as compiled 
   Reactions/ Reply/      emoji reactions, swipe-to-reply
   components/            shared leaf components (Icon, TouchableOpacity, markdown, voice…)
   hooks/                 useTheme, useLabels, useStreamingMessages, …
-  locales/ i18n.ts       built-in UI translations (en, es, fr, de, ru)
+  locales/ i18n.ts       15 built-in UI translations, one file per language; en is the default
   Models.ts              IMessage, User, QuickReplies, MessageReaction - the public data model
   index.ts types.ts      public API surface; anything not exported here is internal
   __tests__/             Jest tests, colocated with the source they cover
