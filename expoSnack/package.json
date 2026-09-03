@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@kesha-antonov/react-native-chat": "^4.4.0",
+    "@kesha-antonov/react-native-chat": "^5.0.0",
     "@expo/react-native-action-sheet": "^4.1.1",
     "@expo/vector-icons": "^15.1.1",
     "@lodev09/react-native-true-sheet": "^3.11.12",

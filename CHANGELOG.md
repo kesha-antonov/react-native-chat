@@ -1,12 +1,24 @@
 # Changelog
 
-## [Unreleased]
+## [5.0.0] - 2026-09-03
 
 ### 💥 Breaking
 - **`disableKeyboardProvider` → `enableKeyboardProvider`, `disableGestureHandlerRootView` → `enableGestureHandlerRootView`.** Both were opt-out flags with inverted (double-negative) naming - `disableX = false` to get the default. Renamed to positive, opt-in flags (default `true`, matching the previous default behavior); pass `false` to get the old opt-out effect. `enableGestureHandlerRootView` only shipped in 4.4.0, two days ago, so this is a straight rename rather than a deprecated alias.
 
 ### 🐛 Fixes
 - Pinned `collapsable={false}` on the view wrapping the message list and composer. Its only paint prop (`opacity`) is conditional on the chat's ready state, so on every mount that view's Fabric shadow-node flattening eligibility flipped once, right after becoming ready - restructuring the Yoga tree directly above the composer on the same cycle a remounted `Chat` first accepts a keystroke. That matches the timing of the Fabric/Yoga layout assertion still being reported against [#17](https://github.com/kesha-antonov/react-native-chat/issues/17) even with `enableGestureHandlerRootView={false}` set; upstream (facebook/react-native#48203, #52349) remains unresolved, so this narrows one concrete trigger rather than closing out the underlying RN bug.
+- **Stopped flooding the dev console with Reanimated warnings.** 16 call sites passed a dependency array to `useAnimatedStyle` / `useDerivedValue` / `useAnimatedReaction`, and Reanimated 4 logs `[Reanimated] dependencies should only be used in web implementation.` once per call per render when one is passed on native. The array on `Item`'s per-row day lookup meant one warning per message row per render, so simply browsing the example app produced over 3000 of them, burying anything else in the log. No behavior change: with the Babel plugin (which every React Native and Expo setup has) the hooks derive their inputs from the worklet's closure on both native and web, so the arrays were only ever read by a plugin-less web build
+
+### 📲 Example app
+- **Replaced three dead sample-asset hosts.** `download.blender.org`'s `BigBuckBunny_320x180.mp4` and `file-examples.com`'s sample MP3 now both 404, and `placeimg.com` no longer resolves at all - so Media & Voice rendered black boxes instead of video, the audio bubble in Basic / Reply / Slack / Reactions had nothing to decode, and every avatar plus the sample image in Customized Rendering came up blank. They now point at `test-videos.co.uk` (Big Buck Bunny, 10s), the SoundHelix MP3 the Media example already used, and `picsum.photos`. Same swap in `expoSnack/ExpoSnack.tsx`
+- **Slack Style no longer prints a day pill above every message.** Its custom `renderMessage` rendered its own `<Day>` with no same-day guard, while the list already renders a day separator on each day change around whatever `renderMessage` returns - so "Today" repeated between every message and the real separator showed twice. A custom `renderMessage` should not render its own day header
+- **Links & Patterns no longer turns dates into phone links.** The screen's deliberately loose phone pattern also matches ISO dates like `2025-12-25`, and the "disabled" branch of its `renderLink` only dropped the underline - the text stayed pressable and was still announced as a link to screen readers. Candidates that libphonenumber-js rejects now render as ordinary text
+
+### 🔧 Deprecations
+- **`minComposerHeight`, `maxComposerHeight`, `minInputToolbarHeight` are still here.** 4.4.0 said they would go in `5.0.0`; they stay one more major so this release is a rename-only break, and are now slated for `6.0.0`. Nothing has ever read them, so setting them still does nothing - use `textInputProps.style` to constrain the composer ([#14](https://github.com/kesha-antonov/react-native-chat/issues/14))
+
+### 📝 Docs
+- `AGENTS.md` still described the built-in translations as `en, es, fr, de, ru`; there have been 15 since 4.4.0
 
 ## [4.4.0] - 2026-08-20
 
