@@ -2,6 +2,7 @@ import React, {
   createRef,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useCallback,
   RefObject,
@@ -152,6 +153,11 @@ function Chat<TMessage extends IMessage = IMessage> (
     [isInverted, messagesContainerRef]
   )
 
+  const scrollAfterSendTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => {
+    clearTimeout(scrollAfterSendTimeout.current)
+  }, [])
+
   const handleSwipeToReply = useCallback(
     (message: TMessage) => {
       if (replyMessageProp === undefined)
@@ -177,6 +183,17 @@ function Chat<TMessage extends IMessage = IMessage> (
     onClearReply?.()
   }, [replyMessageProp, onClearReply])
 
+  // Rebuilt on the way down to the list, so it has to keep its identity across renders that
+  // change nothing: it is passed through `MessagesContainer` into every row, and `Item`'s memo
+  // compares it by reference, so a fresh object here re-renders every mounted row whenever the
+  // parent re-renders. See rowRenderChurn.test.tsx.
+  const replyForList = useMemo(() => ({
+    ...reply,
+    swipe: reply?.swipe
+      ? { ...reply.swipe, onSwipe: handleSwipeToReply }
+      : undefined,
+  }), [reply, handleSwipeToReply])
+
   const renderMessages = useMemo(() => {
     if (!isInitialized)
       return null
@@ -191,13 +208,7 @@ function Chat<TMessage extends IMessage = IMessage> (
           messages={messages}
           forwardRef={messagesContainerRef}
           isTyping={isTyping}
-          reply={{
-            ...reply,
-            swipe: reply?.swipe ? {
-              ...reply.swipe,
-              onSwipe: handleSwipeToReply,
-            } : undefined,
-          }}
+          reply={replyForList}
         />
         {renderComponentOrElement(renderChatFooter, {})}
       </View>
@@ -210,8 +221,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     isInverted,
     messagesContainerRef,
     renderChatFooter,
-    reply,
-    handleSwipeToReply,
+    replyForList,
   ])
 
   const notifyInputTextReset = useCallback(() => {
@@ -254,7 +264,10 @@ function Chat<TMessage extends IMessage = IMessage> (
 
       onSend?.(newMessages)
 
-      setTimeout(() => scrollToBottom(), 10)
+      // One frame's grace so the new message is laid out before we scroll to it.
+      // Held in a ref so sending and immediately unmounting cannot fire it afterwards.
+      clearTimeout(scrollAfterSendTimeout.current)
+      scrollAfterSendTimeout.current = setTimeout(() => scrollToBottom(), 10)
     },
     [messageIdGenerator, onSend, user, resetInputToolbar, scrollToBottom, replyMessage, clearReply]
   )
