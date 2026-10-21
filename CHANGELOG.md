@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 📝 Docs
+- **Troubleshooting entry for "Cannot read property 'Chat' of undefined"** ([#28](https://github.com/kesha-antonov/react-native-chat/issues/28)). The package itself loads fine - the published 5.0.1 renders the Quick start example unchanged in a fresh Expo SDK 58 app - so the error means a dependency threw during import and Metro handed back an empty module. The entry points at the earlier error that names the real cause, usually a native peer that was installed without rebuilding the app or at a version the app does not ship
+- **Bare React Native install steps were incomplete.** They left out `react-native-worklets`, which Reanimated 4 requires, pointed at the Reanimated 3 Babel plugin name, and never said to rebuild the native app after installing. All three are covered now
+
 ## [5.0.1] - 2026-09-15
 
 ### ⚡ Performance

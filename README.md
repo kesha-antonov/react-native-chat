@@ -304,23 +304,23 @@ npx expo install @kesha-antonov/react-native-chat react-native-reanimated react-
 <details>
 <summary><strong>Three steps</strong></summary>
 
-**1.** Install the packages:
+**1.** Install the packages. Reanimated 4 also needs `react-native-worklets`; leave it out on Reanimated 3:
 
 ```bash
-yarn add @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
+yarn add @kesha-antonov/react-native-chat react-native-reanimated react-native-worklets react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
 ```
 
 ```bash
-npm install --save @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
+npm install --save @kesha-antonov/react-native-chat react-native-reanimated react-native-worklets react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
 ```
 
-**2.** Install iOS pods:
+**2.** Add the worklets Babel plugin as the last entry in `babel.config.js` - `react-native-worklets/plugin` on Reanimated 4, `react-native-reanimated/plugin` on Reanimated 3 - following the [react-native-reanimated installation guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
+
+**3.** Install iOS pods, then **rebuild the native app** (`npx react-native run-ios` / `run-android`) and restart Metro with `--reset-cache`. every peer above ships native code, so reloading the JS bundle alone is not enough:
 
 ```bash
 npx pod-install
 ```
-
-**3.** Add Reanimated's Babel plugin, following the [react-native-reanimated installation guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/#step-2-add-reanimateds-babel-plugin).
 
 </details>
 
@@ -1395,6 +1395,17 @@ npx expo start --web   # Web
 ---
 
 ## ❓ Troubleshooting
+
+<details>
+<summary><strong>"Cannot read property 'Chat' of undefined"</strong></summary>
+
+This means the package threw while it was being loaded, so the import came back empty. The real cause is the **first** error in the Metro log or red box, logged before this one - almost always a native peer that is missing or out of sync with the installed app:
+
+- `react-native-reanimated`, `react-native-worklets`, `react-native-gesture-handler` and `react-native-keyboard-controller` are native modules. After installing or upgrading any of them, rebuild the app (`npx expo run:ios`, `npx expo prebuild`, or `pod install` + a native build) - reloading the JS bundle is not enough.
+- In Expo, install them with `npx expo install` so the versions match your SDK. A plain `npm install` pulls the latest releases, which Expo Go and an existing dev build may not include, and Reanimated throws a version-mismatch error on import.
+- In bare React Native, check the worklets Babel plugin is in `babel.config.js` (see [Bare React Native Projects](#bare-react-native-projects)), then restart Metro with `--reset-cache`.
+
+</details>
 
 <details>
 <summary><strong>TextInput is hidden on Android</strong></summary>

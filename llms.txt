@@ -15,9 +15,14 @@ Required peers - all four must be installed and configured:
 npx expo install @kesha-antonov/react-native-chat react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-keyboard-controller
 ```
 
-Bare React Native: use `yarn add` / `npm install --save` with the same list, then
-`npx pod-install`, then add Reanimated's Babel plugin to `babel.config.js`
-(`plugins: ['react-native-worklets/plugin']` for Reanimated 4, `'react-native-reanimated/plugin'` for 3).
+Bare React Native: use `yarn add` / `npm install --save` with the same list (plus
+`react-native-worklets` on Reanimated 4), then `npx pod-install`, then add Reanimated's Babel plugin
+to `babel.config.js` (`plugins: ['react-native-worklets/plugin']` for Reanimated 4,
+`'react-native-reanimated/plugin'` for 3), then rebuild the native app and restart Metro with `--reset-cache`.
+
+"Cannot read property 'Chat' of undefined" at the import means a dependency threw while loading -
+read the first error in the log; it is usually a native peer installed without rebuilding the app,
+or (in Expo) installed with `npm install` instead of `npx expo install`.
 
 Requires React Native >= 0.70, iOS >= 13.4, Android API 21+, Expo SDK 50+.
 
