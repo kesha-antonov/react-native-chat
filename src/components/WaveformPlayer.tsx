@@ -366,12 +366,13 @@ export function WaveformPlayer ({
     const elapsed = (ctx.currentTime - startedAtRef.current) * rateRef.current
     const next = Math.min(1, elapsed / duration)
     progressRef.current = next
-    // A drag owns the visible progress until it is released.
-    if (!isDragging.value)
+    // A drag owns the visible progress, and the time, until it is released.
+    if (!isDragging.value) {
       progress.value = next
-    setShownProgress(prev =>
-      Math.floor(prev * duration) === Math.floor(next * duration) ? prev : next
-    )
+      setShownProgress(prev =>
+        Math.floor(prev * duration) === Math.floor(next * duration) ? prev : next
+      )
+    }
 
     if (next >= 1) {
       setIsPlaying(false)
@@ -564,6 +565,15 @@ export function WaveformPlayer ({
   const onWaveformTap = useCallback(() => toggleRef.current(), [])
   const onWaveformDragEnd = useCallback((fraction: number) => commitSeekRef.current(fraction), [])
 
+  // While dragging, the time follows the finger, as Telegram's does
+  // (`onSeekBarContinuousDrag`); only a new whole second re-renders.
+  const onWaveformDrag = useCallback((fraction: number) => {
+    const duration = durationRef.current
+    setShownProgress(prev =>
+      duration > 0 && Math.floor(prev * duration) === Math.floor(fraction * duration) ? prev : fraction
+    )
+  }, [])
+
   // A tap toggles playback, like a tap on the button (ChatMessageCell's
   // `didPressButton` on an ACTION_UP that never started dragging). A drag only
   // starts past Telegram's 0.2cm slop, and must stay horizontal, or it fights
@@ -588,6 +598,7 @@ export function WaveformPlayer ({
               return
 
             progress.value = Math.max(0, Math.min(1, dragStart.value + event.translationX / width))
+            runOnJS(onWaveformDrag)(progress.value)
           })
           .onEnd(() => {
             runOnJS(onWaveformDragEnd)(progress.value)
@@ -604,7 +615,7 @@ export function WaveformPlayer ({
           })
           .withTestId('voice-waveform-tap')
       ),
-    [isDragging, dragStart, progress, trackWidthSV, onWaveformDragEnd, onWaveformTap, isViewOnce]
+    [isDragging, dragStart, progress, trackWidthSV, onWaveformDrag, onWaveformDragEnd, onWaveformTap, isViewOnce]
   )
 
   const onTrackLayout = useCallback((event: LayoutChangeEvent) => {
