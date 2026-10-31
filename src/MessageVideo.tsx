@@ -186,6 +186,8 @@ const RoundNotePlayer = ({
   const [currentTime, setCurrentTime] = useState(0)
   const [isHeard, setIsHeard] = useState(false)
   const [growShift, setGrowShift] = useState(0)
+  // How far the grown circle's right edge moves, for the bubble's sent time.
+  const [timeShift, setTimeShift] = useState(0)
   const rafRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null)
   const noteRef = useRef<View>(null)
   /** Taken back from the floating note: grow, but do not centre the list. */
@@ -265,6 +267,7 @@ const RoundNotePlayer = ({
     setIsPlaying(false)
     setIsGrown(false)
     setGrowShift(0)
+    setTimeShift(0)
     setCurrentTime(0)
     try {
       player.muted = true
@@ -332,6 +335,9 @@ const RoundNotePlayer = ({
         const inset = PLAYING_NOTE_INSET / 2
         const fittedLeft = Math.min(Math.max(grownLeft, inset), windowWidth - inset - playingNoteSize)
         setGrowShift(fittedLeft - grownLeft)
+        // Telegram keeps the time at the circle's bottom-right, so it moves
+        // with the grown circle's right edge.
+        setTimeShift(fittedLeft + playingNoteSize - (x + width))
       })
   }, [playerCache, playerKey, windowWidth, windowHeight, isIncoming, playingNoteSize])
 
@@ -441,7 +447,7 @@ const RoundNotePlayer = ({
       resume()
   }, [isCurrent, isPlaying, playFromStart, pause, resume])
 
-  useReportNoteGrown(messageId, isGrown)
+  useReportNoteGrown(messageId, isGrown, timeShift)
 
   // The "now playing" bar's close stops the note and shrinks it back.
   const stop = useCallback(() => {

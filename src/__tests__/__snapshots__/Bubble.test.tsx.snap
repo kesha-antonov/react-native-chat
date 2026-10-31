@@ -103,6 +103,7 @@ exports[`should render <Bubble /> and compare with snapshot 1`] = `
             false,
             false,
             undefined,
+            false,
           ]
         }
       >

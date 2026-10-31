@@ -168,8 +168,13 @@ export interface MediaPlaybackController {
    * The round note grown to play, if any. Its row hides the sender's avatar
    * meanwhile, as Telegram does (`isAvatarVisible && !isPlayingRound`).
    */
-  setGrownNote: (messageId: string | number | null) => void
+  setGrownNote: (messageId: string | number | null, timeShift?: number) => void
   getGrownNote: () => string | number | null
+  /**
+   * How far the grown note's right edge moved from where it rests, so the
+   * bubble can carry the sent time along with the circle.
+   */
+  getGrownTimeShift: () => number
   subscribeGrownNote: (listener: () => void) => () => void
   /**
    * The note that owns playback, playing or paused, for the "now playing" bar
@@ -227,6 +232,7 @@ export const createMediaPlaybackController = (): MediaPlaybackController => {
   const entries = new Map<string | number, PlaylistEntry>()
   const nearEarListeners = new Set<() => void>()
   let grownNote: string | number | null = null
+  let grownTimeShift = 0
   const grownListeners = new Set<() => void>()
   let scroller: ((messageId: string | number) => void) | null = null
   let nowPlaying: NowPlayingEntry | null = null
@@ -299,11 +305,15 @@ export const createMediaPlaybackController = (): MediaPlaybackController => {
     scrollToMessage (messageId) {
       scroller?.(messageId)
     },
-    setGrownNote (messageId) {
-      if (grownNote === messageId)
+    setGrownNote (messageId, timeShift = 0) {
+      if (grownNote === messageId && grownTimeShift === timeShift)
         return
+      grownTimeShift = messageId == null ? 0 : timeShift
       grownNote = messageId
       grownListeners.forEach(listener => listener())
+    },
+    getGrownTimeShift () {
+      return grownTimeShift
     },
     getGrownNote () {
       return grownNote
@@ -433,18 +443,34 @@ export const useIsNoteGrown = (messageId: string | number | undefined) => {
 }
 
 /** Reports this note growing or shrinking back, so its row can hide the avatar. */
-export const useReportNoteGrown = (messageId: string | number | undefined, isGrown: boolean) => {
+export const useReportNoteGrown = (messageId: string | number | undefined, isGrown: boolean, timeShift = 0) => {
   const controller = useContext(MediaPlaybackContext)
   useEffect(() => {
     if (!controller || messageId == null || !isGrown)
       return
 
-    controller.setGrownNote(messageId)
+    controller.setGrownNote(messageId, timeShift)
+  }, [controller, messageId, isGrown, timeShift])
+
+  useEffect(() => {
+    if (!controller || messageId == null || !isGrown)
+      return
+
     return () => {
       if (controller.getGrownNote() === messageId)
         controller.setGrownNote(null)
     }
   }, [controller, messageId, isGrown])
+}
+
+/** How far this message's grown round note moved its right edge; 0 at rest. */
+export const useNoteTimeShift = (messageId: string | number | undefined) => {
+  const controller = useContext(MediaPlaybackContext)
+  return useSyncExternalStore(
+    controller?.subscribeGrownNote ?? noSubscription,
+    () => messageId != null && controller?.getGrownNote() === messageId ? controller.getGrownTimeShift() : 0,
+    () => 0
+  )
 }
 
 /**

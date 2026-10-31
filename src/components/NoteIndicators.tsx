@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { StyleSheet } from 'react-native'
 import Animated, {
   Easing,
+  ReduceMotion,
   ZoomIn,
   ZoomOut,
   cancelAnimation,
@@ -70,9 +71,17 @@ const PlayingBar = ({ phase, period, isAnimating, color }: { phase: number, peri
     }
 
     // Finish the current leg up, then bounce for as long as it plays.
+    // Always animated: with the system's Reduce Motion on, Reanimated would
+    // hold the bars still and they would not read as "playing".
     value.value = withSequence(
-      withTiming(1, { duration: (1 - value.value) * period, easing: Easing.linear }),
-      withRepeat(withTiming(0, { duration: period, easing: Easing.linear }), -1, true)
+      withTiming(1, { duration: (1 - value.value) * period, easing: Easing.linear, reduceMotion: ReduceMotion.Never }),
+      withRepeat(
+        withTiming(0, { duration: period, easing: Easing.linear, reduceMotion: ReduceMotion.Never }),
+        -1,
+        true,
+        undefined,
+        ReduceMotion.Never
+      )
     )
     return () => cancelAnimation(value)
   }, [isAnimating, period, value])

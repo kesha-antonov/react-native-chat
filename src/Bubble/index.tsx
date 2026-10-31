@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Pressable,
@@ -20,7 +20,9 @@ import Animated, {
 import { useChatContext } from '../ChatContext'
 import { ContextMenu } from '../components/ContextMenu'
 import { Icon } from '../components/Icon'
+import { useNoteTimeShift } from '../components/mediaPlayback'
 import { MessageReply } from '../components/MessageReply'
+import { NOTE_GROW_MS, noteGrowEasing } from '../components/roundNoteChrome'
 import { PendingClock, Ticks } from '../components/Ticks'
 import { useIsRTL } from '../hooks/useIsRTL'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
@@ -223,6 +225,17 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   // circle floats like in Telegram. Its meta row then has no bubble to sit on,
   // so it moves into a translucent pill over the circle instead.
   const isVideoNote = !!currentMessage?.videoNote && !!currentMessage?.video && !currentMessage?.text
+
+  // A round note that grows to play moves its right edge; the sent time rides
+  // along at the circle's bottom-right, on the grow's own timing.
+  const noteTimeShift = useNoteTimeShift(isVideoNote ? currentMessage?._id : undefined)
+  const noteTimeShiftSV = useSharedValue(noteTimeShift)
+  useEffect(() => {
+    noteTimeShiftSV.value = withTiming(noteTimeShift, { duration: NOTE_GROW_MS, easing: noteGrowEasing })
+  }, [noteTimeShift, noteTimeShiftSV])
+  const noteTimeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: noteTimeShiftSV.value }],
+  }))
 
   // A bare voice note keeps its time on the duration's line, at the bubble's
   // bottom-right, as Telegram draws it, rather than on a row of its own under
@@ -633,12 +646,13 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     <>
       {renderUsername()}
       {renderBubbleContent()}
-      <View
+      <Animated.View
         style={[
           styles.bottom,
           isVideoNote && styles.noteMetaPill,
           isVoiceNote && styles.voiceMeta,
           bottomContainerStyle?.[position],
+          isVideoNote && noteTimeStyle,
         ]}
       >
         {/* Faded on its own layer so the time keeps full strength. */}
@@ -647,7 +661,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
           {renderTime()}
           {renderTicks()}
         </View>
-      </View>
+      </Animated.View>
     </>
   ), [
     position,
@@ -659,6 +673,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     styles,
     isVideoNote,
     isVoiceNote,
+    noteTimeStyle,
   ])
 
   const wrapperStyleList = useMemo(() => [
