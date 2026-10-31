@@ -8,6 +8,7 @@ import { useTheme } from '../hooks/useTheme'
 import { IMessage, VideoRecordingProps } from '../Models'
 import { Icon } from './Icon'
 import { CameraIcon, CloseIcon, FlashIcon, FlipCameraIcon, PauseIcon, PlayIcon } from './MediaControls'
+import { stopAllPlayback } from './mediaPlayback'
 import { SendIcon } from './SendIcon'
 
 // Optional camera. Resolved through a try/catch require so the bundle works
@@ -194,18 +195,19 @@ function RecorderChrome ({
           if (lockedSV.value > 0)
             return
 
-          const x = Math.max(-(cancelThreshold + 60), Math.min(0, event.translationX))
+          const x = Math.max(-cancelThreshold, Math.min(0, event.translationX))
           const y = Math.max(-(lockThreshold + 12), Math.min(0, event.translationY))
           translateX.value = x
           translateY.value = y
 
-          const armed = x <= -cancelThreshold ? 1 : 0
+          // Same rule as the record button: releasing past 55% of the slide cancels.
+          const armed = x <= -cancelThreshold * 0.55 ? 1 : 0
           if (armed !== cancelArmed.value) {
             cancelArmed.value = armed
             runOnJS(setIsCancelArmed)(armed > 0)
           }
 
-          if (-y >= lockThreshold) {
+          if (-y >= lockThreshold && armed === 0) {
             lockedSV.value = 1
             translateX.value = withTiming(0, { duration: 150 })
             translateY.value = withTiming(0, { duration: 150 })
@@ -506,16 +508,19 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   const finish = useCallback((uri: string | null) => {
     const duration = startedAtRef.current > 0 ? Date.now() - startedAtRef.current : 0
 
-    if (uri && !abortedRef.current && duration >= minDurationMs)
-      onSend?.({
-        video: uri,
-        videoNote: true,
-        duration: Math.round(duration / 1000),
-      } as Partial<TMessage>, false)
+    if (uri && !abortedRef.current)
+      if (duration >= minDurationMs)
+        onSend?.({
+          video: uri,
+          videoNote: true,
+          duration: Math.round(duration / 1000),
+        } as Partial<TMessage>, false)
+      else
+        config?.onTooShort?.()
 
     startedAtRef.current = 0
     onClose()
-  }, [onSend, onClose, minDurationMs])
+  }, [onSend, onClose, minDurationMs, config])
 
   const stopRef = useRef<() => void>(() => {})
 
@@ -541,6 +546,8 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
     if (!canRecord)
       return
 
+    // Pause whatever note is playing so it does not end up in the take.
+    stopAllPlayback()
     begin()
     startedAtRef.current = Date.now()
     try {
@@ -601,20 +608,12 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
     stopRecording()
   }, [stopRecording])
 
+  // Cancelling closes the recorder, as Telegram's does; it used to stay open
+  // on a dimmed screen that then had to be dismissed by hand.
   const onShutterCancel = useCallback(() => {
     setIsLocked(false)
-    abortedRef.current = true
-    end()
-    try {
-      const stopped = cameraRef.current?.stopRecording?.() as Promise<void> | undefined
-      stopped?.catch?.(() => {})
-    } catch {
-      // nothing was recording
-    }
-    // Reset so the recorder stays open for another take, as Telegram does.
-    abortedRef.current = false
-    startedAtRef.current = 0
-  }, [end])
+    abort()
+  }, [abort])
 
   const flipCamera = useCallback(() => {
     setFacing(current => (current === 'front' ? 'back' : 'front'))

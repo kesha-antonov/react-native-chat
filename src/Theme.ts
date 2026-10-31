@@ -133,7 +133,11 @@ export interface ChatThemeComposer {
 }
 
 export interface ChatThemeVoice {
-  /** Horizontal slide distance (px) to cancel a recording. */
+  /**
+   * Full slide-to-cancel distance (px), capped at 35% of the window width as
+   * in Telegram. Reaching it cancels the take mid-drag; releasing past 55% of
+   * it cancels too.
+   */
   cancelThreshold: number
   /** Vertical slide distance (px) to lock hands-free recording. */
   lockThreshold: number
@@ -180,9 +184,11 @@ const sharedComposer: ChatThemeComposer = {
   insetIconSize: 24,
 }
 
+// Telegram's `distCanMove` (140dp, capped at 35% of the width) and lock
+// distance (57dp), from `ChatActivityEnterView`.
 const sharedVoice: ChatThemeVoice = {
-  cancelThreshold: 80,
-  lockThreshold: 90,
+  cancelThreshold: 140,
+  lockThreshold: 57,
 }
 
 const sharedSpacing: ChatThemeSpacing = {

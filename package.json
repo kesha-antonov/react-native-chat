@@ -127,7 +127,10 @@
     "@lodev09/react-native-true-sheet": "*",
     "@shopify/flash-list": "*",
     "expo-audio": "*",
+    "expo-blur": "*",
     "expo-device": "*",
+    "expo-file-system": "*",
+    "expo-haptics": "*",
     "expo-image-picker": "*",
     "expo-video": "*",
     "react": ">=18.0.0",
@@ -151,7 +154,16 @@
     "expo-audio": {
       "optional": true
     },
+    "expo-blur": {
+      "optional": true
+    },
     "expo-device": {
+      "optional": true
+    },
+    "expo-file-system": {
+      "optional": true
+    },
+    "expo-haptics": {
       "optional": true
     },
     "expo-image-picker": {

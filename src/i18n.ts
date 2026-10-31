@@ -50,6 +50,34 @@ export interface ChatLabels {
   releaseToSend: string
   /** Idle hint for the hold-to-record video shutter. */
   holdToRecord: string
+  /** Tooltip by the lock while a take is held, shown for the first few takes. */
+  slideUpToLock: string
+  /** Tooltip after the shared record button switches to voice. */
+  holdToRecordAudioSwitch: string
+  /** Tooltip after the shared record button switches to video. */
+  holdToRecordVideoSwitch: string
+  /** Tooltip after a tap on a voice-only record button. */
+  holdToRecordAudioOnly: string
+  /** Tooltip after a tap on a video-only record button. */
+  holdToRecordVideoOnly: string
+  /** Tooltip by the pause button of a locked voice take. */
+  pauseToTrimOrReplay: string
+  /** Title of the prompt before resuming a trimmed voice take. */
+  trimRecordingTitle: string
+  /** Body of the prompt before resuming a trimmed voice take. */
+  trimRecordingText: string
+  /** Confirm button of a prompt. */
+  ok: string
+  /** Tooltip by the view-once toggle on the first few locked takes; `**` marks bold. */
+  viewOnceHint: string
+  /** Tooltip once view-once is switched on for a voice take. */
+  viewOnceVoiceEnabledHint: string
+  /** Tooltip once view-once is switched on for a round video take. */
+  viewOnceVideoEnabledHint: string
+  /** Accessibility label of the view-once toggle while off. */
+  activateViewOnce: string
+  /** Accessibility label of the view-once toggle while on. */
+  deactivateViewOnce: string
 }
 
 export const defaultLabels: ChatLabels = {
@@ -72,6 +100,20 @@ export const defaultLabels: ChatLabels = {
   tapToRecord: 'Tap to record',
   releaseToSend: 'Release to send, slide up to lock',
   holdToRecord: 'Hold to record',
+  slideUpToLock: 'Slide up to lock recording',
+  holdToRecordAudioSwitch: 'Hold to record audio. Tap to switch to video.',
+  holdToRecordVideoSwitch: 'Hold to record video. Tap to switch to audio.',
+  holdToRecordAudioOnly: 'Hold to record audio.',
+  holdToRecordVideoOnly: 'Hold to record video.',
+  pauseToTrimOrReplay: 'Pause to trim or replay',
+  trimRecordingTitle: 'Trim to selected range?',
+  trimRecordingText: 'Audio outside that range will be discarded, and recording will start immediately.',
+  ok: 'OK',
+  viewOnceHint: 'Tap to set this message to **Play Once**.',
+  viewOnceVoiceEnabledHint: 'The recipient will be able to listen to it only once.',
+  viewOnceVideoEnabledHint: 'The recipient will be able to play it only once.',
+  activateViewOnce: 'Activate Play Once',
+  deactivateViewOnce: 'Deactivate Play Once',
 }
 
 /**
