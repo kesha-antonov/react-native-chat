@@ -216,7 +216,11 @@ export const detachRoundNote = (
   let playing = isPlaying
   let isOver = false
 
+  // Only while playing: on iOS a rate set on a paused player starts it.
   const unsubscribeRate = host.subscribeRate(rate => {
+    if (!playing)
+      return
+
     try {
       player.playbackRate = rate
     } catch {
@@ -239,10 +243,11 @@ export const detachRoundNote = (
 
     detach()
     // Back to rest, so a row that mounts later shows the first frame.
+    // The rate first: set after the pause, it would start the player again.
     try {
+      player.playbackRate = 1
       player.pause()
       player.muted = true
-      player.playbackRate = 1
       player.currentTime = 0
     } catch {
       // already torn down

@@ -410,9 +410,12 @@ const RoundNotePlayer = ({
     return () => subscription?.remove?.()
   }, [player, playerId, reset, onEndedRef])
 
-  // A speed picked on any note applies to a playing round note too.
+  // A speed picked on any note applies to a playing round note too. Only
+  // while it plays: on iOS a rate set on a paused player starts it, so a
+  // paused note would run on silently to its end and start the next note.
+  // A paused one picks the rate up in `resume`.
   useEffect(() => {
-    if (!isCurrent)
+    if (!isCurrent || !isPlaying)
       return
 
     try {
@@ -420,7 +423,7 @@ const RoundNotePlayer = ({
     } catch {
       // player already torn down
     }
-  }, [isCurrent, player, rate])
+  }, [isCurrent, isPlaying, player, rate])
 
   useEffect(() => () => {
     stopRaf()

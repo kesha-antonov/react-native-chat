@@ -149,8 +149,6 @@ const Ring = ({ size, maxSize, chrome }: { size: SharedValue<number>, maxSize: n
   const trackProps = useAnimatedProps(() => {
     const pause = pausedAmount(chrome.pause.value, chrome.isPaused.value)
     return {
-      cx: size.value / 2,
-      cy: size.value / 2,
       r: Math.max(0, ringRadius(size.value, chrome.grow.value, pause)),
       strokeWidth: RING_STROKE * (1 + RING_PAUSED_STROKE_GAIN * chrome.pause.value),
       strokeOpacity: RING_OPACITY * TRACK_OPACITY * chrome.pause.value * chrome.ringAlpha.value,
@@ -162,8 +160,6 @@ const Ring = ({ size, maxSize, chrome }: { size: SharedValue<number>, maxSize: n
     const pause = pausedAmount(chrome.pause.value, chrome.isPaused.value)
     const radius = Math.max(0, ringRadius(size.value, chrome.grow.value, pause))
     return {
-      cx: size.value / 2,
-      cy: size.value / 2,
       r: radius,
       strokeWidth: RING_STROKE * (1 + RING_PAUSED_STROKE_GAIN * chrome.pause.value),
       strokeDashoffset: dash - 2 * Math.PI * radius * Math.max(0, Math.min(1, progress)),
@@ -175,24 +171,39 @@ const Ring = ({ size, maxSize, chrome }: { size: SharedValue<number>, maxSize: n
   const progressProps = useAnimatedProps(() => arcProps(chrome.progress.value, 1 - chrome.wrapAlpha.value))
   const wrapProps = useAnimatedProps(() => arcProps(chrome.wrapProgress.value, chrome.wrapAlpha.value))
 
-  const knobProps = useAnimatedProps(() => {
+  // The knob is a plain view moved around the centre: a transform keeps it
+  // where the ring is, whatever the note's size is at that moment.
+  const knobStyle = useAnimatedStyle(() => {
     const pause = pausedAmount(chrome.pause.value, chrome.isPaused.value)
     const radius = ringRadius(size.value, chrome.grow.value, pause)
     const angle = 2 * Math.PI * chrome.progress.value
+    const knob = Math.max(0, KNOB_RADIUS + KNOB_PAUSED_GAIN * pause + KNOB_DRAG_GAIN * chrome.drag.value)
     return {
-      cx: size.value / 2 + radius * Math.cos(angle),
-      cy: size.value / 2 + radius * Math.sin(angle),
-      r: Math.max(0, KNOB_RADIUS + KNOB_PAUSED_GAIN * pause + KNOB_DRAG_GAIN * chrome.drag.value),
-      fillOpacity: Math.min(1, Math.max(0, pause)) * chrome.ringAlpha.value,
+      width: knob * 2,
+      height: knob * 2,
+      borderRadius: knob,
+      marginLeft: -knob,
+      marginTop: -knob,
+      opacity: Math.min(1, Math.max(0, pause)) * chrome.ringAlpha.value,
+      // Clockwise from 12 o'clock, in the note's own (unrotated) frame.
+      transform: [
+        { translateX: radius * Math.sin(angle) },
+        { translateY: -radius * Math.cos(angle) },
+      ],
     }
   })
 
   return (
-    <View style={[StyleSheet.absoluteFill, styles.ringRotation]}>
-      <Svg width='100%' height='100%'>
-        <AnimatedCircle animatedProps={trackProps} stroke='#FFFFFF' fill='none' />
+    <View style={StyleSheet.absoluteFill}>
+      {/* Centred by percentage rather than by animated `cx`/`cy`: an SVG
+          circle that ever renders without its animated centre is drawn
+          around the corner, a grey ring at the top-left of the note. */}
+      <Svg width='100%' height='100%' style={styles.ringRotation}>
+        <AnimatedCircle animatedProps={trackProps} cx='50%' cy='50%' stroke='#FFFFFF' fill='none' />
         <AnimatedCircle
           animatedProps={wrapProps}
+          cx='50%'
+          cy='50%'
           stroke='#FFFFFF'
           fill='none'
           strokeLinecap='round'
@@ -200,13 +211,15 @@ const Ring = ({ size, maxSize, chrome }: { size: SharedValue<number>, maxSize: n
         />
         <AnimatedCircle
           animatedProps={progressProps}
+          cx='50%'
+          cy='50%'
           stroke='#FFFFFF'
           fill='none'
           strokeLinecap='round'
           strokeDasharray={dashArray}
         />
-        <AnimatedCircle animatedProps={knobProps} fill='#FFFFFF' />
       </Svg>
+      <Animated.View style={[styles.knob, knobStyle]} />
     </View>
   )
 }
@@ -382,6 +395,12 @@ const styles = StyleSheet.create({
   },
   ringRotation: {
     transform: [{ rotate: '-90deg' }],
+  },
+  knob: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    backgroundColor: '#FFFFFF',
   },
   metaText: {
     fontSize: 12,
