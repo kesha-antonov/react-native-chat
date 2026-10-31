@@ -2,7 +2,39 @@
 
 ## [Unreleased]
 
+Voice and round video notes now look and behave like Telegram's (Android source used as the reference).
+
+### 💥 Breaking
+- **Unread dot comes from `IMessage.isMediaUnread`** instead of local play state, on voice and round notes
+- **Round notes no longer autoplay**: they rest on their first frame. Opt back in with `mediaPlayback.isRoundVideoAutoplayEnabled`
+- **`theme.voice` distances follow Telegram**: `cancelThreshold` 140 (full slide; was the 80 release point), `lockThreshold` 57 (was 90)
+- **Voice takes of 700ms or less are dropped** (was under 800ms)
+- **Speed control moved** from each voice bubble into the new "now playing" bar
+- **Round notes need `createVideoPlayer`** (expo-video, SDK 52+); without it they fall back to the media card
+
+### ✨ Features
+- **Recording**: big record circle with voice-reactive blobs, Telegram's lock (pause once locked), slide to cancel that follows the finger, rolling timer, blinking dot, bin on cancel, and composer transitions
+- **Video notes record on the first hold**, with flash, camera switch, pinch zoom and a blurred background (optional `expo-blur`)
+- **Pause, resume and trim** a voice take; resuming joins the clips (`react-native-audio-api`), trimming needs optional `expo-file-system`
+- **Send animations**: the record circle flies into the new voice bubble, the camera circle into the new round note
+- **Voice bubbles** use Telegram's layout and waveform: tap to play, drag to seek, partly played bars, play/pause morph, appear and loading animations
+- **Round notes** grow on play, scroll to the middle, hide the avatar, and pause with a scrubbable ring
+- **Floating round note** keeps playing when its row scrolls away (`mediaPlayback.isFloatingRoundNoteEnabled`)
+- **"Now playing" bar** at the top of the chat (`mediaPlayback.isNowPlayingBarEnabled`)
+- **Auto-play next note** and **one shared playback speed** (`mediaPlayback.playbackRate`, `onPlaybackRateChange`)
+- **View once**: `audioRecording` / `videoRecording.isViewOnceEnabled`, `IMessage.isViewOnce`, `mediaPlayback.onViewOnceEnd`
+- **Transcription**: `mediaPlayback.onTranscribe` and `IMessage.transcription`
+- **Raise to listen** via `mediaPlayback.isNearEar` (feed it from a proximity sensor)
+- **Hints and haptics** (optional `expo-haptics`); `onMediaRead`, `videoRecording.onTooShort`; new labels in all 15 locales
+
+### 🐛 Fixes
+- Starting a recording pauses the playing note
+- The `expo-audio` fallback player plays one note at a time
+- Cancelling a video note closes the recorder
+- Resuming a voice take on iOS no longer overwrites the audio recorded before the pause
+
 ### 📝 Docs
+- README documents every `audioRecording`, `videoRecording` and `mediaPlayback` option
 - **Troubleshooting entry for "Cannot read property 'Chat' of undefined"** ([#28](https://github.com/kesha-antonov/react-native-chat/issues/28)). The package itself loads fine - the published 5.0.1 renders the Quick start example unchanged in a fresh Expo SDK 58 app - so the error means a dependency threw during import and Metro handed back an empty module. The entry points at the earlier error that names the real cause, usually a native peer that was installed without rebuilding the app or at a version the app does not ship
 - **Bare React Native install steps were incomplete.** They left out `react-native-worklets`, which Reanimated 4 requires, pointed at the Reanimated 3 Babel plugin name, and never said to rebuild the native app after installing. All three are covered now
 

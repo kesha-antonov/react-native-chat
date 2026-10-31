@@ -101,6 +101,9 @@ Each is inert until you install its peer and turn it on - nothing is forced on t
 | Inline audio playback | `IMessage.audio` | `expo-audio` |
 | Voice notes (hold to record) | `audioRecording={{ isEnabled: true }}` | `expo-audio`, plus `react-native-audio-api` for the waveform |
 | Video messages (camera notes) | `videoRecording={{ isEnabled: true }}` | `react-native-vision-camera`, or `expo-image-picker` |
+| Note speed / auto-play / unread | `mediaPlayback={{ playbackRate, onPlaybackRateChange, onMediaRead }}`, `IMessage.isMediaUnread` (auto-play next and the "now playing" bar are on by default, `isNowPlayingBarEnabled: false` hides the bar; silent round-note loops are opt-in with `isRoundVideoAutoplayEnabled: true`) | none |
+| Recording haptics | install `expo-haptics` | `expo-haptics` |
+| Resume / trim a paused voice take | on with `audioRecording` | `react-native-audio-api` to resume, plus `expo-file-system` to trim (a trimmed take is sent as WAV) |
 | Location messages | `IMessage.location` | none |
 | Emoji reactions | `reactions={{ isEnabled: true, onReactionPress }}` | none |
 | Long-press action menu | `messageActions={[{ label, onPress }]}` | none |

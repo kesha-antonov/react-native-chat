@@ -208,7 +208,8 @@ Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/Farid
 ```jsx
 <Chat
   audioRecording={{ isEnabled: true }}   // hold the mic to record a voice note (needs expo-audio)
-  videoRecording={{ isEnabled: true }}   // record a video message (needs expo-image-picker)
+  videoRecording={{ isEnabled: true }}   // round video notes (needs react-native-vision-camera or expo-image-picker)
+  mediaPlayback={{ playbackRate: 1.5 }}  // optional: start notes at 1.5x, auto-play the next note
   // location messages render automatically for any IMessage with a `location`
   {...props}
 />
@@ -217,7 +218,25 @@ Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/Farid
 ```bash
 # Optional inline media playback + recording:
 npx expo install expo-video expo-audio expo-image-picker
+# Optional: Telegram-style round video notes and the voice-note waveform
+npx expo install react-native-vision-camera react-native-audio-api react-native-svg expo-haptics
+# Optional: trim paused voice takes, blur behind the round-video camera
+npx expo install expo-file-system expo-blur
 ```
+
+Recording and playback follow Telegram:
+
+- **Hold** the record button to record, release to send. With both voice and video enabled, a **tap** switches it between mic and camera, and the choice is remembered. With only video, the camera sits in the record button's place.
+- **Slide left** to cancel: all the way across cancels at once; releasing past about half the way cancels too. **Slide up** to lock and keep recording hands-free. The two exclude each other: no lock once the cancel slide is under way. "Slide up to lock" is shown for the first few takes.
+- **Locked**, the bar shows a `m:ss,t` timer and a CANCEL button, and the lock turns into a **pause** button: pausing stops the take into a preview - the voice note's waveform with play, or the round note looping in its circle (tap to hear it) - to send or delete.
+- In a paused voice take, the mic above send **resumes** recording onto its end, and the handles at either end of the waveform **trim** it. Resuming needs `react-native-audio-api`; trimming also needs `expo-file-system`, and a trimmed take is sent as a WAV. Round video takes can't be resumed or trimmed.
+- A round note records on the first hold, with the camera drawn over a blurred chat (when `expo-blur` is installed). Switch camera and flash work while recording (the screen lights up for the front camera, the torch for the back one), and you can pinch to zoom. At its 60s limit the take stops into the preview instead of sending.
+- Haptic ticks on start, stop, lock and mode switch when `expo-haptics` is installed.
+- Starting a recording pauses any note that is playing.
+- Only one note plays at a time. When a voice or round video note plays to its end, the next newer one in the chat starts.
+- While a note plays or is paused, a "now playing" bar at the top of the chat has play/pause, the sender, the speed (1x / 1.5x / 2x; long-press for more, shared by every note) and close; a tap on the title scrolls to the note.
+- Round notes rest in the list on their first frame with a play button (or loop silently with `isRoundVideoAutoplayEnabled`). A tap plays one from the start with sound and grows it, hiding the sender's avatar; a tap pauses it, and a paused note can be scrubbed by dragging around its ring. Its length, in a pill at its bottom-left, counts down while it plays, and playing bars replace its unread dot once it is heard.
+- Set `isMediaUnread` on a message for the unread dot; `mediaPlayback.onMediaRead` reports when an incoming one is played.
 
 </details>
 
@@ -385,7 +404,17 @@ interface IMessage {
   user: User
   image?: string
   video?: string
+  /** Render `video` as a round video note */
+  videoNote?: boolean
   audio?: string
+  /** Length of `audio` / `video` in seconds */
+  duration?: number
+  /** The voice or round note has not been played by its recipient yet (unread dot) */
+  isMediaUnread?: boolean
+  /** View-once voice or round note: plays a single time, then `mediaPlayback.onViewOnceEnd` fires */
+  isViewOnce?: boolean
+  /** Transcribed text of a voice or round note, shown under it via the transcribe button */
+  transcription?: string
   system?: boolean
   sent?: boolean
   received?: boolean
@@ -500,8 +529,9 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`renderActions`** _(Component | Function)_ - Custom action button on the left of the message composer
 - **`renderAccessory`** _(Component | Function)_ - Custom second line of actions below the message composer
 - **`onPressEmoji`** _(Function)_ - Callback for the optional emoji button on the left of the composer field. When omitted, the emoji button is hidden.
-- **`audioRecording`** _(Object)_ - Enable Telegram-style hold-to-record voice notes. `{ isEnabled, minDurationMs?, onError? }`. Requires the optional `expo-audio` peer (and `react-native-audio-api` for the playback waveform); the mic button is hidden when it is absent.
-- **`videoRecording`** _(Object)_ - Enable record-and-send video messages. `{ isEnabled, maxDuration?, onError? }`. Uses `react-native-vision-camera` for round camera notes, falling back to `expo-image-picker`'s system camera.
+- **`audioRecording`** _(Object)_ - Enable Telegram-style hold-to-record voice notes. `{ isEnabled, minDurationMs?, maxDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `isViewOnceEnabled` shows Telegram's view-once toggle above the pause button while a take is locked or paused; a take sent with it on reaches `onSend` with `isViewOnce: true`. `minDurationMs` (default 700, as in Telegram) drops takes that long or shorter and calls `onTooShort`; `maxDurationMs` (default 600000) sends the take when reached. Requires the optional `expo-audio` peer (and `react-native-audio-api` for the playback waveform); the mic button is hidden when it is absent. A paused take can be resumed when `react-native-audio-api` is installed with FFmpeg (the M4A recordings are joined without re-encoding), and trimmed when `expo-file-system` is installed too; a trimmed take reaches `onSend` as a 16-bit mono WAV at 24kHz, an untrimmed one as the recorder's M4A.
+- **`videoRecording`** _(Object)_ - Enable round video notes. `{ isEnabled, maxDuration?, minDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `maxDuration` is in seconds (default 60); `minDurationMs` (default 800) drops shorter takes and calls `onTooShort`; `isViewOnceEnabled` works as in `audioRecording`, for round notes recorded with vision-camera. With `react-native-vision-camera` linked, the record button records a note on the first hold, like Telegram - shared with voice notes when both are enabled, on its own otherwise. Reaching `maxDuration` stops into a preview (sends directly without `expo-video`). Without vision-camera it falls back to `expo-image-picker`'s system camera, which sends a plain (non-round) video.
+- **`mediaPlayback`** _(Object)_ - How voice and round video notes play. `{ isAutoPlayNextEnabled?, playbackRate?, onPlaybackRateChange?, isRoundVideoAutoplayEnabled?, isNowPlayingBarEnabled?, isFloatingRoundNoteEnabled?, onMediaRead?, isNearEar?, onTranscribe?, onViewOnceEnd? }`. `isNowPlayingBarEnabled` (default `true`) shows Telegram's "now playing" bar at the top of the chat while a note plays or is paused. `isFloatingRoundNoteEnabled` (default `true`) keeps a round note that is playing or paused going in a small draggable circle over the list once its row scrolls out of view; set it to `false` to stop the note with its row instead. `isAutoPlayNextEnabled` (default `true`) starts the next newer voice or round note in the chat when one plays to its end. The playback speed is shared by every note; `playbackRate` sets it, and `onPlaybackRateChange` reports changes so the app can keep the speed across launches. `isRoundVideoAutoplayEnabled` (default `false`) loops round notes silently in the list instead of holding their first frame. `onMediaRead(message)` is called when an incoming note with `isMediaUnread` starts playing, so the app can mark it listened. `isNearEar` is Telegram's raise to listen: feed it from the app's proximity sensor, and while it is `true` the current voice or round note plays through the earpiece (restarting if it was under a second in); when it goes back to `false` the note pauses and the speaker route returns. `onTranscribe(message)` shows a transcribe button on voice notes and beside round notes; tapping it calls this, shows a loading outline until the app sets `message.transcription`, then opens the text under the waveform, or in a bubble under the round note (tap again to collapse or expand). `onViewOnceEnd(message)` is called once a view-once note (`isViewOnce`) has played to its end or been stopped after starting, so the app can remove it. A view-once round note carries the "1" marker on its play button, never autoplays or floats, and cannot be scrubbed.
 - **`textInputProps`** _(Object)_ - props to be passed to the [`<TextInput>`](https://reactnative.dev/docs/textinput).
 
 > **Composer height** - there are no height props. The composer starts one line tall and grows with its content. Constrain it through `textInputProps.style` (e.g. `{ maxHeight: 120 }`), which is applied after the measured height and wins.
