@@ -110,14 +110,27 @@ const VIGNETTE_OPACITY = 40 / 255
 /**
  * The darkened rim behind a paused note's knob, so the white ring reads over
  * a bright frame. It fades in with the pause.
+ *
+ * Drawn once at the grown size and scaled with the note: a static SVG is not
+ * redrawn when its view resizes, so a percentage-sized one kept the note's
+ * resting size and sat in the top-left corner of a grown note.
  */
-const Vignette = ({ chrome }: { chrome: RoundNoteChrome }) => {
+const Vignette = ({ size, maxSize, chrome }: { size: SharedValue<number>, maxSize: number, chrome: RoundNoteChrome }) => {
   const id = `note-vignette-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
-  const style = useAnimatedStyle(() => ({ opacity: chrome.pause.value }))
+  const style = useAnimatedStyle(() => ({
+    opacity: chrome.pause.value,
+    transform: [{ scale: maxSize > 0 ? size.value / maxSize : 1 }],
+  }))
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, style]}>
-      <Svg width='100%' height='100%'>
+    <Animated.View
+      style={[
+        styles.vignette,
+        { width: maxSize, height: maxSize, marginLeft: -maxSize / 2, marginTop: -maxSize / 2 },
+        style,
+      ]}
+    >
+      <Svg width={maxSize} height={maxSize}>
         <SvgDefs>
           <SvgRadialGradient id={id} cx='50%' cy='50%' r='50%'>
             <SvgStop offset='0' stopColor='#000000' stopOpacity={0} />
@@ -125,7 +138,7 @@ const Vignette = ({ chrome }: { chrome: RoundNoteChrome }) => {
             <SvgStop offset='1' stopColor='#000000' stopOpacity={VIGNETTE_OPACITY} />
           </SvgRadialGradient>
         </SvgDefs>
-        <SvgCircle cx='50%' cy='50%' r='50%' fill={`url(#${id})`} />
+        <SvgCircle cx={maxSize / 2} cy={maxSize / 2} r={maxSize / 2} fill={`url(#${id})`} />
       </Svg>
     </Animated.View>
   )
@@ -248,7 +261,7 @@ export function VideoNoteOverlay ({
 }: VideoNoteOverlayProps) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents='none'>
-      {Svg && SvgRadialGradient && SvgStop && SvgDefs && <Vignette chrome={chrome} />}
+      {Svg && SvgRadialGradient && SvgStop && SvgDefs && <Vignette size={size} maxSize={maxSize} chrome={chrome} />}
       {Svg && AnimatedCircle && <Ring size={size} maxSize={maxSize} chrome={chrome} />}
 
       <FadingBadge isVisible={!isCurrent && isMuted} style={styles.muteBadge}>
@@ -395,6 +408,11 @@ const styles = StyleSheet.create({
   },
   ringRotation: {
     transform: [{ rotate: '-90deg' }],
+  },
+  vignette: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
   },
   knob: {
     position: 'absolute',
