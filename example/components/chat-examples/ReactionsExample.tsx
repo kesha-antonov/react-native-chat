@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View, useColorScheme } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Chat, IMessage, MessageReaction, ReactionPickerProps } from '@kesha-antonov/react-native-chat'
 
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import messagesData from '../../example-expo/data/messages'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 import { EmojiReactionPicker } from './reactions/EmojiReactionPicker'
@@ -67,7 +68,7 @@ export default function ReactionsExample () {
         isFullPickerEnabled
         mode={isDark ? 'dark' : 'light'}
         fullPickerLang='en'
-        fullPickerColumnCount={6}
+        fullPickerColumnCount={8}
         fullPickerTheme={{
           light: {
             searchbar: {
@@ -95,10 +96,6 @@ export default function ReactionsExample () {
         messages={messages}
         onSend={onSend}
         user={user}
-        messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
-        textInputProps={{
-          style: getColorSchemeStyle(styles, 'composer', colorScheme),
-        }}
         reactions={{
           isEnabled: true,
           onReactionPress: handleReactionPress,
@@ -116,12 +113,5 @@ const styles = StyleSheet.create({
   },
   container_dark: {
     backgroundColor: '#000',
-  },
-  messagesContainer_dark: {
-    backgroundColor: '#000',
-  },
-  composer_dark: {
-    backgroundColor: '#1a1a1a',
-    color: '#fff',
   },
 })

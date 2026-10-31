@@ -1,11 +1,9 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
+  FlatListProps,
   LayoutChangeEvent,
   ListRenderItemInfo,
-  ViewabilityConfigCallbackPair,
-  ViewToken,
-  CellRendererProps,
   StyleProp,
   ViewStyle,
   Platform } from 'react-native'
@@ -27,6 +25,15 @@ import { ItemProps } from './components/Item/types'
 import { AnimatedFlashList, isFlashListAvailable } from './FlashList'
 import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions, AnimatedFlatList } from './types'
+
+// React Native 0.88's strict TypeScript API no longer exports `ViewToken`,
+// `ViewabilityConfigCallbackPair` or `CellRendererProps`, and older versions do
+// not have its `ListViewToken` replacement - so derive them from `FlatListProps`,
+// which both generations of the typings ship.
+type ViewabilityConfigCallbackPair = NonNullable<FlatListProps<unknown>['viewabilityConfigCallbackPairs']>[number]
+type ViewToken = Parameters<ViewabilityConfigCallbackPair['onViewableItemsChanged']>[0]['viewableItems'][number]
+type CellRendererProps = React.ComponentProps<NonNullable<FlatListProps<unknown>['CellRendererComponent']>>
+
 
 export * from './types'
 
@@ -348,7 +355,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     const content = renderLoadEarlier()
 
     if (!content)
-      return null
+      return undefined
 
     return (
       <View style={stylesCommon.fill}>{content}</View>
@@ -486,7 +493,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     })
   }, [daysPositions, isInverted, isDayAnimationEnabled])
 
-  const renderCell = useCallback((props: CellRendererProps<unknown>) => {
+  const renderCell = useCallback((props: CellRendererProps) => {
     const { item, onLayout: onLayoutProp, children } = props
 
     const handleOnLayout = (event: LayoutChangeEvent) => {
@@ -511,7 +518,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   messagesRef.current = messages
 
   const FlashListCell = useMemo(() => {
-    const Cell = React.forwardRef<View, FlashListCellProps>(({ index, onLayout: onLayoutProp, children, ...rest }, ref) => {
+    const Cell = React.forwardRef<React.ComponentRef<typeof View>, FlashListCellProps>(({ index, onLayout: onLayoutProp, children, ...rest }, ref) => {
       const handleOnLayout = (event: LayoutChangeEvent) => {
         onLayoutProp?.(event)
         trackDayPosition(messagesRef.current[index], event.nativeEvent.layout)
@@ -528,9 +535,8 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     return Cell
   }, [trackDayPosition])
 
-  // The handlers-object form is not an inline function, so the rule cannot read its
-  // captures - the dependency array at the end of this call is maintained by hand.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // No dependency array: on native Reanimated logs a warning for one on every render,
+  // and it compares the handlers' worklet closures itself to pick up changes.
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
       const y = event.contentOffset.y
@@ -579,7 +585,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     onMomentumEnd: () => {
       isScrollActive.value = false
     },
-  }, [isScrollActive, isInverted, scrollToBottomOffset, hasConsumerOnScroll, notifyConsumerScroll, isScrollingDown, lastScrolledY, contentHeight, isScrollToBottomShown, scrolledY])
+  })
 
   // removes unrendered days positions when messages are added/removed
   useEffect(() => {

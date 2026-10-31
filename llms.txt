@@ -24,7 +24,8 @@ to `babel.config.js` (`plugins: ['react-native-worklets/plugin']` for Reanimated
 read the first error in the log; it is usually a native peer installed without rebuilding the app,
 or (in Expo) installed with `npm install` instead of `npx expo install`.
 
-Requires React Native >= 0.70, iOS >= 13.4, Android API 21+, Expo SDK 50+.
+Requires React Native >= 0.82, React 19, `react-native-gesture-handler` >= 3, iOS >= 15.1, Android API 24+,
+Expo SDK 55+.
 
 ## Minimal working example
 
@@ -100,7 +101,7 @@ Each is inert until you install its peer and turn it on - nothing is forced on t
 | Inline video playback | `IMessage.video` | `expo-video` |
 | Inline audio playback | `IMessage.audio` | `expo-audio` |
 | Voice notes (hold to record) | `audioRecording={{ isEnabled: true }}` | `expo-audio`, plus `react-native-audio-api` for the waveform |
-| Video messages (camera notes) | `videoRecording={{ isEnabled: true }}` | `react-native-vision-camera`, or `expo-image-picker` |
+| Video messages (camera notes) | `videoRecording={{ isEnabled: true }}` | `react-native-vision-camera` 5+ (with `react-native-nitro-modules` + `react-native-nitro-image`), or `expo-image-picker` |
 | Note speed / auto-play / unread | `mediaPlayback={{ playbackRate, onPlaybackRateChange, onMediaRead }}`, `IMessage.isMediaUnread` (auto-play next and the "now playing" bar are on by default, `isNowPlayingBarEnabled: false` hides the bar; silent round-note loops are opt-in with `isRoundVideoAutoplayEnabled: true`) | none |
 | Recording haptics | install `expo-haptics` | `expo-haptics` |
 | Resume / trim a paused voice take | on with `audioRecording` | `react-native-audio-api` to resume, plus `expo-file-system` to trim (a trimmed take is sent as WAV) |

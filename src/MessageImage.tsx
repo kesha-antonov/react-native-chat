@@ -12,7 +12,7 @@ import {
   useWindowDimensions,
   StatusBar,
   Text } from 'react-native'
-import { BaseButton, GestureHandlerRootView } from 'react-native-gesture-handler'
+import { GestureHandlerRootView, Touchable } from 'react-native-gesture-handler'
 import { OverKeyboardView } from 'react-native-keyboard-controller'
 import Animated, {
   useAnimatedStyle,
@@ -23,6 +23,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Zoom from 'react-native-zoom-reanimated'
+import { suppressPressAfterHold } from './components/messagePress'
 import { TouchableOpacity } from './components/TouchableOpacity'
 import { IMessage } from './Models'
 import commonStyles from './styles'
@@ -78,13 +79,13 @@ function ModalContent({ isVisible, imageSource, modalImageDimensions, imageProps
 
             {/* close button */}
             <View style={styles.closeButtonContainer}>
-              <BaseButton onPress={handleModalClose}>
+              <Touchable onPress={handleModalClose}>
                 <View style={styles.closeButtonContent}>
                   <Text style={styles.closeButtonIcon}>
                     {'X'}
                   </Text>
                 </View>
-              </BaseButton>
+              </Touchable>
             </View>
 
             <View style={[commonStyles.fill, commonStyles.centerItems]}>
@@ -187,7 +188,7 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
 
   return (
     <View style={containerStyle}>
-      <TouchableOpacity onPress={handleImagePress} testID='message-image-touchable'>
+      <TouchableOpacity onPress={handleImagePress} {...suppressPressAfterHold} testID='message-image-touchable'>
         <Image
           {...imageProps}
           style={computedImageStyle}

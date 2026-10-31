@@ -1,7 +1,7 @@
 import React from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { Href, useRouter } from 'expo-router'
-import { RectButton } from 'react-native-gesture-handler'
+import { Touchable } from 'react-native-gesture-handler'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { ThemedText } from '@/components/themed-text'
@@ -17,7 +17,7 @@ const examples: Array<{ id: ChatExample, title: string, description: string }> =
   { id: 'media', title: 'Media & Voice', description: 'Audio, video and location messages, hold-to-record voice notes, and video recording' },
   { id: 'theming', title: 'Theming & Icons', description: 'Switch themes at runtime and override icons via the icon registry' },
   { id: 'localization', title: 'Localization (i18n)', description: 'Switch UI language at runtime; built-in en/es/fr/de/ru + custom labels' },
-  { id: 'basic', title: 'Basic Example', description: 'Basic chat with keyboard logging for testing' },
+  { id: 'basic', title: 'Basic Example', description: 'Telegram-style composer: emoji, attachment grid, voice and round video notes, load earlier' },
   { id: 'links', title: 'Links & Patterns', description: 'Phone numbers, emails, URLs, hashtags, and mentions' },
   { id: 'customized-rendering', title: 'Customized Rendering', description: 'Customized chat with all rendering options' },
   { id: 'slack', title: 'Slack Style', description: 'Slack-like message styling' },
@@ -45,8 +45,9 @@ export default function ExploreScreen () {
         </ThemedView>
         <View style={styles.examplesContainer}>
           {examples.map(example => (
-            <RectButton
+            <Touchable
               key={example.id}
+              underlayColor='black'
               style={[styles.exampleCard, { borderColor }]}
               onPress={() => router.push(`/chat/${example.id}` as Href)}
             >
@@ -59,7 +60,7 @@ export default function ExploreScreen () {
               <ThemedText type='link' style={styles.tryButton}>
                 Try it →
               </ThemedText>
-            </RectButton>
+            </Touchable>
           ))}
         </View>
       </ScrollView>

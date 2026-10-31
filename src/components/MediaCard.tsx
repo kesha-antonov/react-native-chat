@@ -7,6 +7,7 @@ import { ChatTheme } from '../Theme'
 import { Icon } from './Icon'
 import { PlayIcon } from './MediaControls'
 import { getMediaPalette } from './mediaPalette'
+import { suppressPressAfterHold } from './messagePress'
 
 export interface MediaCardProps {
   kind: 'video' | 'audio'
@@ -44,6 +45,7 @@ export const MediaCard = ({ kind, uri, position = 'left', label, onPress, style 
     return (
       <Pressable
         onPress={handlePress}
+        {...suppressPressAfterHold}
         accessibilityRole='button'
         accessibilityLabel={label ?? defaultLabel}
         style={[styles.videoCard, style]}
@@ -58,6 +60,7 @@ export const MediaCard = ({ kind, uri, position = 'left', label, onPress, style 
   return (
     <Pressable
       onPress={handlePress}
+      {...suppressPressAfterHold}
       accessibilityRole='button'
       accessibilityLabel={label ?? defaultLabel}
       style={[styles.audioRow, style]}

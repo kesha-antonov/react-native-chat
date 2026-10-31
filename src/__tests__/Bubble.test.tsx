@@ -1,9 +1,18 @@
 import React from 'react'
 import { render, within } from '@testing-library/react-native'
-import { Gesture } from 'react-native-gesture-handler'
 
 import { Bubble } from '..'
 import { DEFAULT_TEST_MESSAGE } from './data'
+
+interface MockGestureConfig {
+  cancelsTouchesInView?: boolean
+  enabled?: boolean
+  minDurationMs?: number
+}
+interface MockGesture { type: string, config: MockGestureConfig, gestures?: MockGesture[] }
+
+// The gesture each detector was last rendered with, most recent last.
+const mockDetectedGestures: MockGesture[] = []
 
 jest.mock('react-native-gesture-handler', () => {
   const actual = jest.requireActual('react-native-gesture-handler')
@@ -12,10 +21,23 @@ jest.mock('react-native-gesture-handler', () => {
 
   return {
     ...actual,
-    // Tag the detector so tests can assert whether the bubble attached gestures.
-    GestureDetector: ({ children }: { children: React.ReactNode }) =>
-      ReactActual.createElement(View, { testID: 'bubble-gesture-detector' }, children),
+    // Tag the detector so tests can assert whether the bubble attached gestures,
+    // and record what it was handed.
+    GestureDetector: ({ children, gesture }: { children: React.ReactNode, gesture: MockGesture }) => {
+      mockDetectedGestures.push(gesture)
+      return ReactActual.createElement(View, { testID: 'bubble-gesture-detector' }, children)
+    },
   }
+})
+
+// The bubble attaches one composed gesture; pick a member of it by handler type.
+function lastGestureOfType (type: 'TapGestureHandler' | 'LongPressGestureHandler') {
+  const composed = mockDetectedGestures[mockDetectedGestures.length - 1]!
+  return composed.gestures!.find(gesture => gesture.type === type)!
+}
+
+beforeEach(() => {
+  mockDetectedGestures.length = 0
 })
 
 const REACTIONS = { isEnabled: true, onReactionPress: jest.fn() }
@@ -97,9 +119,6 @@ describe('bubble gestures', () => {
   // Regression: gesture recognizers cancelled touches on native subviews, so
   // video controls rendered through renderMessageVideo were dead (#1).
   it('does not cancel touches in native subviews', async () => {
-    const tapSpy = jest.spyOn(Gesture, 'Tap')
-    const longPressSpy = jest.spyOn(Gesture, 'LongPress')
-
     await render(
       <Bubble
         user={{ _id: 1 }}
@@ -110,16 +129,11 @@ describe('bubble gestures', () => {
       />
     )
 
-    expect(tapSpy.mock.results[0]!.value.config.cancelsTouchesInView).toBe(false)
-    expect(longPressSpy.mock.results[0]!.value.config.cancelsTouchesInView).toBe(false)
-
-    tapSpy.mockRestore()
-    longPressSpy.mockRestore()
+    expect(lastGestureOfType('TapGestureHandler').config.cancelsTouchesInView).toBe(false)
+    expect(lastGestureOfType('LongPressGestureHandler').config.cancelsTouchesInView).toBe(false)
   })
 
-  it('only composes the tap gesture when onPressMessage is provided', async () => {
-    const exclusiveSpy = jest.spyOn(Gesture, 'Exclusive')
-
+  it('holds for 0.32s, as Telegram does, before opening', async () => {
     await render(
       <Bubble
         user={{ _id: 1 }}
@@ -129,7 +143,20 @@ describe('bubble gestures', () => {
       />
     )
 
-    expect(exclusiveSpy).not.toHaveBeenCalled()
+    expect(lastGestureOfType('LongPressGestureHandler').config.minDurationMs).toBe(320)
+  })
+
+  it('only enables the tap gesture when onPressMessage is provided', async () => {
+    await render(
+      <Bubble
+        user={{ _id: 1 }}
+        currentMessage={DEFAULT_TEST_MESSAGE}
+        position='left'
+        reactions={REACTIONS}
+      />
+    )
+
+    expect(lastGestureOfType('TapGestureHandler').config.enabled).toBe(false)
 
     await render(
       <Bubble
@@ -141,8 +168,6 @@ describe('bubble gestures', () => {
       />
     )
 
-    expect(exclusiveSpy).toHaveBeenCalled()
-
-    exclusiveSpy.mockRestore()
+    expect(lastGestureOfType('TapGestureHandler').config.enabled).toBe(true)
   })
 })

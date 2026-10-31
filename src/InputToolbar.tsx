@@ -13,8 +13,8 @@ import { CANCEL_LINGER_MS, RecordingBar } from './components/RecordingBar'
 import { getLastRecordMode, setLastRecordMode } from './components/recordingFeedback'
 import { ReplyPreview, ReplyPreviewProps } from './components/ReplyPreview'
 import { useVideoNoteSession } from './components/VideoNoteCapture'
-import { isVisionCameraNativeReady } from './components/VideoNoteRecorder'
 import { VideoRecordButton, isVideoRecordingAvailable } from './components/VideoRecordButton'
+import { isVisionCameraNativeReady } from './components/visionCamera'
 import {
   RecordedVoicePreview,
   VoiceMessageInput,

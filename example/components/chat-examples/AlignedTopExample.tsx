@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { Pressable, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native'
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Bubble, BubbleProps, Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 type AlignMode = 'bottom' | 'top' | 'auto'
@@ -107,8 +108,6 @@ export default function AlignedTopExample () {
         isAlignedTop={isAlignedTop}
         renderBubble={isTallBubbleEnabled ? renderBubble : undefined}
         renderInputToolbar={isCustomToolbarEnabled ? renderInputToolbar : undefined}
-        messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
-        textInputProps={{ style: getColorSchemeStyle(styles, 'composer', colorScheme) }}
       />
     </View>
   )
@@ -122,15 +121,9 @@ const styles = StyleSheet.create({
   container_dark: {
     backgroundColor: '#000',
   },
-  messagesContainer_dark: {
-    backgroundColor: '#000',
-  },
-  composer_dark: {
-    backgroundColor: '#1a1a1a',
-    color: '#fff',
-  },
   toolbar: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 12,

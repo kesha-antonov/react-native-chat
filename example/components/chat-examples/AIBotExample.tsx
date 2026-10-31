@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react'
-import { Pressable, StyleSheet, View, useColorScheme } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
 import { Chat, IMessage, Send, useStreamingMessages } from '@kesha-antonov/react-native-chat'
 
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 const USER = { _id: 1, name: 'You' }
@@ -116,8 +117,6 @@ export default function AIBotExample () {
         // Render replies as markdown via the optional react-native-streamdown
         // peer. No-op (plain text) until that package is installed.
         messageTextProps={{ markdown: true }}
-        messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
-        textInputProps={{ style: getColorSchemeStyle(styles, 'composer', colorScheme) }}
       />
     </View>
   )
@@ -130,13 +129,6 @@ const styles = StyleSheet.create({
   },
   container_dark: {
     backgroundColor: '#000',
-  },
-  messagesContainer_dark: {
-    backgroundColor: '#000',
-  },
-  composer_dark: {
-    backgroundColor: '#1a1a1a',
-    color: '#fff',
   },
   sendWrap: {
     height: 44,

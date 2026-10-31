@@ -1,8 +1,12 @@
 import React, { useCallback, useState } from 'react'
-import { StyleSheet, View, useColorScheme } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Chat, IMessage, MessageMenuItem, MessageReaction } from '@kesha-antonov/react-native-chat'
 import * as Clipboard from 'expo-clipboard'
+// Deep imports, not the `lucide-react-native` barrel, which would ship every icon.
+import CopyIcon from 'lucide-react-native/icons/copy'
+import TrashIcon from 'lucide-react-native/icons/trash'
 
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 interface ChatMessage extends IMessage {
@@ -57,10 +61,17 @@ export default function ContextMenuExample () {
     const items: MessageMenuItem[] = []
 
     if (message.text)
-      items.push({ label: 'Copy', onPress: () => Clipboard.setStringAsync(message.text) })
+      items.push({
+        label: 'Copy',
+        icon: ({ color, size }) => <CopyIcon color={color} size={size} />,
+        onPress: () => Clipboard.setStringAsync(message.text),
+      })
 
+    // Telegram draws each action with its glyph on the trailing edge, and a
+    // destructive one - label and glyph - in red.
     items.push({
       label: 'Delete',
+      icon: ({ color, size }) => <TrashIcon color={color} size={size} />,
       destructive: true,
       onPress: () => setMessages(previous => previous.filter(m => m._id !== message._id)),
     })

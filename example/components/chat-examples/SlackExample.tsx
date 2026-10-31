@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View, useColorScheme } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { ActionSheetProvider } from '@expo/react-native-action-sheet'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import messagesData from '../../example-expo/data/messages'
 import SlackMessage from '../../example-slack-message/src/SlackMessage'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
@@ -34,10 +35,6 @@ export default function SlackExample () {
           onSend={onSend}
           user={user}
           renderMessage={props => <SlackMessage {...props} />}
-          messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
-          textInputProps={{
-            style: getColorSchemeStyle(styles, 'composer', colorScheme),
-          }}
         />
       </View>
     </ActionSheetProvider>
@@ -51,12 +48,5 @@ const styles = StyleSheet.create({
   },
   container_dark: {
     backgroundColor: '#000',
-  },
-  messagesContainer_dark: {
-    backgroundColor: '#000',
-  },
-  composer_dark: {
-    backgroundColor: '#1a1a1a',
-    color: '#fff',
   },
 })

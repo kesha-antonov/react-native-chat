@@ -1,34 +1,31 @@
-import React, {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from 'react'
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Dimensions,
-  Platform,
+  FlatList,
+  LayoutChangeEvent,
   Pressable,
   StyleProp,
   StyleSheet,
+  Text,
+  TextInput,
   TextStyle,
   View,
+  ListViewToken,
   ViewStyle,
 } from 'react-native'
-import EmojiPicker from 'react-native-emoji-chooser'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated'
-
-const { height: WINDOW_HEIGHT, width: WINDOW_WIDTH } = Dimensions.get('window')
-const SHEET_HEIGHT = WINDOW_HEIGHT * 0.8
-const SAFE_BOTTOM_PADDING = Platform.OS === 'ios' ? 24 : 16
-const SWIPE_CLOSE_THRESHOLD = 80
+import AsyncStorage from '@react-native-async-storage/async-storage'
+// Deep imports, not the `lucide-react-native` barrel: the barrel re-exports every icon in the
+// set and Metro has no tree-shaking, so importing from it ships all ~1600 of them (~1.2 MB).
+import AppleIcon from 'lucide-react-native/icons/apple'
+import CatIcon from 'lucide-react-native/icons/cat'
+import ClockIcon from 'lucide-react-native/icons/clock'
+import SmileIcon from 'lucide-react-native/icons/face-grinning'
+import FlagIcon from 'lucide-react-native/icons/flag'
+import HashIcon from 'lucide-react-native/icons/hash'
+import LightbulbIcon from 'lucide-react-native/icons/lightbulb'
+import PlaneIcon from 'lucide-react-native/icons/plane'
+import UserIcon from 'lucide-react-native/icons/user'
+import VolleyballIcon from 'lucide-react-native/icons/volleyball'
+import { EMOJI_DATA } from './emojiData'
 
 export interface EmojiPickerSearchBarProps {
   placeholderTextColor?: string
@@ -50,15 +47,8 @@ export interface FullEmojiPickerTheme {
   dark?: EmojiPickerThemeMode
 }
 
-/** Imperative handle so the parent picker can slide the sheet in/out */
-export interface FullEmojiPickerRef {
-  expand: () => void
-  close: () => void
-}
-
 export interface FullEmojiPickerProps {
   onSelect: (emoji: string) => void
-  onClose: () => void
   mode?: 'light' | 'dark'
   lang?: string
   columnCount?: number
@@ -66,168 +56,325 @@ export interface FullEmojiPickerProps {
   searchBarProps?: EmojiPickerSearchBarProps
 }
 
-export const FullEmojiPicker = forwardRef<FullEmojiPickerRef, FullEmojiPickerProps>(
-  (props, ref) => {
-    const {
-      onSelect,
-      onClose,
-      mode = 'light',
-      lang = 'en',
-      columnCount = 6,
-      theme = {},
-      searchBarProps,
-    } = props
+type IconComponent = React.ComponentType<{ color?: string, size?: number }>
 
-    const [isMounted, setIsMounted] = useState(false)
+interface Emoji {
+  char: string
+  search: string
+}
 
-    const translateY = useSharedValue(SHEET_HEIGHT)
-    const backdropOpacity = useSharedValue(0)
+interface Category {
+  key: string
+  icon: IconComponent
+}
 
-    const close = useCallback(() => {
-      translateY.value = withTiming(SHEET_HEIGHT, { duration: 250 })
-      backdropOpacity.value = withTiming(0, { duration: 250 }, finished => {
-        if (finished)
-          runOnJS(onClose)()
+const CATEGORIES: Category[] = [
+  { key: 'Smileys & Emotion', icon: SmileIcon },
+  { key: 'People & Body', icon: UserIcon },
+  { key: 'Animals & Nature', icon: CatIcon },
+  { key: 'Food & Drink', icon: AppleIcon },
+  { key: 'Travel & Places', icon: PlaneIcon },
+  { key: 'Activities', icon: VolleyballIcon },
+  { key: 'Objects', icon: LightbulbIcon },
+  { key: 'Symbols', icon: HashIcon },
+  { key: 'Flags', icon: FlagIcon },
+]
+const RECENTS_KEY = 'Recent'
+
+const LABELS: Record<string, { placeholder: string, recent: string, results: string }> = {
+  en: { placeholder: 'Search emojis...', recent: 'Recent', results: 'Search results' },
+  uk: { placeholder: 'Пошук емодзі...', recent: 'Останні', results: 'Результати' },
+}
+
+// Kept under the key react-native-emoji-chooser used, so recents survive the switch.
+const STORAGE_KEY = 'emoji-picker-recent'
+const MAX_RECENTS = 20
+const HEADER_HEIGHT = 34
+const TOOLBAR_HEIGHT = 40
+
+const toChar = (unified: string) =>
+  String.fromCodePoint(...unified.split('-').map(hex => parseInt(hex, 16)))
+
+// Built once, on first open, not per render or per open.
+let emojisByCategory: Map<string, Emoji[]> | null = null
+const getEmojisByCategory = () => {
+  if (!emojisByCategory)
+    emojisByCategory = new Map(EMOJI_DATA.map(([category, emojis]) =>
+      [category, emojis.map(([char, search]) => ({ char, search }))]
+    ))
+
+  return emojisByCategory
+}
+
+type Item =
+  | { type: 'header', key: string, title: string, categoryIndex: number }
+  | { type: 'row', key: string, emojis: string[], categoryIndex: number }
+
+const EmojiRow = memo(({ emojis, cellSize, fontSize, onPress }: {
+  emojis: string[]
+  cellSize: number
+  fontSize: number
+  onPress: (emoji: string) => void
+}) => (
+  <View style={styles.row}>
+    {emojis.map(emoji => (
+      // A plain Text press: no per-cell animated touchable, so a screenful of
+      // emojis mounts as cheaply as a screenful of text.
+      <Text
+        key={emoji}
+        onPress={() => onPress(emoji)}
+        style={[styles.cell, { width: cellSize, height: cellSize, lineHeight: cellSize, fontSize }]}
+        suppressHighlighting
+        accessibilityRole='button'
+      >
+        {emoji}
+      </Text>
+    ))}
+  </View>
+))
+EmojiRow.displayName = 'EmojiRow'
+
+/**
+ * The full emoji browser drawn inside the reactions bar once its expand button
+ * has grown it into a panel - Telegram's in-place expansion.
+ *
+ * It renders only the rows on screen. The emoji-chooser package it replaces
+ * drew a whole category as one list item, so opening the panel mounted ~600
+ * animated touchables at once and stalled the JS thread through the expand.
+ */
+export const FullEmojiPicker = ({
+  onSelect,
+  mode = 'light',
+  lang = 'en',
+  columnCount = 7,
+  theme = {},
+  searchBarProps,
+}: FullEmojiPickerProps) => {
+  const isDark = mode === 'dark'
+  const themeMode = (isDark ? theme.dark : theme.light) ?? {}
+  const labels = LABELS[lang] ?? LABELS.en
+  const { placeholderTextColor, ...textInputProps } = searchBarProps ?? {}
+
+  const [width, setWidth] = useState(0)
+  const [query, setQuery] = useState('')
+  const [recents, setRecents] = useState<string[]>([])
+  const [activeIndex, setActiveIndex] = useState(0)
+  const listRef = useRef<FlatList<Item>>(null)
+
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then(raw => {
+        const stored: unknown[] = raw ? JSON.parse(raw) : []
+        // The old package stored emoji objects; this stores the characters.
+        setRecents(stored.map(item =>
+          typeof item === 'string' ? item : toChar((item as { unified: string }).unified)
+        ))
       })
-    }, [backdropOpacity, onClose, translateY])
+      .catch(() => {})
+  }, [])
 
-    const expand = useCallback(() => {
-      setIsMounted(true)
-    }, [])
+  const handleSelect = useCallback((emoji: string) => {
+    const next = [emoji, ...recents.filter(item => item !== emoji)].slice(0, MAX_RECENTS)
+    setRecents(next)
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {})
+    onSelect(emoji)
+  }, [recents, onSelect])
 
-    // Trigger the entrance animation once the component is mounted in the tree
-    useEffect(() => {
-      if (!isMounted)
+  const cellSize = width > 0 ? Math.floor(width / columnCount) : 0
+
+  const { items, offsets, headerIndexByCategory } = useMemo(() => {
+    const list: Item[] = []
+    const headerIndex: number[] = []
+    const pushSection = (title: string, emojis: string[], categoryIndex: number) => {
+      if (emojis.length === 0)
         return
-
-      translateY.value = withTiming(0, { duration: 300 })
-      backdropOpacity.value = withTiming(0.6, { duration: 300 })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isMounted])
-
-    useImperativeHandle(ref, () => ({ expand, close }), [expand, close])
-
-    // Swipe-to-dismiss gesture
-    const panGesture = Gesture.Pan()
-      .onUpdate(e => {
-        translateY.value = Math.max(0, e.translationY)
-      })
-      .onEnd(e => {
-        if (e.translationY > SWIPE_CLOSE_THRESHOLD)
-          runOnJS(close)()
-        else
-          translateY.value = withSpring(0, { damping: 22, stiffness: 110 })
-      })
-
-    const sheetStyle = useAnimatedStyle(() => ({
-      transform: [{ translateY: translateY.value }],
-    }))
-
-    const backdropStyle = useAnimatedStyle(() => ({
-      opacity: backdropOpacity.value,
-    }))
-
-    if (!isMounted)
-      return null
-
-    const lightOverrides = theme.light ?? {}
-    const darkOverrides = theme.dark ?? {}
-
-    const emojiPickerTheme: Record<string, any> = {
-      light: {
-        searchbar: {
-          ...(lightOverrides.searchbar as Record<string, unknown>),
-          placeholderColor: searchBarProps?.placeholderTextColor,
-        },
-        toolbar: {
-          container: {
-            paddingBottom: SAFE_BOTTOM_PADDING,
-            ...(lightOverrides.toolbar?.container as Record<string, unknown>),
-          },
-        },
-      },
-      dark: {
-        searchbar: {
-          ...(darkOverrides.searchbar as Record<string, unknown>),
-          placeholderColor: searchBarProps?.placeholderTextColor,
-        },
-        toolbar: {
-          container: {
-            paddingBottom: SAFE_BOTTOM_PADDING,
-            ...(darkOverrides.toolbar?.container as Record<string, unknown>),
-          },
-        },
-      },
+      headerIndex[categoryIndex] = list.length
+      list.push({ type: 'header', key: `h-${title}`, title, categoryIndex })
+      for (let i = 0; i < emojis.length; i += columnCount)
+        list.push({ type: 'row', key: `${title}-${i}`, emojis: emojis.slice(i, i + columnCount), categoryIndex })
     }
 
-    const bgColor = mode === 'dark' ? '#111827' : '#ffffff'
-    const handleColor = mode === 'dark' ? '#4b5563' : '#d1d5db'
+    const byCategory = getEmojisByCategory()
+    const needle = query.trim().toLowerCase()
+    if (needle) {
+      const matches: string[] = []
+      byCategory.forEach(emojis => emojis.forEach(emoji => {
+        if (emoji.search.includes(needle))
+          matches.push(emoji.char)
+      }))
+      pushSection(labels.results, matches, 0)
+    } else {
+      // Index 0 is the recents tab; categories follow from 1.
+      pushSection(labels.recent, recents, 0)
+      CATEGORIES.forEach((category, index) =>
+        pushSection(category.key, byCategory.get(category.key)!.map(emoji => emoji.char), index + 1)
+      )
+    }
 
-    return (
-      <>
-        {/* Semi-transparent backdrop - tap to dismiss */}
-        <Pressable style={StyleSheet.absoluteFill} onPress={close}>
-          <Animated.View
-            style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]}
-            pointerEvents='none'
-          />
-        </Pressable>
+    let offset = 0
+    const itemOffsets = list.map(item => {
+      const start = offset
+      offset += item.type === 'header' ? HEADER_HEIGHT : cellSize
+      return start
+    })
+    return { items: list, offsets: itemOffsets, headerIndexByCategory: headerIndex }
+  }, [query, recents, columnCount, cellSize, labels])
 
-        {/* Slide-up sheet */}
-        <Animated.View
-          style={[
-            styles.sheet,
-            { height: SHEET_HEIGHT, width: WINDOW_WIDTH, backgroundColor: bgColor },
-            sheetStyle,
-          ]}
-        >
-          {/* Drag handle - pan gesture attached here */}
-          <GestureDetector gesture={panGesture}>
-            <View style={styles.handleContainer}>
-              <View style={[styles.handle, { backgroundColor: handleColor }]} />
-            </View>
-          </GestureDetector>
+  const getItemLayout = useCallback((_: ArrayLike<Item> | null | undefined, index: number) => ({
+    length: items[index]?.type === 'header' ? HEADER_HEIGHT : cellSize,
+    offset: offsets[index] ?? 0,
+    index,
+  }), [items, offsets, cellSize])
 
-          <EmojiPicker
-            onSelect={(emoji: string) => {
-              onSelect(emoji)
-              close()
-            }}
-            mode={mode}
-            lang={lang}
-            columnCount={columnCount}
-            theme={emojiPickerTheme}
-            searchBarProps={searchBarProps}
-          />
-        </Animated.View>
-      </>
-    )
-  }
-)
+  const renderItem = useCallback(({ item }: { item: Item }) => {
+    if (item.type === 'header')
+      return <Text style={[styles.header, isDark && styles.headerDark]} numberOfLines={1}>{item.title}</Text>
 
-FullEmojiPicker.displayName = 'FullEmojiPicker'
+    return <EmojiRow emojis={item.emojis} cellSize={cellSize} fontSize={Math.round(cellSize * 0.62)} onPress={handleSelect} />
+  }, [isDark, cellSize, handleSelect])
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 10 }).current
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ListViewToken[] }) => {
+    const first = viewableItems[0]?.item as Item | undefined
+    if (first)
+      setActiveIndex(first.categoryIndex)
+  }).current
+
+  const scrollToCategory = useCallback((categoryIndex: number) => {
+    const index = headerIndexByCategory[categoryIndex]
+    if (index === undefined)
+      return
+    setActiveIndex(categoryIndex)
+    listRef.current?.scrollToIndex({ index, animated: false })
+  }, [headerIndexByCategory])
+
+  const onLayout = useCallback((event: LayoutChangeEvent) => {
+    setWidth(event.nativeEvent.layout.width - styles.list.paddingHorizontal * 2)
+  }, [])
+
+  const iconColor = isDark ? '#9ca3af' : '#6b7280'
+  const activeColor = '#3390EC'
+  const tabs = [{ key: RECENTS_KEY, icon: ClockIcon as IconComponent }, ...CATEGORIES]
+
+  return (
+    <View style={[styles.panel, isDark && styles.panelDark]} onLayout={onLayout}>
+      <View style={themeMode.searchbar?.container}>
+        <TextInput
+          style={[styles.search, isDark && styles.searchDark, themeMode.searchbar?.textInput]}
+          placeholder={labels.placeholder}
+          placeholderTextColor={(placeholderTextColor as string | undefined) ?? iconColor}
+          value={query}
+          onChangeText={setQuery}
+          autoCorrect={false}
+          clearButtonMode='always'
+          returnKeyType='done'
+          {...textInputProps}
+        />
+      </View>
+      {cellSize > 0 && (
+        <FlatList
+          ref={listRef}
+          style={styles.list}
+          data={items}
+          keyExtractor={item => item.key}
+          renderItem={renderItem}
+          getItemLayout={getItemLayout}
+          // About one panel of rows up front, and a short window after it: the
+          // panel is at most 300pt tall, so a screen is ~7 rows.
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews
+          keyboardShouldPersistTaps='handled'
+          viewabilityConfig={viewabilityConfig}
+          onViewableItemsChanged={onViewableItemsChanged}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+      {!query && (
+        <View style={[styles.toolbar, isDark && styles.toolbarDark, themeMode.toolbar?.container]}>
+          {tabs.map((tab, index) => {
+            const Icon = tab.icon
+            const isDisabled = headerIndexByCategory[index] === undefined
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={() => scrollToCategory(index)}
+                disabled={isDisabled}
+                style={[styles.tab, isDisabled && styles.tabDisabled]}
+                accessibilityRole='button'
+                accessibilityLabel={tab.key}
+              >
+                <Icon size={20} color={activeIndex === index ? activeColor : iconColor} />
+              </Pressable>
+            )
+          })}
+        </View>
+      )}
+    </View>
+  )
+}
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: '#000000',
+  panel: {
+    flex: 1,
+    paddingTop: 8,
+    backgroundColor: '#ffffff',
   },
-  sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
+  panelDark: {
+    backgroundColor: '#1f2937',
   },
-  handleContainer: {
-    width: '100%',
+  search: {
+    height: 36,
+    marginHorizontal: 8,
+    marginBottom: 4,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: '#E5E8E9',
+    color: '#111827',
+  },
+  searchDark: {
+    backgroundColor: '#374151',
+    color: '#f9fafb',
+  },
+  list: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  header: {
+    height: HEADER_HEIGHT,
+    paddingTop: 10,
+    paddingLeft: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  headerDark: {
+    color: '#9ca3af',
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  cell: {
+    textAlign: 'center',
+  },
+  toolbar: {
+    height: TOOLBAR_HEIGHT,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    justifyContent: 'space-around',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0, 0, 0, 0.12)',
+    backgroundColor: '#ffffff',
   },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
+  toolbarDark: {
+    borderTopColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#1f2937',
+  },
+  tab: {
+    padding: 6,
+  },
+  tabDisabled: {
+    opacity: 0.3,
   },
 })

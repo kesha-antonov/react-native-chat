@@ -10,12 +10,13 @@ import React, {
 import {
   View,
   LayoutChangeEvent,
+  TextInput,
   useColorScheme,
 } from 'react-native'
 import dayjs from 'dayjs'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
 import '../dayjsLocales'
-import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
@@ -156,7 +157,7 @@ function Chat<TMessage extends IMessage = IMessage> (
   ) as RefObject<AnimatedList<TMessage>>
 
   const textInputRef = useMemo(
-    () => props.textInputRef || createRef<TextInput>(),
+    () => props.textInputRef || createRef<React.ComponentRef<typeof TextInput>>(),
     [props.textInputRef]
   )
 

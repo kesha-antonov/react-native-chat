@@ -57,8 +57,12 @@ const Message = (props: Props) => {
       // Set the invisible avatar height to 0, but keep the width, padding, etc.
       extraStyle = { height: 0 }
 
+    // On top, as in Slack: the avatar sits beside the author line of the group's first
+    // message. It also makes `Avatar` compare with the previous message - the same one
+    // the zero height above is keyed on - so the visible avatar is never the hidden one.
     const avatarProps = {
       ...innerProps,
+      isAvatarOnTop: true,
       imageStyle: { left: [styles.slackAvatar, extraStyle] },
     }
 
@@ -96,13 +100,12 @@ export default Message
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'flex-start',
     marginLeft: 8,
     marginRight: 0,
   },
   slackAvatar: {
-    // The bottom should roughly line up with the first line of message text.
     height: 40,
     width: 40,
     borderRadius: 3,

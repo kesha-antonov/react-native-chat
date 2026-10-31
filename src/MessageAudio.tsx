@@ -12,6 +12,7 @@ import {
   usePlaylistEntry,
   useReportNowPlaying,
 } from './components/mediaPlayback'
+import { suppressPressAfterHold } from './components/messagePress'
 import { UnreadDot } from './components/NoteIndicators'
 import { PlayPauseIcon } from './components/PlayPauseIcon'
 import { TranscribeButton, TranscriptionText, useTranscription } from './components/TranscribeButton'
@@ -201,6 +202,7 @@ const ExpoAudioPlayer = ({
         <View>
           <Pressable
             onPress={togglePlayback}
+            {...suppressPressAfterHold}
             disabled={isPlayDisabled}
             accessibilityRole='button'
             accessibilityState={{ disabled: isPlayDisabled }}

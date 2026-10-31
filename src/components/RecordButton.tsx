@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   FadeIn,
@@ -290,7 +290,7 @@ export function RecordButton ({
 
   // A sent voice take flies into the new message's play button
   // (`VoiceMessageEnterTransition`) instead of collapsing in place.
-  const containerRef = useRef<View>(null)
+  const containerRef = useRef<React.ComponentRef<typeof View>>(null)
   const [flightTarget, setFlightTarget] = useState<VoiceFlightTarget | null>(null)
   // Stops waiting for a target, or reports a flight in the air as landed.
   const flightCleanupRef = useRef<(() => void) | null>(null)
@@ -596,78 +596,73 @@ export function RecordButton ({
       setIsLockHintVisible(false)
   }
 
-  const panGesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .activateAfterLongPress(onTap ? HOLD_DELAY_MS : 0)
-        .onStart(() => {
-          isTakeSV.value = 1
-          runOnJS(jsStart)()
-        })
-        .onUpdate(event => {
-          if (isTakeSV.value === 0 || lockedSV.value > 0)
-            return
+  const panGesture = usePanGesture({
+    activateAfterLongPress: onTap ? HOLD_DELAY_MS : 0,
+    onActivate: () => {
+      isTakeSV.value = 1
+      runOnJS(jsStart)()
+    },
+    onUpdate: event => {
+      if (isTakeSV.value === 0 || lockedSV.value > 0)
+        return
 
-          const dx = cancelSign === -1
-            ? Math.max(-slideDistance, Math.min(0, event.translationX))
-            : Math.min(slideDistance, Math.max(0, event.translationX))
-          const progress = 1 - Math.abs(dx) / slideDistance
-          const up = Math.max(0, Math.min(lockDistance, -event.translationY))
+      const dx = cancelSign === -1
+        ? Math.max(-slideDistance, Math.min(0, event.translationX))
+        : Math.min(slideDistance, Math.max(0, event.translationX))
+      const progress = 1 - Math.abs(dx) / slideDistance
+      const up = Math.max(0, Math.min(lockDistance, -event.translationY))
 
-          // The circle tracks every frame; JS only hears about real changes.
-          slideProgress.value = progress
-          if (slideProgressValue)
-            slideProgressValue.value = progress
-          if (Math.abs(progress - lastReported.value) > 0.01 || progress === 0) {
-            lastReported.value = progress
-            runOnJS(jsSlideProgress)(progress)
-          }
+      // The circle tracks every frame; JS only hears about real changes.
+      slideProgress.value = progress
+      if (slideProgressValue)
+        slideProgressValue.value = progress
+      if (Math.abs(progress - lastReported.value) > 0.01 || progress === 0) {
+        lastReported.value = progress
+        runOnJS(jsSlideProgress)(progress)
+      }
 
-          // All the way across: cancel now, before the finger lifts.
-          if (progress <= 0) {
-            isTakeSV.value = 0
-            runOnJS(jsFinish)(true, true)
-            return
-          }
+      // All the way across: cancel now, before the finger lifts.
+      if (progress <= 0) {
+        isTakeSV.value = 0
+        runOnJS(jsFinish)(true, true)
+        return
+      }
 
-          // Lock and cancel exclude each other: no lock once the slide is past 30%.
-          const isBlocked = progress < LOCK_BLOCK_PROGRESS ? 1 : 0
-          if (isBlocked !== lockHideTarget.value) {
-            lockHideTarget.value = isBlocked
-            lockHide.value = withTiming(isBlocked, { duration: 140 })
-          }
-          fingerUp.value = isBlocked ? 0 : up
+      // Lock and cancel exclude each other: no lock once the slide is past 30%.
+      const isBlocked = progress < LOCK_BLOCK_PROGRESS ? 1 : 0
+      if (isBlocked !== lockHideTarget.value) {
+        lockHideTarget.value = isBlocked
+        lockHide.value = withTiming(isBlocked, { duration: 140 })
+      }
+      fingerUp.value = isBlocked ? 0 : up
 
-          if (!isBlocked && up >= lockDistance) {
-            lockedSV.value = 1
-            isTakeSV.value = 0
-            runOnJS(jsLock)()
-          }
-        })
-        .onFinalize((_event, success) => {
-          if (isTakeSV.value === 0)
-            return
+      if (!isBlocked && up >= lockDistance) {
+        lockedSV.value = 1
+        isTakeSV.value = 0
+        runOnJS(jsLock)()
+      }
+    },
+    onFinalize: event => {
+      if (isTakeSV.value === 0)
+        return
 
-          isTakeSV.value = 0
+      isTakeSV.value = 0
 
-          // Interrupted by the system rather than released: Telegram locks the
-          // take unless the cancel slide was already well under way.
-          if (!success) {
-            if (slideProgress.value < LOCK_BLOCK_PROGRESS) {
-              runOnJS(jsFinish)(true, false)
-            } else {
-              lockedSV.value = 1
-              runOnJS(jsLock)()
-            }
-            return
-          }
+      // Interrupted by the system rather than released: Telegram locks the
+      // take unless the cancel slide was already well under way.
+      if (event.canceled) {
+        if (slideProgress.value < LOCK_BLOCK_PROGRESS) {
+          runOnJS(jsFinish)(true, false)
+        } else {
+          lockedSV.value = 1
+          runOnJS(jsLock)()
+        }
+        return
+      }
 
-          runOnJS(jsFinish)(slideProgress.value < RELEASE_CANCEL_PROGRESS, false)
-        }),
-    // The js* helpers only read refs, so they are safe to omit.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [onTap ? 1 : 0, cancelSign, slideDistance, lockDistance, slideProgress, slideProgressValue, fingerUp, lockedSV, isTakeSV, lockHide, lockHideTarget, lastReported]
-  )
+      runOnJS(jsFinish)(slideProgress.value < RELEASE_CANCEL_PROGRESS, false)
+    },
+  })
 
   const tapRef = useRef(onTap)
   tapRef.current = onTap
@@ -679,15 +674,15 @@ export function RecordButton ({
   // A tap switches voice <-> video; the hold records. Race so whichever
   // recognizes first wins. With a single mode the press records at once.
   const hasTap = !!onTap
-  const gesture = useMemo(() => {
-    if (!hasTap)
-      return panGesture
-
-    const tap = Gesture.Tap().maxDuration(HOLD_DELAY_MS).onEnd(() => {
+  const tapGesture = useTapGesture({
+    enabled: hasTap,
+    maxDuration: HOLD_DELAY_MS,
+    onDeactivate: () => {
       runOnJS(jsTap)()
-    })
-    return Gesture.Race(tap, panGesture)
-  }, [panGesture, hasTap])
+    },
+  })
+  const raceGesture = useCompetingGestures(tapGesture, panGesture)
+  const gesture = hasTap ? raceGesture : panGesture
 
   // Hidden under the big circle while a take records, back once it has left.
   const buttonStyle = useAnimatedStyle(() => ({

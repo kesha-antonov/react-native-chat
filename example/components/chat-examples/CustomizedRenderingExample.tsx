@@ -1,5 +1,6 @@
 import React from 'react'
-import { StyleSheet, View, useColorScheme } from 'react-native'
+import { StyleSheet, View } from 'react-native'
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import Chats from '../../example-chat/src/Chats'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 

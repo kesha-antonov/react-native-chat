@@ -1,13 +1,14 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { Alert, StyleSheet, View, useColorScheme } from 'react-native'
+import { Alert, StyleSheet, View } from 'react-native'
 import { AttachmentAction, Chat, IMessage } from '@kesha-antonov/react-native-chat'
 // Deep imports, not the `lucide-react-native` barrel: the barrel re-exports every icon in the
 // set and Metro has no tree-shaking, so importing from it ships all ~1600 of them (~1.2 MB).
-import CameraIcon from 'lucide-react-native/dist/esm/icons/camera.mjs'
-import FileText from 'lucide-react-native/dist/esm/icons/file-text.mjs'
-import ImageIcon from 'lucide-react-native/dist/esm/icons/image.mjs'
-import MapPin from 'lucide-react-native/dist/esm/icons/map-pin.mjs'
+import CameraIcon from 'lucide-react-native/icons/camera'
+import FileText from 'lucide-react-native/icons/file-text'
+import ImageIcon from 'lucide-react-native/icons/image'
+import MapPin from 'lucide-react-native/icons/map-pin'
 
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 import EmojiPicker from '../EmojiPicker'
 

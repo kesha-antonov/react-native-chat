@@ -219,7 +219,8 @@ Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/Farid
 # Optional inline media playback + recording:
 npx expo install expo-video expo-audio expo-image-picker
 # Optional: Telegram-style round video notes and the voice-note waveform
-npx expo install react-native-vision-camera react-native-audio-api react-native-svg expo-haptics
+# (vision-camera 5+, which runs on Nitro and needs its two Nitro packages too)
+npx expo install react-native-vision-camera react-native-nitro-modules react-native-nitro-image react-native-audio-api react-native-svg expo-haptics
 # Optional: trim paused voice takes, blur behind the round-video camera
 npx expo install expo-file-system expo-blur
 ```
@@ -316,9 +317,11 @@ Overridable names: `send`, `mic`, `camera`, `play`, `pause`, `check`, `checkAll`
 
 ## 📋 Requirements
 
-| React Native | iOS | Android | Expo | TypeScript |
-|---|---|---|---|---|
-| >= 0.70.0 | >= 13.4 | API 21+ (5.0) | SDK 50+ | >= 5.0 (optional) |
+| React Native | React | iOS | Android | Expo | TypeScript |
+|---|---|---|---|---|---|
+| >= 0.82.0 | >= 19 | >= 15.1 | API 24+ (7.0) | SDK 55+ | >= 5.0 (optional) |
+
+The floor comes from `react-native-gesture-handler` 3, which the library is built on (3.0+ is required; it supports React Native 0.82 and newer). The example app runs Expo SDK 58 with React Native 0.88.
 
 ---
 
@@ -530,7 +533,7 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`renderAccessory`** _(Component | Function)_ - Custom second line of actions below the message composer
 - **`onPressEmoji`** _(Function)_ - Callback for the optional emoji button on the left of the composer field. When omitted, the emoji button is hidden.
 - **`audioRecording`** _(Object)_ - Enable Telegram-style hold-to-record voice notes. `{ isEnabled, minDurationMs?, maxDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `isViewOnceEnabled` shows Telegram's view-once toggle above the pause button while a take is locked or paused; a take sent with it on reaches `onSend` with `isViewOnce: true`. `minDurationMs` (default 700, as in Telegram) drops takes that long or shorter and calls `onTooShort`; `maxDurationMs` (default 600000) sends the take when reached. Requires the optional `expo-audio` peer (and `react-native-audio-api` for the playback waveform); the mic button is hidden when it is absent. A paused take can be resumed when `react-native-audio-api` is installed with FFmpeg (the M4A recordings are joined without re-encoding), and trimmed when `expo-file-system` is installed too; a trimmed take reaches `onSend` as a 16-bit mono WAV at 24kHz, an untrimmed one as the recorder's M4A.
-- **`videoRecording`** _(Object)_ - Enable round video notes. `{ isEnabled, maxDuration?, minDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `maxDuration` is in seconds (default 60); `minDurationMs` (default 800) drops shorter takes and calls `onTooShort`; `isViewOnceEnabled` works as in `audioRecording`, for round notes recorded with vision-camera. With `react-native-vision-camera` linked, the record button records a note on the first hold, like Telegram - shared with voice notes when both are enabled, on its own otherwise. Reaching `maxDuration` stops into a preview (sends directly without `expo-video`). Without vision-camera it falls back to `expo-image-picker`'s system camera, which sends a plain (non-round) video.
+- **`videoRecording`** _(Object)_ - Enable round video notes. `{ isEnabled, maxDuration?, minDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `maxDuration` is in seconds (default 60); `minDurationMs` (default 800) drops shorter takes and calls `onTooShort`; `isViewOnceEnabled` works as in `audioRecording`, for round notes recorded with vision-camera. With `react-native-vision-camera` 5 or newer linked (plus its `react-native-nitro-modules` and `react-native-nitro-image` peers; it has no Expo config plugin, so add `NSCameraUsageDescription`/`NSMicrophoneUsageDescription` and the `CAMERA`/`RECORD_AUDIO` permissions yourself), the record button records a note on the first hold, like Telegram - shared with voice notes when both are enabled, on its own otherwise. Reaching `maxDuration` stops into a preview (sends directly without `expo-video`). Without vision-camera it falls back to `expo-image-picker`'s system camera, which sends a plain (non-round) video.
 - **`mediaPlayback`** _(Object)_ - How voice and round video notes play. `{ isAutoPlayNextEnabled?, playbackRate?, onPlaybackRateChange?, isRoundVideoAutoplayEnabled?, isNowPlayingBarEnabled?, isFloatingRoundNoteEnabled?, onMediaRead?, isNearEar?, onTranscribe?, onViewOnceEnd? }`. `isNowPlayingBarEnabled` (default `true`) shows Telegram's "now playing" bar at the top of the chat while a note plays or is paused. `isFloatingRoundNoteEnabled` (default `true`) keeps a round note that is playing or paused going in a small draggable circle over the list once its row scrolls out of view; set it to `false` to stop the note with its row instead. `isAutoPlayNextEnabled` (default `true`) starts the next newer voice or round note in the chat when one plays to its end. The playback speed is shared by every note; `playbackRate` sets it, and `onPlaybackRateChange` reports changes so the app can keep the speed across launches. `isRoundVideoAutoplayEnabled` (default `false`) loops round notes silently in the list instead of holding their first frame. `onMediaRead(message)` is called when an incoming note with `isMediaUnread` starts playing, so the app can mark it listened. `isNearEar` is Telegram's raise to listen: feed it from the app's proximity sensor, and while it is `true` the current voice or round note plays through the earpiece (restarting if it was under a second in); when it goes back to `false` the note pauses and the speaker route returns. `onTranscribe(message)` shows a transcribe button on voice notes and beside round notes; tapping it calls this, shows a loading outline until the app sets `message.transcription`, then opens the text under the waveform, or in a bubble under the round note (tap again to collapse or expand). `onViewOnceEnd(message)` is called once a view-once note (`isViewOnce`) has played to its end or been stopped after starting, so the app can remove it. A view-once round note carries the "1" marker on its play button, never autoplays or floats, and cannot be scrubbed.
 - **`textInputProps`** _(Object)_ - props to be passed to the [`<TextInput>`](https://reactnative.dev/docs/textinput).
 
@@ -1032,7 +1035,9 @@ const handleReactionPress = useCallback((message: IChatMessage, emoji: string) =
 - **`emojis`** _(String[])_ - Emojis shown in the quick picker (default `['👍', '❤️', '😂', '😮', '😢', '👎']`)
 - **`onReactionPress`** _(Function)_ - `(message, emoji) => void` called when an emoji is selected or a pill is tapped. Toggle logic is left to you
 - **`renderReactions`** _(Function)_ - Override the reactions-display component rendered below the bubble
-- **`renderReactionPicker`** _(Function)_ - Override the picker shown on long-press (use for a full emoji browser)
+- **`renderReactionPicker`** _(Function)_ - Override the picker shown on long-press (use for a full emoji browser). It receives [`ReactionPickerProps`](src/Reactions/types.ts): `visible`, `message`, `emojis`, `onSelect`, `onDismiss`, `position`, the bubble's on-screen box (`pageX`, `pageY`, `bubbleWidth`, `bubbleHeight`), the two picker styles and:
+  - **`messagePreview`** _(ReactNode, optional)_ - A copy of the pressed bubble to draw lifted above your backdrop at the bubble's box. While it is mounted the original bubble is hidden, so the message seems to rise out of the list; if you never render it, the original simply stays put. The easiest way to get the built-in look is to render the exported `ContextMenu` with `items={[]}`, as the example app's `EmojiReactionPicker` does (see [Message actions](#message-actions-long-press-context-menu) for its props)
+- **`renderExpandedPicker`** _(Function(`{ onSelect }`), optional)_ - Telegram's expand button. When set, the reactions bar (in the quick picker and above the context menu) ends in a chevron that grows the bar in place into a panel up to 300pt tall, holding what this returns - typically a full emoji grid. Call `onSelect(emoji)` with the pick; the overlay closes and `onReactionPress` is called. Also passed to a custom `renderReactionPicker`
 - **`containerStyle`**, **`reactionStyle`**, **`reactionActiveStyle`**, **`reactionTextStyle`**, **`reactionCountStyle`** - Styles for the reaction pills
 - **`pickerContainerStyle`**, **`pickerEmojiStyle`** - Styles for the quick picker
 
@@ -1075,6 +1080,8 @@ For full control, pass custom `matchers` (`{ type, pattern, getLinkUrl?, getLink
 
 Long-press a message to open a floating, themed context menu anchored to the bubble. Provide the actions via `messageActions` - an array, or a function of the message - each `{ label, icon?, onPress, destructive? }`. When reactions are enabled, a reactions row is shown on top of the menu automatically.
 
+It follows Telegram's iOS client, timings included: the bubble shrinks by 15pt of its width while you hold it, and after 0.32s the menu opens with a medium haptic (if `expo-haptics` is installed). The chat blurs (`expo-blur`, optional; a stronger dim without it) and dims, and the message is lifted above it in place. The reactions bar grows out of a circle at the bubble's corner with its emojis rippling in, and the actions - each with its icon on the left, a destructive one in red, with a highlight while pressed - scale out of the corner below the message. When they don't all fit, the message, the bar and the menu move together until they do. A picked reaction is applied and flies to the message; an action runs once the menu has closed; a tap on the backdrop plays it all in reverse. Every animation runs on Reanimated and follows the system Reduce Motion setting. The reaction-only picker (`reactions` without `messageActions`) is the same overlay without actions.
+
 ```tsx
 import { setStringAsync } from 'expo-clipboard'
 import { Copy, Trash2 } from 'lucide-react-native' // optional icons
@@ -1082,10 +1089,16 @@ import { Copy, Trash2 } from 'lucide-react-native' // optional icons
 <Chat
   messageActions={message => [
     { label: 'Copy', icon: ({ color, size }) => <Copy color={color} size={size} />, onPress: () => setStringAsync(message.text) },
-    { label: 'Delete', destructive: true, onPress: () => deleteMessage(message) },
+    { label: 'Delete', icon: ({ color, size }) => <Trash2 color={color} size={size} />, destructive: true, onPress: () => deleteMessage(message) },
   ]}
 />
 ```
+
+`ContextMenu` is exported for custom pickers and menus. Beyond `visible`, `items`, `onDismiss` (called once its exit has played), `position` and the bubble's box (`pageX`, `pageY`, `bubbleWidth`, `bubbleHeight`), it takes these optional props:
+
+- **`reactions`** _(Object)_ - `{ emojis, onSelect, containerStyle?, emojiStyle?, renderAccessory?, renderExpandedPicker? }`. `renderAccessory` adds content at the end of the bar; `renderExpandedPicker` adds Telegram's expand button and the panel it opens (see `reactions.renderExpandedPicker` above)
+- **`messagePreview`** _(ReactNode)_ - The lifted copy of the message; pass the one a custom picker receives
+- **`children`** _(ReactNode)_ - Drawn above everything else in the overlay, e.g. a full emoji sheet
 
 > **Note:** This library no longer depends on `@expo/react-native-action-sheet`. Prefer `messageActions` above. If you specifically want a native action sheet, install it yourself, wrap your tree in `ActionSheetProvider`, and either call `useActionSheet()` in your own `onLongPressMessage` or pass an `actionSheet` prop - the `actionSheet` prop / `context.actionSheet()` escape hatch still works when you provide an implementation. The composer "+" actions use the built-in themed `AttachmentSheet` and need no setup.
 
@@ -1446,6 +1459,17 @@ This means the package threw while it was being loaded, so the import came back 
 - `react-native-reanimated`, `react-native-worklets`, `react-native-gesture-handler` and `react-native-keyboard-controller` are native modules. After installing or upgrading any of them, rebuild the app (`npx expo run:ios`, `npx expo prebuild`, or `pod install` + a native build) - reloading the JS bundle is not enough.
 - In Expo, install them with `npx expo install` so the versions match your SDK. A plain `npm install` pulls the latest releases, which Expo Go and an existing dev build may not include, and Reanimated throws a version-mismatch error on import.
 - In bare React Native, check the worklets Babel plugin is in `babel.config.js` (see [Bare React Native Projects](#bare-react-native-projects)), then restart Metro with `--reset-cache`.
+
+</details>
+
+<details>
+<summary><strong>The whole message list is blurred on iOS 26</strong></summary>
+
+The chat sits under a transparent navigation header - Expo Router 58's default is a transparent Liquid Glass header the screen scrolls under. iOS 26 then blurs scroll content beneath the header with a scroll edge effect, and because the message list is inverted, that blur covers every message instead of a strip at the top. Give the chat screen an opaque header:
+
+```tsx
+<Stack.Screen name='chat' options={{ headerTransparent: false }} />
+```
 
 </details>
 

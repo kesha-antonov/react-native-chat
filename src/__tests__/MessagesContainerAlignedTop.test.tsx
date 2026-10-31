@@ -1,9 +1,10 @@
 import React from 'react'
 import { StyleSheet } from 'react-native'
-import { act, render } from '@testing-library/react-native'
+import { act } from '@testing-library/react-native'
 
 import { MessagesContainer } from '..'
 import { DEFAULT_TEST_MESSAGE } from './data'
+import { render } from './renderWithGestureRoot'
 
 // The shipped mock records listeners but never calls them, so keyboard transitions are
 // unobservable. Swap in a tiny emitter and keep everything else it provides.

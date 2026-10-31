@@ -134,6 +134,9 @@ Other things worth knowing before you write a test:
   also neutralises `JSReanimated.setCSSEventHandler`, because Reanimated's own `/mock` entry
   throws on import under Jest since 4.6. Leave that in place.
 - gesture-handler is set up separately, from `jestSetup.js` listed in `jest.config.cjs`
+- gesture-handler 3's `GestureDetector` throws in development without a `GestureHandlerRootView`
+  above it. `Chat` mounts one; a test that renders a lower-level component (a bubble, a player,
+  `MessagesContainer`) imports `render` from `src/__tests__/renderWithGestureRoot.tsx` instead
 - the safe-area and keyboard-controller mocks deliberately expose *real* contexts
   (`SafeAreaInsetsContext`, `KeyboardContext`) defaulting to the "no provider mounted" value,
   because `Chat` detects an app-level provider by reading them - a plain stub object would
@@ -183,36 +186,55 @@ On Android the Metro port is baked into the debug build, so pass it at build tim
 
 ## Dependency policy
 
-The example is an **Expo SDK 57** app. `npx expo install --check` is the first thing to run
-when a native build misbehaves, but it is **not** the final word here: the example
-deliberately runs ahead of Expo's pins on the animation stack, so the check reports those as
-"should be updated" and would downgrade them. Read the table below before acting on it.
+The example is an **Expo SDK 58** app (React Native 0.88, React 19.3). `npx expo install --check`
+is the first thing to run when a native build misbehaves, but it is **not** the final word
+here: the example deliberately runs ahead of a few of Expo's pins, so the check reports those
+as "should be updated" and would downgrade them. Read the table below before acting on it.
+(`npx expo install --fix` also insists on installing the newest `expo` first, so within the
+24-hour quarantine below it fails; align the `expo-*` packages by hand from `--check` then.)
 
 Deliberately **ahead** of `expo install --check`:
 
-| Package | Here | Expo SDK 57 wants | Why |
+| Package | Here | Expo SDK 58 wants | Why |
 | --- | --- | --- | --- |
-| `react-native-reanimated` | 4.6.x | 4.5.1 | the library's own toolchain pins 4.6; downgrading splits the two |
-| `react-native-worklets` | 0.12.x | 0.10.1 | ships with reanimated 4.6 |
-| `react-native-keyboard-controller` | 1.22.x | 1.21.9 | the version the keyboard work in `src/` targets |
+| `react-native-gesture-handler` | 3.4.x | ~3.3.0 | the library's own toolchain pins 3.4; downgrading splits the two |
+| `react-native-worklets` | 0.13.1 | 0.13.0 | the patch release that ships with reanimated 4.7.1 |
+| `react-native-keyboard-controller` | 1.22.x | 1.22.7 | the version the keyboard work in `src/` targets |
+| `react-native-safe-area-context` | 5.11.x | ~5.10.1 | matches the library's toolchain |
+| `@react-native-async-storage/async-storage` | 3.x | 2.2.0 | v3 is the current major; the example uses its default (legacy) storage, whose API is unchanged |
+| `@shopify/flash-list` | 2.3.3 | 2.3.2 | matches the library's toolchain |
+| `react` / `react-dom` | 19.3.1 | 19.3.0 | patch release; React Native 0.88 accepts `^19.3.0` |
 
-Worklets 0.12 renamed `WorkletRuntime::executeSync` to `runSync`, which two native packages
-still call. `example/.yarn/patches/` carries the fixes (`react-native-audio-api` wired on the
-dependency spec, `expo-modules-core` through `resolutions`) - without them the iOS build fails
-to compile. If you bump either package, re-check the patch still applies; if you downgrade the
-worklets stack, the patches become unnecessary and must go.
+Metro resolves package `exports` (`unstable_enablePackageExports` is left at its default): SDK 58
+packages import each other through `exports` subpaths. Import deep paths the way a package's
+`exports` map declares them - the Lucide icons come from `lucide-react-native/icons/<name>`, never
+from its `dist/` files.
+
+The chat stack uses `headerTransparent: false`. Expo Router 58's default transparent header makes
+iOS 26 blur scroll content under it, and on the inverted chat list that blur covers every message.
+
+No native patches are carried any more. Worklets 0.12 renamed `WorkletRuntime::executeSync` to
+`runSync`; `react-native-audio-api` 0.13.6 and `expo-modules-core` 58 call `runSync` upstream,
+so the `.yarn/patches/` fixes and their `resolutions` wiring were removed. If a native package
+fails to compile against the worklets headers after a bump, check its call sites first; add a
+patch with `yarn patch` only if upstream has not caught up.
+
+`react-native-vision-camera` 5 runs on Nitro (`react-native-nitro-modules` +
+`react-native-nitro-image`, both direct dependencies of the example) and ships no Expo config
+plugin, so its camera/microphone permission strings live in `app.json` (`ios.infoPlist`,
+`android.permissions`).
 
 Held back deliberately, with reasons - do not bump these casually:
 
 | Package | Pinned at | Why |
 | --- | --- | --- |
-| `react-native` | 0.86.x | Expo SDK 57 pins it |
-| `react-native-gesture-handler` | 2.x | v3 renames `BaseButton`/`FlatList`/`TextInput`/`Pressable` to `Legacy*`, used across `src/` |
-| `react-native-vision-camera` | 4.x | v5 requires the `react-native-nitro-modules` stack |
-| `@react-native-async-storage/async-storage` | 2.x | Expo SDK 57 pins it exactly |
-| `typescript` | 6.x | `@typescript-eslint` supports `<6.1.0` |
-| `@babel/*` | 7.x | the RN 0.86 toolchain is Babel 7 |
-| `jest` | 29.x | `@react-native/jest-preset` still depends on jest 29 internals |
+| `typescript` | 6.0.x | `@typescript-eslint` 8.72 declares `typescript >=4.8.4 <6.1.0`; TypeScript 7 breaks the lint |
+| `@babel/*` | 7.x | `@react-native/babel-preset` 0.88 is built from Babel 7 plugins; under `@babel/core` 8 it throws `Requires Babel "^7.0.0-0"` |
+| `remend` (example) | 1.3.0 | `react-native-streamdown` 0.3 pins its peer to exactly `1.3.0` |
+
+Jest is on 30 even though `@react-native/jest-preset` 0.88 still lists `babel-jest` and
+`jest-environment-node` 29 - the suite runs under Jest 30 as is. If a preset bump breaks that,
+`jest.config.cjs`'s `transformIgnorePatterns` already keeps Jest's own packages out of Babel.
 
 Yarn 4.17 applies a 24-hour publish age gate, so a just-released version can be refused as
 "quarantined". That is expected - pick the previous version and move on.

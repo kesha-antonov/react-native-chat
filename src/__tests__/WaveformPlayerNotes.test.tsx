@@ -1,9 +1,10 @@
 import React from 'react'
-import { act, fireEvent, render } from '@testing-library/react-native'
+import { act, fireEvent } from '@testing-library/react-native'
 
 import { MediaPlaybackContext, createMediaPlaybackController } from '../components/mediaPlayback'
 import { WaveformPlayer } from '../components/WaveformPlayer'
 import { IMessage } from '../Models'
+import { render } from './renderWithGestureRoot'
 
 const sources: any[] = []
 const mockSessionOptions: any[] = []

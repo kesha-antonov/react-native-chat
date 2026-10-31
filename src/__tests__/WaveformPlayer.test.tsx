@@ -1,9 +1,10 @@
 import React from 'react'
-import { act, fireEvent, render } from '@testing-library/react-native'
+import { act, fireEvent } from '@testing-library/react-native'
 import { State } from 'react-native-gesture-handler'
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils'
 
 import { WaveformPlayer } from '../components/WaveformPlayer'
+import { render } from './renderWithGestureRoot'
 
 const sources: any[] = []
 

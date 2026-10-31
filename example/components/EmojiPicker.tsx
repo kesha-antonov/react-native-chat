@@ -1,6 +1,20 @@
-import React from 'react'
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import Animated, {
+  Easing,
+  ReduceMotion,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+// Rises on a firm spring and drops away a little faster, like an iOS sheet.
+const SHEET_SPRING = { damping: 30, stiffness: 320, mass: 1, reduceMotion: ReduceMotion.System }
+const SHEET_OUT = { duration: 220, easing: Easing.in(Easing.cubic), reduceMotion: ReduceMotion.System }
+const BACKDROP_IN = { duration: 250, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System }
 
 interface EmojiPickerProps {
   visible: boolean
@@ -19,11 +33,42 @@ const CATEGORIES: { name: string, emojis: string[] }[] = [
 
 export default function EmojiPicker ({ visible, onClose, onSelect }: EmojiPickerProps) {
   const insets = useSafeAreaInsets()
+  const { height: windowHeight } = useWindowDimensions()
+
+  // The Modal outlives `visible` until the sheet has slid away, so the exit
+  // animation is never cut off by an unmount.
+  const [isMounted, setIsMounted] = useState(visible)
+  if (visible && !isMounted)
+    setIsMounted(true)
+
+  const backdrop = useSharedValue(0)
+  const offset = useSharedValue(windowHeight)
+
+  useEffect(() => {
+    if (visible) {
+      offset.value = withSpring(0, SHEET_SPRING)
+      backdrop.value = withTiming(1, BACKDROP_IN)
+      return
+    }
+
+    backdrop.value = withTiming(0, SHEET_OUT)
+    offset.value = withTiming(windowHeight, SHEET_OUT, finished => {
+      if (finished)
+        runOnJS(setIsMounted)(false)
+    })
+  }, [visible, windowHeight, backdrop, offset])
+
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: backdrop.value }))
+  const panelStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.value }] }))
+
+  if (!isMounted)
+    return null
 
   return (
-    <Modal transparent visible={visible} animationType='slide' onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel='dismiss' />
-      <View style={[styles.panel, { paddingBottom: insets.bottom + 8 }]}>
+    <Modal transparent visible animationType='none' onRequestClose={onClose} statusBarTranslucent>
+      <Animated.View style={[styles.backdrop, backdropStyle]} pointerEvents='none' />
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel='dismiss' />
+      <Animated.View style={[styles.panel, { paddingBottom: insets.bottom + 8 }, panelStyle]}>
         <View style={styles.handle} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {CATEGORIES.map(category => (
@@ -43,7 +88,7 @@ export default function EmojiPicker ({ visible, onClose, onSelect }: EmojiPicker
             </View>
           ))}
         </ScrollView>
-      </View>
+      </Animated.View>
     </Modal>
   )
 }

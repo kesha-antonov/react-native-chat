@@ -1,6 +1,6 @@
 import { PropsWithChildren, useState } from 'react'
 import { StyleSheet } from 'react-native'
-import { RectButton } from 'react-native-gesture-handler'
+import { Touchable } from 'react-native-gesture-handler'
 
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
@@ -14,7 +14,8 @@ export function Collapsible ({ children, title }: PropsWithChildren & { title: s
 
   return (
     <ThemedView>
-      <RectButton
+      <Touchable
+        underlayColor='black'
         style={styles.heading}
         onPress={() => setIsOpen(value => !value)}
       >
@@ -27,7 +28,7 @@ export function Collapsible ({ children, title }: PropsWithChildren & { title: s
         />
 
         <ThemedText type='defaultSemiBold'>{title}</ThemedText>
-      </RectButton>
+      </Touchable>
       {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
     </ThemedView>
   )

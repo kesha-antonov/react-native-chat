@@ -19,6 +19,11 @@ export default function ChatLayout () {
       screenOptions={{
         headerShown: true,
         headerTitleAlign: 'center',
+        // Expo Router 58 defaults to a transparent Liquid Glass header that the
+        // screen scrolls under. iOS 26 then blurs scroll content beneath it with a
+        // scroll edge effect, and on an inverted chat list that blur covers the
+        // whole list. An opaque header keeps the list below it.
+        headerTransparent: false,
         contentStyle: { paddingBottom: insets.bottom, backgroundColor: insetBackground },
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>

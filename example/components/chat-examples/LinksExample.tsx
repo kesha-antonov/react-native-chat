@@ -11,7 +11,6 @@ const LinksExample: React.FC = () => {
   const initialMessages: IMessage[] = useMemo(() => [
     {
       text: 'Welcome! 👋',
-      createdAt: new Date(),
       user: {
         _id: 2,
         name: 'John Doe',
@@ -19,7 +18,6 @@ const LinksExample: React.FC = () => {
     },
     {
       text: 'This example shows how Chat handles different types of links in messages. Try tapping on any link!',
-      createdAt: new Date(Date.now() - 1 * 60000),
       user: {
         _id: 2,
         name: 'John Doe',
@@ -27,7 +25,6 @@ const LinksExample: React.FC = () => {
     },
     {
       text: 'Phone numbers are also parsed:\n\n• +79931234567\n\n• 89931234567\n\n• +1-215-456-7890.\n\nIt shouldn\'t parse phone numbers in file names like IMG_20220101_123456.jpg, 89201234567_today.pdf, or in addresses like 1234 React St., JS City, 56789.',
-      createdAt: new Date(Date.now() - 2 * 60000),
       user: {
         _id: 2,
         name: 'John Doe',
@@ -35,7 +32,6 @@ const LinksExample: React.FC = () => {
     },
     {
       text: 'Email addresses are clickable: cool.guy@example.com or contact@reactnative.dev',
-      createdAt: new Date(Date.now() - 3 * 60000),
       user: {
         _id: 2,
         name: 'John Doe',
@@ -43,7 +39,6 @@ const LinksExample: React.FC = () => {
     },
     {
       text: 'Different link formats work:\n• www.google.com\n• google.com\n• https://google.com',
-      createdAt: new Date(Date.now() - 4 * 60000),
       user: {
         _id: 2,
         name: 'John Doe',
@@ -51,7 +46,6 @@ const LinksExample: React.FC = () => {
     },
     {
       text: 'Use hashtags to categorize: #chat #reactnative #opensource',
-      createdAt: new Date(Date.now() - 5 * 60000),
       user: {
         _id: 2,
         name: 'John Doe',
@@ -59,7 +53,6 @@ const LinksExample: React.FC = () => {
     },
     {
       text: 'You can mention people like @kesha-antonov or @john-doe',
-      createdAt: new Date(Date.now() - 6 * 60000),
       user: {
         _id: 2,
         name: 'John Doe',
@@ -67,7 +60,6 @@ const LinksExample: React.FC = () => {
     },
     {
       text: 'System message with link: Check out our documentation at https://github.com/kesha-antonov/react-native-chat',
-      createdAt: new Date(Date.now() - 7 * 60000),
       user: {
         _id: 2,
         name: 'John Doe',
@@ -76,16 +68,18 @@ const LinksExample: React.FC = () => {
     },
     {
       text: 'System message with data and phone numbers: Contact support at +79931234567 or +1-215-456-7890. We have holidays on 2025-12-25 and until 2026-01-01 12:00.',
-      createdAt: new Date(Date.now() - 7 * 60000),
       user: {
         _id: 2,
         name: 'John Doe',
       },
       system: true,
     },
-  ].map((message, index) => ({
+  ].map((message, index, all) => ({
     ...message,
     _id: index + 1,
+    // Listed in reading order, so the first message is the oldest; Chat wants
+    // newest first, hence the reverse below.
+    createdAt: new Date(Date.now() - (all.length - 1 - index) * 60000),
   })).reverse(), [])
 
   const [messages, setMessages] = useState<IMessage[]>(initialMessages)

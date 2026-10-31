@@ -12,6 +12,12 @@ export type TouchableOpacityProps = Omit<React.ComponentProps<typeof BaseButton>
   onPress?: () => void
 } & React.ComponentProps<typeof Animated.View>
 
+// Built on gesture-handler's `BaseButton`, not the `Touchable` 3.0 recommends in
+// its place. `Touchable` handles the press natively, outside the gesture system,
+// so a bubble's long-press could no longer win over a photo or play button
+// inside it: holding a photo neither opened the menu nor stopped the release
+// from opening the viewer. `BaseButton` is still a gesture, so it loses to the
+// long-press the way it always did.
 export const TouchableOpacity: React.FC<TouchableOpacityProps> = ({
   children,
   style,

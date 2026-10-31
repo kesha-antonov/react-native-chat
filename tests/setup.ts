@@ -52,3 +52,16 @@ jest.mock('react-native-keyboard-controller', () => {
     }),
   }
 })
+
+// React Native's own Modal mock (from @react-native/jest-preset) renders through
+// an unimported `React` global and throws. The overlays only need a Modal that
+// renders its children while visible.
+jest.mock('react-native/Libraries/Modal/Modal', () => {
+  const React = require('react')
+  const { View } = require('react-native')
+
+  const Modal = ({ visible = true, children }: { visible?: boolean, children?: React.ReactNode }) =>
+    visible ? React.createElement(View, { testID: 'modal' }, children) : null
+
+  return { __esModule: true, default: Modal }
+})

@@ -4,29 +4,14 @@
  * remembered voice / video choice.
  */
 
-// Optional haptics. Resolved through a try/catch require so the bundle works
-// whether or not the consumer installed `expo-haptics`.
-let expoHaptics: any = null
-try {
-  expoHaptics = require('expo-haptics')
-} catch {
-  expoHaptics = null
-}
+import { impactHaptic } from './haptics'
 
 /**
  * Telegram's only recording haptic is `HapticFeedbackConstants.KEYBOARD_TAP`
  * (record start and stop, lock, the tap that switches voice / video, video
  * start and resume), so a single light tick covers all of them.
  */
-export const recordingHaptic = () => {
-  try {
-    const style = expoHaptics?.ImpactFeedbackStyle?.Light
-    const result = expoHaptics?.impactAsync?.(style)
-    result?.catch?.(() => {})
-  } catch {
-    // haptics are a nicety; never fail a recording over them
-  }
-}
+export const recordingHaptic = () => impactHaptic('Light')
 
 /**
  * Telegram shows "Slide up to lock" for the first three takes and never again

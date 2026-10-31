@@ -11,6 +11,11 @@ Voice and round video notes now look and behave like Telegram's (Android source 
 - **Voice takes of 700ms or less are dropped** (was under 800ms)
 - **Speed control moved** from each voice bubble into the new "now playing" bar
 - **Round notes need `createVideoPlayer`** (expo-video, SDK 52+); without it they fall back to the media card
+- **The long-press menu opens after 0.32s** (was the 500ms gesture default), as Telegram's does. Its actions and `onDismiss` now run once the close animation has finished, about 0.2s after the tap, rather than straight away
+- **`react-native-gesture-handler` 3 is required** (peer `>=3.0.0`, was `>=2.0.0`). The gestures moved to its hook API (`useTapGesture`, `usePanGesture`, `useExclusiveGestures`, `GestureStateManager`...), which 2.x does not have; `BaseButton`, `TextInput`, `FlatList` and `Pressable` now come from 3.x under the same names. Gesture Handler 3 in turn needs **React Native 0.82+** and **React 19**, so the `react-native` peer is now `>=0.82.0` and `react` is `>=19.0.0` (was `*` and `>=18.0.0`). In development, Gesture Handler 3 throws when a `GestureDetector` has no `GestureHandlerRootView` above it: `Chat` still mounts one by default, but a bubble, player or `MessagesContainer` rendered on its own, or a `Chat` with `enableGestureHandlerRootView={false}`, now needs the app's root view
+- **Round video notes need `react-native-vision-camera` 5** (peer `>=5.0.0`, was `*`), plus its `react-native-nitro-modules` and `react-native-nitro-image` peers. Version 5 records through a video output and a `Recorder` instead of methods on the camera ref, which the recorder now uses. With vision-camera 4 installed the camera counts as unavailable and the record button falls back to `expo-image-picker`. Version 5 has no Expo config plugin: add `NSCameraUsageDescription` / `NSMicrophoneUsageDescription` (`ios.infoPlist`) and `CAMERA` / `RECORD_AUDIO` (`android.permissions`) yourself
+- **`@lodev09/react-native-true-sheet` 3 or newer** for the native attachment sheet (peer `>=3.0.0`, was `*`); see the fix below
+- **`textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`** (was `RefObject<TextInput>`), which React Native 0.88's strict TypeScript API needs and older versions accept
 
 ### ✨ Features
 - **Recording**: big record circle with voice-reactive blobs, Telegram's lock (pause once locked), slide to cancel that follows the finger, rolling timer, blinking dot, bin on cancel, and composer transitions
@@ -26,14 +31,63 @@ Voice and round video notes now look and behave like Telegram's (Android source 
 - **Transcription**: `mediaPlayback.onTranscribe` and `IMessage.transcription`
 - **Raise to listen** via `mediaPlayback.isNearEar` (feed it from a proximity sensor)
 - **Hints and haptics** (optional `expo-haptics`); `onMediaRead`, `videoRecording.onTooShort`; new labels in all 15 locales
+- **Long-press menu and reaction picker work like Telegram's iOS client**, with its timings, springs and sizes taken from the Telegram-iOS source:
+  - The bubble shrinks by 15pt of its width while held. After 0.32s the menu opens with a medium haptic.
+  - The chat blurs (optional `expo-blur`) and dims, and the pressed message is lifted above it in place. When the message, the reactions bar and the menu don't fit, the stack moves until they do.
+  - The reactions bar grows out of a circle at the bubble's corner, with its emojis rippling in.
+  - The actions scale out of the corner below the message: icon on the left, destructive in red, pill highlight while pressed.
+  - A picked reaction is applied and flies to the message. An action runs once the menu has closed, and a backdrop tap plays everything in reverse.
+  - Reduce Motion is honoured throughout.
+  - The plain reaction picker is the same overlay without actions.
+- **`reactions.renderExpandedPicker`**: Telegram's expand button. The reactions bar ends in a chevron that grows the bar in place into a panel holding your content (a full emoji grid, say)
+- **`ReactionPickerProps.messagePreview`**: a custom `renderReactionPicker` receives a lifted copy of the pressed bubble; while it is rendered, the original is hidden
+- **`ContextMenu` props for custom pickers**: `messagePreview`, `children`, and `reactions.containerStyle` / `emojiStyle` / `renderAccessory` / `renderExpandedPicker`
+
+### ⚡ Performance
+- **The expanded reactions panel no longer re-lays out its content on every frame of the expand.** The content is laid out once at the panel's final size and revealed by the growing, clipped panel, as in Telegram. Before, a grid passed to `reactions.renderExpandedPicker` was resized and re-rendered each frame
 
 ### 🐛 Fixes
+- **A long-press on a photo, location card, play button or media card no longer also fires it on release.** The menu opened and then the photo viewer, maps or playback started as the finger lifted. Holding as long as the message long-press now counts as a long-press for those tappables too
 - Starting a recording pauses the playing note
 - The `expo-audio` fallback player plays one note at a time
 - Cancelling a video note closes the recorder
 - Resuming a voice take on iOS no longer overwrites the audio recorded before the pause
+- **Overlays animate with Reanimated and play their exit before unmounting.** These overlays used the native `Modal` fade and slide, which cut off the moment they closed: the context menu, the reaction picker, the attachment sheet's Modal fallback, the voice speed presets and the round video recorder's layer. The attachment sheet's fallback now runs an action after the sheet has slid away, so a picker it opens no longer presents over a half-closed sheet
+- **The context menu can no longer cover a neighbouring message or the home indicator.** It used to open over the message below and ignore the bottom inset under a navigator; it now keeps clear of the window's safe areas
+- **The context menu and reaction picker follow RTL**: they align to the side the bubble is drawn on
+- **The native attachment sheet reports its dismissal again.** It still passed true-sheet 2's `sizes` and `onDismiss`, which 3.0 renamed to `detents` and `onDidDismiss`, so with true-sheet 3 the sheet ignored its auto height and swiping it away never told the composer it had closed. Closing it natively no longer asks it to dismiss a second time either
+- **The library's types compile against React Native 0.88's strict TypeScript API.** It no longer imports `ViewToken`, `ViewabilityConfigCallbackPair` or `CellRendererProps`, which 0.88 stopped exporting, and refs to `View` and `TextInput` are typed through `ComponentRef`, so the published `.d.ts` files work with both the strict and the older typings
+- **No more `[Reanimated] dependencies should only be used in web implementation.` from the message list.** Its scroll handler passed a dependency array, which Reanimated warns about on native for every render. It is gone; Reanimated tracks the handler's captures itself
+
+### 📦 Dependencies
+- Library toolchain: React Native **0.86.3 → 0.88.1** (and the `@react-native/*` packages), React **19.2.3 → 19.3.1**, `react-native-gesture-handler` **2.32 → 3.4.0**, `react-native-reanimated` **4.6 → 4.7.1**, `react-native-worklets` **0.12 → 0.13.1**, `react-native-keyboard-controller` 1.22.9, `react-native-safe-area-context` **5.7 → 5.11.0**, `@shopify/flash-list` 2.3.3, `react-native-zoom-reanimated` 1.6.0
+- Tests: **Jest 29 → 30.5.2** (with `babel-jest` 30 and `@types/jest` 30), `@testing-library/react-native` 14.1.0, `test-renderer` 1.3.1. `@react-native/jest-preset` 0.88 still lists Jest 29 packages for its environment, but the suite runs unchanged under Jest 30
+- Lint: ESLint 10.14, `@typescript-eslint` 8.72.1, `eslint-plugin-perfectionist` 5.13, `eslint-plugin-jest` 29.17, `lint-staged` 17.6
+- **Held back**: TypeScript stays on **6.0.3** - `@typescript-eslint` 8.72 supports `typescript >=4.8.4 <6.1.0`, so TypeScript 7 breaks linting. Babel stays on **7.29** - `@react-native/babel-preset` 0.88 is built from Babel 7 plugins, and under `@babel/core` 8 it fails with `Requires Babel "^7.0.0-0", but was loaded with "8.0.10"`
+
+### 📲 Example app
+- **Expo SDK 57 → 58**: React Native 0.88.1, React 19.3.1 and the SDK 58 `expo-*` packages. Ahead of what SDK 58 pins: `react-native-gesture-handler` 3.4.0 (pins ~3.3.0), `react-native-worklets` 0.13.1 (0.13.0), `react-native-keyboard-controller` 1.22.9 (1.22.7), `react-native-safe-area-context` 5.11.0 (~5.10.1), `@react-native-async-storage/async-storage` 3.1.1 (2.2.0), `@shopify/flash-list` 2.3.3 (2.3.2)
+- **Majors**: `react-native-vision-camera` 5.2.4 (with `react-native-nitro-modules` 0.37.1 and `react-native-nitro-image` 0.15.2), `@react-native-async-storage/async-storage` 3.1.1, `@lodev09/react-native-true-sheet` 4.0.1, `emoji-datasource` 16.0.0 (the emoji panel's data is regenerated from it). Also `react-native-audio-api` 0.13.6, `react-native-streamdown` 0.3.0, `react-native-enriched-markdown` 1.1.1, `katex` 0.19.1, `lucide-react-native` 1.65.0
+- **The worklets patches are gone.** `react-native-audio-api` 0.13.6 and `expo-modules-core` 58 call worklets' `runSync` themselves, so `.yarn/patches/` and the `resolutions` entry that wired them are removed
+- vision-camera 5 has no config plugin, so the camera and microphone usage strings moved from its plugin entry into `app.json`'s `ios.infoPlist` and `android.permissions`. `edgeToEdgeEnabled` is dropped from `app.json`: SDK 58 no longer reads it, since Android 16 makes edge-to-edge mandatory
+- `RectButton` (deprecated in Gesture Handler 3) is replaced by `Touchable` in the Explore list, the collapsible and the Slack bubble
+- **The chat screens use an opaque header.** Expo Router 58 draws a transparent Liquid Glass header by default and lets the screen scroll under it; on iOS 26 the system then blurs scroll content beneath it, and on an inverted chat list that blur covered every message. `headerTransparent: false` keeps the list below the header
+- Metro resolves package `exports` again (it was switched off): SDK 58 packages import each other through `exports` subpaths, starting with `@expo/metro-runtime` -> `@expo/log-box/LogBox`. The Lucide icons are imported through the package's own `lucide-react-native/icons/<name>` subpaths instead of physical `dist/` files, which also drops a TypeScript path mapping; `trash-2` is `trash` in Lucide 1.65
+- The example's `tsconfig` maps `react-native` to its `types_generated` entry, since 0.88 publishes types only through `exports`, and the examples take `useColorScheme` from the app's own hook, which narrows 0.88's nullable result
+- **Reactions: the full emoji panel opens without stalling.** The `react-native-emoji-chooser` grid it used mounted ~600 animated touchables at once - about 0.6s of JS (dev build) landing on the expand animation. It is replaced by a small virtualized grid (search, recents and category tabs kept) over a 69 KB dataset generated from `emoji-datasource`, instead of its 1.3 MB JSON. The first expand after launch dropped from ~630ms to ~80ms of JS in a dev build
+- **Dark mode follows the theme in every example.** Slack, Reply, AI Bot, Reactions, Day Animated and Top Aligned no longer paint a black list and a `#1a1a1a` input over the built-in Telegram dark palette
+- **Basic Example uses the Telegram-style composer** from Media & Voice: emoji button and paperclip in the field, an attachment grid (Gallery, Camera, Location), and voice / round video recording. The old `+` action-sheet button, the bottom icon bar and the hard-coded dark colours are gone, so the built-in light and dark themes apply
+- **Slack Style**: the avatar sits beside the author line of a group instead of under its last message, the latest group shows its avatar again, and location messages render instead of showing an empty row
+- **Links & Patterns**: timestamps now increase down the list instead of running backwards
+- **Top Aligned**: the option chips wrap instead of running off the screen
+- **Theming & Icons**: the presets did nothing on a device in dark mode, because they only set `theme`, which applies to light mode. Each preset now sets `darkTheme` too
+- **Reactions**: the custom picker is built on `ContextMenu`, so it has the same Telegram feel as the built-in one. Its full emoji browser now opens in place through `renderExpandedPicker`, instead of in a separate sheet
+- **Context Menu**: Copy and Delete have icons
+- **Emoji picker** in Basic and Media & Voice slides with Reanimated and plays its exit
 
 ### 📝 Docs
+- **README troubleshooting: a blurred message list on iOS 26.** Under a transparent navigation header (Expo Router 58's default) the system's scroll edge effect blurs the whole inverted list; the fix is an opaque header
+- README requirements and install steps follow the new peers (React Native 0.82+, React 19, gesture-handler 3, vision-camera 5 with its Nitro packages)
 - README documents every `audioRecording`, `videoRecording` and `mediaPlayback` option
 - **Troubleshooting entry for "Cannot read property 'Chat' of undefined"** ([#28](https://github.com/kesha-antonov/react-native-chat/issues/28)). The package itself loads fine - the published 5.0.1 renders the Quick start example unchanged in a fresh Expo SDK 58 app - so the error means a dependency threw during import and Metro handed back an empty module. The entry points at the earlier error that names the real cause, usually a native peer that was installed without rebuilding the app or at a version the app does not ship
 - **Bare React Native install steps were incomplete.** They left out `react-native-worklets`, which Reanimated 4 requires, pointed at the Reanimated 3 Babel plugin name, and never said to rebuild the native app after installing. All three are covered now

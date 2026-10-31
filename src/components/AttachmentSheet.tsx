@@ -1,7 +1,17 @@
 import React, { useCallback, useEffect, useRef } from 'react'
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import Animated, {
+  Easing,
+  ReduceMotion,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { useThemedStyles } from '../hooks/useTheme'
 import { IconRenderer } from '../Icons'
 import { ChatTheme } from '../Theme'
@@ -118,15 +128,22 @@ const TrueSheetAttachment = ({ visible, actions, onClose, tintColor }: Attachmen
     ref.current?.dismiss()?.catch(() => {})
   }, [])
 
+  // Swiped or tapped away natively: the sheet is already gone, so the `visible`
+  // flip that follows must not ask it to dismiss again.
+  const onDidDismiss = useCallback(() => {
+    presented.current = false
+    onClose()
+  }, [onClose])
+
   return (
     <TrueSheet
       ref={ref}
-      sizes={['auto']}
+      detents={['auto']}
       cornerRadius={16}
       grabber
       dimmed
       backgroundColor={styles.group.backgroundColor as string}
-      onDismiss={onClose}
+      onDidDismiss={onDidDismiss}
     >
       <View style={[styles.trueContent, { paddingBottom: insets.bottom + 12 }]}>
         <SheetContent actions={actions} tintColor={tintColor} onAction={onAction} styles={styles} />
@@ -135,26 +152,67 @@ const TrueSheetAttachment = ({ visible, actions, onClose, tintColor }: Attachmen
   )
 }
 
+// The sheet rises on a firm spring with no visible overshoot - the iOS sheet
+// feel - and drops away faster than it came.
+const SHEET_SPRING = { damping: 30, stiffness: 320, mass: 1, reduceMotion: ReduceMotion.System }
+const SHEET_OUT = { duration: 220, easing: Easing.in(Easing.cubic), reduceMotion: ReduceMotion.System }
+const BACKDROP_IN = { duration: 250, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System }
+
 // Fallback: a Modal sheet with a dimmed backdrop and a grab handle. Slides up,
 // dismisses on backdrop tap (used when react-native-true-sheet isn't installed).
 const ModalAttachment = ({ visible, actions, onClose, tintColor }: AttachmentSheetProps) => {
   const styles = useThemedStyles(createStyles)
   const insets = useSafeAreaInsets()
+  const { height: windowHeight } = useWindowDimensions()
 
+  // 0 is closed, 1 open; the sheet starts a full window below its rest spot
+  // so it never peeks in, whatever its height.
+  const backdrop = useSharedValue(0)
+  const offset = useSharedValue(windowHeight)
+
+  const animateIn = useCallback(() => {
+    offset.value = windowHeight
+    offset.value = withSpring(0, SHEET_SPRING)
+    backdrop.value = withTiming(1, BACKDROP_IN)
+  }, [offset, backdrop, windowHeight])
+
+  const animateOut = useCallback((onDone: () => void) => {
+    backdrop.value = withTiming(0, SHEET_OUT)
+    offset.value = withTiming(windowHeight, SHEET_OUT, finished => {
+      if (finished)
+        runOnJS(onDone)()
+    })
+  }, [offset, backdrop, windowHeight])
+
+  const { isMounted, close } = useAnimatedPresence(visible, animateIn, animateOut)
+
+  const dismiss = useCallback(() => close(onClose), [close, onClose])
+
+  // The action runs once the sheet is gone, so a picker it opens (camera,
+  // library) doesn't present over a half-closed sheet.
   const onAction = useCallback((action: () => void) => {
-    action()
-    onClose()
-  }, [onClose])
+    close(() => {
+      action()
+      onClose()
+    })
+  }, [close, onClose])
+
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: backdrop.value }))
+  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.value }] }))
+
+  if (!isMounted)
+    return null
 
   return (
-    <Modal transparent visible={visible} animationType='slide' onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel='dismiss' />
-      <View style={[styles.sheetWrapper, { paddingBottom: insets.bottom + 8 }]}>
+    <Modal transparent visible animationType='none' onRequestClose={dismiss} statusBarTranslucent>
+      <Animated.View style={[styles.backdrop, backdropStyle]} pointerEvents='none' />
+      <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} accessibilityLabel='dismiss' />
+      <Animated.View style={[styles.sheetWrapper, { paddingBottom: insets.bottom + 8 }, sheetStyle]}>
         <View style={styles.group}>
           <View style={styles.handle} />
           <SheetContent actions={actions} tintColor={tintColor} onAction={onAction} styles={styles} />
         </View>
-      </View>
+      </Animated.View>
     </Modal>
   )
 }

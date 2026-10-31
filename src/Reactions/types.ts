@@ -35,6 +35,22 @@ export interface ReactionPickerProps<TMessage extends IMessage> {
   bubbleHeight?: number
   pickerContainerStyle?: StyleProp<ViewStyle>
   pickerEmojiStyle?: StyleProp<TextStyle>
+  /**
+   * A copy of the pressed bubble to draw "lifted" above the picker's backdrop,
+   * at `pageX` / `pageY` and `bubbleWidth` wide. While it is mounted the
+   * original bubble is hidden, so the message appears to rise out of the list.
+   * A custom picker can pass it to `ContextMenu`'s `messagePreview`, render it
+   * itself, or ignore it - the original bubble then simply stays in place.
+   */
+  messagePreview?: React.ReactNode
+  /** `ReactionsProps.renderExpandedPicker`, passed through. */
+  renderExpandedPicker?: (props: ExpandedReactionPickerProps) => React.ReactNode
+}
+
+/** Props for the content of the expanded reactions panel. */
+export interface ExpandedReactionPickerProps {
+  /** Pick a reaction: the overlay closes and `onReactionPress` is called. */
+  onSelect: (emoji: string) => void
 }
 
 /**
@@ -65,6 +81,12 @@ export interface ReactionsProps<TMessage extends IMessage> {
    * See the example app for a `react-native-emoji-chooser` integration.
    */
   renderReactionPicker?: (props: ReactionPickerProps<TMessage>) => React.ReactNode
+  /**
+   * Telegram's expand button. When set, the reactions bar ends in a chevron
+   * that grows the bar into a panel (up to 300pt tall) showing what this
+   * returns - typically a full emoji grid. Call `onSelect` with the pick.
+   */
+  renderExpandedPicker?: (props: ExpandedReactionPickerProps) => React.ReactNode
   /** Style for the container wrapping all reaction pills */
   containerStyle?: StyleProp<ViewStyle>
   /** Style applied to every inactive reaction pill */

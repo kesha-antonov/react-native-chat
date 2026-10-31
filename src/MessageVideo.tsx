@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Keyboard, Platform, Pressable, StyleProp, StyleSheet, View, ViewStyle, useWindowDimensions } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { GestureDetector, GestureStateManager, usePanGesture } from 'react-native-gesture-handler'
 import Animated, { ReduceMotion, SharedValue, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useRaiseToListen } from './components/earpiece'
 import { MediaCard } from './components/MediaCard'
@@ -19,6 +19,7 @@ import {
   useReportNowPlaying,
   useScrollToMessage,
 } from './components/mediaPlayback'
+import { suppressPressAfterHold } from './components/messagePress'
 import { recordingHaptic } from './components/recordingFeedback'
 import {
   FADE_MS,
@@ -189,7 +190,7 @@ const RoundNotePlayer = ({
   // How far the grown circle's right edge moves, for the bubble's sent time.
   const [timeShift, setTimeShift] = useState(0)
   const rafRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null)
-  const noteRef = useRef<View>(null)
+  const noteRef = useRef<React.ComponentRef<typeof View>>(null)
   /** Taken back from the floating note: grow, but do not centre the list. */
   const skipCentreRef = useRef(false)
 
@@ -542,51 +543,50 @@ const RoundNotePlayer = ({
       resume()
   }, [total, player, resume])
 
-  const seekGesture = useMemo(() => {
-    // The knob follows the finger on the UI thread; only the seek itself
-    // goes through JS, throttled.
-    const track = (x: number, y: number) => {
-      'worklet'
-      const fraction = angleToFraction(sizeSV.value, x, y)
-      // Wrapping past 12 o'clock leaves the old arc to fade out rather than
-      // jumping, with one tick per wrap, as Telegram does.
-      if (isWrap(chrome.progress.value, fraction)) {
-        if (chrome.wrapAlpha.value === 0)
-          runOnJS(recordingHaptic)()
-        chrome.wrapProgress.value = chrome.progress.value
-        chrome.wrapAlpha.value = 1
-        chrome.wrapAlpha.value = withTiming(0, { duration: FADE_MS })
-      }
-      chrome.progress.value = fraction
-      return fraction
+  // The knob follows the finger on the UI thread; only the seek itself
+  // goes through JS, throttled.
+  const track = (x: number, y: number) => {
+    'worklet'
+    const fraction = angleToFraction(sizeSV.value, x, y)
+    // Wrapping past 12 o'clock leaves the old arc to fade out rather than
+    // jumping, with one tick per wrap, as Telegram does.
+    if (isWrap(chrome.progress.value, fraction)) {
+      if (chrome.wrapAlpha.value === 0)
+        runOnJS(recordingHaptic)()
+      chrome.wrapProgress.value = chrome.progress.value
+      chrome.wrapAlpha.value = 1
+      chrome.wrapAlpha.value = withTiming(0, { duration: FADE_MS })
     }
+    chrome.progress.value = fraction
+    return fraction
+  }
 
-    return Gesture.Pan()
-      .enabled(canSeek)
-      .manualActivation(true)
-      .onTouchesDown((event, manager) => {
-        const touch = event.changedTouches[0]
-        const size = sizeSV.value
-        const pause = pausedAmount(chrome.pause.value, chrome.isPaused.value)
-        const knob = knobPoint(size, ringRadius(size, chrome.grow.value, pause), chrome.progress.value)
-        if (isSeekTouch(size, knob, touch.x, touch.y)) {
-          // `roundToPauseProgress2`: the knob swells under the finger.
-          chrome.drag.value = withTiming(1, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
-          manager.activate()
-        } else {
-          manager.fail()
-        }
-      })
-      .onUpdate(event => {
-        runOnJS(seekTo)(track(event.x, event.y), false)
-      })
-      .onEnd(event => {
-        runOnJS(seekTo)(track(event.x, event.y), true)
-      })
-      .onFinalize(() => {
-        chrome.drag.value = withTiming(0, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
-      })
-  }, [canSeek, seekTo, sizeSV, chrome])
+  const seekGesture = usePanGesture({
+    enabled: canSeek,
+    manualActivation: true,
+    onTouchesDown: event => {
+      const touch = event.changedTouches[0]
+      const size = sizeSV.value
+      const pause = pausedAmount(chrome.pause.value, chrome.isPaused.value)
+      const knob = knobPoint(size, ringRadius(size, chrome.grow.value, pause), chrome.progress.value)
+      if (isSeekTouch(size, knob, touch.x, touch.y)) {
+        // `roundToPauseProgress2`: the knob swells under the finger.
+        chrome.drag.value = withTiming(1, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
+        GestureStateManager.activate(event.handlerTag)
+      } else {
+        GestureStateManager.fail(event.handlerTag)
+      }
+    },
+    onUpdate: event => {
+      runOnJS(seekTo)(track(event.x, event.y), false)
+    },
+    onDeactivate: event => {
+      runOnJS(seekTo)(track(event.x, event.y), true)
+    },
+    onFinalize: () => {
+      chrome.drag.value = withTiming(0, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
+    },
+  })
 
   const remaining = isCurrent ? Math.max(0, total - currentTime) : duration
 
@@ -619,6 +619,7 @@ const RoundNotePlayer = ({
           <Animated.View ref={noteRef} onLayout={onNoteLayout} style={[styles.note, sizeStyle, videoStyle]}>
             <Pressable
               onPress={onPress}
+              {...suppressPressAfterHold}
               disabled={isPlayDisabled}
               accessibilityRole='button'
               accessibilityState={{ disabled: isPlayDisabled }}

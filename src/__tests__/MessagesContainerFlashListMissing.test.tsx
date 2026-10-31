@@ -1,8 +1,8 @@
 import React from 'react'
-import { render } from '@testing-library/react-native'
 
 import { MessagesContainer } from '..'
 import { DEFAULT_TEST_MESSAGE } from './data'
+import { render } from './renderWithGestureRoot'
 
 // Simulate a consumer that opted into FlashList without installing it.
 jest.mock('@shopify/flash-list', () => {

@@ -1,12 +1,28 @@
 import React, { useCallback, useRef, useState } from 'react'
 import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import Animated, {
+  Easing,
+  Extrapolation,
+  ReduceMotion,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated'
 
+import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { useThemedStyles } from '../hooks/useTheme'
 import { ChatTheme } from '../Theme'
 import { PLAYBACK_RATE_PRESETS, nextPlaybackRate, setPlaybackRate } from './mediaPlayback'
 
 const MENU_WIDTH = 120
 const MENU_ROW_HEIGHT = 40
+
+// The presets pop out of the pill like the message context menu does.
+const MENU_SPRING = { damping: 20, stiffness: 360, mass: 0.8, reduceMotion: ReduceMotion.System }
+const MENU_OUT = { duration: 160, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.System }
 
 export interface PlaybackSpeedPillProps {
   rate: number
@@ -22,8 +38,25 @@ const formatRate = (rate: number) => `${Number(rate.toFixed(2))}x`
 export function PlaybackSpeedPill ({ rate }: PlaybackSpeedPillProps) {
   const styles = useThemedStyles(createStyles)
   const { width: windowWidth, height: windowHeight } = useWindowDimensions()
-  const pillRef = useRef<View>(null)
+  const pillRef = useRef<React.ComponentRef<typeof View>>(null)
   const [anchor, setAnchor] = useState<{ x: number, y: number } | null>(null)
+  // The menu keeps its spot while it animates out after `anchor` is cleared.
+  const lastAnchorRef = useRef(anchor)
+  if (anchor)
+    lastAnchorRef.current = anchor
+  const shownAnchor = anchor ?? lastAnchorRef.current
+
+  const appear = useSharedValue(0)
+  const animateIn = useCallback(() => {
+    appear.value = withSpring(1, MENU_SPRING)
+  }, [appear])
+  const animateOut = useCallback((onDone: () => void) => {
+    appear.value = withTiming(0, MENU_OUT, finished => {
+      if (finished)
+        runOnJS(onDone)()
+    })
+  }, [appear])
+  const { isMounted, close } = useAnimatedPresence(!!anchor, animateIn, animateOut)
 
   const cycle = useCallback(() => {
     setPlaybackRate(nextPlaybackRate(rate))
@@ -35,21 +68,30 @@ export function PlaybackSpeedPill ({ rate }: PlaybackSpeedPillProps) {
     })
   }, [])
 
-  const closeMenu = useCallback(() => setAnchor(null), [])
+  const clearAnchor = useCallback(() => setAnchor(null), [])
+  const closeMenu = useCallback(() => close(clearAnchor), [close, clearAnchor])
 
   const pick = useCallback((next: number) => {
     setPlaybackRate(next)
-    setAnchor(null)
-  }, [])
+    close(clearAnchor)
+  }, [close, clearAnchor])
 
   const menuHeight = PLAYBACK_RATE_PRESETS.length * MENU_ROW_HEIGHT
   // Below the pill when it fits, above it otherwise, always on screen.
-  const menuTop = anchor
-    ? (anchor.y + menuHeight + 8 < windowHeight ? anchor.y + 4 : Math.max(8, anchor.y - menuHeight - 24))
+  const isBelow = !!shownAnchor && shownAnchor.y + menuHeight + 8 < windowHeight
+  const menuTop = shownAnchor
+    ? (isBelow ? shownAnchor.y + 4 : Math.max(8, shownAnchor.y - menuHeight - 24))
     : 0
-  const menuLeft = anchor
-    ? Math.max(8, Math.min(windowWidth - MENU_WIDTH - 8, anchor.x - MENU_WIDTH / 2))
+  const menuLeft = shownAnchor
+    ? Math.max(8, Math.min(windowWidth - MENU_WIDTH - 8, shownAnchor.x - MENU_WIDTH / 2))
     : 0
+  // Grow out of the edge that faces the pill, at the pill's x.
+  const originX = shownAnchor ? shownAnchor.x - menuLeft : MENU_WIDTH / 2
+
+  const menuStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(appear.value, [0, 0.5], [0, 1], Extrapolation.CLAMP),
+    transform: [{ scale: 0.6 + 0.4 * appear.value }],
+  }))
 
   return (
     <>
@@ -66,9 +108,15 @@ export function PlaybackSpeedPill ({ rate }: PlaybackSpeedPillProps) {
         <Text style={[styles.pillText, rate !== 1 && styles.pillTextActive]}>{formatRate(rate)}</Text>
       </Pressable>
 
-      <Modal visible={!!anchor} transparent animationType='fade' onRequestClose={closeMenu}>
+      <Modal visible={isMounted} transparent animationType='none' onRequestClose={closeMenu}>
         <Pressable style={StyleSheet.absoluteFill} onPress={closeMenu} accessibilityLabel='close'>
-          <View style={[styles.menu, { top: menuTop, left: menuLeft }]}>
+          <Animated.View
+            style={[
+              styles.menu,
+              { top: menuTop, left: menuLeft, transformOrigin: [originX, isBelow ? 0 : menuHeight + 8, 0] },
+              menuStyle,
+            ]}
+          >
             {PLAYBACK_RATE_PRESETS.map(preset => (
               <Pressable
                 key={preset}
@@ -82,7 +130,7 @@ export function PlaybackSpeedPill ({ rate }: PlaybackSpeedPillProps) {
                 </Text>
               </Pressable>
             ))}
-          </View>
+          </Animated.View>
         </Pressable>
       </Modal>
     </>

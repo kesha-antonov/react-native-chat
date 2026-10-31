@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`Send should always render <Send /> and compare with snapshot 1`] = `
 <View
@@ -14,98 +14,102 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
   }
 >
   <View
-    accessibilityLabel="send"
-    accessibilityRole="button"
-    accessibilityState={
-      {
-        "busy": undefined,
-        "checked": undefined,
-        "disabled": true,
-        "expanded": undefined,
-        "selected": undefined,
-      }
-    }
-    accessibilityValue={
-      {
-        "max": undefined,
-        "min": undefined,
-        "now": undefined,
-        "text": undefined,
-      }
-    }
-    accessible={true}
-    focusable={false}
-    onClick={[Function]}
-    onResponderGrant={[Function]}
-    onResponderMove={[Function]}
-    onResponderRelease={[Function]}
-    onResponderTerminate={[Function]}
-    onResponderTerminationRequest={[Function]}
-    onStartShouldSetResponder={[Function]}
-    style={
+    handlerTags={
       [
-        {
-          "justifyContent": "center",
-        },
-        {
-          "opacity": 1,
-        },
-        {
-          "pointerEvents": "none",
-        },
+        2,
       ]
     }
-    testID="GC_SEND_TOUCHABLE"
-  >
-    <View
-      style={
-        [
-          {
-            "alignItems": "center",
-            "backgroundColor": "#3390EC",
-            "borderRadius": 18,
-            "height": 36,
-            "justifyContent": "center",
-            "width": 36,
-          },
-          {
-            "backgroundColor": "#8E8E93",
-          },
-        ]
+    moduleId={-1}
+    onGestureHandlerEvent={[Function]}
+    onGestureHandlerStateChange={[Function]}
+    onGestureHandlerTouchEvent={[Function]}
+    onStartShouldSetResponder={[Function]}
+    pointerEvents="box-none"
+    style={
+      {
+        "display": "contents",
       }
+    }
+  >
+    <RNGestureHandlerButton
+      accessibilityLabel="send"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "disabled": true,
+        }
+      }
+      accessible={true}
+      enabled={false}
+      needsOffscreenAlphaCompositing={true}
+      testID="GC_SEND_TOUCHABLE"
     >
       <View
         style={
-          {
-            "alignItems": "center",
-            "height": 18,
-            "justifyContent": "center",
-            "transform": [
-              {
-                "rotate": "-45deg",
-              },
-            ],
-            "width": 18,
-          }
+          [
+            {
+              "justifyContent": "center",
+            },
+            {
+              "opacity": 1,
+            },
+            {
+              "pointerEvents": "none",
+            },
+          ]
         }
       >
         <View
           style={
-            {
-              "borderBottomColor": "transparent",
-              "borderBottomWidth": 7.38,
-              "borderLeftColor": "#fff",
-              "borderLeftWidth": 14.76,
-              "borderTopColor": "transparent",
-              "borderTopWidth": 7.38,
-              "height": 0,
-              "marginLeft": 2.88,
-              "width": 0,
-            }
+            [
+              {
+                "alignItems": "center",
+                "backgroundColor": "#3390EC",
+                "borderRadius": 18,
+                "height": 36,
+                "justifyContent": "center",
+                "width": 36,
+              },
+              {
+                "backgroundColor": "#8E8E93",
+              },
+            ]
           }
-        />
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "height": 18,
+                "justifyContent": "center",
+                "transform": [
+                  {
+                    "rotate": "-45deg",
+                  },
+                ],
+                "width": 18,
+              }
+            }
+          >
+            <View
+              style={
+                {
+                  "borderBottomColor": "transparent",
+                  "borderBottomWidth": 7.38,
+                  "borderLeftColor": "#fff",
+                  "borderLeftWidth": 14.76,
+                  "borderTopColor": "transparent",
+                  "borderTopWidth": 7.38,
+                  "height": 0,
+                  "marginLeft": 2.88,
+                  "width": 0,
+                }
+              }
+            />
+          </View>
+        </View>
       </View>
-    </View>
+    </RNGestureHandlerButton>
   </View>
 </View>
 `;
@@ -124,98 +128,102 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
   }
 >
   <View
-    accessibilityLabel="send"
-    accessibilityRole="button"
-    accessibilityState={
-      {
-        "busy": undefined,
-        "checked": undefined,
-        "disabled": true,
-        "expanded": undefined,
-        "selected": undefined,
-      }
-    }
-    accessibilityValue={
-      {
-        "max": undefined,
-        "min": undefined,
-        "now": undefined,
-        "text": undefined,
-      }
-    }
-    accessible={true}
-    focusable={false}
-    onClick={[Function]}
-    onResponderGrant={[Function]}
-    onResponderMove={[Function]}
-    onResponderRelease={[Function]}
-    onResponderTerminate={[Function]}
-    onResponderTerminationRequest={[Function]}
-    onStartShouldSetResponder={[Function]}
-    style={
+    handlerTags={
       [
-        {
-          "justifyContent": "center",
-        },
-        {
-          "opacity": 1,
-        },
-        {
-          "pointerEvents": "none",
-        },
+        1,
       ]
     }
-    testID="GC_SEND_TOUCHABLE"
-  >
-    <View
-      style={
-        [
-          {
-            "alignItems": "center",
-            "backgroundColor": "#3390EC",
-            "borderRadius": 18,
-            "height": 36,
-            "justifyContent": "center",
-            "width": 36,
-          },
-          {
-            "backgroundColor": "#8E8E93",
-          },
-        ]
+    moduleId={-1}
+    onGestureHandlerEvent={[Function]}
+    onGestureHandlerStateChange={[Function]}
+    onGestureHandlerTouchEvent={[Function]}
+    onStartShouldSetResponder={[Function]}
+    pointerEvents="box-none"
+    style={
+      {
+        "display": "contents",
       }
+    }
+  >
+    <RNGestureHandlerButton
+      accessibilityLabel="send"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "disabled": true,
+        }
+      }
+      accessible={true}
+      enabled={false}
+      needsOffscreenAlphaCompositing={true}
+      testID="GC_SEND_TOUCHABLE"
     >
       <View
         style={
-          {
-            "alignItems": "center",
-            "height": 18,
-            "justifyContent": "center",
-            "transform": [
-              {
-                "rotate": "-45deg",
-              },
-            ],
-            "width": 18,
-          }
+          [
+            {
+              "justifyContent": "center",
+            },
+            {
+              "opacity": 1,
+            },
+            {
+              "pointerEvents": "none",
+            },
+          ]
         }
       >
         <View
           style={
-            {
-              "borderBottomColor": "transparent",
-              "borderBottomWidth": 7.38,
-              "borderLeftColor": "#fff",
-              "borderLeftWidth": 14.76,
-              "borderTopColor": "transparent",
-              "borderTopWidth": 7.38,
-              "height": 0,
-              "marginLeft": 2.88,
-              "width": 0,
-            }
+            [
+              {
+                "alignItems": "center",
+                "backgroundColor": "#3390EC",
+                "borderRadius": 18,
+                "height": 36,
+                "justifyContent": "center",
+                "width": 36,
+              },
+              {
+                "backgroundColor": "#8E8E93",
+              },
+            ]
           }
-        />
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "height": 18,
+                "justifyContent": "center",
+                "transform": [
+                  {
+                    "rotate": "-45deg",
+                  },
+                ],
+                "width": 18,
+              }
+            }
+          >
+            <View
+              style={
+                {
+                  "borderBottomColor": "transparent",
+                  "borderBottomWidth": 7.38,
+                  "borderLeftColor": "#fff",
+                  "borderLeftWidth": 14.76,
+                  "borderTopColor": "transparent",
+                  "borderTopWidth": 7.38,
+                  "height": 0,
+                  "marginLeft": 2.88,
+                  "width": 0,
+                }
+              }
+            />
+          </View>
+        </View>
       </View>
-    </View>
+    </RNGestureHandlerButton>
   </View>
 </View>
 `;
@@ -234,96 +242,100 @@ exports[`Send should render <Send /> where there is input and compare with snaps
   }
 >
   <View
-    accessibilityLabel="send"
-    accessibilityRole="button"
-    accessibilityState={
-      {
-        "busy": undefined,
-        "checked": undefined,
-        "disabled": false,
-        "expanded": undefined,
-        "selected": undefined,
-      }
-    }
-    accessibilityValue={
-      {
-        "max": undefined,
-        "min": undefined,
-        "now": undefined,
-        "text": undefined,
-      }
-    }
-    accessible={true}
-    focusable={true}
-    onClick={[Function]}
-    onResponderGrant={[Function]}
-    onResponderMove={[Function]}
-    onResponderRelease={[Function]}
-    onResponderTerminate={[Function]}
-    onResponderTerminationRequest={[Function]}
-    onStartShouldSetResponder={[Function]}
-    style={
+    handlerTags={
       [
-        {
-          "justifyContent": "center",
-        },
-        {
-          "opacity": 1,
-        },
-        {
-          "pointerEvents": "none",
-        },
+        3,
       ]
     }
-    testID="GC_SEND_TOUCHABLE"
-  >
-    <View
-      style={
-        [
-          {
-            "alignItems": "center",
-            "backgroundColor": "#3390EC",
-            "borderRadius": 18,
-            "height": 36,
-            "justifyContent": "center",
-            "width": 36,
-          },
-          false,
-        ]
+    moduleId={-1}
+    onGestureHandlerEvent={[Function]}
+    onGestureHandlerStateChange={[Function]}
+    onGestureHandlerTouchEvent={[Function]}
+    onStartShouldSetResponder={[Function]}
+    pointerEvents="box-none"
+    style={
+      {
+        "display": "contents",
       }
+    }
+  >
+    <RNGestureHandlerButton
+      accessibilityLabel="send"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "disabled": false,
+        }
+      }
+      accessible={true}
+      enabled={true}
+      needsOffscreenAlphaCompositing={true}
+      testID="GC_SEND_TOUCHABLE"
     >
       <View
         style={
-          {
-            "alignItems": "center",
-            "height": 18,
-            "justifyContent": "center",
-            "transform": [
-              {
-                "rotate": "-45deg",
-              },
-            ],
-            "width": 18,
-          }
+          [
+            {
+              "justifyContent": "center",
+            },
+            {
+              "opacity": 1,
+            },
+            {
+              "pointerEvents": "none",
+            },
+          ]
         }
       >
         <View
           style={
-            {
-              "borderBottomColor": "transparent",
-              "borderBottomWidth": 7.38,
-              "borderLeftColor": "#fff",
-              "borderLeftWidth": 14.76,
-              "borderTopColor": "transparent",
-              "borderTopWidth": 7.38,
-              "height": 0,
-              "marginLeft": 2.88,
-              "width": 0,
-            }
+            [
+              {
+                "alignItems": "center",
+                "backgroundColor": "#3390EC",
+                "borderRadius": 18,
+                "height": 36,
+                "justifyContent": "center",
+                "width": 36,
+              },
+              false,
+            ]
           }
-        />
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "height": 18,
+                "justifyContent": "center",
+                "transform": [
+                  {
+                    "rotate": "-45deg",
+                  },
+                ],
+                "width": 18,
+              }
+            }
+          >
+            <View
+              style={
+                {
+                  "borderBottomColor": "transparent",
+                  "borderBottomWidth": 7.38,
+                  "borderLeftColor": "#fff",
+                  "borderLeftWidth": 14.76,
+                  "borderTopColor": "transparent",
+                  "borderTopWidth": 7.38,
+                  "height": 0,
+                  "marginLeft": 2.88,
+                  "width": 0,
+                }
+              }
+            />
+          </View>
+        </View>
       </View>
-    </View>
+    </RNGestureHandlerButton>
   </View>
 </View>
 `;

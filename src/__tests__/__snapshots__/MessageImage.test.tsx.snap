@@ -1,67 +1,65 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`MessageImage should  render <MessageImage /> and compare with snapshot 1`] = `
 <View>
   <View
-    accessibilityState={
-      {
-        "busy": undefined,
-        "checked": undefined,
-        "disabled": false,
-        "expanded": undefined,
-        "selected": undefined,
-      }
-    }
-    accessibilityValue={
-      {
-        "max": undefined,
-        "min": undefined,
-        "now": undefined,
-        "text": undefined,
-      }
-    }
-    accessible={true}
-    focusable={true}
-    onClick={[Function]}
-    onResponderGrant={[Function]}
-    onResponderMove={[Function]}
-    onResponderRelease={[Function]}
-    onResponderTerminate={[Function]}
-    onResponderTerminationRequest={[Function]}
-    onStartShouldSetResponder={[Function]}
-    style={
+    handlerTags={
       [
-        undefined,
-        {
-          "opacity": 1,
-        },
-        {
-          "pointerEvents": "none",
-        },
+        1,
       ]
     }
-    testID="message-image-touchable"
+    moduleId={-1}
+    onGestureHandlerEvent={[Function]}
+    onGestureHandlerStateChange={[Function]}
+    onGestureHandlerTouchEvent={[Function]}
+    onStartShouldSetResponder={[Function]}
+    pointerEvents="box-none"
+    style={
+      {
+        "display": "contents",
+      }
+    }
   >
-    <Image
-      onLayout={[Function]}
-      resizeMode="cover"
-      source={
-        {
-          "uri": "url://to/image.png",
+    <RNGestureHandlerButton
+      delayLongPress={320}
+      needsOffscreenAlphaCompositing={true}
+      testID="message-image-touchable"
+    >
+      <View
+        style={
+          [
+            undefined,
+            {
+              "opacity": 1,
+            },
+            {
+              "pointerEvents": "none",
+            },
+          ]
         }
-      }
-      style={
-        [
-          {
-            "borderRadius": 13,
-            "height": 100,
-            "margin": 3,
-            "width": 150,
-          },
-          undefined,
-        ]
-      }
-    />
+      >
+        <Image
+          onLayout={[Function]}
+          resizeMode="cover"
+          source={
+            {
+              "uri": "url://to/image.png",
+            }
+          }
+          style={
+            [
+              {
+                "borderRadius": 13,
+                "height": 100,
+                "margin": 3,
+                "width": 150,
+              },
+              undefined,
+            ]
+          }
+        />
+      </View>
+    </RNGestureHandlerButton>
   </View>
 </View>
 `;

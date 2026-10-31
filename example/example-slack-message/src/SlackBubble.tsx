@@ -13,6 +13,7 @@ import { useActionSheet } from '@expo/react-native-action-sheet'
 import {
   MessageText,
   MessageImage,
+  MessageLocation,
   Time,
   utils,
   useChatContext,
@@ -20,7 +21,7 @@ import {
   User,
 } from '@kesha-antonov/react-native-chat'
 import * as Clipboard from 'expo-clipboard'
-import { RectButton } from 'react-native-gesture-handler'
+import { Touchable } from 'react-native-gesture-handler'
 
 const { isSameUser, isSameDay } = utils
 
@@ -245,7 +246,8 @@ const Bubble = (props: Props) => {
 
   return (
     <View style={[styles.container, containerStyle?.[position]]}>
-      <RectButton
+      <Touchable
+        underlayColor='black'
         onLongPress={handleLongPress}
         accessibilityRole='text'
         {...touchableProps}
@@ -255,10 +257,11 @@ const Bubble = (props: Props) => {
             {renderCustomView?.(props)}
             {messageHeader}
             {renderMessageImage()}
+            {currentMessage.location && <MessageLocation currentMessage={currentMessage} />}
             {renderMessageText()}
           </View>
         </View>
-      </RectButton>
+      </Touchable>
     </View>
   )
 }

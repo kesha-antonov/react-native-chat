@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { useSafeAreaFrame } from 'react-native-safe-area-context'
 
@@ -34,9 +34,16 @@ import { useSafeAreaFrame } from 'react-native-safe-area-context'
  * the keyboard was already up as the chat mounted.
  * See https://github.com/kesha-antonov/react-native-chat/issues/12
  */
-export function useKeyboardVerticalOffset () {
+export interface KeyboardVerticalOffset {
+  ref: React.RefObject<React.ComponentRef<typeof View> | null>
+  onLayout: () => void
+  keyboardVerticalOffset: number
+  isMeasured: boolean
+}
+
+export function useKeyboardVerticalOffset (): KeyboardVerticalOffset {
   const frameY = useSafeAreaFrame().y
-  const ref = useRef<View>(null)
+  const ref = useRef<React.ComponentRef<typeof View>>(null)
   const [measured, setMeasured] = useState<number | null>(null)
 
   const onLayout = useCallback(() => {

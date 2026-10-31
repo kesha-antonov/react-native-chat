@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View, useColorScheme } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 // Generates a labelled chat spanning several days so the floating/animated day
@@ -79,10 +80,6 @@ export default function DayAnimatedExample () {
           isLoading: isLoadingEarlier,
           onPress: onPressLoadEarlierMessages,
         }}
-        messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
-        textInputProps={{
-          style: getColorSchemeStyle(styles, 'composer', colorScheme),
-        }}
         isScrollToBottomEnabled
       />
     </View>
@@ -96,12 +93,5 @@ const styles = StyleSheet.create({
   },
   container_dark: {
     backgroundColor: '#000',
-  },
-  messagesContainer_dark: {
-    backgroundColor: '#000',
-  },
-  composer_dark: {
-    backgroundColor: '#1a1a1a',
-    color: '#fff',
   },
 })

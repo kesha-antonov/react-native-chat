@@ -43,7 +43,7 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   /* Messages container ref */
   messagesContainerRef?: RefObject<AnimatedList<TMessage>>
   /* text input ref */
-  textInputRef?: RefObject<TextInput>
+  textInputRef?: RefObject<React.ComponentRef<typeof TextInput> | null>
   /* Controls whether or not to show user.name property in the message bubble */
   isUsernameVisible?: boolean
   /* Messages container style */

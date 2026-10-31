@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   SharedValue,
@@ -28,6 +28,7 @@ import {
   usePlaylistEntry,
   useReportNowPlaying,
 } from './mediaPlayback'
+import { suppressPressAfterHold } from './messagePress'
 import { UnreadDot } from './NoteIndicators'
 import { PlayPauseIcon } from './PlayPauseIcon'
 import {
@@ -266,7 +267,7 @@ export function WaveformPlayer ({
   // (`VoiceMessageEnterTransition`), and the button is not drawn until it has
   // landed (`setEnterTransitionInProgress`). Hidden from the first frame, so it
   // does not flash while it is measured.
-  const playRef = useRef<View>(null)
+  const playRef = useRef<React.ComponentRef<typeof View>>(null)
   const playReveal = useSharedValue(appearOnMount && isSendFlightExpected('voice') ? 0 : 1)
   const hasLandedRef = useRef(false)
   const flightCleanupRef = useRef<(() => void) | null>(null)
@@ -579,44 +580,41 @@ export function WaveformPlayer ({
   // starts past Telegram's 0.2cm slop, and must stay horizontal, or it fights
   // the message list. The drag is relative: the progress moves by the finger's
   // travel rather than jumping to where it went down (`thumbDX`).
-  const waveformGesture = useMemo(
-    () =>
-      Gesture.Race(
-        Gesture.Pan()
-          // Telegram never lets a view-once note be scrubbed
-          // (`isSeekBarDragAllowed`).
-          .enabled(!isViewOnce)
-          .activeOffsetX([-DRAG_SLOP, DRAG_SLOP])
-          .failOffsetY([-12, 12])
-          .onStart(() => {
-            isDragging.value = true
-            dragStart.value = progress.value
-          })
-          .onUpdate(event => {
-            const width = trackWidthSV.value
-            if (width <= 0)
-              return
+  const waveformPan = usePanGesture({
+    // Telegram never lets a view-once note be scrubbed
+    // (`isSeekBarDragAllowed`).
+    enabled: !isViewOnce,
+    activeOffsetX: [-DRAG_SLOP, DRAG_SLOP],
+    failOffsetY: [-12, 12],
+    testID: 'voice-waveform-pan',
+    onActivate: () => {
+      isDragging.value = true
+      dragStart.value = progress.value
+    },
+    onUpdate: event => {
+      const width = trackWidthSV.value
+      if (width <= 0)
+        return
 
-            progress.value = Math.max(0, Math.min(1, dragStart.value + event.translationX / width))
-            runOnJS(onWaveformDrag)(progress.value)
-          })
-          .onEnd(() => {
-            runOnJS(onWaveformDragEnd)(progress.value)
-          })
-          .onFinalize(() => {
-            isDragging.value = false
-          })
-          .withTestId('voice-waveform-pan'),
-        Gesture.Tap()
-          .maxDistance(DRAG_SLOP)
-          .onEnd((_event, success) => {
-            if (success)
-              runOnJS(onWaveformTap)()
-          })
-          .withTestId('voice-waveform-tap')
-      ),
-    [isDragging, dragStart, progress, trackWidthSV, onWaveformDrag, onWaveformDragEnd, onWaveformTap, isViewOnce]
-  )
+      progress.value = Math.max(0, Math.min(1, dragStart.value + event.translationX / width))
+      runOnJS(onWaveformDrag)(progress.value)
+    },
+    onDeactivate: () => {
+      runOnJS(onWaveformDragEnd)(progress.value)
+    },
+    onFinalize: () => {
+      isDragging.value = false
+    },
+  })
+  const waveformTap = useTapGesture({
+    maxDistance: DRAG_SLOP,
+    testID: 'voice-waveform-tap',
+    onDeactivate: event => {
+      if (!event.canceled)
+        runOnJS(onWaveformTap)()
+    },
+  })
+  const waveformGesture = useCompetingGestures(waveformPan, waveformTap)
 
   const onTrackLayout = useCallback((event: LayoutChangeEvent) => {
     const width = event.nativeEvent.layout.width
@@ -762,6 +760,7 @@ export function WaveformPlayer ({
         <Animated.View ref={playRef} collapsable={false} onLayout={onPlayLayout} style={playRevealStyle}>
           <Pressable
             onPress={togglePlayback}
+            {...suppressPressAfterHold}
             disabled={isPlayDisabled}
             accessibilityRole='button'
             accessibilityState={{ disabled: isPlayDisabled, busy: isLoading }}

@@ -33,10 +33,27 @@ const customIcons: ChatIcons = {
   ),
 }
 
-const PRESETS: Array<{ id: string, label: string, theme?: PartialChatTheme }> = [
-  { id: 'default', label: 'Telegram blue', theme: { colors: { accent: '#3390EC', outgoingBubble: '#3390EC', background: '#EFEFF4' } } },
-  { id: 'green', label: 'WhatsApp green', theme: { colors: { accent: '#25D366', outgoingBubble: '#DCF8C6', outgoingText: '#000000', outgoingMeta: '#5DA46B', background: '#ECE5DD' } } },
-  { id: 'purple', label: 'Purple', theme: { colors: { accent: '#8E44AD', outgoingBubble: '#8E44AD', background: '#F3ECFA' } } },
+// `theme` only applies in light mode; dark mode reads `darkTheme`. Each preset sets both,
+// so switching works whichever scheme the device is in.
+const PRESETS: Array<{ id: string, label: string, theme: PartialChatTheme, darkTheme: PartialChatTheme }> = [
+  {
+    id: 'default',
+    label: 'Telegram blue',
+    theme: { colors: { accent: '#3390EC', outgoingBubble: '#3390EC', background: '#EFEFF4' } },
+    darkTheme: { colors: { accent: '#3390EC', outgoingBubble: '#2B5278', background: '#0E1621' } },
+  },
+  {
+    id: 'green',
+    label: 'WhatsApp green',
+    theme: { colors: { accent: '#25D366', outgoingBubble: '#DCF8C6', outgoingText: '#000000', outgoingMeta: '#5DA46B', background: '#ECE5DD' } },
+    darkTheme: { colors: { accent: '#25D366', outgoingBubble: '#005C4B', outgoingText: '#E9EDEF', outgoingMeta: 'rgba(233, 237, 239, 0.6)', incomingBubble: '#202C33', background: '#0B141A', inputBarBackground: '#1F2C34' } },
+  },
+  {
+    id: 'purple',
+    label: 'Purple',
+    theme: { colors: { accent: '#8E44AD', outgoingBubble: '#8E44AD', background: '#F3ECFA' } },
+    darkTheme: { colors: { accent: '#B07CC6', outgoingBubble: '#6C3483', incomingBubble: '#2A1F33', background: '#160F1C', inputBarBackground: '#211829' } },
+  },
 ]
 
 export default function ThemingExample () {
@@ -52,7 +69,7 @@ export default function ThemingExample () {
     }))))
   }, [])
 
-  const theme = useMemo(() => PRESETS.find(p => p.id === presetId)?.theme, [presetId])
+  const activePreset = useMemo(() => PRESETS.find(p => p.id === presetId) ?? PRESETS[0], [presetId])
 
   return (
     <View style={styles.container}>
@@ -73,7 +90,8 @@ export default function ThemingExample () {
         messages={messages}
         onSend={onSend}
         user={USER}
-        theme={theme}
+        theme={activePreset.theme}
+        darkTheme={activePreset.darkTheme}
         icons={customIcons}
       />
     </View>

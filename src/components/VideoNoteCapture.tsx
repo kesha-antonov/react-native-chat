@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { GestureDetector, usePinchGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   runOnJS,
@@ -30,15 +30,16 @@ import {
   onSendFlightTarget,
 } from './sendFlight'
 import { SpeakerIcon } from './VideoNoteOverlay'
-
-// Optional camera. Resolved through a try/catch require so the bundle works
-// whether or not the consumer installed `react-native-vision-camera`.
-let visionCamera: any = null
-try {
-  visionCamera = require('react-native-vision-camera')
-} catch {
-  visionCamera = null
-}
+import {
+  VideoNoteRecorderController,
+  createVideoNoteRecorder,
+  getCameraPermissionStatus,
+  getMicrophonePermissionStatus,
+  getVisionCamera,
+  isVisionCameraAvailable,
+  requestCameraPermission,
+  requestMicrophonePermission,
+} from './visionCamera'
 
 // Optional player for the paused take's preview.
 let expoVideo: any = null
@@ -201,7 +202,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   } | null>(null)
 
   const phaseRef = useRef<Phase>('idle')
-  const cameraRef = useRef<any>(null)
+  const cameraRef = useRef<VideoNoteRecorderController | null>(null)
   const startedAtRef = useRef(0)
   const durationRef = useRef(0)
   // Set when a take is cancelled, so a capture callback that lands afterwards
@@ -268,12 +269,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   }, [clearTimers, setPhase])
 
   const stopCapture = useCallback(() => {
-    try {
-      const stopped = cameraRef.current?.stopRecording?.() as Promise<void> | undefined
-      stopped?.catch?.(() => {})
-    } catch {
-      // nothing was recording
-    }
+    cameraRef.current?.stopRecording().catch(() => {})
   }, [])
 
   const sendVideo = useCallback((uri: string) => {
@@ -331,25 +327,24 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   stopTakeRef.current = stopTake
 
   const start = useCallback(() => {
-    if (phaseRef.current !== 'idle' || !visionCamera?.Camera)
+    if (phaseRef.current !== 'idle' || !isVisionCameraAvailable)
       return
 
     // Recording takes the audio over, as in Telegram: pause whatever note is
     // playing so it does not end up in the take.
     stopAllPlayback()
 
-    const Camera = visionCamera.Camera
-    const cameraStatus = Camera.getCameraPermissionStatus?.() ?? 'granted'
-    const micStatus = Camera.getMicrophonePermissionStatus?.() ?? 'granted'
+    const hasCamera = getCameraPermissionStatus() === 'authorized'
+    const hasMicrophone = getMicrophonePermissionStatus() === 'authorized'
 
     // The permission prompt takes the finger off the button anyway, so ask and
     // stop here; the next hold records.
-    if (cameraStatus !== 'granted' || micStatus !== 'granted') {
+    if (!hasCamera || !hasMicrophone) {
       ;(async () => {
         try {
-          const camera = cameraStatus === 'granted' ? 'granted' : await Camera.requestCameraPermission?.()
-          const mic = micStatus === 'granted' ? 'granted' : await Camera.requestMicrophonePermission?.()
-          if (camera !== 'granted' || mic !== 'granted')
+          const camera = hasCamera || await requestCameraPermission()
+          const mic = hasMicrophone || await requestMicrophonePermission()
+          if (!camera || !mic)
             configRef.current?.onPermissionDenied?.()
         } catch (error) {
           configRef.current?.onError?.(error)
@@ -377,8 +372,14 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     if (phaseRef.current !== 'preparing')
       return
 
+    const recorder = cameraRef.current
+    if (!recorder) {
+      close()
+      return
+    }
+
     try {
-      cameraRef.current.startRecording({
+      recorder.startRecording({
         onRecordingFinished: (video: { path: string }) => {
           if (abortedRef.current)
             return
@@ -458,12 +459,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
       clearTimeout(closingTimerRef.current)
     if (phaseRef.current !== 'idle') {
       abortedRef.current = true
-      try {
-        const stopped = cameraRef.current?.stopRecording?.() as Promise<void> | undefined
-        stopped?.catch?.(() => {})
-      } catch {
-        // nothing was recording
-      }
+      cameraRef.current?.stopRecording().catch(() => {})
     }
   }, [clearTimers])
 
@@ -476,9 +472,10 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   }, [])
 
   // Telegram's `InstantCameraView.switchCamera` works mid-take, and so does
-  // vision-camera's: Android records with CameraX's persistent recording,
-  // which survives the camera being rebound, and iOS keeps appending the new
-  // camera's frames to the same asset writer.
+  // vision-camera's persistent recorder (`enablePersistentRecorder` below):
+  // Android records with CameraX's persistent recording, which survives the
+  // camera being rebound, and iOS keeps appending the new camera's frames to
+  // the same asset writer.
   const flipCamera = useCallback(() => {
     setFacing(current => (current === 'front' ? 'back' : 'front'))
   }, [])
@@ -561,7 +558,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
 }
 
 interface VideoNoteCaptureViewProps {
-  cameraRef: React.RefObject<any>
+  cameraRef: React.RefObject<VideoNoteRecorderController | null>
   facing: 'front' | 'back'
   isFlashOn: boolean
   isRecording: boolean
@@ -647,7 +644,7 @@ function useRoundAnimation ({ isClosing, isSlideOut, isOpen, area, isFlight, rou
   /** Sent: fly into the new note rather than close. */
   isFlight: boolean
   /** The view centred on the circle, measured for the flight. */
-  roundRef: React.RefObject<View | null>
+  roundRef: React.RefObject<React.ComponentRef<typeof View> | null>
   roundSize: number
 }) {
   // No note landed in time: close the ordinary way after all.
@@ -780,17 +777,32 @@ function VideoNoteCaptureView ({
   onFlip,
 }: VideoNoteCaptureViewProps) {
   const labels = useLabels()
+  const visionCamera = getVisionCamera()
   const Camera = visionCamera.Camera
   // The camera on the chosen side, else the other side, else any camera at all
-  // (an external one, an emulator's).
+  // (an external one, an emulator's). Each side's default device is the one
+  // vision-camera picks for it: the wide-angle lens.
+  const front = visionCamera.useCameraDevice('front')
+  const back = visionCamera.useCameraDevice('back')
   const devices: any[] = visionCamera.useCameraDevices()
-  const front = devices.find(d => d.position === 'front')
-  const back = devices.find(d => d.position === 'back')
   const device = (facing === 'front' ? front ?? back : back ?? front) ?? devices[0]
+
+  // Recording goes through a video output and the recorders it creates. The
+  // persistent recorder keeps one file across a flip mid-take.
+  const videoOutput = visionCamera.useVideoOutput({ enableAudio: true, enablePersistentRecorder: true })
+  const outputs = useMemo(() => [videoOutput], [videoOutput])
+  const recorder = useMemo(() => createVideoNoteRecorder(videoOutput), [videoOutput])
+  useEffect(() => {
+    cameraRef.current = recorder
+    return () => {
+      if (cameraRef.current === recorder)
+        cameraRef.current = null
+    }
+  }, [cameraRef, recorder])
   const canFlip = !!front && !!back
   const isFront = device?.position === 'front'
   const { area, onLayout, roundSize, ringRadius, ringCircumference, ringBox } = useRoundLayout()
-  const roundRef = useRef<View>(null)
+  const roundRef = useRef<React.ComponentRef<typeof View>>(null)
   const { roundStyle, controlsStyle, ringStyle } = useRoundAnimation({
     isClosing,
     isSlideOut,
@@ -856,8 +868,10 @@ function VideoNoteCaptureView ({
 
   // Pinch to zoom while recording, springing back when the fingers lift
   // (`InstantCameraView` touch handling + `finishZoom`).
-  const neutralZoom: number = device?.neutralZoom ?? 1
+  // vision-camera 5 measures zoom against the wide-angle lens, so 1 is neutral
+  // even on a multi-lens device that can zoom out below it.
   const minZoom: number = device?.minZoom ?? 1
+  const neutralZoom = Math.max(minZoom, Math.min(device?.maxZoom ?? 1, 1))
   const maxZoom: number = Math.min(device?.maxZoom ?? 1, neutralZoom * 8)
   const [zoom, setZoom] = useState(neutralZoom)
   const resetTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -895,21 +909,21 @@ function VideoNoteCaptureView ({
     }, 16)
   }, [neutralZoom, stopZoomReset])
 
-  const pinchGesture = useMemo(
-    () =>
-      Gesture.Pinch()
-        .enabled(isRecording)
-        .onBegin(() => {
-          runOnJS(onPinchBegin)()
-        })
-        .onUpdate(event => {
-          runOnJS(onPinch)(event.scale)
-        })
-        .onFinalize(() => {
-          runOnJS(onPinchEnd)()
-        }),
-    [isRecording, onPinchBegin, onPinch, onPinchEnd]
-  )
+  // Every callback ends up on the JS thread (zoom is React state), so run the
+  // whole gesture there instead of hopping over from the UI thread each frame.
+  const pinchGesture = usePinchGesture({
+    enabled: isRecording,
+    runOnJS: true,
+    onBegin: () => {
+      onPinchBegin()
+    },
+    onUpdate: event => {
+      onPinch(event.scale)
+    },
+    onFinalize: () => {
+      onPinchEnd()
+    },
+  })
 
   // Telegram's flash: a white screen in front of the front camera, the torch on
   // the back one, and only while actually recording.
@@ -944,16 +958,14 @@ function VideoNoteCaptureView ({
               {device
                 ? (
                   <Camera
-                    ref={cameraRef}
                     style={StyleSheet.absoluteFill}
                     device={device}
                     // Stays live after a stop until the file is written.
                     isActive
-                    video
-                    audio
+                    outputs={outputs}
                     zoom={zoom}
-                    torch={isTorchOn ? 'on' : 'off'}
-                    onInitialized={onReady}
+                    torchMode={isTorchOn ? 'on' : 'off'}
+                    onStarted={onReady}
                     onError={onError}
                   />
                 )
@@ -1009,7 +1021,7 @@ function VideoNotePreviewView ({ uri, isClosing, isSlideOut, isFlight }: {
   isFlight: boolean
 }) {
   const { area, onLayout, roundSize } = useRoundLayout()
-  const roundRef = useRef<View>(null)
+  const roundRef = useRef<React.ComponentRef<typeof View>>(null)
   const { roundStyle } = useRoundAnimation({ isClosing, isSlideOut, isOpen: true, area, isFlight, roundRef, roundSize })
   const [isMuted, setIsMuted] = useState(true)
   const player = expoVideo.useVideoPlayer(uri, (p: any) => {

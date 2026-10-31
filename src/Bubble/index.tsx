@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Keyboard,
+  LayoutChangeEvent,
   View,
   Pressable,
   StyleProp,
@@ -7,20 +9,23 @@ import {
   TextStyle,
   Text,
   ViewStyle } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { GestureDetector, useExclusiveGestures, useLongPressGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   ReduceMotion,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated'
 
 import { useChatContext } from '../ChatContext'
 import { ContextMenu } from '../components/ContextMenu'
+import { impactHaptic } from '../components/haptics'
 import { Icon } from '../components/Icon'
-import { useNoteTimeShift } from '../components/mediaPlayback'
+import { MediaPlaybackContext, useNoteTimeShift } from '../components/mediaPlayback'
+import { PRESS_DELAY_MS, PRESS_HOLD_MS, PRESS_RELEASE_MS, PRESS_SHRINK_MS } from '../components/messagePress'
 import { MessageReply } from '../components/MessageReply'
 import { NOTE_GROW_MS, noteGrowEasing } from '../components/roundNoteChrome'
 import { PendingClock, Ticks } from '../components/Ticks'
@@ -50,13 +55,79 @@ interface PickerAnchor {
   bubbleHeight: number
 }
 
-const SCALE_PRESSED = 0.85
-const SCALE_DURATION_IN = 400
-const SCALE_DURATION_OUT = 200
-const SCALE_EASING = Easing.inOut(Easing.quad)
+// CA's easeOut.
+const PRESS_RELEASE_EASING = Easing.bezier(0, 0, 0.58, 1)
+
+// A lifted copy must not undo the original's margins: the overlay places it by
+// the measured bubble box, which excludes them.
+const LIFTED_RESET: ViewStyle = {
+  margin: 0,
+  marginTop: 0,
+  marginBottom: 0,
+  marginLeft: 0,
+  marginRight: 0,
+  marginStart: 0,
+  marginEnd: 0,
+  marginHorizontal: 0,
+  marginVertical: 0,
+}
+
+/**
+ * The copy of a bubble that the long-press overlay draws above its backdrop.
+ * While it is mounted the original is hidden, so the message seems to lift out
+ * of the list and land back in it - and a custom picker that never renders the
+ * copy leaves the original alone. It sits outside the media playback context:
+ * a second player must not register in the playlist under the same message id
+ * and unregister the real one when the overlay closes.
+ */
+const LiftedBubble = ({
+  onLiftChange,
+  onRemeasure,
+  style,
+  children,
+}: {
+  onLiftChange: (isLifted: boolean) => void
+  onRemeasure: () => void
+  style: StyleProp<ViewStyle>
+  children: React.ReactNode
+}) => {
+  // Presenting the overlay's Modal dismisses the keyboard (and iOS brings it
+  // back when the Modal goes), so the list moves under the copy. Follow the
+  // original, so the copy flies back to where it really is.
+  useEffect(() => {
+    const subscriptions = [
+      Keyboard.addListener('keyboardDidHide', onRemeasure),
+      Keyboard.addListener('keyboardDidShow', onRemeasure),
+    ]
+    return () => subscriptions.forEach(subscription => subscription.remove())
+  }, [onRemeasure])
+
+  useEffect(() => {
+    // The Modal holding this copy reaches the screen a frame or two after it
+    // mounts; hiding the original right away would blink the message out.
+    // Waiting is invisible, since the copy opens exactly over the original.
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => onLiftChange(true))
+    })
+    return () => {
+      cancelAnimationFrame(frame)
+      onLiftChange(false)
+    }
+  }, [onLiftChange])
+
+  return (
+    <MediaPlaybackContext.Provider value={null}>
+      <View style={style}>
+        {children}
+      </View>
+    </MediaPlaybackContext.Provider>
+  )
+}
 
 export type PressableBubbleRowProps<TMessage extends IMessage> = {
   isGestureEnabled: boolean
+  /** The overlay is showing a lifted copy, so the original is hidden. */
+  isLifted?: boolean
   onPressMessage?: (context: unknown, message: TMessage) => void
   onLongPressStart: () => void
   measureBubble: () => void
@@ -64,7 +135,7 @@ export type PressableBubbleRowProps<TMessage extends IMessage> = {
   currentMessage: TMessage
   rowSurfaceStyle: StyleProp<ViewStyle>
   wrapperStyleList: StyleProp<ViewStyle>
-  bubbleContainerRef: React.RefObject<View | null>
+  bubbleContainerRef: React.RefObject<React.ComponentRef<typeof View> | null>
   children: React.ReactNode
 }
 
@@ -80,6 +151,7 @@ export type PressableBubbleRowProps<TMessage extends IMessage> = {
  */
 const PressableBubbleRow = <TMessage extends IMessage>({
   isGestureEnabled,
+  isLifted = false,
   onPressMessage,
   onLongPressStart,
   measureBubble,
@@ -91,68 +163,66 @@ const PressableBubbleRow = <TMessage extends IMessage>({
   children,
 }: PressableBubbleRowProps<TMessage>) => {
   const messageScale = useSharedValue(1)
+  const bubbleWidth = useSharedValue(0)
+  const onBubbleLayout = useCallback((event: LayoutChangeEvent) => {
+    bubbleWidth.value = event.nativeEvent.layout.width
+  }, [bubbleWidth])
 
   const bubbleScaleStyle = useAnimatedStyle(() => ({
     transform: [{ scale: messageScale.value }],
   }))
 
-  const tapGesture = useMemo(
-    () =>
-      Gesture.Tap()
-        // Keep native subviews (video controls, maps, native buttons) receiving
-        // touches. iOS cancels them by default the moment this recognizer wins.
-        .cancelsTouchesInView(false)
-        .runOnJS(true)
-        .onEnd((_e, success) => {
-          if (success)
-            onPressMessage?.(context, currentMessage)
-        }),
-    [onPressMessage, context, currentMessage]
-  )
+  const tapGesture = useTapGesture({
+    // Only attached when there is something to call - otherwise it would
+    // compete with interactive content inside the bubble for no reason.
+    enabled: !!onPressMessage,
+    // Keep native subviews (video controls, maps, native buttons) receiving
+    // touches. iOS cancels them by default the moment this recognizer wins.
+    cancelsTouchesInView: false,
+    runOnJS: true,
+    onDeactivate: event => {
+      if (!event.canceled)
+        onPressMessage?.(context, currentMessage)
+    },
+  })
 
-  const longPressGesture = useMemo(
-    () =>
-      Gesture.LongPress()
-        .cancelsTouchesInView(false)
-        .onBegin(() => {
-          messageScale.value = withTiming(SCALE_PRESSED, {
-            duration: SCALE_DURATION_IN,
-            easing: SCALE_EASING,
-            reduceMotion: ReduceMotion.System,
-          })
-          runOnJS(measureBubble)()
-        })
-        .onStart(() => {
-          runOnJS(onLongPressStart)()
-        })
-        .onFinalize(() => {
-          messageScale.value = withTiming(1, {
-            duration: SCALE_DURATION_OUT,
-            easing: SCALE_EASING,
-            reduceMotion: ReduceMotion.System,
-          })
-        }),
-    [messageScale, measureBubble, onLongPressStart]
-  )
+  const longPressGesture = useLongPressGesture({
+    testID: 'message-long-press',
+    minDuration: PRESS_HOLD_MS,
+    cancelsTouchesInView: false,
+    onBegin: () => {
+      const width = bubbleWidth.value
+      const pressed = width > 0 ? Math.max(0.7, (width - 15) / width) : 1
+      messageScale.value = withDelay(
+        PRESS_DELAY_MS,
+        withTiming(pressed, { duration: PRESS_SHRINK_MS, easing: Easing.linear, reduceMotion: ReduceMotion.System }),
+        ReduceMotion.System
+      )
+      runOnJS(measureBubble)()
+    },
+    onActivate: () => {
+      runOnJS(onLongPressStart)()
+    },
+    onFinalize: () => {
+      messageScale.value = withTiming(1, {
+        duration: PRESS_RELEASE_MS,
+        easing: PRESS_RELEASE_EASING,
+        reduceMotion: ReduceMotion.System,
+      })
+    },
+  })
 
   // Exclusive composition: a long-press wins over the tap when held long
   // enough; a quick lift lets the tap through. Both share the onBegin/onFinalize
   // scale animation because onBegin always fires before either gesture wins.
-  // The tap is only attached when there is something to call - otherwise it
-  // would compete with interactive content inside the bubble for no reason.
-  const gesture = useMemo(
-    () => onPressMessage
-      ? Gesture.Exclusive(longPressGesture, tapGesture)
-      : longPressGesture,
-    [longPressGesture, tapGesture, onPressMessage]
-  )
+  const gesture = useExclusiveGestures(longPressGesture, tapGesture)
 
   // `rowSurface` spans the whole message row, so a long-press in the empty
   // space beside the bubble opens the picker too - the way Telegram behaves.
   const bubbleRow = (
     <View style={rowSurfaceStyle}>
-      <Animated.View style={bubbleScaleStyle}>
-        <View style={wrapperStyleList} ref={bubbleContainerRef}>
+      <Animated.View style={[bubbleScaleStyle, isLifted && hiddenStyle]}>
+        <View style={wrapperStyleList} ref={bubbleContainerRef} onLayout={onBubbleLayout}>
           {children}
         </View>
       </Animated.View>
@@ -179,6 +249,8 @@ const PressableBubbleRow = <TMessage extends IMessage>({
     </>
   )
 }
+
+const hiddenStyle: ViewStyle = { opacity: 0 }
 
 export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<TMessage>): React.ReactElement => {
   const {
@@ -253,7 +325,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return isMessageGestureEnabled
   }, [isMessageGestureEnabled, currentMessage])
 
-  const bubbleContainerRef = useRef<View>(null)
+  const bubbleContainerRef = useRef<React.ComponentRef<typeof View>>(null)
 
   const [isPickerVisible, setIsPickerVisible] = useState(false)
   const [pickerAnchor, setPickerAnchor] = useState<PickerAnchor>({
@@ -275,8 +347,17 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     onLongPressMessageProp,
   ])
 
+  // True while the overlay shows the lifted copy - through its exit animation
+  // too, which outlasts `isPickerVisible`.
+  const [isLifted, setIsLifted] = useState(false)
+
   const openPicker = useCallback(() => {
+    impactHaptic('Medium')
     setIsPickerVisible(true)
+  }, [])
+
+  const closePicker = useCallback(() => {
+    setIsPickerVisible(false)
   }, [])
 
   const measureBubble = useCallback(() => {
@@ -694,6 +775,26 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     [styles, visualPosition]
   )
 
+  const isPreviewNeeded = isPickerVisible || isLifted
+  const messagePreview = useMemo(() => {
+    if (!isPreviewNeeded)
+      return undefined
+
+    return (
+      <LiftedBubble
+        onLiftChange={setIsLifted}
+        onRemeasure={measureBubble}
+        style={[
+          wrapperStyleList,
+          LIFTED_RESET,
+          { width: pickerAnchor.bubbleWidth, maxWidth: pickerAnchor.bubbleWidth },
+        ]}
+      >
+        {renderBubbleBody()}
+      </LiftedBubble>
+    )
+  }, [isPreviewNeeded, wrapperStyleList, pickerAnchor.bubbleWidth, renderBubbleBody, measureBubble])
+
   const renderReactionsDisplay = useCallback(() => {
     const currentReactions = currentMessage?.reactions
     if (!currentReactions || currentReactions.length === 0)
@@ -712,11 +813,24 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       reactionCountStyle: reactions?.reactionCountStyle,
     }
 
-    if (reactions?.renderReactions)
-      return renderComponentOrElement(reactions.renderReactions, displayProps)
+    const display = reactions?.renderReactions
+      ? renderComponentOrElement(reactions.renderReactions, displayProps)
+      : <MessageReactions {...displayProps} />
 
-    return <MessageReactions {...displayProps} />
-  }, [currentMessage, position, props.user, reactions])
+    // Under the overlay the pills stay hidden, so a picked reaction's pill
+    // appears as its emoji lands rather than before it.
+    if (isLifted)
+      return <View style={hiddenStyle}>{display}</View>
+
+    return display
+  }, [currentMessage, position, props.user, reactions, isLifted])
+
+  // A pick is applied at once; the overlay's flight then needs the bubble's
+  // new spot, as a first reaction grows the row and the list may move it.
+  const selectReaction = useCallback((emoji: string) => {
+    reactions?.onReactionPress?.(currentMessage, emoji)
+    requestAnimationFrame(() => requestAnimationFrame(measureBubble))
+  }, [reactions, currentMessage, measureBubble])
 
   const renderReactionPickerModal = useCallback(() => {
     if (!reactions?.isEnabled)
@@ -728,25 +842,29 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       visible: isPickerVisible,
       message: currentMessage,
       emojis,
-      onSelect: (emoji: string) => reactions?.onReactionPress?.(currentMessage, emoji),
-      onDismiss: () => setIsPickerVisible(false),
+      onSelect: selectReaction,
+      onDismiss: closePicker,
       position,
       ...pickerAnchor,
       pickerContainerStyle: reactions.pickerContainerStyle,
       pickerEmojiStyle: reactions.pickerEmojiStyle,
+      messagePreview,
+      renderExpandedPicker: reactions.renderExpandedPicker,
     }
 
     if (reactions.renderReactionPicker)
       return renderComponentOrElement(reactions.renderReactionPicker, pickerProps)
 
-    return <ReactionPicker {...pickerProps} />
-  }, [reactions, isPickerVisible, currentMessage, position, pickerAnchor])
+    // The built-in picker aligns to the side the bubble is drawn on.
+    return <ReactionPicker {...pickerProps} position={visualPosition} />
+  }, [reactions, isPickerVisible, currentMessage, position, visualPosition, pickerAnchor, messagePreview, closePicker, selectReaction])
 
   const renderContextMenu = useCallback(() => {
     const reactionsRow = reactions?.isEnabled
       ? {
         emojis: reactions.emojis ?? DEFAULT_REACTION_EMOJIS,
-        onSelect: (emoji: string) => reactions?.onReactionPress?.(currentMessage, emoji),
+        onSelect: selectReaction,
+        renderExpandedPicker: reactions.renderExpandedPicker,
       }
       : undefined
 
@@ -754,13 +872,14 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       <ContextMenu
         visible={isPickerVisible}
         items={menuItems}
-        onDismiss={() => setIsPickerVisible(false)}
-        position={position}
+        onDismiss={closePicker}
+        position={visualPosition}
         {...pickerAnchor}
         reactions={reactionsRow}
+        messagePreview={messagePreview}
       />
     )
-  }, [reactions, menuItems, isPickerVisible, position, pickerAnchor, currentMessage])
+  }, [reactions, menuItems, isPickerVisible, visualPosition, pickerAnchor, messagePreview, closePicker, selectReaction])
 
   // Overlay path: a long-press opens either the Telegram-style context menu
   // (when messageActions are provided, optionally with a reactions row) or the
@@ -772,6 +891,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       <Animated.View style={containerStyleList}>
         <PressableBubbleRow
           isGestureEnabled={isGestureEnabled}
+          isLifted={isLifted}
           onPressMessage={onPressMessageProp}
           onLongPressStart={openPicker}
           measureBubble={measureBubble}

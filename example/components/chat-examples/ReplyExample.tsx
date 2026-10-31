@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View, useColorScheme } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Chat, IMessage, ReplyMessage } from '@kesha-antonov/react-native-chat'
 
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import messagesData from '../../example-expo/data/messages'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
 
@@ -40,10 +41,6 @@ export default function ReplyExample () {
         messages={messages}
         onSend={onSend}
         user={user}
-        messagesContainerStyle={getColorSchemeStyle(styles, 'messagesContainer', colorScheme)}
-        textInputProps={{
-          style: getColorSchemeStyle(styles, 'composer', colorScheme),
-        }}
         // New grouped reply props
         reply={{
           swipe: {
@@ -64,12 +61,5 @@ const styles = StyleSheet.create({
   },
   container_dark: {
     backgroundColor: '#000',
-  },
-  messagesContainer_dark: {
-    backgroundColor: '#000',
-  },
-  composer_dark: {
-    backgroundColor: '#1a1a1a',
-    color: '#fff',
   },
 })

@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   SharedValue,
@@ -167,46 +167,47 @@ const FloatingNoteView = ({ entry, isVisible, area, onHidden }: FloatingNoteView
     return () => cancelAnimationFrame(frame)
   }, [player, progress])
 
-  const gesture = useMemo(() => {
-    const pan = Gesture.Pan()
-      .minDistance(DRAG_START_DISTANCE)
-      .onStart(() => {
-        dragStart.value = { x: x.value, y: y.value }
-      })
-      .onUpdate(event => {
-        const next = clampDrag(dragStart.value.x + event.translationX, dragStart.value.y + event.translationY, areaSV.value)
-        x.value = next.x
-        y.value = next.y
-        fade.value = dragAlpha(next.x, areaSV.value.width)
-      })
-      .onEnd(event => {
-        const settle = settleFloatingNote(x.value, y.value, event.velocityX, areaSV.value, lastDock)
-        const timing = { duration: FLOATING_NOTE_MS, easing: decelerate }
-        y.value = withTiming(settle.y, timing)
-        if (settle.isClosing) {
-          // Thrown off the side: slide out, then stop playback
-          // (`animateToBoundsMaybe` -> `close` -> `onCloseRunnable`).
-          fade.value = withTiming(0, timing)
-          x.value = withTiming(settle.x, timing, finished => {
-            if (finished)
-              runOnJS(close)()
-          })
-          return
-        }
+  const pan = usePanGesture({
+    minDistance: DRAG_START_DISTANCE,
+    onActivate: () => {
+      dragStart.value = { x: x.value, y: y.value }
+    },
+    onUpdate: event => {
+      const next = clampDrag(dragStart.value.x + event.translationX, dragStart.value.y + event.translationY, areaSV.value)
+      x.value = next.x
+      y.value = next.y
+      fade.value = dragAlpha(next.x, areaSV.value.width)
+    },
+    onDeactivate: event => {
+      const settle = settleFloatingNote(x.value, y.value, event.velocityX, areaSV.value, lastDock)
+      const timing = { duration: FLOATING_NOTE_MS, easing: decelerate }
+      y.value = withTiming(settle.y, timing)
+      if (settle.isClosing) {
+        // Thrown off the side: slide out, then stop playback
+        // (`animateToBoundsMaybe` -> `close` -> `onCloseRunnable`).
+        fade.value = withTiming(0, timing)
+        x.value = withTiming(settle.x, timing, finished => {
+          if (finished)
+            runOnJS(close)()
+        })
+        return
+      }
 
-        fade.value = withTiming(1, timing)
-        x.value = withTiming(settle.x, timing)
-        runOnJS(saveDock)(settle.dock)
-      })
+      fade.value = withTiming(1, timing)
+      x.value = withTiming(settle.x, timing)
+      runOnJS(saveDock)(settle.dock)
+    },
+  })
 
-    // A tap without a drag pauses or resumes it.
-    const tap = Gesture.Tap().onEnd((_event, success) => {
-      if (success)
+  // A tap without a drag pauses or resumes it.
+  const tap = useTapGesture({
+    onDeactivate: event => {
+      if (!event.canceled)
         runOnJS(toggle)()
-    })
+    },
+  })
 
-    return Gesture.Race(pan, tap)
-  }, [areaSV, close, dragStart, fade, saveDock, toggle, x, y])
+  const gesture = useCompetingGestures(pan, tap)
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: visibility.value * fade.value,

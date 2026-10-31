@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { useLabels } from '../hooks/useLabels'
@@ -10,15 +10,12 @@ import { Icon } from './Icon'
 import { CameraIcon, CloseIcon, FlashIcon, FlipCameraIcon, PauseIcon, PlayIcon } from './MediaControls'
 import { stopAllPlayback } from './mediaPlayback'
 import { SendIcon } from './SendIcon'
-
-// Optional camera. Resolved through a try/catch require so the bundle works
-// whether or not the consumer installed `react-native-vision-camera`.
-let visionCamera: any = null
-try {
-  visionCamera = require('react-native-vision-camera')
-} catch {
-  visionCamera = null
-}
+import {
+  VideoNoteRecorderController,
+  createVideoNoteRecorder,
+  getVisionCamera,
+  isVisionCameraNativeReady,
+} from './visionCamera'
 
 // Optional SVG, used to draw the circular progress ring around the note. When
 // absent the recorder still works, just without the ring.
@@ -32,24 +29,6 @@ try {
   Svg = null
   SvgCircle = null
 }
-
-export const isVisionCameraAvailable = !!visionCamera?.Camera
-
-// Whether the native vision-camera module is actually linked into the running
-// binary. The JS package can be installed while the native module is not built
-// in (e.g. a simulator running a binary compiled before the dependency was
-// added). `getAvailableCameraDevices()` throws in that case, so we probe it
-// once, outside of render, and fall back to the POC recorder when it fails.
-export const isVisionCameraNativeReady = (() => {
-  if (!visionCamera?.Camera?.getAvailableCameraDevices)
-    return false
-  try {
-    visionCamera.Camera.getAvailableCameraDevices()
-    return true
-  } catch {
-    return false
-  }
-})()
 
 // The preview fills most of the screen width, as Telegram's does.
 const NOTE_WIDTH_RATIO = 0.88
@@ -181,56 +160,53 @@ function RecorderChrome ({
     }
   }, [isLocked, isRecording, lockedSV, translateX, translateY, cancelArmed])
 
-  const shutterGesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .enabled(!isDisabled)
-        .onBegin(() => {
-          if (lockedSV.value > 0)
-            return
+  const shutterGesture = usePanGesture({
+    enabled: !isDisabled,
+    onBegin: () => {
+      if (lockedSV.value > 0)
+        return
 
-          runOnJS(onStart)()
-        })
-        .onUpdate(event => {
-          if (lockedSV.value > 0)
-            return
+      runOnJS(onStart)()
+    },
+    onUpdate: event => {
+      if (lockedSV.value > 0)
+        return
 
-          const x = Math.max(-cancelThreshold, Math.min(0, event.translationX))
-          const y = Math.max(-(lockThreshold + 12), Math.min(0, event.translationY))
-          translateX.value = x
-          translateY.value = y
+      const x = Math.max(-cancelThreshold, Math.min(0, event.translationX))
+      const y = Math.max(-(lockThreshold + 12), Math.min(0, event.translationY))
+      translateX.value = x
+      translateY.value = y
 
-          // Same rule as the record button: releasing past 55% of the slide cancels.
-          const armed = x <= -cancelThreshold * 0.55 ? 1 : 0
-          if (armed !== cancelArmed.value) {
-            cancelArmed.value = armed
-            runOnJS(setIsCancelArmed)(armed > 0)
-          }
+      // Same rule as the record button: releasing past 55% of the slide cancels.
+      const armed = x <= -cancelThreshold * 0.55 ? 1 : 0
+      if (armed !== cancelArmed.value) {
+        cancelArmed.value = armed
+        runOnJS(setIsCancelArmed)(armed > 0)
+      }
 
-          if (-y >= lockThreshold && armed === 0) {
-            lockedSV.value = 1
-            translateX.value = withTiming(0, { duration: 150 })
-            translateY.value = withTiming(0, { duration: 150 })
-            runOnJS(onLock)()
-          }
-        })
-        .onFinalize(() => {
-          // Locked: the finger lifts but recording continues.
-          if (lockedSV.value > 0) {
-            translateX.value = withTiming(0, { duration: 150 })
-            translateY.value = withTiming(0, { duration: 150 })
-            cancelArmed.value = 0
-            return
-          }
+      if (-y >= lockThreshold && armed === 0) {
+        lockedSV.value = 1
+        translateX.value = withTiming(0, { duration: 150 })
+        translateY.value = withTiming(0, { duration: 150 })
+        runOnJS(onLock)()
+      }
+    },
+    onFinalize: () => {
+      // Locked: the finger lifts but recording continues.
+      if (lockedSV.value > 0) {
+        translateX.value = withTiming(0, { duration: 150 })
+        translateY.value = withTiming(0, { duration: 150 })
+        cancelArmed.value = 0
+        return
+      }
 
-          const cancelled = cancelArmed.value > 0
-          translateX.value = withTiming(0, { duration: 150 })
-          translateY.value = withTiming(0, { duration: 150 })
-          cancelArmed.value = 0
-          runOnJS(cancelled ? onCancel : onStop)()
-        }),
-    [isDisabled, onStart, onStop, onCancel, onLock, translateX, translateY, cancelArmed, lockedSV, cancelThreshold, lockThreshold]
-  )
+      const cancelled = cancelArmed.value > 0
+      translateX.value = withTiming(0, { duration: 150 })
+      translateY.value = withTiming(0, { duration: 150 })
+      cancelArmed.value = 0
+      runOnJS(cancelled ? onCancel : onStop)()
+    },
+  })
 
   const shutterStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
@@ -472,15 +448,23 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   onSend,
 }: VideoNoteRecorderProps<TMessage>) {
   const labels = useLabels()
+  const visionCamera = getVisionCamera()
   const Camera = visionCamera.Camera
   // Telegram lets you flip to the rear camera; a note starts on the front one.
   const [facing, setFacing] = useState<'front' | 'back'>('front')
   const device = visionCamera.useCameraDevice(facing)
   const otherDevice = visionCamera.useCameraDevice(facing === 'front' ? 'back' : 'front')
   const { hasPermission, requestPermission } = visionCamera.useCameraPermission()
-  const microphone = visionCamera.useMicrophonePermission?.() ?? { hasPermission: true, requestPermission: async () => true }
+  const microphone = visionCamera.useMicrophonePermission()
 
-  const cameraRef = useRef<any>(null)
+  // Recording goes through a video output and the recorders it creates; the
+  // persistent recorder keeps one file across a flip mid-take. Audio is only
+  // recorded with the microphone permission granted.
+  const videoOutput = visionCamera.useVideoOutput({ enableAudio: microphone.hasPermission, enablePersistentRecorder: true })
+  const outputs = useMemo(() => [videoOutput], [videoOutput])
+  const recorder = useMemo(() => createVideoNoteRecorder(videoOutput), [videoOutput])
+  const cameraRef = useRef<VideoNoteRecorderController>(recorder)
+  cameraRef.current = recorder
   const maxMs = (config?.maxDuration ?? 60) * 1000
   const minDurationMs = config?.minDurationMs ?? 800
   const startedAtRef = useRef(0)
@@ -529,7 +513,7 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   const stopRecording = useCallback(async () => {
     end()
     try {
-      await cameraRef.current?.stopRecording?.()
+      await cameraRef.current.stopRecording()
     } catch (error) {
       config?.onError?.(error)
       finish(null)
@@ -569,12 +553,7 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   const abort = useCallback(() => {
     abortedRef.current = true
     end()
-    try {
-      const stopped = cameraRef.current?.stopRecording?.() as Promise<void> | undefined
-      stopped?.catch?.(() => {})
-    } catch {
-      // nothing was recording
-    }
+    cameraRef.current.stopRecording().catch(() => {})
     onClose()
   }, [end, onClose])
 
@@ -582,12 +561,7 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   // a parent closing the modal): mark aborted and stop the capture.
   useEffect(() => () => {
     abortedRef.current = true
-    try {
-      const stopped = cameraRef.current?.stopRecording?.() as Promise<void> | undefined
-      stopped?.catch?.(() => {})
-    } catch {
-      // nothing was recording
-    }
+    cameraRef.current.stopRecording().catch(() => {})
   }, [])
 
   // Locking mirrors the voice recorder: slide up while holding the shutter and
@@ -623,18 +597,14 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
     setIsTorchOn(current => !current)
   }, [])
 
-  // vision-camera exposes pause/resume only on some versions; probe the ref
-  // rather than assume, so the control is hidden when it cannot work.
-  const canPause = typeof cameraRef.current?.pauseRecording === 'function'
-
   const togglePause = useCallback(async () => {
     try {
       if (isPaused) {
-        await cameraRef.current?.resumeRecording?.()
+        await cameraRef.current.resumeRecording()
         setIsPaused(false)
         resume()
       } else {
-        await cameraRef.current?.pauseRecording?.()
+        await cameraRef.current.pauseRecording()
         setIsPaused(true)
         pause()
       }
@@ -666,7 +636,7 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
       onFlipCamera={otherDevice ? flipCamera : undefined}
       onToggleTorch={device?.hasTorch ? toggleTorch : undefined}
       isTorchOn={isTorchOn}
-      onTogglePause={isRecording && canPause ? togglePause : undefined}
+      onTogglePause={isRecording ? togglePause : undefined}
       isPaused={isPaused}
       cancelLabel={labels.cancel}
       hint={hint}
@@ -676,13 +646,11 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
           : hasPermission
             ? (
               <Camera
-                ref={cameraRef}
                 style={StyleSheet.absoluteFill}
                 device={device}
                 isActive
-                video
-                audio={microphone.hasPermission}
-                torch={isTorchOn ? 'on' : 'off'}
+                outputs={outputs}
+                torchMode={isTorchOn ? 'on' : 'off'}
               />
             )
             : <Text style={styles.placeholderText}>{labels.cameraPermission}</Text>

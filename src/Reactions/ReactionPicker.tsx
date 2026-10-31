@@ -1,27 +1,17 @@
-import React, { useCallback } from 'react'
-import {
-  Dimensions,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import React, { useMemo } from 'react'
 
-import { useThemedStyles } from '../hooks/useTheme'
+import { ContextMenu } from '../components/ContextMenu'
 import { IMessage } from '../Models'
-import { ChatTheme } from '../Theme'
 import { ReactionPickerProps } from './types'
 
-const PICKER_HEIGHT = 54
-const EMOJI_BUTTON_SIZE = 46
-const PICKER_PADDING_H = 8
-const PICKER_VERTICAL_OFFSET = 8
+const NO_ITEMS: never[] = []
 
 /**
- * Lightweight quick-picker shown on long-press: a floating row of emojis
- * anchored to the pressed bubble. For a full emoji browser, pass a custom
- * component via `reactions.renderReactionPicker` (see the example app).
+ * Lightweight quick-picker shown on long-press: the chat dims, the pressed
+ * message is lifted above it, and a row of emojis springs out of the bubble's
+ * edge. It is the context menu without actions, so both feel the same. For a
+ * full emoji browser, pass a custom component via
+ * `reactions.renderReactionPicker` (see the example app).
  */
 export const ReactionPicker = <TMessage extends IMessage = IMessage>(
   props: ReactionPickerProps<TMessage>
@@ -32,110 +22,36 @@ export const ReactionPicker = <TMessage extends IMessage = IMessage>(
     onSelect,
     onDismiss,
     position,
-    pageX = 0,
-    pageY = 0,
-    bubbleWidth = 0,
-    bubbleHeight = 0,
+    pageX,
+    pageY,
+    bubbleWidth,
+    bubbleHeight,
     pickerContainerStyle,
     pickerEmojiStyle,
+    messagePreview,
+    renderExpandedPicker,
   } = props
 
-  const styles = useThemedStyles(createStyles)
-
-  const { width: screenWidth } = Dimensions.get('window')
-
-  const pickerWidth = emojis.length * EMOJI_BUTTON_SIZE + PICKER_PADDING_H * 2
-
-  const showAbove = pageY >= PICKER_HEIGHT + PICKER_VERTICAL_OFFSET
-  const pickerTop = showAbove
-    ? pageY - PICKER_HEIGHT - PICKER_VERTICAL_OFFSET
-    : pageY + bubbleHeight + PICKER_VERTICAL_OFFSET
-
-  let pickerLeft: number
-  if (position === 'right')
-    pickerLeft = pageX + bubbleWidth - pickerWidth
-  else
-    pickerLeft = pageX
-
-  pickerLeft = Math.max(8, Math.min(pickerLeft, screenWidth - pickerWidth - 8))
-
-  const handleSelect = useCallback(
-    (emoji: string) => {
-      onSelect(emoji)
-      onDismiss()
-    },
-    [onSelect, onDismiss]
-  )
-
-  if (!visible)
-    return null
+  const reactions = useMemo(() => ({
+    emojis,
+    onSelect,
+    containerStyle: pickerContainerStyle,
+    emojiStyle: pickerEmojiStyle,
+    renderExpandedPicker,
+  }), [emojis, onSelect, pickerContainerStyle, pickerEmojiStyle, renderExpandedPicker])
 
   return (
-    <Modal
-      transparent
+    <ContextMenu
       visible={visible}
-      onRequestClose={onDismiss}
-      animationType='fade'
-      statusBarTranslucent
-    >
-      <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} />
-
-      <View
-        style={[
-          styles.picker,
-          {
-            top: pickerTop,
-            left: pickerLeft,
-            width: pickerWidth,
-          },
-          pickerContainerStyle,
-        ]}
-      >
-        {emojis.map(emoji => (
-          <Pressable
-            key={emoji}
-            onPress={() => handleSelect(emoji)}
-            style={({ pressed }) => [
-              styles.emojiButton,
-              pressed && styles.emojiButtonPressed,
-            ]}
-          >
-            <Text style={[styles.emoji, pickerEmojiStyle]}>{emoji}</Text>
-          </Pressable>
-        ))}
-      </View>
-    </Modal>
+      items={NO_ITEMS}
+      onDismiss={onDismiss}
+      position={position}
+      pageX={pageX}
+      pageY={pageY}
+      bubbleWidth={bubbleWidth}
+      bubbleHeight={bubbleHeight}
+      reactions={reactions}
+      messagePreview={messagePreview}
+    />
   )
 }
-
-const createStyles = (theme: ChatTheme) => StyleSheet.create({
-  picker: {
-    position: 'absolute',
-    height: PICKER_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: PICKER_HEIGHT / 2,
-    paddingHorizontal: PICKER_PADDING_H,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  emojiButton: {
-    width: EMOJI_BUTTON_SIZE,
-    height: EMOJI_BUTTON_SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: EMOJI_BUTTON_SIZE / 2,
-  },
-  emojiButtonPressed: {
-    backgroundColor: theme.colors.reactionBackground,
-    transform: [{ scale: 1.2 }],
-  },
-  emoji: {
-    fontSize: 26,
-    lineHeight: 32,
-  },
-})

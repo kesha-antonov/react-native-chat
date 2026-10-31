@@ -9,7 +9,7 @@ import React, {
   useState,
 } from 'react'
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { SharedValue } from 'react-native-reanimated'
 
 import { useLabels } from '../hooks/useLabels'
@@ -642,81 +642,81 @@ export function RecordedVoicePreview ({ preview, onTrim }: RecordedVoicePreviewP
     play(isOutside ? from : undefined)
   }, [isPlaying, pause, playerId, range, duration, currentTime, status, play])
 
-  // The gesture is built once; everything it reads goes through this ref.
+  // A drag spans many renders (each trim moves `range`); everything it reads
+  // goes through this ref so one drag sees one consistent, current state.
   const live = useRef({ range, width, duration, isPlaying, play, pause, onTrim, player })
   live.current = { range, width, duration, isPlaying, play, pause, onTrim, player }
   const dragRef = useRef<TrimDrag | null>(null)
 
-  const trimGesture = useMemo(() => {
-    const usable = () => Math.max(1, live.current.width - TRIM_INSET * 2)
-    const fractionAt = (x: number) => clamp((x - TRIM_INSET) / usable(), 0, 1)
-    const minSpan = () => {
-      const { duration: seconds } = live.current
-      const byTime = seconds > 0 ? MIN_TRIM_MS / 1000 / seconds : 0
-      return Math.min(1, Math.max(byTime, MIN_TRIM_WIDTH / usable()))
-    }
-    const seek = (x: number) => {
-      const { range: current, duration: seconds, player: audio } = live.current
-      audio.seekTo(clamp(fractionAt(x), current.start, current.end) * seconds)
-    }
+  const usable = () => Math.max(1, live.current.width - TRIM_INSET * 2)
+  const fractionAt = (x: number) => clamp((x - TRIM_INSET) / usable(), 0, 1)
+  const minSpan = () => {
+    const { duration: seconds } = live.current
+    const byTime = seconds > 0 ? MIN_TRIM_MS / 1000 / seconds : 0
+    return Math.min(1, Math.max(byTime, MIN_TRIM_WIDTH / usable()))
+  }
+  const seek = (x: number) => {
+    const { range: current, duration: seconds, player: audio } = live.current
+    audio.seekTo(clamp(fractionAt(x), current.start, current.end) * seconds)
+  }
 
-    return Gesture.Pan()
-      .runOnJS(true)
-      .minDistance(0)
-      .onBegin(event => {
-        const { range: current, isPlaying: wasPlaying } = live.current
-        const startX = TRIM_INSET + current.start * usable()
-        const endX = TRIM_INSET + current.end * usable()
-        const toStart = Math.abs(event.x - startX)
-        const toEnd = Math.abs(event.x - endX)
+  const trimGesture = usePanGesture({
+    runOnJS: true,
+    minDistance: 0,
+    onBegin: event => {
+      const { range: current, isPlaying: wasPlaying } = live.current
+      const startX = TRIM_INSET + current.start * usable()
+      const endX = TRIM_INSET + current.end * usable()
+      const toStart = Math.abs(event.x - startX)
+      const toEnd = Math.abs(event.x - endX)
 
-        let kind: TrimDrag['kind'] | null = null
-        if (Math.min(toStart, toEnd) <= TRIM_HANDLE_SLOP)
-          kind = toStart < toEnd ? 'start' : 'end'
-        else if (event.x > startX && event.x < endX)
-          kind = 'seek'
+      let kind: TrimDrag['kind'] | null = null
+      if (Math.min(toStart, toEnd) <= TRIM_HANDLE_SLOP)
+        kind = toStart < toEnd ? 'start' : 'end'
+      else if (event.x > startX && event.x < endX)
+        kind = 'seek'
 
-        if (!kind)
-          return
+      if (!kind)
+        return
 
-        dragRef.current = { kind, wasPlaying }
-        live.current.pause()
-        if (kind === 'seek')
-          seek(event.x)
-      })
-      .onUpdate(event => {
-        const drag = dragRef.current
-        if (!drag)
-          return
+      dragRef.current = { kind, wasPlaying }
+      live.current.pause()
+      if (kind === 'seek')
+        seek(event.x)
+    },
+    onUpdate: event => {
+      const drag = dragRef.current
+      if (!drag)
+        return
 
-        if (drag.kind === 'seek') {
-          seek(event.x)
-          return
-        }
+      if (drag.kind === 'seek') {
+        seek(event.x)
+        return
+      }
 
-        const at = fractionAt(event.x)
-        setRange(current => drag.kind === 'start'
-          ? { ...current, start: clamp(at, 0, current.end - minSpan()) }
-          : { ...current, end: clamp(at, current.start + minSpan(), 1) })
-      })
-      .onFinalize(() => {
-        const drag = dragRef.current
-        dragRef.current = null
-        if (!drag)
-          return
+      const at = fractionAt(event.x)
+      setRange(current => drag.kind === 'start'
+        ? { ...current, start: clamp(at, 0, current.end - minSpan()) }
+        : { ...current, end: clamp(at, current.start + minSpan(), 1) })
+    },
+    onFinalize: () => {
+      const drag = dragRef.current
+      dragRef.current = null
+      if (!drag)
+        return
 
-        const { range: current, duration: seconds } = live.current
-        live.current.onTrim?.(current.start, current.end)
+      const { range: current, duration: seconds } = live.current
+      live.current.onTrim?.(current.start, current.end)
 
-        // Telegram keeps playing from where the drag leaves off.
-        if (drag.kind === 'seek')
-          live.current.play()
-        else if (drag.kind === 'start' && drag.wasPlaying)
-          live.current.play(current.start * seconds)
-        else if (drag.kind === 'end' && drag.wasPlaying)
-          live.current.play(Math.max(current.start * seconds, current.end * seconds - END_REPLAY_S))
-      })
-  }, [])
+      // Telegram keeps playing from where the drag leaves off.
+      if (drag.kind === 'seek')
+        live.current.play()
+      else if (drag.kind === 'start' && drag.wasPlaying)
+        live.current.play(current.start * seconds)
+      else if (drag.kind === 'end' && drag.wasPlaying)
+        live.current.play(Math.max(current.start * seconds, current.end * seconds - END_REPLAY_S))
+    },
+  })
 
   const keptSeconds = (range.end - range.start) * duration
   const shownSeconds = isPlaying || currentTime > range.start * duration + 0.05

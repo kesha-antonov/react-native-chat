@@ -2,6 +2,7 @@ import React, { useCallback } from 'react'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Icon } from './components/Icon'
 import { PinIcon } from './components/MediaControls'
+import { suppressPressAfterHold } from './components/messagePress'
 import { useLabels } from './hooks/useLabels'
 import { useThemedStyles } from './hooks/useTheme'
 import { IMessage, MessageLocationProps } from './Models'
@@ -52,6 +53,7 @@ export function MessageLocation<TMessage extends IMessage = IMessage> ({
     <View style={[styles.container, containerStyle]}>
       <Pressable
         onPress={handlePress}
+        {...suppressPressAfterHold}
         accessibilityRole='button'
         accessibilityLabel={labels.openLocationAccessibility}
         style={[styles.card, locationStyle]}

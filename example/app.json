@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.example"
+      "bundleIdentifier": "com.anonymous.example",
+      "infoPlist": {
+        "NSCameraUsageDescription": "$(PRODUCT_NAME) needs camera access to record video messages.",
+        "NSMicrophoneUsageDescription": "$(PRODUCT_NAME) needs microphone access to record video messages."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,9 +23,12 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.example"
+      "package": "com.anonymous.example",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -49,15 +56,6 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-asset",
-      [
-        "react-native-vision-camera",
-        {
-          "cameraPermissionText": "$(PRODUCT_NAME) needs camera access to record video messages.",
-          "enableMicrophonePermission": true,
-          "microphonePermissionText": "$(PRODUCT_NAME) needs microphone access to record video messages.",
-          "enableFrameProcessors": false
-        }
-      ],
       "react-native-audio-api"
     ],
     "experiments": {

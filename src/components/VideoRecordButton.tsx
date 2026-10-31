@@ -1,12 +1,22 @@
 import React, { useCallback, useState } from 'react'
 import { Modal, Pressable, StyleSheet } from 'react-native'
+import Animated, {
+  Easing,
+  ReduceMotion,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
+import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { useThemedStyles } from '../hooks/useTheme'
 import { IMessage, VideoRecordingProps } from '../Models'
 import { ChatTheme } from '../Theme'
 import { Icon } from './Icon'
 import { CameraIcon } from './MediaControls'
-import { VideoNoteRecorder, isVisionCameraAvailable, isVisionCameraNativeReady } from './VideoNoteRecorder'
+import { VideoNoteRecorder } from './VideoNoteRecorder'
+import { isVisionCameraAvailable, isVisionCameraNativeReady } from './visionCamera'
 
 // Optional camera-roll/launcher fallback. Resolved through a try/catch require.
 let imagePicker: any = null
@@ -26,6 +36,9 @@ try {
 } catch {
   device = null
 }
+
+const RECORDER_FADE_IN = { duration: 250, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System }
+const RECORDER_FADE_OUT = { duration: 200, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.System }
 
 export const isVideoRecordingAvailable = isVisionCameraAvailable || !!imagePicker?.launchCameraAsync
 
@@ -65,6 +78,22 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
 }: VideoRecordButtonProps<TMessage>) {
   const styles = useThemedStyles(createStyles)
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
+  const closeRecorder = useCallback(() => setIsRecorderOpen(false), [])
+
+  // Fades rather than replaces the conversation, as Telegram does; the
+  // recorder stays mounted until it has faded out.
+  const recorderOpacity = useSharedValue(0)
+  const animateIn = useCallback(() => {
+    recorderOpacity.value = withTiming(1, RECORDER_FADE_IN)
+  }, [recorderOpacity])
+  const animateOut = useCallback((onDone: () => void) => {
+    recorderOpacity.value = withTiming(0, RECORDER_FADE_OUT, finished => {
+      if (finished)
+        runOnJS(onDone)()
+    })
+  }, [recorderOpacity])
+  const { isMounted: isRecorderMounted } = useAnimatedPresence(isRecorderOpen, animateIn, animateOut)
+  const recorderStyle = useAnimatedStyle(() => ({ opacity: recorderOpacity.value }))
 
   const launchPicker = useCallback(async () => {
     // expo-image-picker's system camera hard-crashes on a simulator/emulator
@@ -134,20 +163,25 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
 
       {isVisionCameraAvailable && (
         <Modal
-          visible={isRecorderOpen}
-          // Transparent + fade so the recorder's scrim dims the conversation
-          // rather than replacing it, which is what Telegram shows.
+          visible={isRecorderMounted}
+          // Transparent so the recorder's scrim dims the conversation rather
+          // than replacing it, which is what Telegram shows.
           transparent
-          animationType='fade'
-          onRequestClose={() => setIsRecorderOpen(false)}
+          animationType='none'
+          onRequestClose={closeRecorder}
           statusBarTranslucent
         >
-          {isRecorderOpen && (
-            <VideoNoteRecorder<TMessage>
-              config={config}
-              onSend={onSend}
-              onClose={() => setIsRecorderOpen(false)}
-            />
+          {isRecorderMounted && (
+            <Animated.View
+              style={[styles.recorderLayer, recorderStyle]}
+              pointerEvents={isRecorderOpen ? 'auto' : 'none'}
+            >
+              <VideoNoteRecorder<TMessage>
+                config={config}
+                onSend={onSend}
+                onClose={closeRecorder}
+              />
+            </Animated.View>
           )}
         </Modal>
       )}
@@ -156,6 +190,9 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
 }
 
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
+  recorderLayer: {
+    flex: 1,
+  },
   // Inset camera control, bottom-aligned inside the field group.
   button: {
     alignItems: 'center',
