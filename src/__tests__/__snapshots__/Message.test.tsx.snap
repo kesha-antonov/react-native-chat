@@ -120,6 +120,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
                   "paddingHorizontal": 12,
                 },
                 false,
+                false,
                 undefined,
               ]
             }
@@ -321,6 +322,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
                   "paddingHorizontal": 12,
                 },
                 false,
+                false,
                 undefined,
               ]
             }
@@ -521,6 +523,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
                   "paddingBottom": 6,
                   "paddingHorizontal": 12,
                 },
+                false,
                 false,
                 undefined,
               ]

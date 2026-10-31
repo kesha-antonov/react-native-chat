@@ -1,10 +1,11 @@
-import React, { useCallback, useMemo, useRef } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { View, StyleSheet } from 'react-native'
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable'
-import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated'
+import Animated, { SharedValue, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { Avatar } from '../Avatar'
 import { Bubble } from '../Bubble'
+import { useIsNoteGrown } from '../components/mediaPlayback'
 import { useIsRTL } from '../hooks/useIsRTL'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { IMessage } from '../Models'
@@ -18,6 +19,25 @@ import styles from './styles'
 import { MessageProps } from './types'
 
 export * from './types'
+
+/** Telegram fades the avatar out as fast as the note grows over it. */
+const AVATAR_FADE_MS = 250
+
+/**
+ * The avatar beside a round note, faded out while that note is grown to play,
+ * as Telegram hides it (`isAvatarVisible && !isPlayingRound`). The space stays,
+ * so the row does not move.
+ */
+const NoteAvatar = ({ messageId, children }: { messageId: string | number, children: React.ReactNode }) => {
+  const isGrown = useIsNoteGrown(messageId)
+  const opacity = useSharedValue(isGrown ? 0 : 1)
+  useEffect(() => {
+    opacity.value = withTiming(isGrown ? 0 : 1, { duration: AVATAR_FADE_MS })
+  }, [isGrown, opacity])
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }))
+
+  return <Animated.View style={style}>{children}</Animated.View>
+}
 
 interface ReplyIconProps {
   progress: SharedValue<number>
@@ -141,6 +161,9 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
       /* eslint-enable @typescript-eslint/no-unused-vars */
       ...rest
     } = props
+
+    if (currentMessage?.videoNote && currentMessage._id != null)
+      return <NoteAvatar messageId={currentMessage._id}><Avatar {...rest} /></NoteAvatar>
 
     return <Avatar {...rest} />
   }, [

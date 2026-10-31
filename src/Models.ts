@@ -58,6 +58,19 @@ export interface IMessage {
   videoNote?: boolean
   audio?: string
   /**
+   * The voice or round note has not been played by its recipient yet. Draws
+   * Telegram's unread dot: on an incoming note until you play it, on an
+   * outgoing one until the recipient does.
+   */
+  isMediaUnread?: boolean
+  /**
+   * A view-once voice or round note (Telegram's TTL "view once"): it plays a
+   * single time, then `mediaPlayback.onViewOnceEnd` lets the app remove it.
+   */
+  isViewOnce?: boolean
+  /** Text of a transcribed voice or round note, shown under it. */
+  transcription?: string
+  /**
    * Length of `audio` / `video` in seconds. Set by the built-in recorders and
    * used to label a voice note before its file has been decoded, so a bubble can
    * render its duration without downloading the whole clip first.
@@ -110,6 +123,11 @@ export interface MessageLocationProps<TMessage extends IMessage> {
  * `expo-audio` peer dependency; when it is absent the mic button is hidden.
  */
 export interface AudioRecordingProps {
+  /**
+   * Show Telegram's "view once" toggle above the lock while a take is locked.
+   * A take sent with it on arrives in `onSend` with `isViewOnce: true`.
+   */
+  isViewOnceEnabled?: boolean
   isEnabled?: boolean
   /** Minimum recording length (ms) below which the take is discarded. Default 800. */
   minDurationMs?: number
@@ -135,6 +153,8 @@ export interface AudioRecordingProps {
  * `expo-image-picker` peer dependency; when it is absent the button is hidden.
  */
 export interface VideoRecordingProps {
+  /** As `audioRecording.isViewOnceEnabled`, for round video takes. */
+  isViewOnceEnabled?: boolean
   isEnabled?: boolean
   /** Max video length in seconds. Default 60. */
   maxDuration?: number
@@ -145,5 +165,63 @@ export interface VideoRecordingProps {
    * point the user at Settings instead of leaving a dead button.
    */
   onPermissionDenied?: () => void
+  /** Called when a take is dropped for being shorter than `minDurationMs`. */
+  onTooShort?: () => void
   onError?: (error: unknown) => void
+}
+
+/**
+ * How voice notes and round video notes play back in the chat, following
+ * Telegram: one speed shared by every note, and a run of notes playing one
+ * after another.
+ */
+export interface MediaPlaybackProps {
+  /**
+   * When a voice or round video note plays to its end, start the next newer
+   * one in the chat. Default true.
+   */
+  isAutoPlayNextEnabled?: boolean
+  /**
+   * Playback speed to start with (1, 1.5 or 2). The speed is shared by every
+   * note; pair this with `onPlaybackRateChange` to keep it across launches.
+   */
+  playbackRate?: number
+  /** Called when the user changes the playback speed on any note. */
+  onPlaybackRateChange?: (rate: number) => void
+  /**
+   * Round video notes loop silently in the list until tapped, Telegram's
+   * "Autoplay videos". Default false: a note holds its first frame with a play
+   * button, and grows when tapped.
+   */
+  isRoundVideoAutoplayEnabled?: boolean
+  /**
+   * Telegram's "now playing" bar at the top of the chat while a voice or round
+   * note plays or is paused: play/pause, sender, speed and close. Default true.
+   */
+  isNowPlayingBarEnabled?: boolean
+  /**
+   * Telegram's floating round note (`PipRoundVideoView`): a round note still
+   * playing or paused when its row scrolls out of view keeps going in a small
+   * draggable circle over the list. Default true; when false, the note stops
+   * with its row instead, as a voice note does.
+   */
+  isFloatingRoundNoteEnabled?: boolean
+  /**
+   * Called when an incoming voice or round note marked `isMediaUnread` starts
+   * playing, so the app can mark it listened (Telegram's `media_unread`).
+   */
+  onMediaRead?: (message: IMessage) => void
+  /**
+   * The phone is held to the ear, from the app's proximity sensor. Telegram's
+   * raise to listen: playback moves to the earpiece, a note under a second in
+   * restarts, and lowering the phone pauses it.
+   */
+  isNearEar?: boolean
+  /**
+   * Shows a transcribe button on voice and round notes. Called on tap; the app
+   * transcribes and sets `IMessage.transcription`, which is then shown.
+   */
+  onTranscribe?: (message: IMessage) => void
+  /** A view-once note finished playing; the app should remove it. */
+  onViewOnceEnd?: (message: IMessage) => void
 }

@@ -48,28 +48,48 @@ export const createBubbleStyles = (theme: ChatTheme) => {
     },
 
     // With the bubble background gone, the meta row would render white-on-light.
-    // Telegram floats it in a translucent dark pill over the circle's lower edge.
-    // Positioning shell only. Anchored to the note's bounding-box corner, which
-    // on a circle sits just outside the shape - where Telegram puts the
-    // timestamp, clear of the duration pill centred on the circle itself.
+    // Telegram floats it in a translucent pill (`drawTime` with
+    // `paint_chatActionBackground` for a round note): 17dp tall, 4dp corners,
+    // 4dp either side of the text and the ticks, in the service text color.
+    // Anchored to the note's bounding-box corner, which on a circle sits just
+    // outside the shape, clear of the duration pill on the other side.
     noteMetaPill: {
       position: 'absolute',
       bottom: 2,
       right: 0,
+      height: 17,
       justifyContent: 'flex-end',
       // Overrides `bottom`'s padding, which would otherwise offset the pill.
-      paddingHorizontal: 0,
+      paddingHorizontal: 4,
       paddingTop: 0,
       paddingBottom: 0,
     },
-    // The meta row grows to fill a bubble; on a note it just hugs. It sits on
-    // the chat background beside the duration now, not over the video, so it
-    // needs no pill behind it.
+    // The service color at 0.6 of its own alpha, as `drawTime` scales it.
+    noteMetaBackground: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      borderRadius: 4,
+      backgroundColor: colors.dayPillBackground,
+      opacity: 0.6,
+    },
+    // The meta row grows to fill a bubble; on a note it just hugs.
     noteMetaInner: {
       flexGrow: 0,
     },
     noteMetaText: {
-      color: colors.incomingMeta,
+      color: colors.dayPillText,
+    },
+
+    // A voice note's time shares the duration's line at the bubble's
+    // bottom-right instead of taking a row of its own (`ChatMessageCell`
+    // draws it at `layoutHeight - 6.5dp`), so it is laid over the player.
+    voiceMeta: {
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
     },
 
     bottom: {

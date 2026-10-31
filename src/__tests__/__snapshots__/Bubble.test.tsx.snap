@@ -101,6 +101,7 @@ exports[`should render <Bubble /> and compare with snapshot 1`] = `
               "paddingHorizontal": 12,
             },
             false,
+            false,
             undefined,
           ]
         }

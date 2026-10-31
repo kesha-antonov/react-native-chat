@@ -19,6 +19,15 @@ import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
+import { ChatOverlayProvider, ChatOverlaySlot } from '../components/ChatOverlay'
+import { FloatingRoundNote } from '../components/FloatingRoundNote'
+import {
+  MediaPlaybackContext,
+  createMediaPlaybackController,
+  setPlaybackRate,
+  subscribePlaybackRate,
+} from '../components/mediaPlayback'
+import { NowPlayingBar } from '../components/NowPlayingBar'
 import { TEST_ID } from '../Constant'
 import { normalizeColorScheme } from '../hooks/useColorScheme'
 import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
@@ -74,7 +83,40 @@ function Chat<TMessage extends IMessage = IMessage> (
 
     // Reply props
     reply,
+    mediaPlayback,
   } = props
+
+  // One playlist per chat: players register by message id and the controller
+  // finds the next note from these messages. Fed on every render as a plain
+  // write, so the list rows never re-render for it.
+  const [mediaController] = useState(createMediaPlaybackController)
+  mediaController.setMessages(messages, isInverted)
+  mediaController.setOptions({
+    isAutoPlayNextEnabled: mediaPlayback?.isAutoPlayNextEnabled ?? true,
+    isRoundVideoAutoplayEnabled: mediaPlayback?.isRoundVideoAutoplayEnabled ?? false,
+    onMediaRead: mediaPlayback?.onMediaRead,
+    isNearEar: mediaPlayback?.isNearEar,
+    onTranscribe: mediaPlayback?.onTranscribe,
+    onViewOnceEnd: mediaPlayback?.onViewOnceEnd,
+    isFloatingRoundNoteEnabled: mediaPlayback?.isFloatingRoundNoteEnabled ?? true,
+  })
+
+  // A round note kept playing past its row is stopped with the chat, and rows
+  // unmounting along with it stop theirs rather than floating them.
+  useEffect(() => {
+    mediaController.notePlayers.setActive(true)
+    return () => mediaController.notePlayers.setActive(false)
+  }, [mediaController])
+
+  const initialPlaybackRate = mediaPlayback?.playbackRate
+  useEffect(() => {
+    if (initialPlaybackRate != null)
+      setPlaybackRate(initialPlaybackRate)
+  }, [initialPlaybackRate])
+
+  const onPlaybackRateChangeRef = useRef(mediaPlayback?.onPlaybackRateChange)
+  onPlaybackRateChangeRef.current = mediaPlayback?.onPlaybackRateChange
+  useEffect(() => subscribePlaybackRate(rate => onPlaybackRateChangeRef.current?.(rate)), [])
 
   // Extract reply props for internal use
   const replyMessageProp = reply?.message
@@ -194,6 +236,31 @@ function Chat<TMessage extends IMessage = IMessage> (
       : undefined,
   }), [reply, handleSwipeToReply])
 
+  const getSenderName = useCallback((messageId: string | number) =>
+    messages.find(message => message._id === messageId)?.user?.name
+  , [messages])
+
+  // Telegram scrolls to the playing message from its bar.
+  const scrollToMessage = useCallback((messageId: string | number) => {
+    const index = messages.findIndex(message => message._id === messageId)
+    if (index < 0)
+      return
+
+    try {
+      messagesContainerRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 })
+    } catch {
+      // Not laid out yet (virtualized away); nothing to jump to.
+    }
+  }, [messages, messagesContainerRef])
+
+  useEffect(() => {
+    mediaController.setScroller(scrollToMessage)
+    return () => mediaController.setScroller(null)
+  }, [mediaController, scrollToMessage])
+
+  const isNowPlayingBarEnabled = mediaPlayback?.isNowPlayingBarEnabled ?? true
+  const isFloatingRoundNoteEnabled = mediaPlayback?.isFloatingRoundNoteEnabled ?? true
+
   const renderMessages = useMemo(() => {
     if (!isInitialized)
       return null
@@ -202,15 +269,24 @@ function Chat<TMessage extends IMessage = IMessage> (
 
     return (
       <View style={[stylesCommon.fill, messagesContainerStyle]}>
-        <MessagesContainer<TMessage>
-          {...messagesContainerProps}
-          isInverted={isInverted}
-          messages={messages}
-          forwardRef={messagesContainerRef}
-          isTyping={isTyping}
-          reply={replyForList}
-        />
+        {isNowPlayingBarEnabled && (
+          <NowPlayingBar getSenderName={getSenderName} onPressTitle={scrollToMessage} />
+        )}
+        {/* The list's own area, so the floating round note docks to it and
+            not over the "now playing" bar above. */}
+        <View style={stylesCommon.fill}>
+          <MessagesContainer<TMessage>
+            {...messagesContainerProps}
+            isInverted={isInverted}
+            messages={messages}
+            forwardRef={messagesContainerRef}
+            isTyping={isTyping}
+            reply={replyForList}
+          />
+          {isFloatingRoundNoteEnabled && <FloatingRoundNote />}
+        </View>
         {renderComponentOrElement(renderChatFooter, {})}
+        <ChatOverlaySlot />
       </View>
     )
   }, [
@@ -222,6 +298,10 @@ function Chat<TMessage extends IMessage = IMessage> (
     messagesContainerRef,
     renderChatFooter,
     replyForList,
+    isNowPlayingBarEnabled,
+    isFloatingRoundNoteEnabled,
+    getSenderName,
+    scrollToMessage,
   ])
 
   const notifyInputTextReset = useCallback(() => {
@@ -411,8 +491,12 @@ function Chat<TMessage extends IMessage = IMessage> (
             collapsable={false}
             style={[stylesCommon.fill, !isReady && styles.hidden]}
           >
-            {renderMessages}
-            {inputToolbarFragment}
+            <MediaPlaybackContext.Provider value={mediaController}>
+              <ChatOverlayProvider>
+                {renderMessages}
+                {inputToolbarFragment}
+              </ChatOverlayProvider>
+            </MediaPlaybackContext.Provider>
           </View>
           {!isReady && renderComponentOrElement(renderLoading, {})}
         </ChatKeyboardAvoidingView>

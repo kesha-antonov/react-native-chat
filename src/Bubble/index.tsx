@@ -224,6 +224,13 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   // so it moves into a translucent pill over the circle instead.
   const isVideoNote = !!currentMessage?.videoNote && !!currentMessage?.video && !currentMessage?.text
 
+  // A bare voice note keeps its time on the duration's line, at the bubble's
+  // bottom-right, as Telegram draws it, rather than on a row of its own under
+  // the player. Only the built-in player leaves room for it there.
+  const isVoiceNote = !!currentMessage?.audio && !currentMessage?.text && !isVideoNote &&
+    !currentMessage?.image && !currentMessage?.video && !currentMessage?.location &&
+    !props.renderMessageAudio
+
   // Consumers can hand the touches back to natively interactive content
   // (video controls, maps, WebViews) on a per-message basis.
   const isGestureEnabled = useMemo(() => {
@@ -630,9 +637,12 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         style={[
           styles.bottom,
           isVideoNote && styles.noteMetaPill,
+          isVoiceNote && styles.voiceMeta,
           bottomContainerStyle?.[position],
         ]}
       >
+        {/* Faded on its own layer so the time keeps full strength. */}
+        {isVideoNote && <View style={styles.noteMetaBackground} />}
         <View style={[styles.messageTimeAndStatusContainer, isVideoNote && styles.noteMetaInner]}>
           {renderTime()}
           {renderTicks()}
@@ -648,6 +658,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     renderTicks,
     styles,
     isVideoNote,
+    isVoiceNote,
   ])
 
   const wrapperStyleList = useMemo(() => [

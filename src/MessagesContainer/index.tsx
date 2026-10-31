@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   LayoutChangeEvent,
   ListRenderItemInfo,
+  ViewabilityConfigCallbackPair,
+  ViewToken,
   CellRendererProps,
   StyleProp,
   ViewStyle,
@@ -10,6 +12,7 @@ import {
 import { Pressable } from 'react-native-gesture-handler'
 import Animated, { runOnJS, ScrollEvent, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { Icon } from '../components/Icon'
+import { MediaPlaybackContext } from '../components/mediaPlayback'
 import { useIsKeyboardVisible } from '../hooks/useIsKeyboardVisible'
 import { useThemedStyles } from '../hooks/useTheme'
 import { LoadEarlierMessages } from '../LoadEarlierMessages'
@@ -26,6 +29,11 @@ import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions, AnimatedFlatList } from './types'
 
 export * from './types'
+
+// Any pixel of a row on screen counts: Telegram floats the playing round note
+// only once its cell has left the list entirely (`ChatActivity`, the
+// `foundTextureViewMessage` scan before `setCurrentVideoVisible(false)`).
+const ROW_ON_SCREEN_CONFIG = { itemVisiblePercentThreshold: 0 }
 
 // Stable reference for the missing prev/next message at the list edges.
 const EMPTY_MESSAGE = Object.freeze({}) as IMessage
@@ -104,6 +112,39 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [isAlignedTop, isFlashList, isTopAligned, isInverted])
 
   const listPropsOnScrollProp = listProps?.onScroll
+
+  // Which rows are on screen, for the floating round note. Both list engines
+  // read viewability callbacks once, at mount, and FlatList refuses
+  // `onViewableItemsChanged` alongside `viewabilityConfigCallbackPairs`, so a
+  // consumer's own handler is folded into the pairs here, read through a ref.
+  const mediaController = useContext(MediaPlaybackContext)
+  const mediaControllerRef = useRef(mediaController)
+  mediaControllerRef.current = mediaController
+  const consumerViewableRef = useRef(listProps?.onViewableItemsChanged)
+  consumerViewableRef.current = listProps?.onViewableItemsChanged
+  const [viewabilityPairs] = useState(() => {
+    const pairs: ViewabilityConfigCallbackPair[] = [{
+      viewabilityConfig: ROW_ON_SCREEN_CONFIG,
+      onViewableItemsChanged: ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+        const ids: (string | number)[] = []
+        for (const token of viewableItems) {
+          const id = (token.item as IMessage | undefined)?._id
+          if (id != null)
+            ids.push(id)
+        }
+        mediaControllerRef.current?.setViewableMessages(ids)
+      },
+    }]
+    if (listProps?.viewabilityConfigCallbackPairs)
+      pairs.push(...listProps.viewabilityConfigCallbackPairs)
+    else if (listProps?.onViewableItemsChanged)
+      pairs.push({
+        // FlatList's own default when a handler comes without a config.
+        viewabilityConfig: listProps.viewabilityConfig ?? { viewAreaCoveragePercentThreshold: 0 },
+        onViewableItemsChanged: info => consumerViewableRef.current?.(info),
+      })
+    return pairs
+  })
 
   const scrollToBottomOpacity = useSharedValue(0)
   const isScrollingDown = useSharedValue(false)
@@ -601,6 +642,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
             }}
             {...listProps}
             onScroll={scrollHandler}
+            onViewableItemsChanged={undefined}
+            viewabilityConfig={undefined}
+            viewabilityConfigCallbackPairs={viewabilityPairs}
             onLayout={onLayoutList}
             CellRendererComponent={FlashListCell}
           />
@@ -618,6 +662,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
             updateCellsBatchingPeriod={50}
             {...listProps}
             onScroll={scrollHandler}
+            onViewableItemsChanged={undefined}
+            viewabilityConfig={undefined}
+            viewabilityConfigCallbackPairs={viewabilityPairs}
             onLayout={onLayoutList}
             CellRendererComponent={renderCell}
           />

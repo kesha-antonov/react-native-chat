@@ -21,6 +21,7 @@ import { AnimatedList, MessagesContainerProps } from '../MessagesContainer'
 import { MessageTextProps } from '../MessageText'
 import {
   AudioRecordingProps,
+  MediaPlaybackProps,
   IMessage,
   LeftRightStyle,
   MessageAudioProps,
@@ -233,6 +234,8 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   isMultiline?: boolean
   /** Telegram-style hold-to-record voice messages (needs optional expo-audio) */
   audioRecording?: AudioRecordingProps
-  /** Record-and-send video messages from the camera (needs optional expo-image-picker) */
+  /** Round video messages from the camera (needs optional react-native-vision-camera or expo-image-picker) */
   videoRecording?: VideoRecordingProps
+  /** Playback speed and auto-play-next for voice and round video notes */
+  mediaPlayback?: MediaPlaybackProps
 }
