@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Easing, SharedValue, useSharedValue, withTiming } from 'react-native-reanimated'
+import { Easing, ReduceMotion, SharedValue, useSharedValue, withTiming } from 'react-native-reanimated'
 
 /*
  * Numbers and state for the chrome Telegram draws on a playing round note
@@ -190,11 +190,15 @@ export const useRoundNoteChrome = ({
     grow.value = withTiming(isGrown ? 1 : 0, { duration: NOTE_GROW_MS, easing: noteGrowEasing })
   }, [isGrown, grow])
 
+  // The ring slides from the edge in to the paused track and back out on
+  // play. It always animates: with the system's Reduce Motion on, Reanimated
+  // would jump it, and the ring would seem to teleport between two sizes.
   useEffect(() => {
     isPaused.value = isPausedNow ? 1 : 0
     pause.value = withTiming(isPausedNow ? 1 : 0, {
       duration: isPausedNow ? PAUSE_IN_MS : PAUSE_OUT_MS,
       easing: Easing.linear,
+      reduceMotion: ReduceMotion.Never,
     })
   }, [isPausedNow, isPaused, pause])
 

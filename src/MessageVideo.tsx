@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Keyboard, Platform, Pressable, StyleProp, StyleSheet, View, ViewStyle, useWindowDimensions } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, { SharedValue, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { ReduceMotion, SharedValue, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useRaiseToListen } from './components/earpiece'
 import { MediaCard } from './components/MediaCard'
 import {
@@ -565,7 +565,7 @@ const RoundNotePlayer = ({
         const knob = knobPoint(size, ringRadius(size, chrome.grow.value, pause), chrome.progress.value)
         if (isSeekTouch(size, knob, touch.x, touch.y)) {
           // `roundToPauseProgress2`: the knob swells under the finger.
-          chrome.drag.value = withTiming(1, { duration: FADE_MS })
+          chrome.drag.value = withTiming(1, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
           manager.activate()
         } else {
           manager.fail()
@@ -578,7 +578,7 @@ const RoundNotePlayer = ({
         runOnJS(seekTo)(track(event.x, event.y), true)
       })
       .onFinalize(() => {
-        chrome.drag.value = withTiming(0, { duration: FADE_MS })
+        chrome.drag.value = withTiming(0, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
       })
   }, [canSeek, seekTo, sizeSV, chrome])
 
