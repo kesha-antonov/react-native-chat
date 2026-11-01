@@ -127,6 +127,7 @@ That is the whole setup - everything below is optional.
 
 ## ✨ Features
 
+- 💬 **[Chat list](#chat-list)** - the list of chats with search, selection actions, archive, swipe to archive and draggable pinned chats; plug in your backend
 - 🌗 **[Dark mode & theming](#theming--dark-mode)** - full light/dark token system, switchable at runtime
 - 🤖 **[Streaming AI messages](#streaming-ai-messages)** - token-by-token replies with a typing caret and stop control
 - 😀 **[Emoji reactions](#emoji-reactions)** - long-press picker and reaction pills
@@ -371,6 +372,7 @@ Overridable names: `send`, `mic`, `camera`, `play`, `pause`, `check`, `checkAll`
 - [Data Structure](#-data-structure)
 - [Props Reference](#-props-reference)
 - [Guides](#-guides)
+  - [Chat List](#chat-list)
   - [Reply to Messages](#reply-to-messages)
   - [Maintaining Scroll Position (AI Chatbots)](#maintaining-scroll-position-ai-chatbots)
   - [Streaming (AI) Messages](#streaming-ai-messages)
@@ -894,6 +896,73 @@ The button comes up after you scroll back towards the newest message by `scrollT
 ---
 
 ## 🧩 Guides
+
+### Chat List
+
+Most apps are a list of chats plus the chats themselves. `ChatList` is the list: map your backend's conversations to `ChatListItem` and wire the callbacks, and you get a messenger's main screen:
+
+- a header with search, and a selection bar (pin, mute, archive, delete) after a long-press
+- an "Archived Chats" folder, and swipe to archive
+- pinned chats first, which you drag into a new order (with reorder handles while selecting)
+- unread counters, typing and drafts, a loading placeholder and a new-chat button
+
+```tsx
+import { Chat, ChatList, ChatListItem } from '@kesha-antonov/react-native-chat'
+
+const chats: ChatListItem[] = conversations.map(c => ({
+  id: c.id,
+  title: c.name,
+  avatar: c.photoUrl,
+  kind: c.isGroup ? 'group' : 'private',
+  lastMessage: c.lastMessage,        // an IMessage: preview, time and your sent/read checks
+  unreadCount: c.unread,
+  isPinned: c.pinned,                // pinned chats show first, in the order you pass them
+  isMuted: c.muted,
+  isArchived: c.archived,
+  typingUsers: c.typing,             // User[]
+  draft: drafts[c.id],
+}))
+
+<ChatList
+  chats={chats}
+  user={me}
+  isLoading={!loaded}
+  onPressChat={chat => navigation.navigate('Chat', { id: chat.id })}
+  onPressNewChat={() => navigation.navigate('NewChat')}
+  onPinChats={(selected, isPinned) => api.pin(selected.map(c => c.id), isPinned)}
+  onMuteChats={(selected, isMuted) => api.mute(selected.map(c => c.id), isMuted)}
+  onArchiveChats={(selected, isArchived) => api.archive(selected.map(c => c.id), isArchived)}
+  onDeleteChats={selected => api.delete(selected.map(c => c.id))}
+  onReorderPinnedChats={ids => api.setPinnedOrder(ids)}
+/>
+```
+
+Each action appears only when its callback is passed. The list is controlled: update `chats` from your backend and it follows. For a prototype, `useChatList` keeps the chats in local state and returns the handlers:
+
+```tsx
+const list = useChatList(initialChats)
+<ChatList chats={list.chats} user={me} {...list.handlers} onPressChat={openChat} />
+// later: list.receiveMessage(chatId, message), list.markRead(chatId), list.upsertChat(chat)
+```
+
+| Prop | What it does |
+| --- | --- |
+| `chats` | Every chat, archived ones included |
+| `user` | You: "You:" in groups and the checks on your own last messages |
+| `onPressChat` / `onLongPressChat` | A tap; a long-press (default: select) |
+| `onPinChats` / `onMuteChats` / `onArchiveChats` / `onDeleteChats` | Selection actions; archive also by swiping a row |
+| `onReorderPinnedChats` | Turns on dragging pinned chats; receives the new order of ids |
+| `onPressNewChat` | Shows the new-chat button |
+| `isLoading` | The loading placeholder |
+| `isSortEnabled` | Pinned first, then by newest message (default `true`) |
+| `isDeleteConfirmed` / `isSwipeEnabled` | Ask before deleting; swipe to archive (both default `true`) |
+| `isHeaderVisible` / `title` / `renderHeaderRight` / `isTopInsetApplied` | The built-in header (hide it to use your navigator's) |
+| `isSearchEnabled` / `filterChat` / `onSearchChange` | Search; a custom match; a server-side search |
+| `isArchiveOpen` / `onArchiveOpenChange` | Control which list shows |
+| `renderChat` / `renderEmpty` / `listProps` / `style` | A custom row (`ChatListCell` is the built-in one), the empty text, FlatList props (`onEndReached`, `refreshControl`...) |
+| `theme` / `darkTheme` / `colorScheme` / `locale` / `labels` / `icons` | As on `Chat`; the list's colors are `theme.chatList` |
+
+`ChatListCell`, `ChatListAvatar`, `ChatListShimmer`, `sortChats`, `getChatPreview` and `formatChatListDate` are exported for building your own row or screen.
 
 ### Reply to Messages
 

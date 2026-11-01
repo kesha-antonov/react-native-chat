@@ -76,6 +76,24 @@ export type {
   StreamHandle
 } from './hooks/useStreamingMessages'
 export { useChatMessages } from './hooks/useChatMessages'
+export {
+  ChatList,
+  ChatListAvatar,
+  ChatListCell,
+  ChatListShimmer,
+  CHAT_LIST_ROW_HEIGHT,
+  formatChatListDate,
+  getChatPreview,
+  matchesChatQuery,
+  sortChats,
+  useChatList
+} from './ChatList'
+export type {
+  ChatListCellProps,
+  ChatListItem,
+  ChatListItemKind,
+  ChatListProps
+} from './ChatList'
 export type { UseChatMessagesOptions, UseChatMessagesResult } from './hooks/useChatMessages'
 export { toggleReaction } from './messageUtils'
 export type { ToggleReactionOptions } from './messageUtils'

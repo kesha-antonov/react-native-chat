@@ -34,7 +34,7 @@ const ICONS: Record<MessageActionKey | 'unpin', IconRenderer> = {
   reply: iconRenderer('reply', ReplyArrowIcon),
   copy: iconRenderer('copy'),
   forward: iconRenderer('forward'),
-  pin: iconRenderer('pin'),
+  pin: iconRenderer('pushpin'),
   unpin: iconRenderer('pinOff'),
   edit: iconRenderer('pencil', PencilIcon),
   select: iconRenderer('checkCircle'),

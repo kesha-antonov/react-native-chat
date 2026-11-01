@@ -19,7 +19,7 @@ const Polygon: any = svg?.Polygon
 export const isSvgAvailable = !!(Svg && Path)
 
 // Icons drawn as solid shapes (play/pause read better filled on a button).
-const FILLED = new Set<IconName>(['play', 'pause'])
+const FILLED = new Set<IconName>(['play', 'pause', 'verified'])
 
 // Lucide glyph geometry (24x24 viewBox), one entry per IconName. Copied verbatim
 // from lucide.dev so the icons match the design system exactly.
@@ -191,6 +191,62 @@ const glyphs: Record<IconName, () => React.ReactNode> = {
     <Path key='a' d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' />,
     <Polyline key='b' points='7 10 12 15 17 10' />,
     <Line key='c' x1={12} x2={12} y1={15} y2={3} />,
+  ],
+  // lucide `pin`: pinning, as opposed to `pin`, the map marker.
+  pushpin: () => [
+    <Path key='a' d='M12 17v5' />,
+    <Path key='b' d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z' />,
+  ],
+  // lucide `archive-arrow-down`
+  archive: () => [
+    <Rect key='a' width={20} height={5} x={2} y={3} rx={1} />,
+    <Path key='b' d='M4 8v11a2 2 0 0 0 2 2h.343' />,
+    <Path key='c' d='M20 8v11a2 2 0 0 1-2 2h-.343' />,
+    <Path key='d' d='m9 18 3 3 3-3' />,
+    <Path key='e' d='M12 12v9' />,
+  ],
+  // lucide `archive-arrow-up`
+  unarchive: () => [
+    <Rect key='a' width={20} height={5} x={2} y={3} rx={1} />,
+    <Path key='b' d='M4 8v11a2 2 0 0 0 2 2h2' />,
+    <Path key='c' d='M20 8v11a2 2 0 0 1-2 2h-2' />,
+    <Path key='d' d='m9 15 3-3 3 3' />,
+    <Path key='e' d='M12 12v9' />,
+  ],
+  // lucide `archive`
+  archiveFolder: () => [
+    <Rect key='a' width={20} height={5} x={2} y={3} rx={1} />,
+    <Path key='b' d='M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8' />,
+    <Path key='c' d='M10 12h4' />,
+  ],
+  // lucide `volume-off`
+  mute: () => [
+    <Path key='a' d='M16 9a5 5 0 0 1 .95 2.293' />,
+    <Path key='b' d='M19.364 5.636a9 9 0 0 1 1.889 9.96' />,
+    <Path key='c' d='m2 2 20 20' />,
+    <Path key='d' d='m7 7-.587.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298V11' />,
+    <Path key='e' d='M9.828 4.172A.686.686 0 0 1 11 4.657v.686' />,
+  ],
+  // lucide `volume-2`
+  unmute: () => [
+    <Path key='a' d='M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z' />,
+    <Path key='b' d='M16 9a5 5 0 0 1 0 6' />,
+    <Path key='c' d='M19.364 18.364a9 9 0 0 0 0-12.728' />,
+  ],
+  // lucide `badge-check`, filled with a white check (the verified mark).
+  verified: () => [
+    <Path key='a' d='M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z' stroke='none' />,
+    <Path key='b' d='m16 9-5.5 5.5L8 12' fill='none' stroke='#FFFFFF' />,
+  ],
+  // lucide `menu`, the reorder handle.
+  reorder: () => [
+    <Path key='a' d='M4 5h16' />,
+    <Path key='b' d='M4 12h16' />,
+    <Path key='c' d='M4 19h16' />,
+  ],
+  arrowLeft: () => [
+    <Path key='a' d='m12 19-7-7 7-7' />,
+    <Path key='b' d='M19 12H5' />,
   ],
 }
 

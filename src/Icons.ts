@@ -46,6 +46,15 @@ export type IconName =
   | 'location'
   | 'download'
   | 'checkCircle'
+  | 'pushpin'
+  | 'archive'
+  | 'unarchive'
+  | 'archiveFolder'
+  | 'mute'
+  | 'unmute'
+  | 'verified'
+  | 'reorder'
+  | 'arrowLeft'
 
 /**
  * Icon override registry. Supply a render function for any icon to replace the

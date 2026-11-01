@@ -26,6 +26,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - **`textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`**
 
 ### ✨ Features
+- **`ChatList`**: a ready chat list (search, selection actions, archive folder, swipe to archive, draggable pinned chats, unread counters, typing, drafts, loading placeholder) for your backend's chats (`ChatListItem`), plus `useChatList` for local state, `ChatListCell`, `ChatListAvatar`, `ChatListShimmer`, `theme.chatList` and new labels
 - **Built-in emoji keyboard** in the system keyboard's place, with search, recents and skin tones (`emojiKeyboard`, `theme.emojiKeyboard`, `EmojiGrid`)
 - **Built-in attachment menu**: photo grid, File, Location and camera, sending through `onSend` (`attachments`, `theme.attachments`, `AttachmentMenu`)
 - **File messages** (`IMessage.file`, `renderMessageFile`, `MessageFile`)
@@ -48,6 +49,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- The message menu's Pin action shows a pushpin instead of a map marker (new `pushpin` icon)
 - Scroll-to-bottom button press feedback and animated unread counter
 - Media progress ring, arrow and ✕ draw without `react-native-svg`
 - The attachment menu's File tab opens the document picker on iOS
@@ -81,7 +83,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10; TypeScript stays on 6.0 and Babel on 7 (see AGENTS.md)
 
 ### 📲 Example app
-- Chats tab: drag pinned chats into a new order (long-press, then drag)
+- The Chats tab is built on `ChatList`, with its store as the backend
 - New Chats tab: a small messenger built on the defaults
 - New Loading States screen
 - Examples slimmed to defaults plus what each demonstrates; dark mode follows the theme everywhere

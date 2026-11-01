@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { Chat, IMessage, User } from '@kesha-antonov/react-native-chat'
+import { Chat, ChatListItem, IMessage, User } from '@kesha-antonov/react-native-chat'
 
 import { CANNED_REPLIES, Dialog, DIALOGS, INITIAL_MESSAGES, ME } from './data'
 
@@ -46,27 +46,40 @@ function patchDialog (id: string, patch: Partial<Dialog>) {
   setState(s => ({ ...s, dialogs: { ...s.dialogs, [id]: { ...s.dialogs[id], ...patch } } }))
 }
 
-const timeOf = (message?: IMessage) => (message ? new Date(message.createdAt).getTime() : 0)
+/** What the library's `ChatList` draws for a dialog, with the dialog itself alongside. */
+export type DialogItem = ChatListItem & { dialog: Dialog }
 
-/** Pinned chats first in pin order, then everything else by its newest message. */
-function sortDialogs (s: State, isArchived: boolean): Dialog[] {
-  const visible = Object.values(s.dialogs).filter(dialog => !!dialog.isArchived === isArchived)
-  const pinned = s.pinOrder.map(id => s.dialogs[id]).filter(dialog => dialog && visible.includes(dialog))
-  const rest = visible
-    .filter(dialog => !pinned.includes(dialog))
-    .sort((a, b) => timeOf(s.messages[b.id]?.[0]) - timeOf(s.messages[a.id]?.[0]))
-  return [...pinned, ...rest]
+/** The dialogs as list items, pinned ones first in pin order (the list sorts the rest itself). */
+function toItems (s: State): DialogItem[] {
+  const pinned = s.pinOrder.map(id => s.dialogs[id]).filter(Boolean)
+  const rest = Object.values(s.dialogs).filter(dialog => !pinned.includes(dialog))
+  return [...pinned, ...rest].map(dialog => ({
+    id: dialog.id,
+    title: dialog.title,
+    kind: dialog.kind === 'user' ? 'private' : dialog.kind,
+    avatar: dialog.avatar,
+    lastMessage: s.messages[dialog.id]?.[0],
+    unreadCount: dialog.unreadCount,
+    isPinned: dialog.isPinned,
+    isMuted: dialog.isMuted,
+    isArchived: dialog.isArchived,
+    isVerified: dialog.isVerified,
+    isOnline: dialog.isOnline,
+    draft: dialog.draft,
+    typingUsers: s.typing[dialog.id] ? [s.typing[dialog.id]!] : undefined,
+    dialog,
+  }))
 }
 
-// `useSyncExternalStore` needs a stable snapshot, so sorted lists are cached per state.
-let sortedCache: { state?: State, main: Dialog[], archived: Dialog[] } = { main: [], archived: [] }
-function getSorted (s: State) {
-  if (sortedCache.state !== s)
-    sortedCache = { state: s, main: sortDialogs(s, false), archived: sortDialogs(s, true) }
-  return sortedCache
+// `useSyncExternalStore` needs a stable snapshot, so the items are cached per state.
+let itemsCache: { state?: State, items: DialogItem[] } = { items: [] }
+function getItems (s: State) {
+  if (itemsCache.state !== s)
+    itemsCache = { state: s, items: toItems(s) }
+  return itemsCache.items
 }
 
-export const useDialogs = (isArchived = false) => useStore(s => (isArchived ? getSorted(s).archived : getSorted(s).main))
+export const useChatListItems = () => useStore(getItems)
 export const useDialog = (id: string): Dialog | undefined => useStore(s => s.dialogs[id])
 export const useMessages = (id: string): IMessage[] => useStore(s => s.messages[id] ?? EMPTY)
 export const useLastMessage = (id: string): IMessage | undefined => useStore(s => s.messages[id]?.[0])
@@ -213,14 +226,9 @@ export const chatStore = {
     patchDialog(id, { isPinned })
   },
 
-  /** Moves a pinned chat to `toIndex` among the pinned ones (dragged in the list). */
-  movePinned (id: string, toIndex: number) {
-    setState(s => {
-      const order = s.pinOrder.filter(other => other !== id && !s.dialogs[other]?.isArchived)
-      order.splice(Math.max(0, Math.min(toIndex, order.length)), 0, id)
-      const archived = s.pinOrder.filter(other => other !== id && s.dialogs[other]?.isArchived)
-      return { ...s, pinOrder: [...order, ...archived] }
-    })
+  /** The pinned chats in a new order (dragged in the list). */
+  setPinOrder (ids: string[]) {
+    setState(s => ({ ...s, pinOrder: [...ids, ...s.pinOrder.filter(id => !ids.includes(id))] }))
   },
 
   toggleMute (id: string) {

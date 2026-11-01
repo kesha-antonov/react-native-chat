@@ -1,12 +1,11 @@
 import React from 'react'
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import { ChatListAvatar } from '@kesha-antonov/react-native-chat'
 import { Href, useRouter } from 'expo-router'
 import { Touchable } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
 import { CONTACTS } from './data'
-import { DialogAvatar } from './DialogAvatar'
 import { chatStore } from './store'
 import { useChatListColors } from './theme'
 
@@ -39,7 +38,7 @@ export default function NewMessageScreen () {
             accessibilityRole='button'
             accessibilityLabel={item.name}
           >
-            <DialogAvatar id={String(item._id)} title={item.name ?? ''} uri={typeof item.avatar === 'string' ? item.avatar : undefined} size={46} />
+            <ChatListAvatar id={String(item._id)} title={item.name ?? ''} uri={typeof item.avatar === 'string' ? item.avatar : undefined} size={46} />
             <Text style={[styles.name, { color: colors.name }]} numberOfLines={1}>{item.name}</Text>
           </Touchable>
         )}

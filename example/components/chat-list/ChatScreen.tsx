@@ -2,12 +2,11 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { ChatListAvatar } from '@kesha-antonov/react-native-chat'
 import { useFocusEffect, useRouter } from 'expo-router'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
 import { Dialog, ME } from './data'
-import { DialogAvatar } from './DialogAvatar'
 import { formatSubscribers } from './format'
 import { chatStore, useDialog, useMessages, useTyping } from './store'
 import { useChatListColors } from './theme'
@@ -102,7 +101,7 @@ function ChatHeader ({ dialog, typingName }: { dialog: Dialog, typingName?: stri
           <MaterialCommunityIcons name='arrow-left' size={24} color={colors.headerIcon} />
         </Pressable>
         <View style={styles.headerAvatar}>
-          <DialogAvatar id={dialog.id} title={dialog.title} uri={dialog.avatar} size={42} ringColor={colors.headerBackground} />
+          <ChatListAvatar id={dialog.id} title={dialog.title} uri={dialog.avatar} size={42} ringColor={colors.headerBackground} />
         </View>
         <View style={styles.headerText}>
           <View style={styles.headerTitleRow}>

@@ -160,6 +160,46 @@ export interface ChatLabels {
   actionSelect: string
   /** Selection bar: accessibility label of the button that leaves selection. */
   cancelSelection: string
+  /** The chat list's header title */
+  chatListTitle: string
+  /** Search field placeholder and button */
+  chatListSearch: string
+  /** The archive folder row and its header */
+  chatListArchived: string
+  /** Archive action */
+  chatListArchive: string
+  /** Unarchive action */
+  chatListUnarchive: string
+  /** Mute action */
+  chatListMute: string
+  /** Unmute action */
+  chatListUnmute: string
+  /** The new-chat button */
+  chatListNewChat: string
+  /** Back from search or the archive */
+  chatListBack: string
+  /** An empty list */
+  chatListEmpty: string
+  /** A search with no results */
+  chatListNoResults: string
+  /** Someone typing in a private chat */
+  chatListTyping: string
+  /** Someone typing in a group; `{name}` is their first name */
+  chatListTypingName: string
+  /** Before an unsent draft */
+  chatListDraft: string
+  /** Before your own last message in a group */
+  chatListYou: string
+  /** A photo as the last message */
+  chatListPhoto: string
+  /** A file as the last message, when it has no name */
+  chatListFile: string
+  /** Confirm deleting one chat */
+  chatListDeleteTitle: string
+  /** Confirm deleting several; `{count}` is how many */
+  chatListDeleteManyTitle: string
+  /** The confirmation's text */
+  chatListDeleteMessage: string
 }
 
 export const defaultLabels: ChatLabels = {
@@ -237,6 +277,26 @@ export const defaultLabels: ChatLabels = {
   unreadMessages: 'Unread Messages',
   actionSelect: 'Select',
   cancelSelection: 'Cancel selection',
+  chatListTitle: 'Chats',
+  chatListSearch: 'Search',
+  chatListArchived: 'Archived Chats',
+  chatListArchive: 'Archive',
+  chatListUnarchive: 'Unarchive',
+  chatListMute: 'Mute',
+  chatListUnmute: 'Unmute',
+  chatListNewChat: 'New message',
+  chatListBack: 'Back',
+  chatListEmpty: 'No chats here yet',
+  chatListNoResults: 'No chats found',
+  chatListTyping: 'typing…',
+  chatListTypingName: '{name} is typing…',
+  chatListDraft: 'Draft:',
+  chatListYou: 'You',
+  chatListPhoto: 'Photo',
+  chatListFile: 'File',
+  chatListDeleteTitle: 'Delete chat',
+  chatListDeleteManyTitle: 'Delete {count} chats',
+  chatListDeleteMessage: 'Are you sure you want to delete the selected chats?',
 }
 
 /**

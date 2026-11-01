@@ -53,6 +53,7 @@ the root `yarn lint` yourself.
 ```
 src/                     library source - the only thing published (as compiled lib/)
   Chat/                  the top-level <Chat> component
+  ChatList/              <ChatList>, the list of chats, and useChatList
   MessagesContainer/     list engine (FlatList / FlashList), day header, scroll handling
   Bubble/ Message/       a single message row and its bubble
   Day/                   the date separator; the animated floating header lives in

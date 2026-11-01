@@ -336,6 +336,60 @@ export interface ChatThemeContextMenu {
   reactionSelected: string
 }
 
+/** `ChatList`: the list of chats. */
+export interface ChatThemeChatList {
+  background: string
+  headerBackground: string
+  /** Header title and icons. */
+  headerText: string
+  /** Chat names. */
+  name: string
+  /** The last message's text. */
+  message: string
+  /** "You:" / "Anna:" before a group's last message. */
+  senderPrefix: string
+  /** "Photo", "Voice message"... when the last message has no text. */
+  attachment: string
+  /** "typing…". */
+  typing: string
+  /** "Draft:". */
+  draft: string
+  /** The last message's time. */
+  date: string
+  /** Sent / read checks on your last message. */
+  check: string
+  /** Unread counter. */
+  badge: string
+  /** Unread counter of a muted chat. */
+  badgeMuted: string
+  badgeText: string
+  muteIcon: string
+  /** The pin and the reorder handle. */
+  pinIcon: string
+  verified: string
+  /** The online dot on an avatar. */
+  online: string
+  divider: string
+  /** A pressed row. */
+  pressed: string
+  /** A selected row. */
+  selectedRow: string
+  /** The selection check on an avatar. */
+  checkbox: string
+  /** Behind a row swiped to archive, and the circle that grows past the threshold. */
+  swipeArchive: string
+  swipeUnarchive: string
+  /** The "Archived Chats" folder avatar. */
+  archiveAvatar: string
+  /** The new-chat button. */
+  fab: string
+  fabIcon: string
+  /** The loading placeholder: its bars (and their opacity), and the band sweeping over them. */
+  shimmer: string
+  shimmerOpacity: number
+  shimmerHighlight: string
+}
+
 export interface ChatThemeAttachments {
   /** Sheet background (`dialogBackground`). */
   background: string
@@ -384,6 +438,8 @@ export interface ChatTheme {
   contextMenu: ChatThemeContextMenu
   /** The built-in attachment menu. */
   attachments: ChatThemeAttachments
+  /** The chat list (`ChatList`). */
+  chatList: ChatThemeChatList
   /** Sender name colors, picked per user id (`avatar_nameInMessage*`); empty uses `colors.senderName`. */
   nameColors: string[]
 }
@@ -402,6 +458,7 @@ export type PartialChatTheme = {
   emojiKeyboard?: Partial<ChatThemeEmojiKeyboard>
   contextMenu?: Partial<ChatThemeContextMenu>
   attachments?: Partial<ChatThemeAttachments>
+  chatList?: Partial<ChatThemeChatList>
   nameColors?: string[]
 }
 
@@ -595,6 +652,38 @@ export const defaultLightTheme: ChatTheme = {
     scrim: 'rgba(0, 0, 0, 0.2)',
     reactionSelected: 'rgba(0, 0, 0, 0.06)',
   },
+  chatList: {
+    background: '#FFFFFF',
+    headerBackground: '#FFFFFF',
+    headerText: '#1A1D21',
+    name: '#1A1D21',
+    message: '#8E9091',
+    senderPrefix: '#298ACF',
+    attachment: '#298ACF',
+    typing: '#298ACF',
+    draft: '#DD4B39',
+    date: '#848688',
+    check: '#46AA36',
+    badge: '#229AF0',
+    badgeMuted: '#BEC3C7',
+    badgeText: '#FFFFFF',
+    muteIcon: '#BDC1C4',
+    pinIcon: '#919294',
+    verified: '#33A8E6',
+    online: '#4BCB1C',
+    divider: '#D9D9D9',
+    pressed: 'rgba(0, 0, 0, 0.06)',
+    selectedRow: 'rgba(10, 144, 240, 0.08)',
+    checkbox: '#5EC245',
+    swipeArchive: '#229AF0',
+    swipeUnarchive: '#9FAAB3',
+    archiveAvatar: '#B8C2CC',
+    fab: '#229AF0',
+    fabIcon: '#FFFFFF',
+    shimmer: '#000000',
+    shimmerOpacity: 0.06,
+    shimmerHighlight: '#FFFFFF',
+  },
   attachments: {
     background: '#FFFFFF',
     dim: 'rgba(0, 0, 0, 0.2)',
@@ -724,6 +813,38 @@ export const defaultDarkTheme: ChatTheme = {
     scrim: 'rgba(0, 0, 0, 0.2)',
     reactionSelected: 'rgba(255, 255, 255, 0.08)',
   },
+  chatList: {
+    background: '#1D2733',
+    headerBackground: '#242D39',
+    headerText: '#FFFFFF',
+    name: '#E9EEF4',
+    message: '#7D8B99',
+    senderPrefix: '#E9EEF4',
+    attachment: '#7D8E98',
+    typing: '#64AFE9',
+    draft: 'rgba(252, 71, 74, 0.85)',
+    date: '#737F8B',
+    check: '#64B5EF',
+    badge: '#64B5EF',
+    badgeMuted: '#3E5263',
+    badgeText: '#FFFFFF',
+    muteIcon: '#4E5F6A',
+    pinIcon: '#586D80',
+    verified: '#64B5EF',
+    online: '#64B5EF',
+    divider: 'rgba(0, 0, 0, 0.58)',
+    pressed: 'rgba(255, 255, 255, 0.05)',
+    selectedRow: 'rgba(95, 157, 227, 0.16)',
+    checkbox: '#5EC245',
+    swipeArchive: '#5796CC',
+    swipeUnarchive: '#2E3E4B',
+    archiveAvatar: '#384B5A',
+    fab: '#229AF0',
+    fabIcon: '#FFFFFF',
+    shimmer: '#E6F7FF',
+    shimmerOpacity: 0.08,
+    shimmerHighlight: '#283848',
+  },
   attachments: {
     background: '#212D3B',
     dim: 'rgba(0, 0, 0, 0.2)',
@@ -803,6 +924,7 @@ export function mergeTheme (base: ChatTheme, override?: PartialChatTheme): ChatT
     emojiKeyboard: { ...base.emojiKeyboard, ...override.emojiKeyboard },
     contextMenu: { ...base.contextMenu, ...override.contextMenu },
     attachments: { ...base.attachments, ...override.attachments },
+    chatList: { ...base.chatList, ...override.chatList },
     nameColors,
   }
 }

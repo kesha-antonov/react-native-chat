@@ -186,6 +186,26 @@ reactions on; it fires for both the picker and a pill tap, and `Chat.toggleReact
 For a quick prototype, `const { chatProps } = useChatMessages({ initialMessages, user })` then
 `<Chat {...chatProps} />` wires sending, reactions, editing and deleting to local state.
 
+## Chat list
+
+`ChatList` draws the list of chats (header with search, selection actions, archive folder,
+swipe to archive, draggable pinned chats, unread counters, typing, drafts, loading placeholder).
+Map your conversations to `ChatListItem` and pass a callback per action you support:
+
+```tsx
+<ChatList
+  chats={chats}            // ChatListItem[]: { id, title, avatar?, kind?, lastMessage?, unreadCount?,
+                           //   isPinned?, isMuted?, isArchived?, isOnline?, typingUsers?, draft? }
+  user={me}
+  onPressChat={chat => openChat(chat.id)}
+  onArchiveChats={(selected, isArchived) => api.archive(selected, isArchived)}
+  onReorderPinnedChats={ids => api.setPinnedOrder(ids)}
+/>
+```
+
+`useChatList(initialChats)` returns `{ chats, handlers, receiveMessage, markRead, upsertChat }` for
+local state: `<ChatList chats={list.chats} {...list.handlers} />`.
+
 ## Coming from react-native-gifted-chat
 
 Same props, same `IMessage`. Swap the package and rename: `GiftedChat` → `Chat`,
