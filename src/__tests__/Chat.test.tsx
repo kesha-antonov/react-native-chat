@@ -19,7 +19,7 @@ const messages = [
   {
     _id: 1,
     text: 'Hello developer',
-    createdAt: new Date(),
+    createdAt: new Date(Date.UTC(2024, 0, 1, 12, 0)),
     user: {
       _id: 2,
       name: 'John Doe',

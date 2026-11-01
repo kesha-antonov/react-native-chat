@@ -71,6 +71,25 @@ const audioApi = getAudioApi()
 /** @deprecated Use `getChatCapabilities().waveform`. */
 export const isWaveformAvailable = !!audioApi?.AudioContext
 
+// One audio context for every note, made on the first play. Each `AudioContext` starts its own
+// worklet runtime, which blocks the JS thread for a few hundred milliseconds, so one per bubble
+// made a chat with a couple of voice notes open seconds late.
+let sharedContext: any = null
+const getAudioContext = () => {
+  if (!sharedContext && audioApi?.AudioContext)
+    sharedContext = new audioApi.AudioContext()
+  return sharedContext
+}
+
+/** Decodes without a context when the library can (`decodeAudioData` on the module). */
+const decodeAudio = (source: string | ArrayBuffer): Promise<any> => {
+  if (typeof audioApi?.decodeAudioData === 'function')
+    return audioApi.decodeAudioData(source)
+  const ctx = getAudioContext()
+  // `decodeAudioDataSource` is the name in older react-native-audio-api releases.
+  return typeof ctx.decodeAudioData === 'function' ? ctx.decodeAudioData(source) : ctx.decodeAudioDataSource(source)
+}
+
 const ROW_PADDING_H = 8
 
 // Bars of a just-sent note grow left to right
@@ -326,8 +345,6 @@ export function WaveformPlayer ({
 
     let cancelled = false
     let abortDownload: (() => void) | null = null
-    const ctx = new audioApi.AudioContext()
-    ctxRef.current = ctx
 
     ;(async () => {
       let source: string | ArrayBuffer = uri
@@ -359,15 +376,7 @@ export function WaveformPlayer ({
       }
 
       try {
-        // `decodeAudioData(uri)` is the current API; `decodeAudioDataSource` was
-        // its name in older react-native-audio-api releases and no longer exists
-        // in 0.13+, where calling it silently degraded every voice note to the
-        // MediaCard fallback. Support both so either version works.
-        const decode = typeof ctx.decodeAudioData === 'function'
-          ? (source: string) => ctx.decodeAudioData(source)
-          : (source: string) => ctx.decodeAudioDataSource(source)
-
-        const buffer = await decode(source as string)
+        const buffer = await decodeAudio(source)
         if (cancelled)
           return
 
@@ -397,11 +406,6 @@ export function WaveformPlayer ({
         sourceRef.current?.stop?.()
       } catch {
         // already stopped
-      }
-      try {
-        ctx.close?.()
-      } catch {
-        // noop
       }
     }
   }, [uri, isRemote, shouldLoad, downloadProgress, stopRaf, playerId, durationProp])
@@ -491,8 +495,9 @@ export function WaveformPlayer ({
   }, [stopSource, setProgressValue])
 
   const playFrom = useCallback((fraction: number) => {
-    const ctx = ctxRef.current
     const buffer = bufferRef.current
+    const ctx = buffer ? getAudioContext() : null
+    ctxRef.current = ctx
     if (!ctx || !buffer)
       return
     // A view-once note that has played does not play again.

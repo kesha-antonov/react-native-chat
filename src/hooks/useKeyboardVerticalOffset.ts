@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { useSafeAreaFrame } from 'react-native-safe-area-context'
 
@@ -55,6 +55,13 @@ export function useKeyboardVerticalOffset (): KeyboardVerticalOffset {
         setMeasured(previous => (previous === y ? previous : y))
     })
   }, [])
+
+  // Measured once before the first paint too: in the New Architecture `measureInWindow` answers
+  // synchronously inside a layout effect, so the chat is ready on its first frame instead of
+  // after a layout event and a native round trip.
+  useLayoutEffect(() => {
+    onLayout()
+  }, [onLayout])
 
   return {
     ref,

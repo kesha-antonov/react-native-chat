@@ -9,12 +9,12 @@ import { Chat } from '..'
 // of the snapshots in `Chat.test.tsx`.
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react')
-  const { View } = require('react-native')
+  const actual = jest.requireActual('react-native-gesture-handler')
 
   return {
-    ...jest.requireActual('react-native-gesture-handler'),
+    ...actual,
     GestureHandlerRootView: ({ children, ...props }: any) =>
-      React.createElement(View, { ...props, testID: 'GH_ROOT' }, children),
+      React.createElement(actual.GestureHandlerRootView, { ...props, testID: 'GH_ROOT' }, children),
   }
 })
 
@@ -42,13 +42,16 @@ it('skips the GestureHandlerRootView when `enableGestureHandlerRootView` is fals
   // An app that already mounts its own (directly, or via something like a bottom sheet
   // library) can't be auto-detected the way `KeyboardProvider` is - gesture-handler
   // doesn't expose that publicly - so this has to be an explicit opt-out.
+  const { GestureHandlerRootView: AppRoot } = jest.requireActual('react-native-gesture-handler')
   const { queryAllByTestId } = await render(
-    <Chat
-      messages={messages}
-      onSend={() => {}}
-      user={{ _id: 1 }}
-      enableGestureHandlerRootView={false}
-    />
+    <AppRoot>
+      <Chat
+        messages={messages}
+        onSend={() => {}}
+        user={{ _id: 1 }}
+        enableGestureHandlerRootView={false}
+      />
+    </AppRoot>
   )
 
   expect(queryAllByTestId('GH_ROOT')).toHaveLength(0)

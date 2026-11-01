@@ -47,6 +47,8 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - New theme tokens, icons, exports (`ChatEmpty`, `countEmojiOnly`, `findFirstUrl`, `formatFileSize`...) and labels in all 15 locales
 
 ### ⚡ Performance
+- **Chats open much faster.** Voice notes share one audio context made on first play (each one used to start its own worklet runtime, a few hundred ms of blocked JS per bubble); the long-press menu and the swipe-to-reply arrow mount on first use instead of with every row; the list and composer no longer wait a layout pass; the wallpaper and composer paint first and the messages follow a frame later
+- `ChatList` rows re-render only when their own chat changes
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes

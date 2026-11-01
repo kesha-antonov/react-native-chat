@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { memo, useEffect } from 'react'
 import { I18nManager, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { GestureDetector, Touchable, useCompetingGestures, usePanGesture } from 'react-native-gesture-handler'
 import Animated, {
@@ -59,7 +59,7 @@ const hoverIndex = (drag: ChatListDrag, count: number) => {
  * A chat's row: avatar, name, time, the last message (or a draft, or who is typing), the unread
  * counter or pin, a swipe to archive, and dragging when pinned chats can be reordered.
  */
-export function ChatListCell<TChat extends ChatListItem> ({
+function ChatListCellInner<TChat extends ChatListItem> ({
   chat,
   user,
   isSelected,
@@ -341,6 +341,30 @@ export function ChatListCell<TChat extends ChatListItem> ({
     </GestureDetector>
   )
 }
+
+/** The drag props are rebuilt with the list; what matters is what they say. */
+const isSameReorder = (a?: ChatListCellProps['reorder'], b?: ChatListCellProps['reorder']) =>
+  a === b || (!!a && !!b && a.index === b.index && a.count === b.count && a.drag === b.drag &&
+    a.onStart === b.onStart && a.onDrop === b.onDrop)
+
+const arePropsEqual = (previous: ChatListCellProps, next: ChatListCellProps) =>
+  previous.chat === next.chat &&
+  previous.user === next.user &&
+  previous.isSelected === next.isSelected &&
+  previous.isSelectionMode === next.isSelectionMode &&
+  previous.onPress === next.onPress &&
+  previous.onLongPress === next.onLongPress &&
+  previous.onSwipe === next.onSwipe &&
+  previous.isLast === next.isLast &&
+  previous.isReordering === next.isReordering &&
+  isSameReorder(previous.reorder, next.reorder)
+
+/**
+ * A chat's row: avatar, name, time, the last message (or a draft, or who is typing), the unread
+ * counter or pin, a swipe to archive, and dragging when pinned chats can be reordered. Rows only
+ * re-render when their own chat or state changes.
+ */
+export const ChatListCell = memo(ChatListCellInner, arePropsEqual as never) as typeof ChatListCellInner
 
 const styles = StyleSheet.create({
   row: {

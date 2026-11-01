@@ -49,16 +49,22 @@ function patchDialog (id: string, patch: Partial<Dialog>) {
 /** What the library's `ChatList` draws for a dialog, with the dialog itself alongside. */
 export type DialogItem = ChatListItem & { dialog: Dialog }
 
-/** The dialogs as list items, pinned ones first in pin order (the list sorts the rest itself). */
-function toItems (s: State): DialogItem[] {
-  const pinned = s.pinOrder.map(id => s.dialogs[id]).filter(Boolean)
-  const rest = Object.values(s.dialogs).filter(dialog => !pinned.includes(dialog))
-  return [...pinned, ...rest].map(dialog => ({
+// Items are reused while their dialog, newest message and typing user stay the same, so a
+// change to one chat re-renders only that chat's row.
+const itemCache = new Map<string, { dialog: Dialog, lastMessage?: IMessage, typing?: User, item: DialogItem }>()
+
+function toItem (s: State, dialog: Dialog): DialogItem {
+  const lastMessage = s.messages[dialog.id]?.[0]
+  const typing = s.typing[dialog.id]
+  const cached = itemCache.get(dialog.id)
+  if (cached && cached.dialog === dialog && cached.lastMessage === lastMessage && cached.typing === typing)
+    return cached.item
+  const item: DialogItem = {
     id: dialog.id,
     title: dialog.title,
     kind: dialog.kind === 'user' ? 'private' : dialog.kind,
     avatar: dialog.avatar,
-    lastMessage: s.messages[dialog.id]?.[0],
+    lastMessage,
     unreadCount: dialog.unreadCount,
     isPinned: dialog.isPinned,
     isMuted: dialog.isMuted,
@@ -66,9 +72,18 @@ function toItems (s: State): DialogItem[] {
     isVerified: dialog.isVerified,
     isOnline: dialog.isOnline,
     draft: dialog.draft,
-    typingUsers: s.typing[dialog.id] ? [s.typing[dialog.id]!] : undefined,
+    typingUsers: typing ? [typing] : undefined,
     dialog,
-  }))
+  }
+  itemCache.set(dialog.id, { dialog, lastMessage, typing, item })
+  return item
+}
+
+/** The dialogs as list items, pinned ones first in pin order (the list sorts the rest itself). */
+function toItems (s: State): DialogItem[] {
+  const pinned = s.pinOrder.map(id => s.dialogs[id]).filter(Boolean)
+  const rest = Object.values(s.dialogs).filter(dialog => !pinned.includes(dialog))
+  return [...pinned, ...rest].map(dialog => toItem(s, dialog))
 }
 
 // `useSyncExternalStore` needs a stable snapshot, so the items are cached per state.

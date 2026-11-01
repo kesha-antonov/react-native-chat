@@ -1,11 +1,13 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
-import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { Chat, defaultDarkTheme, defaultLightTheme, IMessage } from '@kesha-antonov/react-native-chat'
 import { ChatListAvatar } from '@kesha-antonov/react-native-chat'
 import { useFocusEffect, useRouter } from 'expo-router'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Dialog, ME } from './data'
 import { formatSubscribers } from './format'
 import { chatStore, useDialog, useMessages, useTyping } from './store'
@@ -20,6 +22,7 @@ export default function ChatScreen ({ id }: { id: string }) {
   const dialog = useDialog(id)
   const messages = useMessages(id)
   const typingUser = useTyping(id)
+  const background = (useColorScheme() === 'dark' ? defaultDarkTheme : defaultLightTheme).colors.background
 
   // Opening the chat reads it, so the unread count is taken once, before that: the
   // "Unread Messages" bar stays where it was until you leave the chat.
@@ -60,7 +63,8 @@ export default function ChatScreen ({ id }: { id: string }) {
     return null
 
   return (
-    <View style={styles.container}>
+    // The chat's own background, so the screen is never black while the chat mounts.
+    <View style={[styles.container, { backgroundColor: background }]}>
       <ChatHeader dialog={dialog} typingName={typingUser?.name} />
       <Chat
         messages={messages}

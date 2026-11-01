@@ -281,7 +281,7 @@ function Chat<TMessage extends IMessage = IMessage> (
   )
 
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
-  const [text, setText] = useState<string | undefined>(() => props.text || '')
+  const [text, setText] = useState<string | undefined>(() => props.text || props.initialText || '')
   const [internalReplyMessage, setInternalReplyMessage] = useState<ReplyMessage | null>(null)
   // The message being edited in the composer (edit mode), or null.
   const [editingMessage, setEditingMessage] = useState<TMessage | null>(null)
@@ -644,10 +644,16 @@ function Chat<TMessage extends IMessage = IMessage> (
   const isNowPlayingBarEnabled = mediaPlayback?.isNowPlayingBarEnabled ?? true
   const isFloatingRoundNoteEnabled = mediaPlayback?.isFloatingRoundNoteEnabled ?? true
 
-  const renderMessages = useMemo(() => {
-    if (!isInitialized)
-      return null
+  // The wallpaper and the composer paint with the chat's first frame; the message list, by far the
+  // heaviest part, mounts in the frame after, so opening a chat never shows an empty screen while
+  // its messages are built.
+  const [isListMounted, setIsListMounted] = useState(false)
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setIsListMounted(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
 
+  const renderMessages = useMemo(() => {
     const { messagesContainerStyle, ...messagesContainerProps } = props
 
     return (
@@ -687,7 +693,6 @@ function Chat<TMessage extends IMessage = IMessage> (
       </View>
     )
   }, [
-    isInitialized,
     isTyping,
     messages,
     props,
@@ -879,9 +884,6 @@ function Chat<TMessage extends IMessage = IMessage> (
   }, [hasDelete, editingMessage, stopEdit, selectionStore])
 
   const inputToolbarFragment = useMemo(() => {
-    if (!isInitialized)
-      return null
-
     if (isSelecting && renderSelectionBar !== null)
       return (
         <ChatSelectionBar<TMessage>
@@ -919,7 +921,6 @@ function Chat<TMessage extends IMessage = IMessage> (
 
     return <InputToolbar {...inputToolbarProps} />
   }, [
-    isInitialized,
     _onSend,
     getTextFromProp,
     props,
@@ -1010,7 +1011,7 @@ function Chat<TMessage extends IMessage = IMessage> (
                   <MessageSelectionContext.Provider value={selectionStore}>
                     <ComposerPanelsContext.Provider value={composerPanels}>
                       <ChatOverlayProvider>
-                        {renderMessages}
+                        {isListMounted ? renderMessages : <View style={stylesCommon.fill} />}
                         {inputToolbarFragment}
                       </ChatOverlayProvider>
                     </ComposerPanelsContext.Provider>

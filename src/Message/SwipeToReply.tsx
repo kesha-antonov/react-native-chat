@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import Animated, {
@@ -104,6 +104,9 @@ export const SwipeToReplyRow = ({
   // 1 once past the threshold: the circle fills, and an outer ring grows away and fades.
   const filled = useSharedValue(0)
   const outerRing = useSharedValue(0)
+  // The arrow is only mounted while a swipe is on: every row mounting its circle, rings and two
+  // SVGs made a chat noticeably slower to open.
+  const [isActionMounted, setIsActionMounted] = useState(false)
 
   const pan = usePanGesture({
     testID: 'swipe-to-reply',
@@ -112,6 +115,9 @@ export const SwipeToReplyRow = ({
       ? [-SWIPE_START, Number.MAX_SAFE_INTEGER]
       : [-Number.MAX_SAFE_INTEGER, SWIPE_START],
     failOffsetY: [-SWIPE_FAIL_Y, SWIPE_FAIL_Y],
+    onActivate: () => {
+      runOnJS(setIsActionMounted)(true)
+    },
     onUpdate: event => {
       // Counted from where the drag took over, so the row does not jump when it starts.
       const distance = Math.min(SWIPE_MAX, Math.max(0, event.translationX * sign - SWIPE_START))
@@ -147,7 +153,10 @@ export const SwipeToReplyRow = ({
     onFinalize: () => {
       isPastThreshold.value = false
       isIconShown.value = false
-      offset.value = withTiming(0, RETURN)
+      offset.value = withTiming(0, RETURN, isFinished => {
+        if (isFinished)
+          runOnJS(setIsActionMounted)(false)
+      })
       iconScale.value = withTiming(0, RETURN)
       filled.value = withTiming(0, RETURN)
     },
@@ -155,24 +164,6 @@ export const SwipeToReplyRow = ({
 
   const rowStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: offset.value }],
-  }))
-
-  // Beside an outgoing message the arrow travels half as far (`translationX * 0.5f`).
-  const travel = position === 'right' ? 0.5 : 1
-  const fillProgress = useDerivedValue(() =>
-    Math.min(1, Math.max(0, (Math.abs(offset.value) - ICON_APPEAR) / ICON_FILL)))
-  const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: offset.value * travel }, { scale: iconScale.value }],
-  }))
-  const circleStyle = useAnimatedStyle(() => ({
-    opacity: Math.min(1, PRE_FILL_ALPHA * fillProgress.value + (1 - PRE_FILL_ALPHA) * filled.value),
-  }))
-  const outerRingStyle = useAnimatedStyle(() => ({
-    opacity: outerRing.value > 0 && outerRing.value < 1 ? 1 - outerRing.value : 0,
-    transform: [{ scale: 1 + OUTER_RING_GROWTH * outerRing.value }],
-  }))
-  const ringProps = useAnimatedProps(() => ({
-    strokeDashoffset: RING_LENGTH * (1 - fillProgress.value),
   }))
 
   const progress = useDerivedValue(() => Math.abs(offset.value) / SWIPE_REPLY_THRESHOLD)
@@ -190,45 +181,88 @@ export const SwipeToReplyRow = ({
             </View>
           )
           : (
-            <Animated.View
-              pointerEvents='none'
-              style={[
-                styles.icon,
-                direction === 'left' ? styles.iconRight : styles.iconLeft,
-                iconStyle,
-                actionContainerStyle,
-              ]}
-            >
-              <Animated.View style={[styles.circle, circleStyle]} />
-              <Animated.View style={[styles.outerRing, outerRingStyle]} />
-              {AnimatedSvgCircle && (
-                <Svg width={ICON_SIZE} height={ICON_SIZE} style={styles.ring}>
-                  <AnimatedSvgCircle
-                    cx={ICON_SIZE / 2}
-                    cy={ICON_SIZE / 2}
-                    r={RING_RADIUS}
-                    fill='none'
-                    stroke={styles.iconGlyph.color}
-                    strokeWidth={RING_WIDTH}
-                    strokeDasharray={`${RING_LENGTH} ${RING_LENGTH}`}
-                    strokeLinecap='round'
-                    animatedProps={ringProps}
-                  />
-                </Svg>
-              )}
-              <Icon
-                name='reply'
-                color={styles.iconGlyph.color}
-                size={18}
-                fallback={<ReplyArrowIcon color={styles.iconGlyph.color} size={18} />}
+            isActionMounted && (
+              <ReplyActionIcon
+                offset={offset}
+                iconScale={iconScale}
+                filled={filled}
+                outerRing={outerRing}
+                travel={position === 'right' ? 0.5 : 1}
+                direction={direction}
+                actionContainerStyle={actionContainerStyle}
               />
-            </Animated.View>
+            )
           )}
         <Animated.View style={rowStyle}>
           {children}
         </Animated.View>
       </View>
     </GestureDetector>
+  )
+}
+
+/** The arrow beside a row being swiped: a circle that fills, a ring that draws itself round it. */
+function ReplyActionIcon ({ offset, iconScale, filled, outerRing, travel, direction, actionContainerStyle }: {
+  offset: SharedValue<number>
+  iconScale: SharedValue<number>
+  filled: SharedValue<number>
+  outerRing: SharedValue<number>
+  /** Beside an outgoing message the arrow travels half as far. */
+  travel: number
+  direction: 'left' | 'right'
+  actionContainerStyle?: StyleProp<ViewStyle>
+}) {
+  const styles = useThemedStyles(createStyles)
+  const fillProgress = useDerivedValue(() =>
+    Math.min(1, Math.max(0, (Math.abs(offset.value) - ICON_APPEAR) / ICON_FILL)))
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: offset.value * travel }, { scale: iconScale.value }],
+  }))
+  const circleStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, PRE_FILL_ALPHA * fillProgress.value + (1 - PRE_FILL_ALPHA) * filled.value),
+  }))
+  const outerRingStyle = useAnimatedStyle(() => ({
+    opacity: outerRing.value > 0 && outerRing.value < 1 ? 1 - outerRing.value : 0,
+    transform: [{ scale: 1 + OUTER_RING_GROWTH * outerRing.value }],
+  }))
+  const ringProps = useAnimatedProps(() => ({
+    strokeDashoffset: RING_LENGTH * (1 - fillProgress.value),
+  }))
+
+  return (
+    <Animated.View
+      pointerEvents='none'
+      style={[
+        styles.icon,
+        direction === 'left' ? styles.iconRight : styles.iconLeft,
+        iconStyle,
+        actionContainerStyle,
+      ]}
+    >
+      <Animated.View style={[styles.circle, circleStyle]} />
+      <Animated.View style={[styles.outerRing, outerRingStyle]} />
+      {AnimatedSvgCircle && (
+        <Svg width={ICON_SIZE} height={ICON_SIZE} style={styles.ring}>
+          <AnimatedSvgCircle
+            cx={ICON_SIZE / 2}
+            cy={ICON_SIZE / 2}
+            r={RING_RADIUS}
+            fill='none'
+            stroke={styles.iconGlyph.color}
+            strokeWidth={RING_WIDTH}
+            strokeDasharray={`${RING_LENGTH} ${RING_LENGTH}`}
+            strokeLinecap='round'
+            animatedProps={ringProps}
+          />
+        </Svg>
+      )}
+      <Icon
+        name='reply'
+        color={styles.iconGlyph.color}
+        size={18}
+        fallback={<ReplyArrowIcon color={styles.iconGlyph.color} size={18} />}
+      />
+    </Animated.View>
   )
 }
 

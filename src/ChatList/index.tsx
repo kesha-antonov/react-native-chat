@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   BackHandler,
@@ -260,12 +260,18 @@ function ChatListContent<TChat extends ChatListItem> ({
     return () => clearTimeout(timer)
   }, [dropCount, isDragActive, dragY, dragId])
 
+  // Stable handlers for the rows (which only re-render when what they show changes).
+  const dragHandlersRef = useRef({ onDragStart, onDrop })
+  dragHandlersRef.current = { onDragStart, onDrop }
+  const stableOnStart = useCallback((chat: TChat) => dragHandlersRef.current.onDragStart(chat), [])
+  const stableOnDrop = useCallback((chat: TChat, toIndex: number) => dragHandlersRef.current.onDrop(chat, toIndex), [])
+
   const reorderFor = useCallback((chat: TChat): ChatListReorder<TChat> | undefined => {
     const index = pinnedIds.indexOf(chat.id)
     if (!canReorder || index < 0)
       return undefined
-    return { index, count: pinnedIds.length, drag, onStart: onDragStart, onDrop }
-  }, [pinnedIds, canReorder, drag, onDragStart, onDrop])
+    return { index, count: pinnedIds.length, drag, onStart: stableOnStart, onDrop: stableOnDrop }
+  }, [pinnedIds, canReorder, drag, stableOnStart, stableOnDrop])
 
   const runOnSelection = useCallback((action: (selection: TChat[]) => void) => {
     action(selectedChats)

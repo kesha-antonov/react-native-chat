@@ -394,6 +394,11 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const bubbleContainerRef = useAnimatedRef<Animated.View>()
 
   const [isPickerVisible, setIsPickerVisible] = useState(false)
+  // The long-press menu is a heavy component (a Modal and a dozen animated values); a bubble
+  // mounts it the first time it opens, not with every row, and keeps it for its exit animation.
+  const [hasOpenedMenu, setHasOpenedMenu] = useState(false)
+  if (isPickerVisible && !hasOpenedMenu)
+    setHasOpenedMenu(true)
   const [pickerAnchor, setPickerAnchor] = useState<PickerAnchor>({
     pageX: 0,
     pageY: 0,
@@ -1252,7 +1257,10 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         </PressableBubbleRow>
         {renderQuickReplies()}
         {renderReactionsBelow()}
-        {hasMenu ? renderContextMenu() : renderReactionPickerModal()}
+        {/* A custom picker stays mounted, as it always has; the built-in ones mount on first use. */}
+        {hasMenu
+          ? hasOpenedMenu && renderContextMenu()
+          : (hasOpenedMenu || !!reactions?.renderReactionPicker) && renderReactionPickerModal()}
       </Animated.View>
     )
 
