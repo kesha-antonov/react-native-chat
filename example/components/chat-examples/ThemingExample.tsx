@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Chat, ChatIcons, IMessage, PartialChatTheme } from '@kesha-antonov/react-native-chat'
 
+import { OptionChips } from './OptionChips'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Theme Bot' }
@@ -85,31 +86,17 @@ export default function ThemingExample () {
   const [presetId, setPresetId] = useState('default')
 
   const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previous => Chat.append(previous, newMessages.map(m => ({
-      ...m,
-      _id: m._id || Math.random().toString(36).slice(2),
-      user: USER,
-      createdAt: new Date(),
-    }))))
+    setMessages(previous => Chat.append(previous, newMessages))
   }, [])
 
   const activePreset = useMemo(() => PRESETS.find(p => p.id === presetId) ?? PRESETS[0], [presetId])
 
   return (
     <View style={styles.container}>
-      <View style={styles.toolbar}>
-        {PRESETS.map(preset => (
-          <Pressable
-            key={preset.id}
-            onPress={() => setPresetId(preset.id)}
-            style={[styles.chip, presetId === preset.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, presetId === preset.id && styles.chipTextActive]}>
-              {preset.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <OptionChips
+        options={PRESETS.map(preset => ({ id: preset.id, label: preset.label, isActive: preset.id === presetId }))}
+        onPress={setPresetId}
+      />
       <Chat<IMessage>
         messages={messages}
         onSend={onSend}
@@ -125,30 +112,5 @@ export default function ThemingExample () {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  toolbar: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    padding: 12,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  chipActive: {
-    backgroundColor: '#3390EC',
-    borderColor: '#3390EC',
-  },
-  chipText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  chipTextActive: {
-    color: '#fff',
-    fontWeight: '600',
   },
 })

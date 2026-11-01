@@ -1,25 +1,3 @@
-import React from 'react'
-import { StyleSheet, View } from 'react-native'
-import { useColorScheme } from '@/hooks/use-color-scheme'
 import Chats from '../../example-chat/src/Chats'
-import { getColorSchemeStyle } from '../../utils/styleUtils'
 
-export default function CustomizedRenderingExample () {
-  const colorScheme = useColorScheme()
-
-  return (
-    <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
-      <Chats />
-    </View>
-  )
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container_dark: {
-    backgroundColor: '#000',
-  },
-})
+export default Chats

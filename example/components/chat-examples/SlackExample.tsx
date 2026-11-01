@@ -1,52 +1,35 @@
-import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import React, { useCallback, useState } from 'react'
 import { ActionSheetProvider } from '@expo/react-native-action-sheet'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
-import { useColorScheme } from '@/hooks/use-color-scheme'
+
 import messagesData from '../../example-expo/data/messages'
 import SlackMessage from '../../example-slack-message/src/SlackMessage'
-import { getColorSchemeStyle } from '../../utils/styleUtils'
 
+const USER = { _id: 1, name: 'Developer' }
+const SLACK_THEME = { colors: { background: '#FFFFFF' } }
+const SLACK_DARK_THEME = { colors: { background: '#1A1D21' } }
+
+// `renderMessage` replaces the whole row, and `renderWallpaper={null}` swaps the wallpaper for
+// Slack's plain background. The Slack bubble opens its own action sheet
+// on long-press, hence the provider.
 export default function SlackExample () {
   const [messages, setMessages] = useState<IMessage[]>(messagesData)
-  const colorScheme = useColorScheme()
-
-  const user = useMemo(() => ({
-    _id: 1,
-    name: 'Developer',
-  }), [])
 
   const onSend = useCallback((newMessages: IMessage[] = []) => {
-    const messagesWithIds = newMessages.map(msg => ({
-      ...msg,
-      _id: msg._id || Math.random().toString(36).substring(7),
-      user: msg.user || user,
-    }))
-    setMessages(previousMessages =>
-      Chat.append(previousMessages, messagesWithIds)
-    )
-  }, [user])
+    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
+  }, [])
 
   return (
     <ActionSheetProvider>
-      <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
-        <Chat
-          messages={messages}
-          onSend={onSend}
-          user={user}
-          renderMessage={props => <SlackMessage {...props} />}
-        />
-      </View>
+      <Chat
+        messages={messages}
+        onSend={onSend}
+        user={USER}
+        renderMessage={props => <SlackMessage {...props} />}
+        renderWallpaper={null}
+        theme={SLACK_THEME}
+        darkTheme={SLACK_DARK_THEME}
+      />
     </ActionSheetProvider>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container_dark: {
-    backgroundColor: '#000',
-  },
-})

@@ -1,20 +1,19 @@
-import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import React, { useCallback, useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
 import earlierMessages from '../../example-expo/data/earlierMessages'
 import messagesData from '../../example-expo/data/messages'
 
-// The emoji keyboard and the attachment menu (Gallery, File, Location) are built in: the
-// composer's emoji button and paperclip work with no props, and picks arrive in `onSend`.
+const USER = { _id: 1, name: 'Developer' }
+// Voice and round video notes ask for the microphone and camera, so they are opt-in.
+const AUDIO_RECORDING = { isEnabled: true }
+const VIDEO_RECORDING = { isEnabled: true, maxDuration: 30 }
+
+// Everything else is the default: the emoji keyboard, the attachment menu, the long-press
+// menu, swipe-to-reply, the scroll-to-bottom button. This screen only adds "Load earlier".
 export default function BasicExample () {
   const [messages, setMessages] = useState<IMessage[]>(messagesData)
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
-
-  const user = useMemo(() => ({
-    _id: 1,
-    name: 'Developer',
-  }), [])
 
   const onSend = useCallback((newMessages: IMessage[] = []) => {
     setMessages(previousMessages => Chat.append(previousMessages, newMessages))
@@ -23,37 +22,19 @@ export default function BasicExample () {
   const onPressLoadEarlierMessages = useCallback(() => {
     setIsLoadingEarlier(true)
     setTimeout(() => {
-      setMessages(previousMessages =>
-        Chat.prepend(previousMessages, earlierMessages())
-      )
+      setMessages(previousMessages => Chat.prepend(previousMessages, earlierMessages()))
       setIsLoadingEarlier(false)
     }, 1500)
   }, [])
 
-  const audioRecording = useMemo(() => ({ isEnabled: true }), [])
-  const videoRecording = useMemo(() => ({ isEnabled: true, maxDuration: 30 }), [])
-
   return (
-    <View style={styles.container}>
-      <Chat
-        messages={messages}
-        onSend={onSend}
-        user={user}
-        loadEarlierMessagesProps={{ isAvailable: true, isLoading: isLoadingEarlier, onPress: onPressLoadEarlierMessages }}
-        audioRecording={audioRecording}
-        videoRecording={videoRecording}
-        messageTextProps={{
-          hashtag: true,
-          hashtagUrl: 'https://twitter.com/hashtag/',
-        }}
-        isScrollToBottomEnabled
-      />
-    </View>
+    <Chat
+      messages={messages}
+      onSend={onSend}
+      user={USER}
+      loadEarlierMessagesProps={{ isAvailable: true, isLoading: isLoadingEarlier, onPress: onPressLoadEarlierMessages }}
+      audioRecording={AUDIO_RECORDING}
+      videoRecording={VIDEO_RECORDING}
+    />
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-})

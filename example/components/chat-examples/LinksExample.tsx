@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { Linking, StyleSheet, Text, View } from 'react-native'
+import { Linking, StyleSheet, Text } from 'react-native'
 import { ActionSheetProvider, useActionSheet } from '@expo/react-native-action-sheet'
 import { Chat, IMessage, LinkMatcher } from '@kesha-antonov/react-native-chat'
 import { setStringAsync } from 'expo-clipboard'
@@ -90,15 +90,8 @@ const LinksExample: React.FC = () => {
   }), [])
 
   const onSend = useCallback((newMessages: IMessage[] = []) => {
-    const messagesWithIds = newMessages.map(msg => ({
-      ...msg,
-      _id: msg._id || Math.random().toString(36).substring(7),
-      user: msg.user || user,
-    }))
-    setMessages(previousMessages =>
-      Chat.append(previousMessages, messagesWithIds)
-    )
-  }, [user])
+    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
+  }, [])
 
   const getValidPhoneNumber = useCallback((text: string): string | undefined => {
     const cleaned = text.replace(/[\-\(\)\s\.]/g, '')
@@ -186,25 +179,20 @@ const LinksExample: React.FC = () => {
   ], [getValidPhoneNumber, handlePressPhoneNumber])
 
   return (
-    <ActionSheetProvider>
-      <View style={styles.container}>
-        <Chat
-          messages={messages}
-          onSend={onSend}
-          user={user}
-          messageTextProps={{
-            phone: false,
-            url: true,
-            matchers,
-            mention: true,
-            hashtag: true,
-            mentionUrl: 'https://x.com',
-            hashtagUrl: 'https://x.com/hashtag',
-          }}
-          colorScheme='light'
-        />
-      </View>
-    </ActionSheetProvider>
+    <Chat
+      messages={messages}
+      onSend={onSend}
+      user={user}
+      messageTextProps={{
+        phone: false,
+        url: true,
+        matchers,
+        mention: true,
+        hashtag: true,
+        mentionUrl: 'https://x.com',
+        hashtagUrl: 'https://x.com/hashtag',
+      }}
+    />
   )
 }
 
@@ -217,9 +205,6 @@ const ExampleContainer = () => (
 export default ExampleContainer
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   link: {
     textDecorationLine: 'underline',
   },

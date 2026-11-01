@@ -1,9 +1,6 @@
 import React, { useCallback } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
-import { Chat, IMessage, Send, useStreamingMessages } from '@kesha-antonov/react-native-chat'
-
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { getColorSchemeStyle } from '../../utils/styleUtils'
+import { Chat, IMessage, Send, useStreamingMessages, useTheme } from '@kesha-antonov/react-native-chat'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Assistant' }
@@ -43,9 +40,10 @@ function buildReply (prompt: string): string {
   )
 }
 
-// Stop button shown in the composer (replacing Send) while a reply streams -
-// same place the send button lives, like the Claude app.
+// Stop button shown in the composer in place of Send while a reply streams, in the accent
+// color the send button uses.
 function StopButton ({ onPress }: { onPress: () => void }) {
+  const theme = useTheme()
   return (
     <View style={styles.sendWrap}>
       <Pressable
@@ -53,7 +51,7 @@ function StopButton ({ onPress }: { onPress: () => void }) {
         hitSlop={8}
         accessibilityRole='button'
         accessibilityLabel='Stop generating'
-        style={({ pressed }) => [styles.stopButton, pressed && styles.stopButtonPressed]}
+        style={({ pressed }) => [styles.stopButton, { backgroundColor: theme.colors.accent }, pressed && styles.stopButtonPressed]}
       >
         <View style={styles.stopSquare} />
       </Pressable>
@@ -62,8 +60,6 @@ function StopButton ({ onPress }: { onPress: () => void }) {
 }
 
 export default function AIBotExample () {
-  const colorScheme = useColorScheme()
-
   const {
     messages,
     append,
@@ -73,12 +69,7 @@ export default function AIBotExample () {
   } = useStreamingMessages<IMessage>({ initialMessages: [GREETING] })
 
   const onSend = useCallback((newMessages: IMessage[] = []) => {
-    const userMessage = {
-      ...newMessages[0],
-      _id: newMessages[0]?._id || Math.random().toString(36).slice(2),
-      user: USER,
-      createdAt: new Date(),
-    }
+    const userMessage = newMessages[0]
     append(userMessage)
 
     const stream = startStream({ user: BOT })
@@ -108,28 +99,19 @@ export default function AIBotExample () {
   )
 
   return (
-    <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
-      <Chat<IMessage>
-        messages={messages}
-        onSend={onSend}
-        user={USER}
-        renderSend={renderSend}
-        // Render replies as markdown via the optional react-native-streamdown
-        // peer. No-op (plain text) until that package is installed.
-        messageTextProps={{ markdown: true }}
-      />
-    </View>
+    <Chat<IMessage>
+      messages={messages}
+      onSend={onSend}
+      user={USER}
+      renderSend={renderSend}
+      // Markdown in every message, not only while one streams: the built-in renderer, or
+      // react-native-streamdown when it is installed.
+      messageTextProps={{ markdown: true }}
+    />
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container_dark: {
-    backgroundColor: '#000',
-  },
   sendWrap: {
     height: 44,
     justifyContent: 'center',
@@ -137,10 +119,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   stopButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#000',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },

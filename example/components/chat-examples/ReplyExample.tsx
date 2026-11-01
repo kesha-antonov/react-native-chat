@@ -1,54 +1,24 @@
-import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
-import { Chat, IMessage, ReplyMessage } from '@kesha-antonov/react-native-chat'
+import React, { useCallback, useState } from 'react'
+import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
-import { useColorScheme } from '@/hooks/use-color-scheme'
 import messagesData from '../../example-expo/data/messages'
-import { getColorSchemeStyle } from '../../utils/styleUtils'
 
-export interface IChatMessage extends IMessage {
-  replyMessage?: ReplyMessage
-}
+const USER = { _id: 1, name: 'Developer' }
 
+// Replies need nothing: swipe a message left (or pick Reply in its long-press menu), and the
+// sent message carries `replyMessage`. Tapping a quote jumps to the message it quotes.
 export default function ReplyExample () {
-  const [messages, setMessages] = useState<IChatMessage[]>(messagesData)
-  const colorScheme = useColorScheme()
+  const [messages, setMessages] = useState<IMessage[]>(messagesData)
 
-  const user = useMemo(() => ({
-    _id: 1,
-    name: 'Developer',
-  }), [])
-
-  const onSend = useCallback((newMessages: IChatMessage[] = []) => {
-    const messagesWithIds = newMessages.map(msg => ({
-      ...msg,
-      _id: msg._id || Math.random().toString(36).substring(7),
-      user: msg.user || user,
-    }))
-    setMessages(previousMessages =>
-      Chat.append(previousMessages, messagesWithIds)
-    )
-  }, [user])
+  const onSend = useCallback((newMessages: IMessage[] = []) => {
+    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
+  }, [])
 
   return (
-    <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
-      <Chat<IChatMessage>
-        messages={messages}
-        onSend={onSend}
-        user={user}
-        // Swipe left to reply and the menu's Reply are on by default; tapping a quote jumps
-        // to the quoted message.
-      />
-    </View>
+    <Chat
+      messages={messages}
+      onSend={onSend}
+      user={USER}
+    />
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container_dark: {
-    backgroundColor: '#000',
-  },
-})

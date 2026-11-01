@@ -20,6 +20,7 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'bubble.left.and.bubble.right.fill': 'forum',
 } satisfies Partial<Record<SFSymbolName, ComponentProps<typeof MaterialIcons>['name']>>
 
 /**

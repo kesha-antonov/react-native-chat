@@ -134,6 +134,35 @@ describe('inline time', () => {
     expect(findTimeSpacer(toJSON())).toMatch(/^ {2}\d/)
   })
 
+  it('keeps the reserved time out of the wrapping row of pills', async () => {
+    const { toJSON } = await render(
+      <Bubble
+        user={ME}
+        position='right'
+        currentMessage={message({ user: ME, text: 'Hi', reactions: [{ emoji: '🔥', userIds: [1] }] })}
+      />
+    )
+    // Inside the wrapping row, the time wrapped onto a row of its own whenever the pills set
+    // the bubble's width, after the bubble had been sized: the text slid out above it.
+    const wrapsHoldingSpacer: unknown[] = []
+    const visit = (node: any, wrapAncestors: number) => {
+      if (!node)
+        return
+      if (Array.isArray(node)) {
+        node.forEach(child => visit(child, wrapAncestors))
+        return
+      }
+      const style = StyleSheet.flatten(node.props?.style) ?? {}
+      const depth = wrapAncestors + (style.flexWrap === 'wrap' ? 1 : 0)
+      if (node.type === 'Text' && style.color === 'transparent' && depth > 0)
+        wrapsHoldingSpacer.push(node)
+      visit(node.children, depth)
+    }
+    visit(toJSON(), 0)
+    expect(findTimeSpacer(toJSON())).toMatch(/\d/)
+    expect(wrapsHoldingSpacer).toHaveLength(0)
+  })
+
   it('gives a custom time a row of its own', async () => {
     const { toJSON } = await render(
       <Bubble user={ME} position='left' currentMessage={message({})} renderTime={() => null} />

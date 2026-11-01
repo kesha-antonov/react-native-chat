@@ -1,93 +1,32 @@
-import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
-import { Chat, IMessage, MessageReaction, ReactionPickerProps } from '@kesha-antonov/react-native-chat'
+import React, { useCallback, useState } from 'react'
+import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
-import { useColorScheme } from '@/hooks/use-color-scheme'
 import messagesData from '../../example-expo/data/messages'
-import { getColorSchemeStyle } from '../../utils/styleUtils'
-import { EmojiReactionPicker } from './reactions/EmojiReactionPicker'
 
-export interface IChatMessage extends IMessage {
-  reactions?: MessageReaction[]
-}
-
-const CURRENT_USER_ID = 1
+const USER = { _id: 1, name: 'Developer' }
+// The quick bar's emojis are yours to pick; the chevron after them opens the built-in full
+// emoji grid either way.
+const QUICK_REACTIONS = ['🔥', '🎉', '😍', '🤯', '👏', '🙏', '💯']
 
 export default function ReactionsExample () {
-  const [messages, setMessages] = useState<IChatMessage[]>(messagesData)
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === 'dark'
+  const [messages, setMessages] = useState<IMessage[]>(messagesData)
 
-  const user = useMemo(() => ({
-    _id: CURRENT_USER_ID,
-    name: 'Developer',
-  }), [])
-
-  const onSend = useCallback((newMessages: IChatMessage[] = []) => {
-    setMessages(previousMessages =>
-      Chat.append(previousMessages, newMessages)
-    )
+  const onSend = useCallback((newMessages: IMessage[] = []) => {
+    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
   }, [])
 
-  // Toggle the current user's reaction for the given emoji on a message.
-  const handleReactionPress = useCallback((message: IChatMessage, emoji: string) => {
-    setMessages(previousMessages =>
-      Chat.toggleReaction(previousMessages, message._id, emoji, CURRENT_USER_ID)
-    )
+  // Reactions live in your messages, so toggling one is yours too: `Chat.toggleReaction`
+  // adds or removes the current user's pick (one per user, as in Telegram).
+  const onReactionPress = useCallback((message: IMessage, emoji: string) => {
+    setMessages(previousMessages => Chat.toggleReaction(previousMessages, message._id, emoji, USER._id))
   }, [])
-
-  // Provide a richer picker (quick bar + full emoji browser) via the override.
-  const renderReactionPicker = useCallback(
-    (pickerProps: ReactionPickerProps<IChatMessage>) => (
-      <EmojiReactionPicker
-        {...pickerProps}
-        isFullPickerEnabled
-        mode={isDark ? 'dark' : 'light'}
-        fullPickerLang='en'
-        fullPickerColumnCount={8}
-        fullPickerTheme={{
-          light: {
-            searchbar: {
-              container: { backgroundColor: '#f3f4f6' },
-              textInput: { backgroundColor: '#ffffff', color: '#111827', fontSize: 15 },
-            },
-            toolbar: { container: { backgroundColor: '#ffffff' } },
-          },
-          dark: {
-            searchbar: {
-              container: { backgroundColor: '#1f2937' },
-              textInput: { backgroundColor: '#374151', color: '#f9fafb', fontSize: 15 },
-            },
-            toolbar: { container: { backgroundColor: '#111827' } },
-          },
-        }}
-      />
-    ),
-    [isDark]
-  )
 
   return (
-    <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
-      <Chat<IChatMessage>
-        messages={messages}
-        onSend={onSend}
-        user={user}
-        reactions={{
-          isEnabled: true,
-          onReactionPress: handleReactionPress,
-          renderReactionPicker,
-        }}
-      />
-    </View>
+    <Chat
+      messages={messages}
+      onSend={onSend}
+      user={USER}
+      reactions={{ onReactionPress, emojis: QUICK_REACTIONS }}
+    />
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container_dark: {
-    backgroundColor: '#000',
-  },
-})

@@ -13,7 +13,6 @@ import { RenderInputToolbar, RenderActions, RenderComposer, RenderSend } from '.
 import initialMessages from './messages'
 
 const Chats = () => {
-  const [text, setText] = useState('')
   const [messages, setMessages] = useState<IMessage[]>([])
   const colorScheme = useColorScheme()
   const isDark = colorScheme === 'dark'
@@ -29,7 +28,6 @@ const Chats = () => {
   return (
     <Chat
       messages={messages}
-      text={text}
       onSend={onSend}
       user={{
         _id: 1,
@@ -38,7 +36,6 @@ const Chats = () => {
       }}
       isAlignedTop
       isSendButtonAlwaysVisible
-      isScrollToBottomEnabled
       // isUserAvatarVisible
       isAvatarOnTop
       isUsernameVisible
@@ -58,7 +55,6 @@ const Chats = () => {
       messagesContainerStyle={{ backgroundColor: isDark ? '#1a1a1a' : 'indigo' }}
       textInputProps={{
         style: isDark && { backgroundColor: '#2a2a2a', color: '#fff' },
-        onChangeText: setText,
       }}
     />
   )

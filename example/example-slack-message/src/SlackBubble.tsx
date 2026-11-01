@@ -17,6 +17,7 @@ import {
   Time,
   utils,
   useChatContext,
+  useTheme,
   IMessage,
   User,
 } from '@kesha-antonov/react-native-chat'
@@ -78,6 +79,8 @@ const Bubble = (props: Props) => {
   } = props
 
   const context = useChatContext()
+  // The name and checks follow the chat theme, so they read in dark mode too.
+  const theme = useTheme()
   // The library no longer bundles an action sheet; consumers bring their own.
   // This screen wraps the chat in an ActionSheetProvider (see SlackExample).
   const { showActionSheetWithOptions } = useActionSheet()
@@ -161,14 +164,14 @@ const Bubble = (props: Props) => {
         <View style={[styles.headerItem, styles.tickView]}>
           {currentMessage.sent && (
             <Text
-              style={[styles.standardFont, styles.tick, tickStyle]}
+              style={[styles.standardFont, styles.tick, { color: theme.colors.accent }, tickStyle]}
             >
               ✓
             </Text>
           )}
           {currentMessage.received && (
             <Text
-              style={[styles.standardFont, styles.tick, tickStyle]}
+              style={[styles.standardFont, styles.tick, { color: theme.colors.accent }, tickStyle]}
             >
               ✓
             </Text>
@@ -177,7 +180,7 @@ const Bubble = (props: Props) => {
       )
 
     return null
-  }, [props, tickStyle, user?._id])
+  }, [props, tickStyle, user?._id, theme])
 
   const renderUsername = useCallback(() => {
     const username = currentMessage.user.name
@@ -191,6 +194,7 @@ const Bubble = (props: Props) => {
             styles.standardFont,
             styles.headerItem,
             styles.username,
+            { color: theme.colors.incomingText },
             usernameStyle,
           ]}
         >
@@ -199,7 +203,7 @@ const Bubble = (props: Props) => {
       )
     }
     return null
-  }, [currentMessage.user.name, props, usernameStyle])
+  }, [currentMessage.user.name, props, usernameStyle, theme])
 
   const renderTime = useCallback(() => {
     if (currentMessage.createdAt) {
@@ -308,7 +312,6 @@ const styles = StyleSheet.create({
   },
   tick: {
     backgroundColor: 'transparent',
-    color: 'white',
   },
   tickView: {
     flexDirection: 'row',

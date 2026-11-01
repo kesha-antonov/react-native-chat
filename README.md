@@ -1139,7 +1139,7 @@ For a prototype, `useChatMessages({ initialMessages, user })` keeps the messages
 - **`onReactionPress`** _(Function)_ - `(message, emoji) => void` called when an emoji is selected or a pill is tapped. Apply it with `Chat.toggleReaction`
 - **`renderReactions`** _(Function)_ - Override the reactions-display component rendered below the bubble
 - **`renderReactionPicker`** _(Function)_ - Override the picker shown on long-press (use for a full emoji browser). It receives [`ReactionPickerProps`](src/Reactions/types.ts): `visible`, `message`, `emojis`, `onSelect`, `onDismiss`, `position`, the bubble's on-screen box (`pageX`, `pageY`, `bubbleWidth`, `bubbleHeight`), the two picker styles and:
-  - **`messagePreview`** _(ReactNode, optional)_ - A copy of the pressed bubble to draw lifted above your backdrop at the bubble's box. While it is mounted the original bubble is hidden, so the message seems to rise out of the list; if you never render it, the original simply stays put. The easiest way to get the built-in look is to render the exported `ContextMenu` with `items={[]}`, as the example app's `EmojiReactionPicker` does (see [Message actions](#message-actions-long-press-context-menu) for its props)
+  - **`messagePreview`** _(ReactNode, optional)_ - A copy of the pressed bubble to draw lifted above your backdrop at the bubble's box. While it is mounted the original bubble is hidden, so the message seems to rise out of the list; if you never render it, the original simply stays put. The easiest way to get the built-in look is to render the exported `ContextMenu` with `items={[]}` (see [Message actions](#message-actions-long-press-context-menu) for its props)
 - **`renderExpandedPicker`** _(Function(`{ onSelect }`) | null, optional)_ - Telegram's expand button. The reactions bar (in the quick picker and above the context menu) ends in a chevron that grows the bar in place into a panel holding what this returns. Defaults to the built-in emoji grid (8 columns, search, tabs, recents); pass your own, or `null` to drop the button. Call `onSelect(emoji)` with the pick; the overlay closes and `onReactionPress` is called. Also passed to a custom `renderReactionPicker`
 - **`containerStyle`**, **`reactionStyle`**, **`reactionActiveStyle`**, **`reactionTextStyle`**, **`reactionCountStyle`** - Styles for the reaction pills
 - **`pickerContainerStyle`**, **`pickerEmojiStyle`** - Styles for the quick picker
@@ -1570,7 +1570,7 @@ fireEvent(loadingWrapper, 'layout', {
 <details>
 <summary><strong>Running the demo locally</strong></summary>
 
-The repository includes a comprehensive example app demonstrating all features - basic chat, custom bubbles and avatars, swipe-to-reply, quick replies, typing indicators, attachment actions, link parsing with custom matchers, and web compatibility.
+The repository includes an example app with two parts. The **Chats** tab is a small messenger built on the defaults: a Telegram Android chat list (unread badges, pinned and muted chats, "typing…" previews, swipe to archive, long-press selection, a compose button) where each chat is a bare `<Chat>` with seeded history, and sending moves the chat to the top and gets a simulated reply. The **Explore** tab has one screen per feature or customization: streaming AI replies, reactions, the long-press menu, media and voice, theming, localization, links, custom rendering, a Slack-style layout, and more.
 
 ```bash
 git clone https://github.com/kesha-antonov/react-native-chat.git

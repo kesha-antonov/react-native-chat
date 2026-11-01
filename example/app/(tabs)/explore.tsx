@@ -12,12 +12,12 @@ type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply
 
 const examples: Array<{ id: ChatExample, title: string, description: string }> = [
   { id: 'ai-bot', title: 'AI Bot (Streaming + Markdown)', description: 'Streamed assistant replies with a typing cursor, Stop button, and markdown rendering' },
-  { id: 'reactions', title: 'Reactions', description: 'Long-press a message to react with emojis, with a full emoji browser' },
-  { id: 'context-menu', title: 'Context Menu', description: 'Telegram-style long-press menu with Copy/Delete actions and a reactions row' },
+  { id: 'reactions', title: 'Reactions', description: 'Your own quick reactions bar; the chevron opens the built-in full emoji grid' },
+  { id: 'context-menu', title: 'Context Menu', description: 'Telegram-style long-press menu: built-in actions, Edit / Pin / Delete callbacks and a custom action' },
   { id: 'media', title: 'Media & Voice', description: 'Audio, video and location messages, hold-to-record voice notes, and video recording' },
   { id: 'theming', title: 'Theming & Icons', description: 'Switch themes at runtime and override icons via the icon registry' },
   { id: 'localization', title: 'Localization (i18n)', description: 'Switch UI language at runtime; built-in en/es/fr/de/ru + custom labels' },
-  { id: 'basic', title: 'Basic Example', description: 'Telegram-style composer: emoji, attachment grid, voice and round video notes, load earlier' },
+  { id: 'basic', title: 'Basic Example', description: 'Defaults only: emoji keyboard, attachment menu, voice and round video notes, load earlier' },
   { id: 'links', title: 'Links & Patterns', description: 'Phone numbers, emails, URLs, hashtags, and mentions' },
   { id: 'customized-rendering', title: 'Customized Rendering', description: 'Customized chat with all rendering options' },
   { id: 'slack', title: 'Slack Style', description: 'Slack-like message styling' },

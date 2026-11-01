@@ -176,9 +176,10 @@ export interface ClipboardAdapter {
 
 /**
  * The first clipboard that resolves: `expo-clipboard`, then
- * `@react-native-clipboard/clipboard`, then the browser's on web, then the one React Native
- * still ships (read through its own module path, as `require('react-native').Clipboard` logs
- * a deprecation warning on every app that touches it).
+ * `@react-native-clipboard/clipboard`, then the browser's on web. React Native's own deprecated
+ * Clipboard is not used: `require('react-native').Clipboard` warns on access, and requiring its
+ * module path warns on every app load, since React Native's Babel preset flags any deep import
+ * in the bundle whether or not it runs.
  */
 export const getClipboard = (): ClipboardAdapter | null => resolve('clipboard', () => {
   const expoClipboard = resolve('expo-clipboard', () => {
@@ -216,17 +217,6 @@ export const getClipboard = (): ClipboardAdapter | null => resolve('clipboard', 
       }
     return null
   }
-
-  const coreModule = resolve('react-native-clipboard-core', () => {
-    try {
-      return require('react-native/Libraries/Components/Clipboard/Clipboard')
-    } catch {
-      return null
-    }
-  })
-  const core = coreModule?.default ?? coreModule
-  if (core?.setString)
-    return { setString: (text: string) => core.setString(text) }
 
   return null
 })

@@ -86,9 +86,9 @@ export interface ReactionsProps<TMessage extends IMessage> {
   /** Override the reactions-display component rendered below the bubble */
   renderReactions?: (props: MessageReactionsDisplayProps<TMessage>) => React.ReactNode
   /**
-   * Override the emoji-picker component shown on long-press.
-   * Use this to provide a richer picker (e.g. a full emoji browser).
-   * See the example app for a `react-native-emoji-chooser` integration.
+   * Override the emoji-picker component shown on long-press. The built-in one is Telegram's
+   * reactions bar over the long-press menu, with the full emoji grid behind its chevron
+   * (`renderExpandedPicker`); `ContextMenu` is exported to build your own on.
    */
   renderReactionPicker?: (props: ReactionPickerProps<TMessage>) => React.ReactNode
   /**

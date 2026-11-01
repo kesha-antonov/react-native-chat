@@ -1,75 +1,62 @@
 import React, { useCallback, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
-import { Chat, IMessage, MessageReaction } from '@kesha-antonov/react-native-chat'
-
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { getColorSchemeStyle } from '../../utils/styleUtils'
-
-interface ChatMessage extends IMessage {
-  reactions?: MessageReaction[]
-}
+import { Alert } from 'react-native'
+import { Chat, IMessage, MessageMenuItem } from '@kesha-antonov/react-native-chat'
+import Info from 'lucide-react-native/icons/info'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Bot' }
-const CURRENT_USER_ID = 1
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  { _id: 2, text: 'Long-press me: Reply, Copy, Pin, Delete, and a reactions row on top.', createdAt: new Date(Date.now() - 1000 * 30), user: BOT },
+const INITIAL_MESSAGES: IMessage[] = [
+  { _id: 3, text: 'Edit shows on your own messages only.', createdAt: new Date(Date.now() - 1000 * 20), user: USER },
+  { _id: 2, text: 'Long-press me: Reply, Copy, Pin, Delete, a custom Info action, and a reactions row on top.', createdAt: new Date(Date.now() - 1000 * 30), user: BOT },
   { _id: 1, text: 'Long-press a message to open the context menu.', createdAt: new Date(Date.now() - 1000 * 60), user: BOT },
 ]
 
 export default function ContextMenuExample () {
-  const colorScheme = useColorScheme()
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
+  const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
 
-  const onSend = useCallback((newMessages: ChatMessage[] = []) => {
-    setMessages(previous => Chat.append(previous, newMessages.map(m => ({
-      ...m,
-      _id: m._id || Math.random().toString(36).slice(2),
-      user: USER,
-      createdAt: new Date(),
-    }))))
+  const onSend = useCallback((newMessages: IMessage[] = []) => {
+    setMessages(previous => Chat.append(previous, newMessages))
   }, [])
 
-  const handleReactionPress = useCallback((message: ChatMessage, emoji: string) => {
-    setMessages(previous => Chat.toggleReaction(previous, message._id, emoji, CURRENT_USER_ID))
+  const onReactionPress = useCallback((message: IMessage, emoji: string) => {
+    setMessages(previous => Chat.toggleReaction(previous, message._id, emoji, USER._id))
   }, [])
 
-  // The menu's Reply and Copy are built in; these callbacks add Edit (on your own messages),
-  // Pin / Unpin, and a red Delete.
-  const handleEditMessage = useCallback((message: ChatMessage, text: string) => {
+  // Reply and Copy are built in; each callback below turns on one more built-in action.
+  const onEditMessage = useCallback((message: IMessage, text: string) => {
     setMessages(previous => previous.map(m => (m._id === message._id ? { ...m, text, editedAt: new Date() } : m)))
   }, [])
 
-  const handlePinMessage = useCallback((message: ChatMessage) => {
+  const onPinMessage = useCallback((message: IMessage) => {
     setMessages(previous => previous.map(m => (m._id === message._id ? { ...m, isPinned: !m.isPinned } : m)))
   }, [])
 
-  const handleDeleteMessage = useCallback((message: ChatMessage) => {
+  const onDeleteMessage = useCallback((message: IMessage) => {
     setMessages(previous => previous.filter(m => m._id !== message._id))
   }, [])
 
+  // A function gets the built-in actions for the message, so you can add to them.
+  const messageActions = useCallback((message: IMessage, defaults: MessageMenuItem[]): MessageMenuItem[] => [
+    ...defaults,
+    {
+      key: 'info',
+      label: 'Info',
+      icon: ({ color, size }) => <Info color={color} size={size} />,
+      onPress: () => Alert.alert('Message info', `Sent ${new Date(message.createdAt).toLocaleString()}`),
+    },
+  ], [])
+
   return (
-    <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
-      <Chat<ChatMessage>
-        messages={messages}
-        onSend={onSend}
-        user={USER}
-        onEditMessage={handleEditMessage}
-        onPinMessage={handlePinMessage}
-        onDeleteMessage={handleDeleteMessage}
-        reactions={{ onReactionPress: handleReactionPress }}
-      />
-    </View>
+    <Chat
+      messages={messages}
+      onSend={onSend}
+      user={USER}
+      onEditMessage={onEditMessage}
+      onPinMessage={onPinMessage}
+      onDeleteMessage={onDeleteMessage}
+      messageActions={messageActions}
+      reactions={{ onReactionPress }}
+    />
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container_dark: {
-    backgroundColor: '#000',
-  },
-})

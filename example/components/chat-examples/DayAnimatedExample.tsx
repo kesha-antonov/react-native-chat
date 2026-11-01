@@ -1,12 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import React, { useCallback, useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 // Generates a labelled chat spanning several days so the floating/animated day
 // header and the inline day separators can be exercised. Each "day" is a fixed
 // number of days before today with a handful of messages, alternating sides.
+const USER = { _id: 1, name: 'Developer' }
 const MESSAGES_PER_DAY = 6
 const INITIAL_DAYS = 4
 const LOAD_EARLIER_DAYS = 3
@@ -45,12 +43,6 @@ export default function DayAnimatedExample () {
   const [messages, setMessages] = useState<IMessage[]>(() => generateRange(0, INITIAL_DAYS - 1))
   const [oldestDayOffset, setOldestDayOffset] = useState(INITIAL_DAYS - 1)
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
-  const colorScheme = useColorScheme()
-
-  const user = useMemo(() => ({
-    _id: 1,
-    name: 'Developer',
-  }), [])
 
   const onSend = useCallback((newMessages: IMessage[] = []) => {
     setMessages(previousMessages => Chat.append(previousMessages, newMessages))
@@ -70,28 +62,15 @@ export default function DayAnimatedExample () {
   }, [oldestDayOffset])
 
   return (
-    <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
-      <Chat
-        messages={messages}
-        onSend={onSend}
-        user={user}
-        loadEarlierMessagesProps={{
-          isAvailable: true,
-          isLoading: isLoadingEarlier,
-          onPress: onPressLoadEarlierMessages,
-        }}
-        isScrollToBottomEnabled
-      />
-    </View>
+    <Chat
+      messages={messages}
+      onSend={onSend}
+      user={USER}
+      loadEarlierMessagesProps={{
+        isAvailable: true,
+        isLoading: isLoadingEarlier,
+        onPress: onPressLoadEarlierMessages,
+      }}
+    />
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container_dark: {
-    backgroundColor: '#000',
-  },
-})

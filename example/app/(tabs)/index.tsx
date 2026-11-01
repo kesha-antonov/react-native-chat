@@ -33,7 +33,7 @@ export default function HomeScreen () {
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText>
-          Tap the Explore tab to try different chat examples.
+          Tap the Explore tab to try different chat examples, or Chats for a whole messenger built on the defaults.
         </ThemedText>
       </ThemedView>
     </ParallaxScrollView>

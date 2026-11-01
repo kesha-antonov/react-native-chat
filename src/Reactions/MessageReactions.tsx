@@ -93,6 +93,25 @@ export const MessageReactions = <TMessage extends IMessage = IMessage>(
   const chosenText = position === 'right' ? theme.colors.outgoingReactionTextChosen : theme.colors.incomingReactionTextChosen
   const unchosenBackground = multiplyAlpha(accent, UNCHOSEN_ALPHA)
 
+  const pills = reactions.map(reaction => {
+    const isChosen = currentUserId != null && reaction.userIds.includes(currentUserId)
+
+    return (
+      <ReactionPill
+        key={reaction.emoji}
+        emoji={reaction.emoji}
+        count={reaction.userIds.length}
+        isChosen={isChosen}
+        background={isChosen ? accent : unchosenBackground}
+        textColor={isChosen ? chosenText : unchosenText}
+        onPress={onReactionPress}
+        style={isChosen ? reactionActiveStyle : reactionStyle}
+        textStyle={reactionTextStyle}
+        countStyle={reactionCountStyle}
+      />
+    )
+  })
+
   return (
     <View
       style={[
@@ -101,24 +120,11 @@ export const MessageReactions = <TMessage extends IMessage = IMessage>(
         containerStyle,
       ]}
     >
-      {reactions.map(reaction => {
-        const isChosen = currentUserId != null && reaction.userIds.includes(currentUserId)
-
-        return (
-          <ReactionPill
-            key={reaction.emoji}
-            emoji={reaction.emoji}
-            count={reaction.userIds.length}
-            isChosen={isChosen}
-            background={isChosen ? accent : unchosenBackground}
-            textColor={isChosen ? chosenText : unchosenText}
-            onPress={onReactionPress}
-            style={isChosen ? reactionActiveStyle : reactionStyle}
-            textStyle={reactionTextStyle}
-            countStyle={reactionCountStyle}
-          />
-        )
-      })}
+      {/* The reserved time sits beside the pills, not in their wrapping row: as the row's
+          last item it had to fit the bubble's width exactly, and when the pills set that width
+          a rounding error wrapped it onto a row of its own after the bubble had been sized,
+          pushing the text above out of the bubble. */}
+      <View style={styles.pills}>{pills}</View>
       {!!trailing && <View style={styles.trailing}>{trailing}</View>}
     </View>
   )
@@ -129,11 +135,16 @@ const createStyles = (theme: ChatTheme) =>
     // Starts at the text's inset; the pills end 7 above the body's bottom.
     container: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
       alignItems: 'flex-end',
       gap: 4,
       paddingHorizontal: theme.spacing.bubblePaddingH,
       paddingBottom: 7,
+    },
+    pills: {
+      flexShrink: 1,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
     },
     containerAlone: {
       paddingTop: 6,
@@ -165,6 +176,7 @@ const createStyles = (theme: ChatTheme) =>
     },
     // The reserved time sits on the pills' baseline, under the visible one.
     trailing: {
+      flexShrink: 0,
       height: 14,
       justifyContent: 'flex-end',
     },

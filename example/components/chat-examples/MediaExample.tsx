@@ -1,9 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import React, { useCallback, useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
-
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { getColorSchemeStyle } from '../../utils/styleUtils'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Media Bot' }
@@ -69,43 +65,27 @@ const INITIAL_MESSAGES: IMessage[] = [
   },
 ]
 
+// Telegram-style round video notes (react-native-vision-camera). On a simulator there is no
+// camera, so the recorder runs in POC mode.
+const AUDIO_RECORDING = { isEnabled: true }
+const VIDEO_RECORDING = { isEnabled: true, maxDuration: 30 }
+
 export default function MediaExample () {
-  const colorScheme = useColorScheme()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
 
   const onSend = useCallback((newMessages: IMessage[] = []) => {
     setMessages(previous => Chat.append(previous, newMessages))
   }, [])
 
-  const audioRecording = useMemo(() => ({ isEnabled: true }), [])
-  // Telegram-style round video notes (react-native-vision-camera). On a
-  // simulator there is no camera, so the recorder runs in POC mode.
-  const videoRecording = useMemo(() => ({ isEnabled: true, maxDuration: 30 }), [])
-
+  // Playback works out of the box with the optional peers installed: expo-audio for voice,
+  // expo-video for video and round notes, expo-sharing to open files. Recording is opt-in.
   return (
-    <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
-      <Chat<IMessage>
-        messages={messages}
-        onSend={onSend}
-        user={USER}
-        // This example wires the optional media peers:
-        //   - expo-audio              -> voice recording + simple audio playback
-        //   - expo-video              -> inline video playback
-        //   - react-native-vision-camera -> round video notes (camera button in the bar)
-        //   - expo-media-library, expo-document-picker, expo-location -> the attachment menu
-        audioRecording={audioRecording}
-        videoRecording={videoRecording}
-      />
-    </View>
+    <Chat<IMessage>
+      messages={messages}
+      onSend={onSend}
+      user={USER}
+      audioRecording={AUDIO_RECORDING}
+      videoRecording={VIDEO_RECORDING}
+    />
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container_dark: {
-    backgroundColor: '#000',
-  },
-})
