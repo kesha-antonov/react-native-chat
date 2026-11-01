@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { Chat, ChatListItem, IMessage, TypingAction, User } from '@kesha-antonov/react-native-chat'
 
-import { CANNED_REPLIES, Dialog, DIALOGS, INITIAL_MESSAGES, ME, SAMPLE_AUDIO } from './data'
+import { BOT_SUGGESTIONS, botAnswer, CANNED_REPLIES, Dialog, DIALOGS, INITIAL_MESSAGES, ME, SAMPLE_AUDIO } from './data'
 
 /**
  * The demo's whole "backend": dialogs, their messages and who is typing, in one module with
@@ -166,6 +166,40 @@ function simulateUpload (id: string, messageId: IMessage['_id']) {
 }
 
 /** Someone types for a moment, then answers - and reads everything you sent. */
+/** How many words each streamed chunk adds, and how often one arrives. */
+const STREAM_WORDS = 2
+const STREAM_MS = 60
+
+/**
+ * A bot reply, the way an AI bot answers: "typing" while it thinks, then one message that grows
+ * a few words at a time (`streaming: true` draws the cursor) until it is final.
+ */
+function streamBotReply (id: string, bot: User, prompt: string, after: number) {
+  const answer = botAnswer(prompt.trim())
+  const tokens = answer.split(/(\s+)/)
+  const messageId = `${id}-bot-${Date.now()}`
+  schedule(id, after, () => {
+    setMessages(id, messages => messages.map(m => (m.user._id === ME._id && m.sent && !m.received ? { ...m, received: true } : m)))
+    setTyping(id, bot)
+  })
+  schedule(id, after + 900, () => {
+    setTyping(id, undefined)
+    receive(id, { _id: messageId, text: '', streaming: true, createdAt: new Date(), user: bot })
+    let count = 0
+    const step = () => {
+      count = Math.min(tokens.length, count + STREAM_WORDS * 2)
+      const isDone = count >= tokens.length
+      const text = tokens.slice(0, count).join('')
+      setMessages(id, messages => messages.map(m => (m._id === messageId
+        ? { ...m, text, streaming: !isDone, quickReplies: isDone ? BOT_SUGGESTIONS : undefined }
+        : m)))
+      if (!isDone)
+        schedule(id, STREAM_MS, step)
+    }
+    schedule(id, STREAM_MS, step)
+  })
+}
+
 function simulateReply (id: string, from: User, text: string, typingAfter = 900, typingFor = 2200) {
   schedule(id, typingAfter, () => {
     setMessages(id, messages => messages.map(m => (m.user._id === ME._id && m.sent && !m.received ? { ...m, received: true } : m)))
@@ -201,6 +235,13 @@ export const chatStore = {
       else
         schedule(id, SEND_MS, () => markSent(id, message._id))
     })
+
+    if (dialog.isBot && dialog.peer) {
+      const prompt = newMessages.map(m => m.text).filter(Boolean).join('\n')
+      if (prompt)
+        streamBotReply(id, dialog.peer, prompt, doneAt + 200)
+      return
+    }
 
     // Pick someone to answer: the other person, or a group member in turn.
     const responder = dialog.peer ?? dialog.members?.[replyIndex % dialog.members.length]
@@ -269,6 +310,14 @@ export const chatStore = {
     const draft = text.trim() ? text : undefined
     if (state.dialogs[id] && state.dialogs[id].draft !== draft)
       patchDialog(id, { draft })
+  },
+
+  /** Empties a chat (the bot's then shows its intro card and START). */
+  clearHistory (id: string) {
+    timers.get(id)?.forEach(clearTimeout)
+    timers.delete(id)
+    setTyping(id, undefined)
+    setMessages(id, () => [])
   },
 
   markRead (id: string) {

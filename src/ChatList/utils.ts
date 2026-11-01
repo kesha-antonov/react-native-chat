@@ -58,6 +58,16 @@ export interface ChatPreview {
 
 const firstName = (name?: string) => (name ?? '').split(' ')[0]
 
+/** Markdown as plain text, for a one-line preview: links keep their text, markers go. */
+export function stripMarkdown (text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, match => match.replace(/```\w*/g, ''))
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, '')
+    .replace(/(\*\*|__|~~|`)(.+?)\1/g, '$2')
+    .replace(/(^|[^\w*])[*_]([^*_\n]+)[*_](?=[^\w*]|$)/g, '$1$2')
+}
+
 /** The second line of a row for its newest message. */
 export function getChatPreview (chat: ChatListItem, labels: ChatLabels, user?: User): ChatPreview {
   const message = chat.lastMessage
@@ -86,7 +96,7 @@ export function getChatPreview (chat: ChatListItem, labels: ChatLabels, user?: U
   return {
     prefix,
     attachment: attachment && message.text ? undefined : attachment,
-    text: message.text ? message.text.replace(/\s+/g, ' ') : '',
+    text: message.text ? stripMarkdown(message.text).replace(/\s+/g, ' ').trim() : '',
     thumbnail: message.image,
   }
 }

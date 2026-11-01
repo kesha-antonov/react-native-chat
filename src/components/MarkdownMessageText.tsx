@@ -38,6 +38,49 @@ export const canUseStreamdown = (): boolean => {
 
 export const isMarkdownAvailable = !!(StreamdownText || LegacyStreamdown)
 
+/**
+ * How often a streaming reply's text reaches the renderer. `StreamdownText` processes each text
+ * on a worklet and drops every result older than the newest text, so a reply growing every few
+ * milliseconds showed nothing until it stopped. Fed at this pace, each step lands.
+ */
+export const STREAM_RENDER_MS = 250
+
+/** The text, updated at most every `STREAM_RENDER_MS` while streaming, and at once when it ends. */
+export const useStreamThrottledText = (text: string, isStreaming: boolean) => {
+  const [shown, setShown] = React.useState(text)
+  const latestRef = React.useRef(text)
+  latestRef.current = text
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastAtRef = React.useRef(0)
+
+  React.useEffect(() => {
+    if (!isStreaming) {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+        timerRef.current = null
+      }
+      setShown(text)
+      return
+    }
+    // One pending update at a time, which takes whatever the text is when it fires.
+    if (timerRef.current)
+      return
+    const wait = Math.max(0, lastAtRef.current + STREAM_RENDER_MS - Date.now())
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null
+      lastAtRef.current = Date.now()
+      setShown(latestRef.current)
+    }, wait)
+  }, [text, isStreaming])
+
+  React.useEffect(() => () => {
+    if (timerRef.current)
+      clearTimeout(timerRef.current)
+  }, [])
+
+  return isStreaming ? shown : text
+}
+
 export interface MarkdownMessageTextProps {
   text: string
   isStreaming?: boolean
@@ -124,6 +167,8 @@ export const MarkdownMessageText = ({
     [textStyle, linkStyle, markdownStyleProp]
   )
 
+  const renderedText = useStreamThrottledText(text, !!isStreaming)
+
   const handleLinkPress = React.useMemo(
     () => onLinkPress ? (event: { url?: string }) => event?.url && onLinkPress(event.url) : undefined,
     [onLinkPress]
@@ -137,7 +182,7 @@ export const MarkdownMessageText = ({
       {StreamdownText
         ? (
           <StreamdownText
-            markdown={text}
+            markdown={renderedText}
             markdownStyle={markdownStyle}
             onLinkPress={handleLinkPress}
             {...restProps}

@@ -53,6 +53,8 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- **Streamed markdown replies show their words as they arrive.** With `react-native-streamdown`, a reply that grew every few milliseconds showed only the cursor until it ended (each new text dropped the previous one's rendering); the text now reaches it at most every 250ms
+- Chat list previews show markdown as plain text
 - The message menu's Pin action shows a pushpin instead of a map marker (new `pushpin` icon)
 - Scroll-to-bottom button press feedback and animated unread counter
 - Media progress ring, arrow and ✕ draw without `react-native-svg`
@@ -87,6 +89,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10; TypeScript stays on 6.0 and Babel on 7 (see AGENTS.md)
 
 ### 📲 Example app
+- Chats: an AI Assistant bot whose replies stream in ("bot" in the header, typing while it thinks, markdown, tappable suggestions, an intro card with START after clearing the history)
 - Chats: who is typing shows in the chat header and the list (with a voice-note recording in the demo), not as a bubble in the chat
 - The Chats tab is built on `ChatList`, with its store as the backend
 - New Chats tab: a small messenger built on the defaults

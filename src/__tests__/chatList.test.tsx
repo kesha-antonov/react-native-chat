@@ -19,6 +19,11 @@ describe('chat list helpers', () => {
     expect(sortChats(CHATS).map(chat => chat.id)).toEqual(['team', 'max', 'anna', 'old'])
   })
 
+  it('previews markdown as plain text', () => {
+    const bot: ChatListItem = { id: 'b', title: 'Bot', lastMessage: { _id: 9, text: 'I am **bold**\n\n1. a `code` [link](http://x)', createdAt: 0, user: { _id: 2 } } }
+    expect(getChatPreview(bot, defaultLabels).text).toBe('I am bold a code link')
+  })
+
   it('previews a group message with its sender and media by type', () => {
     expect(getChatPreview(CHATS[1], defaultLabels, ME)).toMatchObject({ prefix: 'You: ', text: 'Shipping tonight' })
     const photo: ChatListItem = { id: 'p', title: 'P', lastMessage: { _id: 9, text: '', image: 'https://x/y.jpg', createdAt: 0, user: { _id: 2 } } }

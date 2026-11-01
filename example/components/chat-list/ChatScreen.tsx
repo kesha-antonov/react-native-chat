@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
-import { Chat, defaultDarkTheme, defaultLightTheme, IMessage, TypingAction, TypingStatus, User } from '@kesha-antonov/react-native-chat'
+import { Chat, defaultDarkTheme, defaultLightTheme, IMessage, Reply, TypingAction, TypingStatus, User } from '@kesha-antonov/react-native-chat'
 import { ChatListAvatar } from '@kesha-antonov/react-native-chat'
 import { useFocusEffect, useRouter } from 'expo-router'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
@@ -51,6 +51,15 @@ export default function ChatScreen ({ id }: { id: string }) {
   }, [id]))
 
   const onSend = useCallback((newMessages: IMessage[]) => chatStore.send(id, newMessages), [id])
+  // A bot's suggestion is sent as your own message.
+  const sendText = useCallback((text: string) => {
+    chatStore.send(id, [{ _id: `${id}-me-${Date.now()}`, text, createdAt: new Date(), user: ME }])
+  }, [id])
+  const onQuickReply = useCallback((replies: Reply[]) => {
+    const reply = replies[0]
+    if (reply)
+      sendText(String(reply.value))
+  }, [sendText])
   const reactions = useMemo(() => ({
     onReactionPress: (message: IMessage, emoji: string) => chatStore.toggleReaction(id, message, emoji),
   }), [id])
@@ -79,8 +88,15 @@ export default function ChatScreen ({ id }: { id: string }) {
         onEditMessage={onEditMessage}
         onDeleteMessage={onDeleteMessage}
         firstUnreadMessageId={firstUnreadMessageId}
-        // Only admins post in a channel; everyone else gets a mute button.
-        renderInputToolbar={dialog.kind === 'channel' ? () => <ChannelBar dialog={dialog} /> : undefined}
+        // Only admins post in a channel; everyone else gets a mute button. A bot nobody has
+        // talked to yet shows START instead of the composer.
+        renderInputToolbar={dialog.kind === 'channel'
+          ? () => <ChannelBar dialog={dialog} />
+          : dialog.isBot && messages.length === 0 ? () => <StartBar onStart={() => sendText('/start')} /> : undefined}
+        // A bot replies in markdown, and its suggestions are tappable.
+        messageTextProps={dialog.isBot ? BOT_TEXT_PROPS : undefined}
+        onQuickReply={dialog.isBot ? onQuickReply : undefined}
+        renderChatEmpty={dialog.isBot ? () => <BotIntro dialog={dialog} /> : undefined}
       />
     </View>
   )
@@ -96,16 +112,19 @@ function ChatHeader ({ dialog, typingUser, typingAction }: { dialog: Dialog, typ
   const router = useRouter()
 
   const isActive = !!typingUser || !!dialog.isOnline
-  const subtitle = dialog.kind === 'group'
-    ? `${(dialog.members?.length ?? 0) + 1} members`
-    : dialog.kind === 'channel'
-      ? formatSubscribers(dialog.subscribers ?? 0)
-      : dialog.isOnline ? 'online' : dialog.lastSeen ?? 'last seen recently'
+  const subtitle = dialog.isBot
+    ? 'bot'
+    : dialog.kind === 'group'
+      ? `${(dialog.members?.length ?? 0) + 1} members`
+      : dialog.kind === 'channel'
+        ? formatSubscribers(dialog.subscribers ?? 0)
+        : dialog.isOnline ? 'online' : dialog.lastSeen ?? 'last seen recently'
 
   const openMenu = () => {
     Alert.alert(dialog.title, undefined, [
       { text: dialog.isMuted ? 'Unmute' : 'Mute', onPress: () => chatStore.toggleMute(dialog.id) },
       { text: dialog.isPinned ? 'Unpin' : 'Pin', onPress: () => chatStore.togglePin(dialog.id) },
+      ...(dialog.isBot ? [{ text: 'Clear history', style: 'destructive' as const, onPress: () => chatStore.clearHistory(dialog.id) }] : []),
       { text: 'Cancel', style: 'cancel' },
     ])
   }
@@ -143,7 +162,7 @@ function ChatHeader ({ dialog, typingUser, typingAction }: { dialog: Dialog, typ
               </Animated.Text>
             )}
         </View>
-        {dialog.kind === 'user' && (
+        {dialog.kind === 'user' && !dialog.isBot && (
           <Pressable style={styles.headerButton} hitSlop={4} accessibilityRole='button' accessibilityLabel='Call' onPress={() => Alert.alert('Calls are not part of this demo')}>
             <MaterialCommunityIcons name='phone-outline' size={24} color={colors.headerIcon} />
           </Pressable>
@@ -152,6 +171,38 @@ function ChatHeader ({ dialog, typingUser, typingAction }: { dialog: Dialog, typ
           <MaterialCommunityIcons name='dots-vertical' size={24} color={colors.headerIcon} />
         </Pressable>
       </View>
+    </View>
+  )
+}
+
+const BOT_TEXT_PROPS = { markdown: true }
+
+/** A bot's card in an empty chat: what it can do. */
+function BotIntro ({ dialog }: { dialog: Dialog }) {
+  const colors = useChatListColors()
+  return (
+    <View style={styles.botIntroWrap} pointerEvents='none'>
+      <View style={[styles.botIntro, { backgroundColor: colors.headerBackground }]}>
+        <Text style={[styles.botIntroTitle, { color: colors.headerTitle }]}>What can this bot do?</Text>
+        <Text style={[styles.botIntroText, { color: colors.headerTitle }]}>{dialog.botDescription}</Text>
+      </View>
+    </View>
+  )
+}
+
+/** START, in the composer's place, for a bot you have not talked to yet. */
+function StartBar ({ onStart }: { onStart: () => void }) {
+  const colors = useChatListColors()
+  const insets = useSafeAreaInsets()
+  return (
+    <View style={[styles.channelBar, { paddingBottom: insets.bottom + 9 }]}>
+      <Pressable
+        onPress={onStart}
+        style={({ pressed }) => [styles.channelButton, { backgroundColor: colors.headerBackground, opacity: pressed ? 0.85 : 1 }]}
+        accessibilityRole='button'
+      >
+        <Text style={[styles.channelButtonText, { color: colors.typing }]}>START</Text>
+      </Pressable>
     </View>
   )
 }
@@ -219,6 +270,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 1,
     textAlign: 'left',
+  },
+  botIntroWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  botIntro: {
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    maxWidth: 300,
+  },
+  botIntroTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  botIntroText: {
+    fontSize: 14,
+    lineHeight: 19,
+    textAlign: 'center',
   },
   channelBar: {
     paddingTop: 9,

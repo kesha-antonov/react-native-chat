@@ -22,6 +22,10 @@ export interface Dialog {
   members?: User[]
   subscribers?: number
   draft?: string
+  /** A bot: "bot" in the header, an intro card with START in an empty chat, streamed replies. */
+  isBot?: boolean
+  /** What the bot says it can do, on that card. */
+  botDescription?: string
 }
 
 export const ME: User = { _id: 'me', name: 'Alex Morgan' }
@@ -31,6 +35,7 @@ const face = (index: number) => `https://i.pravatar.cc/200?img=${index}`
 
 const ANNA: User = { _id: 'anna', name: 'Anna Petrova', avatar: face(47) }
 const MAX: User = { _id: 'max', name: 'Max Ivanov' }
+export const AI_BOT: User = { _id: 'ai', name: 'AI Assistant' }
 const SOFIA: User = { _id: 'sofia', name: 'Sofia Garcia', avatar: face(45) }
 const LIAM: User = { _id: 'liam', name: 'Liam Chen' }
 const EMMA: User = { _id: 'emma', name: 'Emma Wilson', avatar: face(32) }
@@ -73,6 +78,16 @@ function history (chatId: string, seeds: Seed[]): IMessage[] {
 const read = { sent: true, received: true }
 
 export const DIALOGS: Dialog[] = [
+  {
+    id: 'ai',
+    title: 'AI Assistant',
+    kind: 'user',
+    peer: AI_BOT,
+    isBot: true,
+    isVerified: true,
+    unreadCount: 0,
+    botDescription: 'Ask me anything: I explain things, write and brainstorm with you. My answers stream in as I write them.',
+  },
   {
     id: 'rn-chat',
     title: 'React Native Chat',
@@ -196,7 +211,26 @@ export const DIALOGS: Dialog[] = [
   },
 ]
 
+/** Suggestions under a bot reply, sent as your next message when tapped. */
+export const BOT_SUGGESTIONS = {
+  type: 'radio' as const,
+  values: [
+    { title: '✍️ Write a poem', value: 'Write a short poem about chat apps' },
+    { title: '💡 Explain streaming', value: 'How does streaming work?' },
+    { title: '😄 Tell a joke', value: 'Tell me a joke' },
+  ],
+}
+
 export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
+  'ai': history('ai', [
+    { ago: 30 * MINUTE, user: ME, text: '/start', sent: true, received: true },
+    {
+      ago: 30 * MINUTE - 2000,
+      user: AI_BOT,
+      text: '👋 Hi! I am your **AI Assistant**.\n\nAsk me anything, or pick a suggestion below. My replies appear as I write them.',
+      quickReplies: BOT_SUGGESTIONS,
+    },
+  ]),
   'rn-chat': history('rn-chat', [
     { ago: 2 * DAY, user: MAX, text: 'Morning! Who is looking at the FlashList regression?' },
     { ago: 2 * DAY - 5 * MINUTE, user: LIAM, text: 'On it. Looks like the inverted list loses its scroll position after a prepend.' },
@@ -323,6 +357,20 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
   'kate': history('kate', [
     { ago: 40 * DAY, user: KATE, text: 'Thanks for the help with the move!' },
   ]),
+}
+
+/** The bot's answers, by what the question mentions. Markdown, streamed in a few words at a time. */
+export function botAnswer (prompt: string): string {
+  const text = prompt.toLowerCase()
+  if (text === '/start')
+    return '👋 Hi again! What would you like to talk about?'
+  if (text.includes('poem'))
+    return 'Here is a little poem:\n\n*Dots that swell and gently fade,*\n*a message forms, a promise made.*\n*Word by word the answer grows,*\n*and where it ends, nobody knows.*'
+  if (text.includes('joke'))
+    return 'Why did the React Native developer go broke?\n\nBecause they kept **bridging** the gap. 😄\n\n(Luckily the New Architecture removed the bridge.)'
+  if (text.includes('stream'))
+    return 'Streaming means you see an answer **while it is being written**:\n\n1. The bot starts a message right away.\n2. New words are appended every few milliseconds.\n3. When it is done, the message is final, like any other.\n\nIn this library a message with `streaming: true` draws a cursor, and the chat list shows the text as it grows.'
+  return `Good question! You asked: "${prompt}".\n\nThis demo bot has no real model behind it, but its replies **stream in** exactly like a real AI would. Wire \`onSend\` to your LLM and push its tokens into the message as they arrive.`
 }
 
 /** Replies the other side sends back, picked in turn. */
