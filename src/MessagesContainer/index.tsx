@@ -410,14 +410,17 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     return renderChatEmptyProp()
   }, [renderChatEmptyProp])
 
+  // An inverted list flips its empty component along with its rows, so it is flipped back here.
   const renderChatEmpty = useCallback(() => {
     if (renderChatEmptyProp)
       return isInverted
         ? (
-          emptyContent
+          <View style={[stylesCommon.fill, styles.emptyChatContainer]}>
+            {emptyContent}
+          </View>
         )
         : (
-          <View style={[stylesCommon.fill, styles.emptyChatContainer]}>
+          <View style={stylesCommon.fill}>
             {emptyContent}
           </View>
         )

@@ -53,6 +53,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- **A custom `renderChatEmpty` was drawn upside down** in the default inverted list (and mirrored on Android); it is flipped back the way the list flips its rows
 - **Streamed markdown replies show their words as they arrive.** With `react-native-streamdown`, a reply that grew every few milliseconds showed only the cursor until it ended (each new text dropped the previous one's rendering); the text now reaches it at most every 250ms
 - Chat list previews show markdown as plain text
 - The message menu's Pin action shows a pushpin instead of a map marker (new `pushpin` icon)
