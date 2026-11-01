@@ -15,6 +15,10 @@ export default function ChatLayout () {
         // scroll edge effect, and on an inverted chat list that blur covers the
         // whole list. An opaque header keeps the list below it.
         headerTransparent: false,
+        // Even under an opaque header iOS 26 still attaches its scroll edge effects to the
+        // list, and the inverted list flips them: opening the keyboard blurred every message
+        // for the length of the keyboard animation. The chat draws its own edges.
+        scrollEdgeEffects: { top: 'hidden', bottom: 'hidden', left: 'hidden', right: 'hidden' },
         // No bottom padding: the chat's wallpaper runs under the home indicator, and the
         // composer island keeps itself clear of it.
         headerLeft: () => (

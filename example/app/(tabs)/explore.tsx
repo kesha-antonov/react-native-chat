@@ -106,7 +106,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 17,
   },
+  // Pinned to the card's bottom, so "Try it" lines up across a row of cards of different text lengths.
   tryButton: {
     alignSelf: 'flex-start',
+    marginTop: 'auto',
   },
 })

@@ -75,6 +75,8 @@ const MENU_MIN_WIDTH = 200
 const ROW_IN_MS = 180
 const ROW_SHIFT = 6
 const CLOSE_MS = 220
+/** The bar and card glide after a message the list moved under them (the keyboard leaving). */
+const FOLLOW_MS = 250
 const CLOSE_SCALE = 0.8
 
 // Placement (`CA:32667-32701`): the popup's right edge 28 left of the finger (20 with the card's
@@ -407,8 +409,10 @@ export const ContextMenu = ({
   const expand = useSharedValue(0)
   const menuFade = useSharedValue(1)
 
-  // Placement is fixed for as long as the overlay is up: presenting the Modal can move the
-  // list underneath (it dismisses the keyboard), which only the lit copy follows.
+  // Placement is worked out once, when the overlay opens. Presenting the Modal can still move
+  // the list underneath (it dismisses the keyboard); the lit copy follows the message, and the
+  // bar and card follow the copy by the same distance (see `followY`), so they never end up
+  // over a message they are not for.
   const anchor = {
     pageX,
     pageY,
@@ -527,33 +531,45 @@ export const ContextMenu = ({
 
   const minY = insets.top + TOP_INSET
   const maxY = screenHeight - insets.bottom - containerHeight - BOTTOM_CLEARANCE
-  let containerTop = openAnchor.touchY
-  if (containerHeight > TALL_POPUP)
-    containerTop += TALL_POPUP - containerHeight
-  containerTop = clamp(containerTop, minY, maxY)
 
   // Telegram anchors the popup at the finger, which near the bottom of the list (or beside a
   // short bubble at the right edge) clamps it straight over the message it is for. When the
   // card (or its reactions pill) would cover the lit message's text and it fits fully below or
   // above that message, it moves there instead, keeping Telegram's horizontal placement.
-  const bubbleTop = openAnchor.pageY
-  const bubbleBottom = openAnchor.pageY + openAnchor.bubbleHeight
-  const cardTop = hasReactions ? containerTop + BAR_OFFSET : containerTop
-  const cardBottom = containerTop + containerHeight
-  const coversBubble = openAnchor.bubbleHeight > 0 &&
-    cardTop < bubbleBottom && cardBottom > bubbleTop &&
-    containerLeft < openAnchor.pageX + openAnchor.bubbleWidth && containerLeft + containerWidth > openAnchor.pageX
-  if (coversBubble) {
-    // Below: the reactions bar's tail reaches up to the bubble, as it does from the finger.
-    const below = bubbleBottom + MESSAGE_GAP - (hasReactions ? BAR_OFFSET : 0)
-    // Above: the card ends just over the bubble.
-    const above = bubbleTop - MESSAGE_GAP - containerHeight
-    if (below >= minY && below <= maxY)
-      containerTop = below
-    else if (above >= minY && above <= maxY)
-      containerTop = above
-  }
+  const placeTop = (touchAt: number, messageTop: number, messageHeight: number) => {
+    let top = touchAt
+    if (containerHeight > TALL_POPUP)
+      top += TALL_POPUP - containerHeight
+    top = clamp(top, minY, maxY)
 
+    const messageBottom = messageTop + messageHeight
+    const cardTop = hasReactions ? top + BAR_OFFSET : top
+    const cardBottom = top + containerHeight
+    const coversBubble = messageHeight > 0 &&
+      cardTop < messageBottom && cardBottom > messageTop &&
+      containerLeft < openAnchor.pageX + openAnchor.bubbleWidth && containerLeft + containerWidth > openAnchor.pageX
+    if (coversBubble) {
+      // Below: the reactions bar's tail reaches up to the bubble, as it does from the finger.
+      const below = messageBottom + MESSAGE_GAP - (hasReactions ? BAR_OFFSET : 0)
+      // Above: the card ends just over the bubble.
+      const above = messageTop - MESSAGE_GAP - containerHeight
+      if (below >= minY && below <= maxY)
+        top = below
+      else if (above >= minY && above <= maxY)
+        top = above
+    }
+    return top
+  }
+  const containerTop = placeTop(openAnchor.touchY, openAnchor.pageY, openAnchor.bubbleHeight)
+
+  // How far the message has moved since the overlay opened, kept on screen.
+  const movedBy = pageY - openAnchor.pageY
+  const followDy = movedBy === 0 ? 0 : placeTop(openAnchor.touchY + movedBy, pageY, bubbleHeight) - containerTop
+  const followY = useSharedValue(0)
+  useEffect(() => {
+    followY.value = withTiming(followDy, timing(FOLLOW_MS, DECELERATE))
+  }, [followDy, followY])
+  const followStyle = useAnimatedStyle(() => ({ transform: [{ translateY: followY.value }] }))
 
   // The bar keeps to the container's far side, the card to its near side.
   const barLeft = isRTL ? containerLeft : containerLeft + containerWidth - barWidth
@@ -664,97 +680,99 @@ export const ContextMenu = ({
           </View>
         )}
 
-        <Animated.View style={[StyleSheet.absoluteFill, closeStyle, { transformOrigin: `${isRTL ? containerLeft : containerLeft + containerWidth}px ${containerTop}px` }]} pointerEvents='box-none'>
-          {hasMenu && (
-            <Animated.View
-              style={[styles.menu, { top: menuTop, left: menuLeft }, menuFadeStyle]}
-              pointerEvents={isExpanded ? 'none' : 'box-none'}
-            >
-              <Animated.View style={[styles.menuBackground, { transformOrigin: 'center top' }, menuBackgroundStyle]} />
-              <View style={styles.menuClip} onLayout={onMenuLayout}>
-                {items.map((item, index) => (
-                  <MenuRow
-                    key={`${item.key ?? item.label}-${index}`}
-                    item={item}
-                    index={index}
-                    revealMs={revealMs}
-                    rowCount={rowCount}
-                    hasIcons={hasIcons}
-                    onPress={handlePress}
-                    styles={styles}
-                    theme={theme}
-                  />
-                ))}
-              </View>
-            </Animated.View>
-          )}
-
-          {hasReactions && (
-            <>
-              <Animated.View style={[styles.tail, tailStyle]} pointerEvents='none'>
-                <View style={[styles.tailBig, { left: tailX - TAIL_BIG, top: pillTop + BAR_HEIGHT - TAIL_BIG }]} />
-                <View style={[styles.tailSmall, { left: smallTailX - TAIL_SMALL, top: pillTop + BAR_HEIGHT + 15 - TAIL_SMALL }]} />
+        <Animated.View style={[StyleSheet.absoluteFill, followStyle]} pointerEvents='box-none'>
+          <Animated.View style={[StyleSheet.absoluteFill, closeStyle, { transformOrigin: `${isRTL ? containerLeft : containerLeft + containerWidth}px ${containerTop}px` }]} pointerEvents='box-none'>
+            {hasMenu && (
+              <Animated.View
+                style={[styles.menu, { top: menuTop, left: menuLeft }, menuFadeStyle]}
+                pointerEvents={isExpanded ? 'none' : 'box-none'}
+              >
+                <Animated.View style={[styles.menuBackground, { transformOrigin: 'center top' }, menuBackgroundStyle]} />
+                <View style={styles.menuClip} onLayout={onMenuLayout}>
+                  {items.map((item, index) => (
+                    <MenuRow
+                      key={`${item.key ?? item.label}-${index}`}
+                      item={item}
+                      index={index}
+                      revealMs={revealMs}
+                      rowCount={rowCount}
+                      hasIcons={hasIcons}
+                      onPress={handlePress}
+                      styles={styles}
+                      theme={theme}
+                    />
+                  ))}
+                </View>
               </Animated.View>
-              <Animated.View style={[styles.bar, { transformOrigin: barOrigin }, barStyle]}>
-                <Animated.View style={[styles.barClip, isRTL ? styles.alignStart : styles.alignEnd, barClipStyle]}>
-                  <Animated.View style={[styles.barBackground, reactions?.containerStyle, barBackgroundStyle]} />
-                  <Animated.View
-                    style={[styles.barItems, isRTL ? styles.barItemsRTL : styles.barItemsLTR, { width: barWidth }, barItemsStyle]}
-                    pointerEvents={isExpanded ? 'none' : 'box-none'}
-                  >
-                    {quickEmojis.map((emoji, index) => {
-                      const center = cellCenter(index) - barLeft
-                      return (
-                        <ReactionButton
-                          key={emoji}
-                          emoji={emoji}
-                          index={index}
-                          delay={ITEM_DELAY_SPREAD * Math.abs(center / Math.max(1, barWidth) - (isRTL ? 0.2 : 0.8)) + 30 * index}
-                          isSelected={!!selected?.includes(emoji)}
-                          isHidden={flight?.emoji === emoji}
-                          onPress={handleReaction}
-                          emojiStyle={reactions?.emojiStyle}
-                          styles={styles}
-                        />
-                      )
-                    })}
-                    {reactions?.renderAccessory && (
-                      <View onLayout={onAccessoryLayout}>{reactions.renderAccessory()}</View>
-                    )}
-                    {hasExpand && (
-                      <Pressable
-                        onPress={handleExpand}
-                        accessibilityRole='button'
-                        accessibilityLabel='more reactions'
-                        hitSlop={4}
-                        style={styles.reactionCell}
-                      >
-                        <Icon
-                          name='chevronDown'
-                          color={theme.contextMenu.icon}
-                          size={22}
-                          fallback={<ChevronFallback color={theme.contextMenu.icon} />}
-                        />
-                      </Pressable>
-                    )}
-                  </Animated.View>
-                  {/* Mounted from the start: a view that attaches to an animated style after its
+            )}
+
+            {hasReactions && (
+              <>
+                <Animated.View style={[styles.tail, tailStyle]} pointerEvents='none'>
+                  <View style={[styles.tailBig, { left: tailX - TAIL_BIG, top: pillTop + BAR_HEIGHT - TAIL_BIG }]} />
+                  <View style={[styles.tailSmall, { left: smallTailX - TAIL_SMALL, top: pillTop + BAR_HEIGHT + 15 - TAIL_SMALL }]} />
+                </Animated.View>
+                <Animated.View style={[styles.bar, { transformOrigin: barOrigin }, barStyle]}>
+                  <Animated.View style={[styles.barClip, isRTL ? styles.alignStart : styles.alignEnd, barClipStyle]}>
+                    <Animated.View style={[styles.barBackground, reactions?.containerStyle, barBackgroundStyle]} />
+                    <Animated.View
+                      style={[styles.barItems, isRTL ? styles.barItemsRTL : styles.barItemsLTR, { width: barWidth }, barItemsStyle]}
+                      pointerEvents={isExpanded ? 'none' : 'box-none'}
+                    >
+                      {quickEmojis.map((emoji, index) => {
+                        const center = cellCenter(index) - barLeft
+                        return (
+                          <ReactionButton
+                            key={emoji}
+                            emoji={emoji}
+                            index={index}
+                            delay={ITEM_DELAY_SPREAD * Math.abs(center / Math.max(1, barWidth) - (isRTL ? 0.2 : 0.8)) + 30 * index}
+                            isSelected={!!selected?.includes(emoji)}
+                            isHidden={flight?.emoji === emoji}
+                            onPress={handleReaction}
+                            emojiStyle={reactions?.emojiStyle}
+                            styles={styles}
+                          />
+                        )
+                      })}
+                      {reactions?.renderAccessory && (
+                        <View onLayout={onAccessoryLayout}>{reactions.renderAccessory()}</View>
+                      )}
+                      {hasExpand && (
+                        <Pressable
+                          onPress={handleExpand}
+                          accessibilityRole='button'
+                          accessibilityLabel='more reactions'
+                          hitSlop={4}
+                          style={styles.reactionCell}
+                        >
+                          <Icon
+                            name='chevronDown'
+                            color={theme.contextMenu.icon}
+                            size={22}
+                            fallback={<ChevronFallback color={theme.contextMenu.icon} />}
+                          />
+                        </Pressable>
+                      )}
+                    </Animated.View>
+                    {/* Mounted from the start: a view that attaches to an animated style after its
                       animation has finished keeps the style's first value, here invisible. */}
-                  {hasExpand && (
-                    <Animated.View style={[styles.panelContent, panelContentStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
-                      {/* Laid out once at the panel's final size and revealed by the growing,
+                    {hasExpand && (
+                      <Animated.View style={[styles.panelContent, panelContentStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
+                        {/* Laid out once at the panel's final size and revealed by the growing,
                           clipped panel - Telegram's mask. Filling the panel instead resized the
                           content on every frame of the expand, so a grid re-laid out its cells
                           each frame. */}
-                      <View style={[styles.panelContentInner, isRTL ? styles.panelInnerStart : styles.panelInnerEnd, { width: panelWidth, height: panelHeight }]}>
-                        {isExpanded && reactions?.renderExpandedPicker?.({ onSelect: handleExpandedSelect })}
-                      </View>
-                    </Animated.View>
-                  )}
+                        <View style={[styles.panelContentInner, isRTL ? styles.panelInnerStart : styles.panelInnerEnd, { width: panelWidth, height: panelHeight }]}>
+                          {isExpanded && reactions?.renderExpandedPicker?.({ onSelect: handleExpandedSelect })}
+                        </View>
+                      </Animated.View>
+                    )}
+                  </Animated.View>
                 </Animated.View>
-              </Animated.View>
-            </>
-          )}
+              </>
+            )}
+          </Animated.View>
         </Animated.View>
 
         {flight && (

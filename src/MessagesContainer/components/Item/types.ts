@@ -13,5 +13,8 @@ export interface ItemProps<TMessage extends IMessage> extends MessagesContainerP
   // inline separator stay visible until the header has actually rendered that day,
   // covering the ~1-frame JS-thread lag on the floating header's text.
   floatingRenderedDate?: { value: number | undefined }
+  // The floating header's scroll-gated opacity: the inline separator it covers comes
+  // back as it fades out at rest.
+  floatingDayOpacity?: { value: number }
   isDayAnimationEnabled?: boolean
 }

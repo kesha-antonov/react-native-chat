@@ -51,7 +51,7 @@ exports[`MessageImage should  render <MessageImage /> and compare with snapshot 
               {
                 "borderRadius": 15,
                 "height": 180,
-                "width": 240,
+                "minWidth": 240,
               },
               undefined,
             ]

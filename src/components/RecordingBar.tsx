@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { LayoutChangeEvent, Pressable, StyleProp, StyleSheet, Text, TextStyle, View } from 'react-native'
 import Animated, {
   Easing,
@@ -98,16 +98,26 @@ export function RecordingBar ({
   const isRTL = useIsRTL()
   const cancelSign = isRTL ? 1 : -1
 
+  // A locked take cancelled with CANCEL is no longer locked, but the bar has to stay in its
+  // locked look while it leaves: unlocking first brought "slide to cancel" back over the trash
+  // can and dropped CANCEL in a frame.
+  const [wasLocked, setWasLocked] = useState(isLocked)
+  if (isLocked && !wasLocked)
+    setWasLocked(true)
+  else if (!isLocked && !isCancelled && wasLocked)
+    setWasLocked(false)
+  const isShownLocked = isLocked || (isCancelled && wasLocked)
+
   const labelWidth = useSharedValue(0)
   const drift = useSharedValue(0)
-  const lock = useSharedValue(isLocked ? 1 : 0)
+  const lock = useSharedValue(isShownLocked ? 1 : 0)
   // After a cancel the timer and the hint fade and move 20 back, 200ms
   // after a 200ms wait.
   const leave = useSharedValue(0)
 
   useEffect(() => {
-    lock.value = withTiming(isLocked ? 1 : 0, { duration: LOCK_MS })
-  }, [isLocked, lock])
+    lock.value = withTiming(isShownLocked ? 1 : 0, { duration: LOCK_MS })
+  }, [isShownLocked, lock])
 
   useEffect(() => {
     leave.value = isCancelled ? withDelay(200, withTiming(1, { duration: 200 })) : 0
@@ -179,8 +189,8 @@ export function RecordingBar ({
           </Animated.View>
         </Animated.View>
         {/* Locked: the hint becomes a CANCEL text button, as in Telegram. */}
-        {isLocked && (
-          <Animated.View style={[styles.hintFill, cancelStyle]}>
+        {isShownLocked && (
+          <Animated.View style={[styles.hintFill, cancelStyle]} pointerEvents={isLocked ? 'auto' : 'none'}>
             <Pressable
               hitSlop={8}
               onPress={onCancel}
@@ -198,15 +208,21 @@ export function RecordingBar ({
 
 /**
  * The timer, one slot per character, so a changed digit rolls down out of
- * its slot while the new one rolls in from above.
+ * its slot while the new one rolls in from above. The tenths are the
+ * exception: `TimerView` only rolls when a digit before them changes, and
+ * swaps the last one in place - rolled ten times a second, it never sat still
+ * long enough to read and the timer looked like it was shaking.
  */
 function RollingTimer ({ text, style }: { text: string, style: StyleProp<TextStyle> }) {
   const styles = useThemedStyles(createStyles)
+  const chars = text.split('')
   return (
     <View style={styles.timerRow} accessible accessibilityLabel={text}>
-      {text.split('').map((char, index) => (
+      {chars.map((char, index) => (
         <View key={index} style={styles.digitSlot}>
-          <Animated.Text key={char} entering={DIGIT_IN} exiting={DIGIT_OUT} style={style}>{char}</Animated.Text>
+          {index === chars.length - 1
+            ? <Text style={style}>{char}</Text>
+            : <Animated.Text key={char} entering={DIGIT_IN} exiting={DIGIT_OUT} style={style}>{char}</Animated.Text>}
         </View>
       ))}
     </View>

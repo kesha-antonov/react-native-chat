@@ -24,14 +24,22 @@ jest.mock('react-native-reanimated', () => {
     addListener: () => {},
     removeListener: () => {},
   }
+  // Created once per hook, as on a device: the mock's own `useSharedValue` builds a fresh
+  // value on every render, so every callback depending on one changed identity each time and
+  // a test could not tell a real remount (a new `CellRendererComponent`) from that.
+  const React = require('react')
   mock.useSharedValue = (init: unknown) => {
-    const value = baseUseSharedValue(init)
-    return new Proxy(value, {
-      get: (target, prop) =>
-        typeof prop === 'string' && prop in listenerMethods && !(prop in target)
-          ? listenerMethods[prop]
-          : Reflect.get(target, prop),
-    })
+    const ref = React.useRef(null)
+    if (ref.current == null) {
+      const value = baseUseSharedValue(init)
+      ref.current = new Proxy(value, {
+        get: (target, prop) =>
+          typeof prop === 'string' && prop in listenerMethods && !(prop in target)
+            ? listenerMethods[prop]
+            : Reflect.get(target, prop),
+      })
+    }
+    return ref.current
   }
 
   return mock

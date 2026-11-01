@@ -10,8 +10,7 @@ import {
   ImageURISource,
   LayoutChangeEvent,
   useWindowDimensions,
-  StatusBar,
-  Text } from 'react-native'
+  StatusBar } from 'react-native'
 import { GestureHandlerRootView, Touchable } from 'react-native-gesture-handler'
 import { OverKeyboardView } from 'react-native-keyboard-controller'
 import Animated, {
@@ -23,6 +22,8 @@ import Animated, {
 } from 'react-native-reanimated'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Zoom from 'react-native-zoom-reanimated'
+import { Icon } from './components/Icon'
+import { CloseIcon } from './components/MediaControls'
 import { suppressPressAfterHold } from './components/messagePress'
 import { TouchableOpacity } from './components/TouchableOpacity'
 import { IMessage } from './Models'
@@ -72,7 +73,8 @@ function ModalContent({ isVisible, imageSource, modalImageDimensions, imageProps
 
   return (
     <>
-      <StatusBar animated barStyle='dark-content' />
+      {/* White on the black viewer, whatever the app's own bar style. */}
+      <StatusBar animated barStyle='light-content' />
       <Animated.View style={[styles.modalOverlay, modalAnimatedStyle, modalBorderRadiusStyle]}>
         <GestureHandlerRootView style={commonStyles.fill}>
           <Animated.View style={[commonStyles.fill, styles.modalContent, modalBorderRadiusStyle, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -80,10 +82,8 @@ function ModalContent({ isVisible, imageSource, modalImageDimensions, imageProps
             {/* close button */}
             <View style={styles.closeButtonContainer}>
               <Touchable onPress={handleModalClose}>
-                <View style={styles.closeButtonContent}>
-                  <Text style={styles.closeButtonIcon}>
-                    {'X'}
-                  </Text>
+                <View style={styles.closeButtonContent} accessibilityRole='button' accessibilityLabel='Close'>
+                  <Icon name='close' color='#fff' size={24} fallback={<CloseIcon color='#fff' size={24} />} />
                 </View>
               </Touchable>
             </View>
@@ -221,9 +221,13 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
 }
 
 const styles = StyleSheet.create({
-  // `Bubble` insets the photo by 2 and rounds its corners to follow the bubble's.
+  // `Bubble` insets the photo by 2 and rounds its corners to follow the bubble's. The width is
+  // a minimum, not fixed: a caption wider than the photo widens the bubble, and Telegram
+  // then widens the photo to fill it (`fixPhotoWidth`, `ChatMessageCell:10268`) rather than
+  // leaving a strip of bubble beside it. The source is always a uri, so the image has no
+  // intrinsic size of its own to grow to.
   image: {
-    width: 240,
+    minWidth: 240,
     height: 180,
     borderRadius: 15,
   },
@@ -250,10 +254,5 @@ const styles = StyleSheet.create({
   },
   closeButtonContent: {
     padding: 20,
-  },
-  closeButtonIcon: {
-    fontSize: 20,
-    lineHeight: 20,
-    color: 'white',
   },
 })

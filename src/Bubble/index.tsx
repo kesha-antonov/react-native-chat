@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ImageStyle,
   Keyboard,
@@ -12,7 +12,11 @@ import {
   useWindowDimensions } from 'react-native'
 import { GestureDetector, useExclusiveGestures, useLongPressGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
+  AnimatedRef,
+  measure,
   runOnJS,
+  runOnUI,
+  useAnimatedRef,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -84,6 +88,9 @@ const LIFTED_RESET: ViewStyle = {
  * a second player must not register in the playlist under the same message id
  * and unregister the real one when the overlay closes.
  */
+/** Long enough for the list to finish following the keyboard down (250ms) and lay out. */
+const KEYBOARD_SETTLE_MS = 350
+
 const LiftedBubble = ({
   onLiftChange,
   onRemeasure,
@@ -98,12 +105,29 @@ const LiftedBubble = ({
   // Presenting the overlay's Modal dismisses the keyboard (and iOS brings it
   // back when the Modal goes), so the list moves under the copy. Follow the
   // original, so the copy flies back to where it really is.
+  //
+  // The event alone is not enough: on Android the keyboard can be gone before this copy has
+  // subscribed, and the list is still sliding down (keyboard-controller animates it) when the
+  // event arrives - either way the copy stayed where the message had been, over another one,
+  // with the original's slot left empty. So it also measures once the slide has had time to
+  // finish; when nothing moved, that measure lands exactly where the copy already is.
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = []
+    const remeasureSoon = () => {
+      onRemeasure()
+      timers.push(setTimeout(onRemeasure, KEYBOARD_SETTLE_MS))
+    }
+    // Unconditionally: by the time this runs the keyboard may already report hidden while the
+    // list is still on its way down.
+    timers.push(setTimeout(onRemeasure, KEYBOARD_SETTLE_MS))
     const subscriptions = [
-      Keyboard.addListener('keyboardDidHide', onRemeasure),
-      Keyboard.addListener('keyboardDidShow', onRemeasure),
+      Keyboard.addListener('keyboardDidHide', remeasureSoon),
+      Keyboard.addListener('keyboardDidShow', remeasureSoon),
     ]
-    return () => subscriptions.forEach(subscription => subscription.remove())
+    return () => {
+      subscriptions.forEach(subscription => subscription.remove())
+      timers.forEach(clearTimeout)
+    }
   }, [onRemeasure])
 
   useEffect(() => {
@@ -140,7 +164,7 @@ export type PressableBubbleRowProps<TMessage extends IMessage> = {
   currentMessage: TMessage
   rowSurfaceStyle: StyleProp<ViewStyle>
   wrapperStyleList: StyleProp<ViewStyle>
-  bubbleContainerRef: React.RefObject<React.ComponentRef<typeof View> | null>
+  bubbleContainerRef: AnimatedRef<Animated.View>
   children: React.ReactNode
 }
 
@@ -204,9 +228,9 @@ const PressableBubbleRow = <TMessage extends IMessage>({
   const bubbleRow = (
     <View style={rowSurfaceStyle}>
       <View style={isLifted ? hiddenStyle : undefined}>
-        <View style={wrapperStyleList} ref={bubbleContainerRef}>
+        <Animated.View style={wrapperStyleList} ref={bubbleContainerRef}>
           {children}
-        </View>
+        </Animated.View>
       </View>
     </View>
   )
@@ -367,7 +391,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return isMessageGestureEnabled
   }, [isMessageGestureEnabled, currentMessage])
 
-  const bubbleContainerRef = useRef<React.ComponentRef<typeof View>>(null)
+  const bubbleContainerRef = useAnimatedRef<Animated.View>()
 
   const [isPickerVisible, setIsPickerVisible] = useState(false)
   const [pickerAnchor, setPickerAnchor] = useState<PickerAnchor>({
@@ -407,11 +431,18 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     setIsPickerVisible(false)
   }, [])
 
+  // Measured on the UI thread, from the native view: the list rides the keyboard on an
+  // animated transform that never reaches the shadow tree on Android, so a JS `measure` kept
+  // returning the row's place from before the keyboard went down, and the lifted copy and its
+  // menu stayed there, over another message.
   const measureBubble = useCallback(() => {
-    bubbleContainerRef.current?.measure((_x, _y, width, height, pageX, pageY) => {
-      setPickerAnchor({ pageX, pageY, bubbleWidth: width, bubbleHeight: height })
-    })
-  }, [])
+    runOnUI(() => {
+      'worklet'
+      const frame = measure(bubbleContainerRef)
+      if (frame)
+        runOnJS(setPickerAnchor)({ pageX: frame.pageX, pageY: frame.pageY, bubbleWidth: frame.width, bubbleHeight: frame.height })
+    })()
+  }, [bubbleContainerRef])
 
   // The flash after a quote jump tints the bubble too, not just the row behind it.
   const highlightToken = useMessageHighlightToken(currentMessage?._id)

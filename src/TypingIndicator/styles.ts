@@ -8,6 +8,10 @@ export const createTypingIndicatorStyles = (theme: ChatTheme) => StyleSheet.crea
     borderRadius: theme.radii.bubble,
     backgroundColor: theme.colors.incomingBubble,
   },
+  mountedContainer: {
+    height: 35,
+    marginBottom: 8,
+  },
   dots: {
     flexDirection: 'row',
   },

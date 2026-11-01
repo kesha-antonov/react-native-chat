@@ -119,6 +119,8 @@ export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
   loadEarlierMessagesProps?: LoadEarlierMessagesProps
   /** Style for TypingIndicator component */
   typingIndicatorStyle?: StyleProp<ViewStyle>
+  /** Whether incoming messages leave room for an avatar; the typing bubble lines up with them */
+  isAvatarVisible?: boolean
   /** Enable animated day label that appears on scroll; default is true */
   isDayAnimationEnabled?: boolean
   /** Reply functionality configuration */

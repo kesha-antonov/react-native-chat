@@ -22,12 +22,14 @@ import { LoadEarlierMessages } from '../LoadEarlierMessages'
 import { warning } from '../logging'
 import { IMessage } from '../Models'
 import stylesCommon from '../styles'
-import { TypingIndicator } from '../TypingIndicator'
+import { TypingIndicator, TypingIndicatorListAnimationContext } from '../TypingIndicator'
 import { isSameDay } from '../utils'
 import { DayAnimated } from './components/DayAnimated'
+import { useScrollGatedOpacity } from './components/DayAnimated/useScrollGatedOpacity'
 import { Item } from './components/Item'
 import { ItemProps } from './components/Item/types'
 import { AnimatedFlashList, isFlashListAvailable } from './FlashList'
+import { isArrivingMessage, listCellTransition, newestCellEntering } from './listTransitions'
 import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions, AnimatedFlatList } from './types'
 
@@ -214,13 +216,19 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // running). Drives the floating day header visibility so it stays opaque for the
   // whole gesture and only fades once scrolling fully stops.
   const isScrollActive = useSharedValue(false)
+  // The floating day header's fade, shared with the inline separators it stands in for.
+  const floatingDayOpacity = useScrollGatedOpacity(isScrollActive)
+
+  // The incoming bubbles start past the avatar column: the row's 8, then the avatar
+  // (pulled 2 towards the edge) and the 11 the tail curls into (see `Avatar`).
+  const typingIndicatorAvatarInset = useMemo(() => ({ marginLeft: 8 - 2 + theme.avatar.size + 11 }), [theme.avatar.size])
 
   const renderTypingIndicator = useCallback(() => {
     if (renderTypingIndicatorProp)
       return renderTypingIndicatorProp()
 
-    return <TypingIndicator isTyping={isTyping} style={props.typingIndicatorStyle} />
-  }, [isTyping, renderTypingIndicatorProp, props.typingIndicatorStyle])
+    return <TypingIndicator isTyping={isTyping} style={[props.isAvatarVisible && typingIndicatorAvatarInset, props.typingIndicatorStyle]} />
+  }, [isTyping, renderTypingIndicatorProp, props.isAvatarVisible, typingIndicatorAvatarInset, props.typingIndicatorStyle])
 
   const ListFooterComponent = useMemo(() => {
     if (renderFooterProp)
@@ -361,6 +369,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         daysPositions,
         listHeight,
         floatingRenderedDate,
+        floatingDayOpacity,
         isDayAnimationEnabled,
       }
 
@@ -370,7 +379,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     }
 
     return null
-  }, [messages, restProps, isInverted, scrolledY, daysPositions, listHeight, floatingRenderedDate, isDayAnimationEnabled, user])
+  }, [messages, restProps, isInverted, scrolledY, daysPositions, listHeight, floatingRenderedDate, floatingDayOpacity, isDayAnimationEnabled, user])
 
   const emptyContent = useMemo(() => {
     if (!renderChatEmptyProp)
@@ -652,7 +661,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // Records where each message sits in the content so the floating day header
   // knows which day is currently on screen. Shared by both cell renderers.
   const trackDayPosition = useCallback((message: IMessage | undefined, layout: { y: number, height: number }) => {
-    if (message && isScreenGradient) {
+    // Recorded whatever the theme: a cell is only measured when it lays out, so a switch
+    // into the screen-gradient theme (dark mode) would otherwise find no rows to paint.
+    if (message) {
       const cell = { y: layout.y, height: layout.height }
       const key = message._id.toString()
       cellLayouts.modify(value => {
@@ -698,25 +709,52 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       value[id] = newValue
       return value
     })
-  }, [daysPositions, isInverted, isDayAnimationEnabled, isScreenGradient, cellLayouts])
+  }, [daysPositions, isInverted, isDayAnimationEnabled, cellLayouts])
+
+  // The ids on screen as of the last commit, to tell a message that has just arrived from a
+  // row the list mounts late (windowing, or scrolling back down).
+  const knownIdsRef = useRef<ReadonlySet<string | number>>(new Set(messages.map(message => message._id)))
+  useEffect(() => {
+    knownIdsRef.current = new Set(messages.map(message => message._id))
+  }, [messages])
+
+  // Rows slide to their new place when one arrives or changes height, and the newest
+  // message rises in from below (Telegram's `ChatListItemAnimator`). Only the inverted
+  // FlatList: a non-inverted chat scrolls to a new message instead, and FlashList
+  // recycles its cells.
+  const areCellsAnimated = isInverted && !isFlashList
 
   const renderCell = useCallback((props: CellRendererProps) => {
-    const { item, onLayout: onLayoutProp, children } = props
+    const { item, index, onLayout: onLayoutProp, children } = props
 
     const handleOnLayout = (event: LayoutChangeEvent) => {
       onLayoutProp?.(event)
       trackDayPosition(item as IMessage, event.nativeEvent.layout)
     }
 
+    if (!areCellsAnimated)
+      return (
+        <View
+          {...props}
+          onLayout={handleOnLayout}
+        >
+          {children}
+        </View>
+      )
+
+    const isArriving = isArrivingMessage((item as IMessage)._id, index, knownIdsRef.current)
+
     return (
-      <View
+      <Animated.View
         {...props}
+        layout={listCellTransition}
+        entering={isArriving ? newestCellEntering : undefined}
         onLayout={handleOnLayout}
       >
         {children}
-      </View>
+      </Animated.View>
     )
-  }, [trackDayPosition])
+  }, [trackDayPosition, areCellsAnimated])
 
   // FlashList recycles cells and hands its CellRendererComponent only an
   // `index` (no `item`), so the message is looked up through a ref to keep the
@@ -932,6 +970,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
           listHeight={listHeight}
           isScrollActive={isScrollActive}
           floatingRenderedDate={floatingRenderedDate}
+          opacity={floatingDayOpacity}
           renderDay={renderDayProp}
           isLoading={loadEarlierMessagesProps?.isLoading ?? false}
           dateFormat={props.dateFormat}
@@ -941,12 +980,18 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     </View>
   )
 
-  if (!gradientStore)
-    return list
+  const animatedList = (
+    <TypingIndicatorListAnimationContext.Provider value={areCellsAnimated}>
+      {list}
+    </TypingIndicatorListAnimationContext.Provider>
+  )
 
+  // Always mounted, with `null` outside the screen-gradient theme: wrapping the list only in
+  // that theme moved it in the tree whenever the color scheme flipped, and React remounted
+  // the whole list - back at the newest message, wherever the user had scrolled.
   return (
     <BubbleGradientContext.Provider value={gradientStore}>
-      {list}
+      {animatedList}
     </BubbleGradientContext.Provider>
   )
 }

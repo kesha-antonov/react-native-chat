@@ -47,6 +47,7 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
     daysPositions,
     listHeight,
     floatingRenderedDate,
+    floatingDayOpacity,
     ...rest
   } = props
 
@@ -82,8 +83,15 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
     const belowHandoff = separatorScreenTop > DAY_HANDOFF_OFFSET
     const headerShowsThisDay = floatingRenderedDate != null && floatingRenderedDate.value === createdAt
 
+    if (belowHandoff || !headerShowsThisDay)
+      return { opacity: 1 }
+
+    // Past the line the header stands in for this separator - but only while it is
+    // showing. At rest it fades out (Telegram hides the floating date when idle), and the
+    // separator fades back in where it really is; otherwise a list that settles with a
+    // date just under the top - or that a growing row nudges past the line - shows none.
     return {
-      opacity: belowHandoff || !headerShowsThisDay ? 1 : 0,
+      opacity: floatingDayOpacity ? 1 - floatingDayOpacity.value : 0,
     }
   })
 

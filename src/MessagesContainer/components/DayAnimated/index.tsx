@@ -11,13 +11,14 @@ import { useScrollGatedOpacity } from './useScrollGatedOpacity'
 
 export * from './types'
 
-export const DayAnimated = ({ scrolledY, daysPositions, listHeight, isScrollActive, floatingRenderedDate, renderDay, isLoading, ...rest }: DayAnimatedProps) => {
+export const DayAnimated = ({ scrolledY, daysPositions, listHeight, isScrollActive, opacity: opacityProp, floatingRenderedDate, renderDay, isLoading, ...rest }: DayAnimatedProps) => {
   const containerHeight = useSharedValue(0)
   const isLoadingAnim = useSharedValue(isLoading)
 
   // Telegram only shows the floating date while scrolling; this opacity fades in on
   // scroll start and out after the gesture fully ends.
-  const opacity = useScrollGatedOpacity(isScrollActive)
+  const ownOpacity = useScrollGatedOpacity(isScrollActive)
+  const opacity = opacityProp ?? ownOpacity
 
   // Sort newest day first. Sorting by createdAt (stable) rather than measured y
   // keeps the order deterministic even while cells are (re)measured mid-scroll, so
