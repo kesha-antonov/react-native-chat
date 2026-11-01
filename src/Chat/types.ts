@@ -13,6 +13,7 @@ import { AvatarProps } from '../Avatar'
 import { BubbleProps } from '../Bubble'
 import { ActionSheetOptions } from '../ChatContext'
 import { AttachmentAction } from '../components/AttachmentSheet'
+import { SelectionBarProps } from '../components/SelectionBar'
 import { ComposerProps } from '../Composer'
 import { EmojiKeyboardProps } from '../emoji/EmojiKeyboard'
 import { ChatLabels } from '../i18n'
@@ -43,7 +44,8 @@ import { SystemMessageProps } from '../SystemMessage'
 import { PartialChatTheme } from '../Theme'
 import { TimeProps } from '../Time'
 
-export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<MessagesContainerProps<TMessage>, 'messageReplyContainerStyle'>> {
+export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<MessagesContainerProps<TMessage>, 'messageReplyContainerStyle'>>,
+  Pick<BubbleProps<TMessage>, 'fetchLinkPreview' | 'renderLinkPreview' | 'onPressLinkPreview'> {
   /* Messages container ref */
   messagesContainerRef?: RefObject<AnimatedList<TMessage>>
   /* text input ref */
@@ -152,6 +154,12 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   onSend?: (messages: TMessage[]) => void
   /*  Render a loading view when initializing */
   renderLoading?: () => React.ReactNode
+  /**
+   * The big greeting on the empty-chat card, sent as a message when tapped (Telegram's greeting
+   * sticker). `null` leaves it out, keeping just the "No messages here yet..." card.
+   * @default '👋'
+   */
+  emptyChatGreeting?: string | null
   /* Custom message avatar; set to null to not render any avatar for the message */
   renderAvatar?: null | ((props: AvatarProps<TMessage>) => React.ReactNode)
   /* Custom message bubble */
@@ -243,9 +251,9 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   messageActions?: MessageMenuItem[] | ((message: TMessage, defaults: MessageMenuItem[]) => MessageMenuItem[])
   /**
    * The built-in long-press actions, in Telegram's order: Reply, Copy, Forward, Pin / Unpin,
-   * Edit, Delete. Each shows only when it can work (Copy needs text and a clipboard peer; Edit
-   * needs your own text message and `onEditMessage`; Forward, Pin and Delete need their
-   * callbacks).
+   * Edit, Select, Delete. Each shows only when it can work (Copy needs text and a clipboard peer;
+   * Edit needs your own text message and `onEditMessage`; Forward, Pin and Delete need their
+   * callbacks; Select needs something to do with a selection - a clipboard, Forward or Delete).
    * `true` (default) offers them all; an array picks and orders them; `false` turns them off.
    * They are also off when `onLongPressMessage` is set and `messageActions` is not, so an app
    * that already handles long-press keeps doing so.
@@ -261,6 +269,28 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   onDeleteMessage?: (message: TMessage) => void
   /** Turns on the "Forward" action. */
   onForwardMessage?: (message: TMessage) => void
+  /**
+   * Forwards the messages checked in selection mode, oldest first. Without it the selection
+   * bar's Forward calls `onForwardMessage` once per message.
+   */
+  onForwardMessages?: (messages: TMessage[]) => void
+  /**
+   * Deletes the messages checked in selection mode, oldest first. Without it the selection
+   * bar's Delete calls `onDeleteMessage` once per message.
+   */
+  onDeleteMessages?: (messages: TMessage[]) => void
+  /**
+   * Called whenever the selection changes in Telegram's multi-select mode (entered from the
+   * menu's "Select"), with the checked messages in the order they were checked - an empty array
+   * once it ends.
+   */
+  onSelectionChange?: (messages: TMessage[]) => void
+  /**
+   * The bar that replaces the composer while messages are selected (count, Copy, Forward,
+   * Delete). Return your own, or `null` to keep the composer and drive the selection from your
+   * header through `onSelectionChange`.
+   */
+  renderSelectionBar?: ((props: SelectionBarProps & { messages: TMessage[] }) => React.ReactNode) | null
   /**
    * Turns on the "Pin" action; it reads "Unpin" on a message with `isPinned`. Called with the
    * message either way - flip its `isPinned` to toggle.
@@ -303,10 +333,18 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    * return key inserting a newline; `false` turns it into Send.
    */
   isMultiline?: boolean
-  /** Telegram-style hold-to-record voice messages (needs optional expo-audio) */
-  audioRecording?: AudioRecordingProps
-  /** Round video messages from the camera (needs optional react-native-vision-camera or expo-image-picker) */
-  videoRecording?: VideoRecordingProps
+  /**
+   * Telegram-style hold-to-record voice notes. On by default when the optional `expo-audio` is
+   * installed; `false` turns them off, an object configures them (`minDurationMs`, ...).
+   */
+  audioRecording?: boolean | AudioRecordingProps
+  /**
+   * Round video notes, recorded in the chat. On by default when `react-native-vision-camera`
+   * is installed (the mic button then toggles to the camera with a tap, as in Telegram);
+   * `false` turns them off. `{ isEnabled: true }` additionally falls back to the system camera
+   * (`expo-image-picker`) when vision-camera is missing.
+   */
+  videoRecording?: boolean | VideoRecordingProps
   /** Playback speed and auto-play-next for voice and round video notes */
   mediaPlayback?: MediaPlaybackProps
   /**

@@ -11,9 +11,10 @@ import { PencilIcon, ReplyArrowIcon, TrashIcon } from './MediaControls'
 /**
  * Telegram's order for the actions the library can offer by itself, as Telegram Android's
  * `ChatActivity.fillMessageMenu` adds them for a regular message: Reply, Copy, Forward,
- * Pin / Unpin, Edit, Delete.
+ * Pin / Unpin, Edit, Delete - with Select (which Telegram Android starts from the long-press
+ * itself) before Delete.
  */
-export const DEFAULT_MESSAGE_ACTION_KEYS: MessageActionKey[] = ['reply', 'copy', 'forward', 'pin', 'edit', 'delete']
+export const DEFAULT_MESSAGE_ACTION_KEYS: MessageActionKey[] = ['reply', 'copy', 'forward', 'pin', 'edit', 'select', 'delete']
 
 type DrawnIcon = (props: { color?: string, size?: number }) => React.ReactNode
 
@@ -39,6 +40,7 @@ const ICONS: Record<MessageActionKey | 'unpin', IconRenderer> = {
   pin: iconRenderer('pin'),
   unpin: iconRenderer('pinOff'),
   edit: iconRenderer('pencil', PencilIcon),
+  select: iconRenderer('checkCircle'),
   delete: iconRenderer('trash', TrashIcon),
 }
 
@@ -53,6 +55,7 @@ export interface DefaultMessageActionsOptions<TMessage extends IMessage> {
   onEdit?: (message: TMessage) => void
   onForward?: (message: TMessage) => void
   onPin?: (message: TMessage) => void
+  onSelect?: (message: TMessage) => void
   onDelete?: (message: TMessage) => void
 }
 
@@ -71,6 +74,7 @@ export function buildDefaultMessageActions<TMessage extends IMessage> ({
   onEdit,
   onForward,
   onPin,
+  onSelect,
   onDelete,
 }: DefaultMessageActionsOptions<TMessage>): MessageMenuItem[] {
   if (message.system)
@@ -111,6 +115,10 @@ export function buildDefaultMessageActions<TMessage extends IMessage> ({
           items.push(message.isPinned
             ? { key, label: labels.actionUnpin, icon: ICONS.unpin, onPress: () => onPin(message) }
             : { key, label: labels.actionPin, icon: ICONS.pin, onPress: () => onPin(message) })
+        break
+      case 'select':
+        if (onSelect)
+          items.push({ key, label: labels.actionSelect, icon: ICONS.select, onPress: () => onSelect(message) })
         break
       case 'delete':
         if (onDelete)

@@ -217,11 +217,24 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
     { ago: 5 * HOUR - MINUTE, user: ANNA, audio: SAMPLE_AUDIO, duration: 14 },
     { ago: 4 * HOUR, user: ME, text: 'Perfect, booked a table for two 🍝', ...read, reactions: [{ emoji: '❤️', userIds: ['anna'] }] },
     { ago: 25 * MINUTE, user: ME, text: 'See you at 7!', ...read },
+    { ago: 24 * MINUTE, user: ANNA, text: '😍' },
   ]),
   'design-digest': history('design-digest', [
     { ago: 3 * DAY, user: DESIGN, text: 'Welcome to Design Digest: one good interface idea a day.' },
     { ago: 2 * DAY, user: DESIGN, image: photo('digest-1'), text: 'Motion with purpose: every animation should answer "where did this come from?"', reactions: [{ emoji: '👍', userIds: ['a', 'b', 'c', 'd'] }, { emoji: '🔥', userIds: ['e', 'f'] }] },
-    { ago: DAY, user: DESIGN, text: 'Tip: keep tap targets at least 44pt, even when the icon is 24.' },
+    {
+      ago: DAY,
+      user: DESIGN,
+      text: 'Tip: keep tap targets at least 48dp, even when the icon is 24. More in https://m3.material.io/foundations/designing/structure',
+      linkPreview: {
+        siteName: 'Material Design',
+        title: 'Structure - Material Design 3',
+        description: 'Touch targets should be at least 48x48dp, with 8dp of space between them.',
+        image: photo('material-touch', 400, 400),
+        imageWidth: 400,
+        imageHeight: 400,
+      },
+    },
     { ago: 6 * HOUR, user: DESIGN, image: photo('digest-2'), text: 'Today\'s pick: a chat list that fits 70dp rows without feeling cramped.' },
     { ago: 50 * MINUTE, user: DESIGN, image: photo('digest-3') },
   ]),
@@ -229,7 +242,22 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
     { ago: 3 * DAY, user: MAX, text: 'Did you see the talk about Fabric?' },
     { ago: 3 * DAY - MINUTE, user: ME, text: 'Yes! The part about synchronous layout was mind-blowing', ...read },
     { ago: 2 * HOUR, user: MAX, text: 'Sending you the slides later' },
+    {
+      ago: 2 * HOUR - MINUTE,
+      user: MAX,
+      text: 'Meanwhile, the write-up: https://reactnative.dev/architecture/landing-page',
+      // What a server would have fetched from the page's Open Graph tags.
+      linkPreview: {
+        siteName: 'React Native',
+        title: 'About the New Architecture',
+        description: 'Since 2018, the React Native team has been redesigning the core internals of React Native to enable developers to create higher-quality experiences.',
+        image: photo('new-architecture', 1200, 630),
+        imageWidth: 1200,
+        imageHeight: 630,
+      },
+    },
     { ago: 2 * HOUR - 2 * MINUTE, user: ME, text: 'Thanks 🙏', ...read },
+    { ago: 2 * HOUR - 3 * MINUTE, user: MAX, text: '👍' },
   ]),
   'family': history('family', [
     { ago: DAY, user: MOM, text: 'Dinner on Sunday at ours?' },
@@ -278,6 +306,19 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
   ]),
   'rn-releases': history('rn-releases', [
     { ago: 9 * DAY, user: RELEASES, text: 'React Native 0.88 is out: strict TypeScript API, faster startup.' },
+    {
+      ago: 9 * DAY - MINUTE,
+      user: RELEASES,
+      text: 'Release notes: https://reactnative.dev/blog',
+      linkPreview: {
+        siteName: 'React Native',
+        title: 'Blog - React Native',
+        description: 'Release notes, deep dives and announcements from the React Native team.',
+        image: photo('rn-blog', 1200, 630),
+        imageWidth: 1200,
+        imageHeight: 630,
+      },
+    },
   ]),
   'kate': history('kate', [
     { ago: 40 * DAY, user: KATE, text: 'Thanks for the help with the move!' },

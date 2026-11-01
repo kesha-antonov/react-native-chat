@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
@@ -12,11 +12,6 @@ import { formatSubscribers } from './format'
 import { chatStore, useDialog, useMessages, useTyping } from './store'
 import { useChatListColors } from './theme'
 
-// Voice notes and round video notes need a prop (they ask for the microphone and camera);
-// everything else below is the library's default.
-const AUDIO_RECORDING = { isEnabled: true }
-const VIDEO_RECORDING = { isEnabled: true, maxDuration: 60 }
-
 /**
  * One conversation from the Chats tab: a bare `<Chat>` fed from the demo store. Besides
  * `messages`, `onSend` and `user` it only passes what changes state the app owns (reactions,
@@ -26,6 +21,13 @@ export default function ChatScreen ({ id }: { id: string }) {
   const dialog = useDialog(id)
   const messages = useMessages(id)
   const typingUser = useTyping(id)
+
+  // Opening the chat reads it, so the unread count is taken once, before that: Telegram keeps
+  // the "Unread Messages" bar where it was until you leave the chat.
+  const [firstUnreadMessageId] = useState(() => {
+    const unread = Math.min(dialog?.unreadCount ?? 0, messages.length)
+    return unread > 0 ? messages[unread - 1]._id : undefined
+  })
 
   // Opening a chat reads it; while it is on screen, incoming messages do not count as unread.
   useFocusEffect(useCallback(() => {
@@ -55,8 +57,7 @@ export default function ChatScreen ({ id }: { id: string }) {
         reactions={reactions}
         onEditMessage={onEditMessage}
         onDeleteMessage={onDeleteMessage}
-        audioRecording={AUDIO_RECORDING}
-        videoRecording={VIDEO_RECORDING}
+        firstUnreadMessageId={firstUnreadMessageId}
         // Only admins post in a channel; everyone else gets Telegram's mute button.
         renderInputToolbar={dialog.kind === 'channel' ? () => <ChannelBar dialog={dialog} /> : undefined}
       />

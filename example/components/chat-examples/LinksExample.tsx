@@ -1,9 +1,36 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { Linking, StyleSheet, Text } from 'react-native'
 import { ActionSheetProvider, useActionSheet } from '@expo/react-native-action-sheet'
-import { Chat, IMessage, LinkMatcher } from '@kesha-antonov/react-native-chat'
+import { Chat, FetchLinkPreview, IMessage, LinkMatcher, LinkPreview } from '@kesha-antonov/react-native-chat'
 import { setStringAsync } from 'expo-clipboard'
 import { isValidPhoneNumber, parsePhoneNumberWithError } from 'libphonenumber-js'
+
+// A stand-in for a server that reads a page's Open Graph tags; a real app would call its backend
+// here (fetching pages straight from the device runs into CORS on web and leaks the user's IP).
+const KNOWN_PAGES: Record<string, LinkPreview> = {
+  'expo.dev': {
+    siteName: 'Expo',
+    title: 'Expo',
+    description: 'An open-source platform for making universal native apps for Android, iOS, and the web.',
+    image: 'https://picsum.photos/seed/expo-og/1200/630',
+    imageWidth: 1200,
+    imageHeight: 630,
+  },
+  'reactnative.dev': {
+    siteName: 'React Native',
+    title: 'React Native · Learn once, write anywhere',
+    description: 'A framework for building native applications using React.',
+    image: 'https://picsum.photos/seed/rn-og/400/400',
+    imageWidth: 400,
+    imageHeight: 400,
+  },
+}
+
+const fetchLinkPreview: FetchLinkPreview = async url => {
+  await new Promise(resolve => setTimeout(resolve, 300))
+  const host = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+  return KNOWN_PAGES[host] ?? null
+}
 
 const LinksExample: React.FC = () => {
   const { showActionSheetWithOptions } = useActionSheet()
@@ -39,6 +66,28 @@ const LinksExample: React.FC = () => {
     },
     {
       text: 'Different link formats work:\n• www.google.com\n• google.com\n• https://google.com',
+      user: {
+        _id: 2,
+        name: 'John Doe',
+      },
+    },
+    {
+      text: 'Links get Telegram\'s preview block when the message carries one: https://github.com/kesha-antonov/react-native-chat',
+      user: {
+        _id: 2,
+        name: 'John Doe',
+      },
+      linkPreview: {
+        siteName: 'GitHub',
+        title: 'kesha-antonov/react-native-chat',
+        description: 'A complete, Telegram-grade chat UI for React Native and Web.',
+        image: 'https://picsum.photos/seed/rn-chat-og/1200/600',
+        imageWidth: 1200,
+        imageHeight: 600,
+      },
+    },
+    {
+      text: 'Or when fetchLinkPreview finds one. Send expo.dev or reactnative.dev to try it.',
       user: {
         _id: 2,
         name: 'John Doe',
@@ -183,6 +232,7 @@ const LinksExample: React.FC = () => {
       messages={messages}
       onSend={onSend}
       user={user}
+      fetchLinkPreview={fetchLinkPreview}
       messageTextProps={{
         phone: false,
         url: true,

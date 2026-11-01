@@ -7,7 +7,7 @@ export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>
  * The actions the chat can put in the long-press menu by itself, in Telegram's order:
  * `reply`, `copy`, `forward`, `pin`, `edit`, `delete`.
  */
-export type MessageActionKey = 'reply' | 'copy' | 'forward' | 'pin' | 'edit' | 'delete'
+export type MessageActionKey = 'reply' | 'copy' | 'forward' | 'pin' | 'edit' | 'select' | 'delete'
 
 /** An action shown in the message long-press context menu (Telegram style). */
 export interface MessageMenuItem {
@@ -70,6 +70,32 @@ export interface IMessageFile {
   mimeType?: string
 }
 
+/**
+ * A web page preview for the first link in a message: Telegram's webpage block under the text
+ * (accent bar, site name, title, description, picture). Fetching it takes a request to the page,
+ * so the app supplies it, on the message or through `Chat`'s `fetchLinkPreview`.
+ */
+export interface LinkPreview {
+  /** The page the preview is for; a tap opens it. Defaults to the first link in the text. */
+  url?: string
+  /** The site's name, drawn in the accent color on top (`og:site_name`). */
+  siteName?: string
+  /** The page title, bold (`og:title`). */
+  title?: string
+  /** A few lines of the page's description (`og:description`). */
+  description?: string
+  /** The page's picture (`og:image`). */
+  image?: string
+  /** The picture's size, so it keeps its aspect ratio before it has loaded. */
+  imageWidth?: number
+  imageHeight?: number
+  /**
+   * `'large'` draws the picture full width under the text, `'small'` as a 48dp thumbnail at the
+   * top right, as Telegram does for articles. Default: large when the picture is wider than tall.
+   */
+  imageSize?: 'large' | 'small'
+}
+
 export interface IMessage {
   _id: string | number
   text: string
@@ -122,6 +148,8 @@ export interface IMessage {
   }
   /** A document: Telegram's file bubble (icon, name, size); a tap opens it. */
   file?: IMessageFile
+  /** A preview of the first link in `text`, drawn under it. `null` hides the preview for this message. */
+  linkPreview?: LinkPreview | null
 }
 
 export type IChatMessage = IMessage
@@ -169,6 +197,7 @@ export interface AudioRecordingProps {
    * A take sent with it on arrives in `onSend` with `isViewOnce: true`.
    */
   isViewOnceEnabled?: boolean
+  /** On by default when `expo-audio` is installed; `false` hides the mic button. */
   isEnabled?: boolean
   /** Minimum recording length (ms) below which the take is discarded. Default 800. */
   minDurationMs?: number
@@ -196,6 +225,10 @@ export interface AudioRecordingProps {
 export interface VideoRecordingProps {
   /** As `audioRecording.isViewOnceEnabled`, for round video takes. */
   isViewOnceEnabled?: boolean
+  /**
+   * On by default when `react-native-vision-camera` is installed; `false` turns round video
+   * off, `true` also falls back to the system camera (`expo-image-picker`) without it.
+   */
   isEnabled?: boolean
   /** Max video length in seconds. Default 60. */
   maxDuration?: number

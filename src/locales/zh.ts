@@ -70,4 +70,9 @@ export const zh: Partial<ChatLabels> = {
   attachChooseFromGallery: '从相册选择',
   attachChooseFile: '选择文件',
   attachLocationDenied: '位置权限已关闭。请在设置中开启以发送位置。',
+  emptyChatTitle: '这里还没有消息...',
+  emptyChatText: '发送一条消息，或点按下方的问候。',
+  unreadMessages: '未读消息',
+  actionSelect: '选择',
+  cancelSelection: '取消选择',
 }

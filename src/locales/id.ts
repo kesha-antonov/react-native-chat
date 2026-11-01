@@ -70,4 +70,9 @@ export const id: Partial<ChatLabels> = {
   attachChooseFromGallery: 'Pilih dari galeri',
   attachChooseFile: 'Pilih file',
   attachLocationDenied: 'Akses lokasi nonaktif. Aktifkan di Pengaturan untuk mengirim lokasi.',
+  emptyChatTitle: 'Belum ada pesan di sini...',
+  emptyChatText: 'Kirim pesan atau ketuk salam di bawah.',
+  unreadMessages: 'Pesan Belum Dibaca',
+  actionSelect: 'Pilih',
+  cancelSelection: 'Batalkan pilihan',
 }

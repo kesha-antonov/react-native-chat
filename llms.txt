@@ -122,18 +122,21 @@ prepends correctly for that ordering.
 
 ## Optional features and the peers they need
 
-Each is inert until you install its peer and turn it on - nothing is forced on the user.
+Each is inert until you install its peer; most then turn on by themselves, and every one can be turned off.
 
 | Feature | Enable with | Extra peer dependency |
 | --- | --- | --- |
 | Inline video playback | `IMessage.video` | `expo-video` |
 | Inline audio playback | `IMessage.audio` | `expo-audio` |
-| Voice notes (hold to record) | `audioRecording={{ isEnabled: true }}` | `expo-audio`, plus `react-native-audio-api` for the waveform |
-| Video messages (camera notes) | `videoRecording={{ isEnabled: true }}` | `react-native-vision-camera` 5+ (with `react-native-nitro-modules` + `react-native-nitro-image`), or `expo-image-picker` |
+| Voice notes (hold to record) | on once the peer is installed; `audioRecording={false}` turns off | `expo-audio`, plus `react-native-audio-api` for the waveform |
+| Video messages (camera notes) | on once vision-camera is installed; `videoRecording={false}` turns off, `{ isEnabled: true }` adds the system-camera fallback | `react-native-vision-camera` 5+ (with `react-native-nitro-modules` + `react-native-nitro-image`), or `expo-image-picker` |
 | Note speed / auto-play / unread | `mediaPlayback={{ playbackRate, onPlaybackRateChange, onMediaRead }}`, `IMessage.isMediaUnread` (auto-play next and the "now playing" bar are on by default, `isNowPlayingBarEnabled: false` hides the bar; silent round-note loops are opt-in with `isRoundVideoAutoplayEnabled: true`) | none |
 | Recording haptics | install `expo-haptics` | `expo-haptics` |
 | Resume / trim a paused voice take | on with `audioRecording` | `react-native-audio-api` to resume, plus `expo-file-system` to trim (a trimmed take is sent as WAV) |
 | Location messages | `IMessage.location` | none |
+| Link previews | `IMessage.linkPreview`, or `fetchLinkPreview(url)` | none |
+| Unread bar | `firstUnreadMessageId` | none |
+| Multi-select | "Select" in the long-press menu; `onSelectionChange`, `onDeleteMessage(s)`, `onForwardMessage(s)` | `expo-clipboard` for Copy |
 | Emoji reactions | `reactions={{ onReactionPress }}` (+ `Chat.toggleReaction`) | none |
 | Long-press action menu | on by default; `messageActions` to extend or replace | `expo-clipboard` for Copy |
 | Emoji recents across launches | on with the emoji keyboard | `@react-native-async-storage/async-storage` |

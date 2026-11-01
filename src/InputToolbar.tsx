@@ -184,10 +184,17 @@ export interface InputToolbarProps<TMessage extends IMessage> {
   replyPreviewContainerStyle?: StyleProp<ViewStyle>
   /** Style for reply preview text */
   replyPreviewTextStyle?: StyleProp<TextStyle>
-  /** Telegram-style hold-to-record voice messages (needs optional expo-audio) */
-  audioRecording?: AudioRecordingProps
-  /** Record-and-send video messages (needs optional expo-image-picker) */
-  videoRecording?: VideoRecordingProps
+  /**
+   * Telegram-style hold-to-record voice notes. On by default when the optional `expo-audio` is
+   * installed; `false` turns them off, an object configures them.
+   */
+  audioRecording?: boolean | AudioRecordingProps
+  /**
+   * Round video notes. On by default when `react-native-vision-camera` is installed; `false`
+   * turns them off. `{ isEnabled: true }` also offers the system camera (`expo-image-picker`)
+   * when vision-camera is missing.
+   */
+  videoRecording?: boolean | VideoRecordingProps
   /** Force-show the send button even when the composer is empty */
   isSendButtonAlwaysVisible?: boolean
   /** Current composer text (used to swap the send button for the mic button) */
@@ -490,9 +497,16 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     transform: [{ scale: 0.5 + 0.5 * attachShown.value }],
   }))
   const canRecord = !hasText && !props.isSendButtonAlwaysVisible
-  const isVoiceEnabled = !!props.audioRecording?.isEnabled && isVoiceRecordingAvailable
+  // Voice and round video notes turn on by themselves once their peers are installed; `false`
+  // (or `isEnabled: false`) turns either off. The system-camera fallback is a different control
+  // (a camera button that opens another app), so it stays behind an explicit `isEnabled: true`.
+  const audioConfig = typeof props.audioRecording === 'object' ? props.audioRecording : undefined
+  const videoConfig = typeof props.videoRecording === 'object' ? props.videoRecording : undefined
+  const isVoiceEnabled = props.audioRecording !== false && audioConfig?.isEnabled !== false && isVoiceRecordingAvailable
   const showVoice = isVoiceEnabled && canRecord
-  const showVideo = !!props.videoRecording?.isEnabled && isVideoRecordingAvailable
+  const isVideoAllowed = props.videoRecording !== false && videoConfig?.isEnabled !== false
+  const isVideoForced = props.videoRecording === true || videoConfig?.isEnabled === true
+  const showVideo = isVideoAllowed && (isVideoForced ? isVideoRecordingAvailable : isVisionCameraNativeReady)
   // A round note recorded straight from the record button. Needs
   // vision-camera's native module; without it video falls back to the system
   // camera behind a tap-to-open button.
@@ -506,7 +520,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const canToggleMode = showVoice && showVideo
   const mode = canToggleMode ? recordMode : (isVoiceEnabled ? 'voice' : 'video')
 
-  const videoSession = useVideoNoteSession<TMessage>({ config: props.videoRecording, onSend })
+  const videoSession = useVideoNoteSession<TMessage>({ config: videoConfig, onSend })
 
   // The camera preview is drawn over the message list by `Chat`; outside a
   // Chat it falls back to sitting above the toolbar.
@@ -672,7 +686,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
       return (
         <VoiceMessageInput
           ref={voiceRef}
-          config={props.audioRecording}
+          config={audioConfig}
           onSend={onSend as VoiceMessageInputProps['onSend']}
           onStateChange={setVoiceState}
           onTap={canToggleMode ? toggleRecordMode : undefined}
@@ -687,7 +701,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     if (canToggleMode && mode === 'video')
       return (
         <VideoRecordButton<TMessage>
-          config={props.videoRecording}
+          config={videoConfig}
           onSend={onSend}
           onTap={toggleRecordMode}
           variant='round'
@@ -708,10 +722,10 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     recordHint,
     onVideoQuickRelease,
     showVoice,
-    props.audioRecording,
+    audioConfig,
     onSend,
     onVoiceQuickRelease,
-    props.videoRecording,
+    videoConfig,
     sendFragment,
   ])
 
@@ -731,8 +745,8 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     if (!showVideo || canToggleMode || isVideoHoldEnabled)
       return null
 
-    return <VideoRecordButton<TMessage> config={props.videoRecording} onSend={onSend} />
-  }, [showVideo, canToggleMode, isVideoHoldEnabled, props.videoRecording, onSend])
+    return <VideoRecordButton<TMessage> config={videoConfig} onSend={onSend} />
+  }, [showVideo, canToggleMode, isVideoHoldEnabled, videoConfig, onSend])
 
   const accessoryFragment = useMemo(() => {
     if (!renderAccessory)

@@ -45,6 +45,7 @@ export type IconName =
   | 'file'
   | 'location'
   | 'download'
+  | 'checkCircle'
 
 /**
  * Icon override registry. Supply a render function for any icon to replace the

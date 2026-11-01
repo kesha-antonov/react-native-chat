@@ -22,6 +22,7 @@ import { useChatContext } from '../ChatContext'
 import { BubbleTail, GradientBubbleBackground } from '../components/BubbleBackground'
 import { ContextMenu } from '../components/ContextMenu'
 import { impactHaptic } from '../components/haptics'
+import { LinkPreviewCard, useLinkPreview } from '../components/LinkPreviewCard'
 import { MediaPlaybackContext, useNoteTimeShift } from '../components/mediaPlayback'
 import { BubbleHighlightTint, useMessageHighlightToken } from '../components/messageHighlight'
 import { PRESS_HOLD_MS } from '../components/messagePress'
@@ -29,6 +30,7 @@ import { MessageReply } from '../components/MessageReply'
 import { MessageStatus, MessageStatusKind } from '../components/MessageStatus'
 import { NOTE_GROW_MS, noteGrowEasing } from '../components/roundNoteChrome'
 import { TIME_FORMAT } from '../Constant'
+import { countEmojiOnly } from '../emojiOnly'
 import { useIsRTL } from '../hooks/useIsRTL'
 import { useLabels } from '../hooks/useLabels'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
@@ -253,7 +255,7 @@ const isTextRTL = (text: string) => {
   return false
 }
 
-type MetaMode = 'inline' | 'reactions' | 'overlay' | 'row' | 'voice' | 'note'
+type MetaMode = 'inline' | 'reactions' | 'overlay' | 'row' | 'voice' | 'note' | 'emoji'
 
 export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<TMessage>): React.ReactElement => {
   const {
@@ -326,6 +328,26 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     !currentMessage?.video && !currentMessage?.audio && !currentMessage?.location &&
     !props.renderMessageFile
 
+  // Telegram's big emoji (`MessageObject.checkEmojiOnly` -> `TYPE_EMOJIS`): a text of nothing
+  // but emoji, with no media, quote or custom renderer, drops its bubble and draws them large.
+  const bigEmojiMaxCount = theme.bubble.bigEmojiMaxCount
+  const bigEmojiCount = useMemo(() => {
+    if (!bigEmojiMaxCount || !currentMessage?.text || props.renderMessageText || props.renderCustomView)
+      return 0
+    if (currentMessage.image || currentMessage.video || currentMessage.audio || currentMessage.location ||
+      currentMessage.file || currentMessage.replyMessage || currentMessage.quickReplies || currentMessage.linkPreview)
+      return 0
+    return countEmojiOnly(currentMessage.text, bigEmojiMaxCount)
+  }, [bigEmojiMaxCount, currentMessage, props.renderMessageText, props.renderCustomView])
+  const isBigEmoji = bigEmojiCount > 0
+
+  // Telegram's web page block under the text, for the first link in it.
+  const linkPreview = useLinkPreview(
+    props.renderLinkPreview === null || isBigEmoji ? undefined : currentMessage,
+    props.fetchLinkPreview
+  )
+  const hasLinkPreview = !!linkPreview && !!currentMessage?.text
+
   // Telegram's runs: the same sender within five minutes. A run shares one tail, one name.
   const isGroupedWithPrevious = isSameGroup(currentMessage, previousMessage)
   const isGroupedWithNext = isSameGroup(currentMessage, nextMessage)
@@ -334,7 +356,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   // four corners rounded and no tail (`TYPE_MEDIA`).
   const isMediaBubble = !currentMessage?.text &&
     (!!currentMessage?.image || !!currentMessage?.video || !!currentMessage?.location)
-  const hasTail = theme.bubble.hasTail && !isGroupedWithNext && !isVideoNote && !isMediaBubble
+  const hasTail = theme.bubble.hasTail && !isGroupedWithNext && !isVideoNote && !isMediaBubble && !isBigEmoji
 
   // Consumers can hand the touches back to natively interactive content
   // (video controls, maps, WebViews) on a per-message basis.
@@ -427,12 +449,12 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     [wrapperStyle, position]
   )
   const bodyColor = customBodyColor ?? (position === 'right' ? theme.colors.outgoingBubble : theme.colors.incomingBubble)
-  const gradientStops = position === 'right' && !customBodyColor && !isVideoNote
+  const gradientStops = position === 'right' && !customBodyColor && !isVideoNote && !isBigEmoji
     ? theme.bubble.outgoingGradient
     : null
   const hasGradient = !!gradientStops && gradientStops.length > 1
   const shadowColor = position === 'right' ? theme.colors.outgoingBubbleShadow : theme.colors.incomingBubbleShadow
-  const hasShadow = !isVideoNote && !hasGradient && !!shadowColor && shadowColor !== 'transparent'
+  const hasShadow = !isVideoNote && !isBigEmoji && !hasGradient && !!shadowColor && shadowColor !== 'transparent'
 
   // Telegram's text column: `min(width, height) - 80dp`, minus the avatar column beside it.
   const isAvatarShown = position === 'left' && (props as { isAvatarVisible?: boolean }).isAvatarVisible === true
@@ -462,18 +484,21 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const metaMode: MetaMode = useMemo(() => {
     if (isVideoNote)
       return 'note'
+    if (isBigEmoji && !props.renderTime)
+      return 'emoji'
     if (isVoiceNote || isFileNote)
       return 'voice'
     if (!theme.bubble.isTimeInline || props.renderTime || (props.isCustomViewBottom && props.renderCustomView))
       return 'row'
     if (hasDefaultReactions)
       return 'reactions'
+    // A link preview under the text puts the time on a line of its own below it.
     if (currentMessage?.text)
-      return props.renderMessageText ? 'row' : 'inline'
+      return props.renderMessageText || hasLinkPreview ? 'row' : 'inline'
     if (currentMessage?.image && !currentMessage.video && !currentMessage.location && !currentMessage.audio && !props.renderMessageImage)
       return 'overlay'
     return 'row'
-  }, [isVideoNote, isVoiceNote, isFileNote, theme, props.renderTime, props.isCustomViewBottom, props.renderCustomView, props.renderMessageText, props.renderMessageImage, hasDefaultReactions, currentMessage])
+  }, [isVideoNote, isBigEmoji, hasLinkPreview, isVoiceNote, isFileNote, theme, props.renderTime, props.isCustomViewBottom, props.renderCustomView, props.renderMessageText, props.renderMessageImage, hasDefaultReactions, currentMessage])
 
   const timeFormat = (props as { timeFormat?: string }).timeFormat ?? TIME_FORMAT
   const timeTextStyle = (props as { timeTextStyle?: LeftRightStyle<TextStyle> }).timeTextStyle
@@ -539,6 +564,19 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   ])
 
   const renderMessageText = useCallback(() => {
+    if (isBigEmoji && currentMessage?.text) {
+      const sizes = theme.bubble.bigEmojiSizes
+      const fontSize = sizes[Math.min(bigEmojiCount, sizes.length) - 1] ?? theme.typography.message.fontSize
+      return (
+        <Text
+          style={[styles.bigEmoji, { fontSize, lineHeight: Math.round(fontSize * 1.2) }]}
+          allowFontScaling={false}
+        >
+          {currentMessage.text.trim()}
+        </Text>
+      )
+    }
+
     if (currentMessage?.text) {
       const {
         /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -558,11 +596,13 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         return renderComponentOrElement(props.renderMessageText, combinedProps)
 
       // Pills and a time row sit closer to the text than the bubble's own bottom edge does.
-      const spacing = metaMode === 'reactions'
-        ? styles.textAboveReactions
-        : metaMode === 'row'
-          ? styles.textAboveMetaRow
-          : null
+      const spacing = hasLinkPreview
+        ? styles.textAboveLinkPreview
+        : metaMode === 'reactions'
+          ? styles.textAboveReactions
+          : metaMode === 'row'
+            ? styles.textAboveMetaRow
+            : null
       const userContainerStyle = messageTextProps?.containerStyle
 
       return (
@@ -577,7 +617,25 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     }
 
     return null
-  }, [props, currentMessage, metaMode, styles, timeSpacer])
+  }, [props, currentMessage, metaMode, styles, timeSpacer, isBigEmoji, bigEmojiCount, theme, hasLinkPreview])
+
+  const renderLinkPreview = useCallback(() => {
+    if (!hasLinkPreview || !linkPreview || !currentMessage)
+      return null
+
+    const previewProps = {
+      preview: linkPreview,
+      currentMessage,
+      position,
+      maxWidth: maxWidth - theme.spacing.bubblePaddingH * 2,
+      onPress: props.onPressLinkPreview,
+    }
+
+    if (props.renderLinkPreview)
+      return renderComponentOrElement(props.renderLinkPreview, previewProps)
+
+    return <LinkPreviewCard {...previewProps} />
+  }, [hasLinkPreview, linkPreview, currentMessage, position, maxWidth, theme, props.onPressLinkPreview, props.renderLinkPreview])
 
   // Photo corners (`ChatMessageCell:10997`): 2 less than the bubble's, 4 next to other
   // content, 3 on the tail side next to a grouped neighbour.
@@ -772,7 +830,8 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       renderUsername,
     } = props
 
-    if (props.isUsernameVisible && currentMessage) {
+    // Like a sticker, big emoji go without the name.
+    if (props.isUsernameVisible && currentMessage && !isBigEmoji) {
       if (user && currentMessage.user._id === user._id)
         return null
 
@@ -799,6 +858,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   }, [
     currentMessage,
     isGroupedWithPrevious,
+    isBigEmoji,
     props,
     styles,
     theme,
@@ -893,6 +953,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         {renderMessageLocation()}
         {renderMessageFile()}
         {renderMessageText()}
+        {renderLinkPreview()}
         {props.isCustomViewBottom && renderCustomView()}
         {renderReactionsInside()}
       </>
@@ -906,6 +967,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     renderMessageLocation,
     renderMessageFile,
     renderMessageText,
+    renderLinkPreview,
     renderReactionsInside,
     props.isCustomViewBottom,
   ])
@@ -964,6 +1026,15 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       )
     }
 
+    // Under big emoji, the time sits in a service pill, as under a sticker.
+    if (metaMode === 'emoji')
+      return (
+        <View style={[styles.emojiMeta, bottomContainerStyle?.[position]]} pointerEvents='none'>
+          {renderTime('note')}
+          {renderTicks('note')}
+        </View>
+      )
+
     if (metaMode === 'overlay')
       return (
         <View
@@ -1019,7 +1090,8 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     wrapperStyle?.[position],
     hasGradient && styles.gradientWrapper,
     isVideoNote && styles.noteWrapper,
-  ] as StyleProp<ViewStyle>, [position, maxWidth, cornerStyle, hasShadow, shadowColor, styledBubbleToNext, styledBubbleToPrevious, wrapperStyle, styles, hasGradient, isVideoNote])
+    isBigEmoji && styles.emojiWrapper,
+  ] as StyleProp<ViewStyle>, [position, maxWidth, cornerStyle, hasShadow, shadowColor, styledBubbleToNext, styledBubbleToPrevious, wrapperStyle, styles, hasGradient, isVideoNote, isBigEmoji])
 
   const containerStyleList = useMemo(() => [
     getStyleWithPosition(styles, 'container', visualPosition),

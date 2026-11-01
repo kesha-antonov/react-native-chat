@@ -190,6 +190,33 @@ describe('ContextMenu (Telegram Android)', () => {
     expect(style.top).toBeGreaterThanOrEqual(24)
   })
 
+  it('moves off the message it is for instead of covering it', async () => {
+    const { Dimensions } = require('react-native')
+    const { height } = Dimensions.get('window')
+    const items = ['Reply', 'Copy', 'Edit', 'Select', 'Delete'].map(label => ({ label, onPress: jest.fn() }))
+    // A short outgoing bubble near the bottom, pressed near the right edge: clamped up from the
+    // finger, the card would land on it.
+    const bubbleTop = height - 130
+    const { getByLabelText } = await renderMenu({
+      pageX: 300,
+      pageY: bubbleTop,
+      bubbleWidth: 200,
+      bubbleHeight: 40,
+      touchX: 480,
+      touchY: bubbleTop + 20,
+      items,
+    })
+    let node = getByLabelText('Reply').parent
+    let style = flatten(node?.props.style)
+    while (node && style?.position !== 'absolute') {
+      node = node.parent
+      style = flatten(node?.props.style)
+    }
+    // Ends 8 above the bubble; Telegram's horizontal placement is kept.
+    expect(style.top).toBe(bubbleTop - 8 - items.length * 48)
+    expect(style.left).toBe(480 - 20 - 200)
+  })
+
   it('marks reactions you already picked', async () => {
     const { getByLabelText } = await renderMenu({
       reactions: { emojis: ['👍', '❤️'], selected: ['❤️'], onSelect: jest.fn() },

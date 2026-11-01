@@ -70,4 +70,9 @@ export const de: Partial<ChatLabels> = {
   attachChooseFromGallery: 'Aus Galerie wählen',
   attachChooseFile: 'Datei auswählen',
   attachLocationDenied: 'Der Standortzugriff ist aus. Aktiviere ihn in den Einstellungen, um deinen Standort zu senden.',
+  emptyChatTitle: 'Noch keine Nachrichten hier...',
+  emptyChatText: 'Sende eine Nachricht oder tippe auf die Begrüßung unten.',
+  unreadMessages: 'Ungelesene Nachrichten',
+  actionSelect: 'Auswählen',
+  cancelSelection: 'Auswahl aufheben',
 }

@@ -85,6 +85,8 @@ const SIDE_INSET = 6
 const TOP_INSET = 24
 const BOTTOM_CLEARANCE = 48 + 8
 const TALL_POPUP = 240
+/** Space kept between the lit message and a card moved off it. */
+const MESSAGE_GAP = 8
 
 // The reactions bar (RCL; `CA:32424-32460`): 50 above it in the popup, 4 + 48 + 22 for its
 // padding, the pill and the tail; the menu starts 20 into that bottom padding. The pill is 48
@@ -518,6 +520,11 @@ export const ContextMenu = ({
     ? (hasMenu ? BAR_OFFSET + BAR_TO_MENU + menuHeight : barBlockHeight)
     : menuHeight
 
+  // Beside the finger, on the side away from the reading direction.
+  const containerLeft = isRTL
+    ? clamp(openAnchor.touchX + FINGER_GAP, SIDE_INSET, screenWidth - SIDE_INSET - containerWidth)
+    : clamp(openAnchor.touchX - FINGER_GAP - containerWidth, SIDE_INSET, screenWidth - SIDE_INSET - containerWidth)
+
   const minY = insets.top + TOP_INSET
   const maxY = screenHeight - insets.bottom - containerHeight - BOTTOM_CLEARANCE
   let containerTop = openAnchor.touchY
@@ -525,10 +532,28 @@ export const ContextMenu = ({
     containerTop += TALL_POPUP - containerHeight
   containerTop = clamp(containerTop, minY, maxY)
 
-  // Beside the finger, on the side away from the reading direction.
-  const containerLeft = isRTL
-    ? clamp(openAnchor.touchX + FINGER_GAP, SIDE_INSET, screenWidth - SIDE_INSET - containerWidth)
-    : clamp(openAnchor.touchX - FINGER_GAP - containerWidth, SIDE_INSET, screenWidth - SIDE_INSET - containerWidth)
+  // Telegram anchors the popup at the finger, which near the bottom of the list (or beside a
+  // short bubble at the right edge) clamps it straight over the message it is for. When the
+  // card would cover the lit message's text and it fits fully below or above that message,
+  // it moves there instead, keeping Telegram's horizontal placement.
+  const bubbleTop = openAnchor.pageY
+  const bubbleBottom = openAnchor.pageY + openAnchor.bubbleHeight
+  const cardTop = hasReactions && hasMenu ? containerTop + BAR_OFFSET + BAR_TO_MENU : containerTop
+  const cardBottom = containerTop + containerHeight
+  const coversBubble = openAnchor.bubbleHeight > 0 &&
+    cardTop < bubbleBottom && cardBottom > bubbleTop &&
+    containerLeft < openAnchor.pageX + openAnchor.bubbleWidth && containerLeft + containerWidth > openAnchor.pageX
+  if (coversBubble) {
+    // Below: the reactions bar's tail reaches up to the bubble, as it does from the finger.
+    const below = bubbleBottom + MESSAGE_GAP - (hasReactions ? BAR_OFFSET : 0)
+    // Above: the card ends just over the bubble.
+    const above = bubbleTop - MESSAGE_GAP - containerHeight
+    if (below >= minY && below <= maxY)
+      containerTop = below
+    else if (above >= minY && above <= maxY)
+      containerTop = above
+  }
+
 
   // The bar keeps to the container's far side, the card to its near side.
   const barLeft = isRTL ? containerLeft : containerLeft + containerWidth - barWidth

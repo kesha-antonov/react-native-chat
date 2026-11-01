@@ -70,4 +70,9 @@ export const ar: Partial<ChatLabels> = {
   attachChooseFromGallery: 'اختيار من المعرض',
   attachChooseFile: 'اختيار ملف',
   attachLocationDenied: 'الوصول إلى الموقع متوقف. فعّله من الإعدادات لإرسال موقعك.',
+  emptyChatTitle: 'لا توجد رسائل هنا بعد...',
+  emptyChatText: 'أرسل رسالة أو انقر على التحية أدناه.',
+  unreadMessages: 'رسائل غير مقروءة',
+  actionSelect: 'تحديد',
+  cancelSelection: 'إلغاء التحديد',
 }

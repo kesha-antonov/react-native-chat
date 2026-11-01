@@ -70,4 +70,9 @@ export const nl: Partial<ChatLabels> = {
   attachChooseFromGallery: 'Kiezen uit galerij',
   attachChooseFile: 'Bestand kiezen',
   attachLocationDenied: 'Locatietoegang staat uit. Zet het aan in Instellingen om je locatie te sturen.',
+  emptyChatTitle: 'Nog geen berichten hier...',
+  emptyChatText: 'Stuur een bericht of tik op de begroeting hieronder.',
+  unreadMessages: 'Ongelezen berichten',
+  actionSelect: 'Selecteren',
+  cancelSelection: 'Selectie annuleren',
 }

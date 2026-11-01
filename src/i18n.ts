@@ -150,6 +150,16 @@ export interface ChatLabels {
   attachChooseFile: string
   /** Attachment menu: shown when location access is denied. */
   attachLocationDenied: string
+  /** Empty chat card: the title. */
+  emptyChatTitle: string
+  /** Empty chat card: the line above the greeting. */
+  emptyChatText: string
+  /** The bar above the first unread message. */
+  unreadMessages: string
+  /** Message context menu: start selecting messages. */
+  actionSelect: string
+  /** Selection bar: accessibility label of the button that leaves selection. */
+  cancelSelection: string
 }
 
 export const defaultLabels: ChatLabels = {
@@ -222,6 +232,11 @@ export const defaultLabels: ChatLabels = {
   attachChooseFromGallery: 'Choose from Gallery',
   attachChooseFile: 'Choose a file to send',
   attachLocationDenied: 'Location access is off. Turn it on in Settings to send your location.',
+  emptyChatTitle: 'No messages here yet...',
+  emptyChatText: 'Send a message or tap the greeting below.',
+  unreadMessages: 'Unread Messages',
+  actionSelect: 'Select',
+  cancelSelection: 'Cancel selection',
 }
 
 /**

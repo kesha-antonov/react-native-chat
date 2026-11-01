@@ -75,6 +75,8 @@ export interface SwipeToReplyRowProps {
     position: 'left' | 'right'
   ) => React.ReactNode
   actionContainerStyle?: StyleProp<ViewStyle>
+  /** `false` pauses the swipe without changing the row's tree (selection mode). */
+  isEnabled?: boolean
   children: React.ReactNode
 }
 
@@ -89,6 +91,7 @@ export const SwipeToReplyRow = ({
   onReply,
   renderAction,
   actionContainerStyle,
+  isEnabled = true,
   children,
 }: SwipeToReplyRowProps) => {
   // React Compiler would memoize the gesture config on `offset.value`, which its callbacks read,
@@ -106,6 +109,7 @@ export const SwipeToReplyRow = ({
 
   const pan = usePanGesture({
     testID: 'swipe-to-reply',
+    enabled: isEnabled,
     activeOffsetX: direction === 'left'
       ? [-SWIPE_START, Number.MAX_SAFE_INTEGER]
       : [-Number.MAX_SAFE_INTEGER, SWIPE_START],

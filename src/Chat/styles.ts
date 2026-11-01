@@ -10,4 +10,10 @@ export default StyleSheet.create({
   hidden: {
     opacity: 0,
   },
+  // Centers the empty-chat card in the list's area, above the composer.
+  emptyOverlay: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
 })

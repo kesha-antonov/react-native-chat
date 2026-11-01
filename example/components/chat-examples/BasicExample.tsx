@@ -5,12 +5,10 @@ import earlierMessages from '../../example-expo/data/earlierMessages'
 import messagesData from '../../example-expo/data/messages'
 
 const USER = { _id: 1, name: 'Developer' }
-// Voice and round video notes ask for the microphone and camera, so they are opt-in.
-const AUDIO_RECORDING = { isEnabled: true }
-const VIDEO_RECORDING = { isEnabled: true, maxDuration: 30 }
 
-// Everything else is the default: the emoji keyboard, the attachment menu, the long-press
-// menu, swipe-to-reply, the scroll-to-bottom button. This screen only adds "Load earlier".
+// Everything is the default: the emoji keyboard, the attachment menu, the long-press menu,
+// swipe-to-reply, voice and round video notes (on once expo-audio / vision-camera are
+// installed), the scroll-to-bottom button. This screen only adds "Load earlier".
 export default function BasicExample () {
   const [messages, setMessages] = useState<IMessage[]>(messagesData)
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
@@ -33,8 +31,6 @@ export default function BasicExample () {
       onSend={onSend}
       user={USER}
       loadEarlierMessagesProps={{ isAvailable: true, isLoading: isLoadingEarlier, onPress: onPressLoadEarlierMessages }}
-      audioRecording={AUDIO_RECORDING}
-      videoRecording={VIDEO_RECORDING}
     />
   )
 }

@@ -6,6 +6,7 @@ import {
   Pressable,
 } from 'react-native'
 
+import { FetchLinkPreview, LinkPreviewProps } from '../components/LinkPreviewCard'
 import { MessageReplyProps } from '../components/MessageReply'
 import { MessageImageProps } from '../MessageImage'
 import { MessageTextProps } from '../MessageText'
@@ -21,6 +22,7 @@ import {
   MessageFileProps,
   MessageLocationProps,
   MessageMenuItem,
+  LinkPreview,
 } from '../Models'
 import { QuickRepliesProps } from '../QuickReplies'
 import { ReactionsProps } from '../Reactions'
@@ -137,4 +139,14 @@ export interface BubbleProps<TMessage extends IMessage> {
    * @default true
    */
   isMessageGestureEnabled?: boolean | ((message: TMessage) => boolean)
+  /**
+   * Fetches Telegram's web page preview for the first link in a message that has no
+   * `linkPreview` of its own (e.g. from your server's Open Graph endpoint). Each URL is fetched
+   * once per app run.
+   */
+  fetchLinkPreview?: FetchLinkPreview
+  /** Custom web page preview under the text, or `null` to draw none. */
+  renderLinkPreview?: ((props: LinkPreviewProps<TMessage>) => React.ReactNode) | null
+  /** Called when a link preview is tapped, instead of opening its URL. */
+  onPressLinkPreview?: (preview: LinkPreview & { url: string }, message: TMessage) => void
 }

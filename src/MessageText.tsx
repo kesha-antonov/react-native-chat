@@ -51,7 +51,8 @@ export type MessageTextProps<TMessage extends IMessage> = {
   /**
    * Inline content after the last word. `Bubble` puts an invisible copy of the time here, so
    * the visible time can sit on the last line when it fits and the text wraps around it
-   * when it does not - Telegram's trailing time. Markdown gets it on a line of its own.
+   * when it does not - Telegram's trailing time. In markdown it follows the closing paragraph,
+   * heading or list item; after a code block or a quote it takes a line of its own.
    */
   trailing?: React.ReactNode
 }
@@ -128,13 +129,16 @@ export function MessageText<TMessage extends IMessage>({
           textStyle={style}
           linkStyle={linkStyle}
           onLinkPress={onPressProp ? (link: string) => handlePress(link, 'url') : undefined}
+          // The time shares the last line when it fits, as with plain text; a streaming reply
+          // keeps its caret on the line after, so the time waits below it.
+          trailing={isStreaming ? undefined : trailing}
         />
         {isStreaming && (
           <Text style={style}>
             <StreamingCursor />
           </Text>
         )}
-        {trailingLine}
+        {isStreaming && trailingLine}
       </View>
     )
 

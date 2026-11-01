@@ -8,6 +8,8 @@ import React, {
   RefObject,
 } from 'react'
 import {
+  BackHandler,
+  Keyboard,
   View,
   LayoutChangeEvent,
   TextInput,
@@ -20,6 +22,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
+import { ChatEmpty } from '../components/ChatEmpty'
 import { ChatOverlayProvider, ChatOverlaySlot } from '../components/ChatOverlay'
 import { ChatWallpaper, useOutgoingStep } from '../components/ChatWallpaper'
 import { ComposerPanelsContext, createComposerPanelsStore } from '../components/composerPanels'
@@ -32,7 +35,15 @@ import {
   subscribePlaybackRate,
 } from '../components/mediaPlayback'
 import { createMessageHighlightStore, MessageHighlightContext } from '../components/messageHighlight'
+import {
+  createMessageSelectionStore,
+  MessageSelectionContext,
+  MessageSelectionStore,
+  useIsSelectionActive,
+  useSelectedIds,
+} from '../components/messageSelection'
 import { NowPlayingBar } from '../components/NowPlayingBar'
+import { SelectionBar, SelectionBarAction, SelectionBarProps } from '../components/SelectionBar'
 import { TEST_ID } from '../Constant'
 import { renderDefaultExpandedPicker } from '../emoji/defaultExpandedPicker'
 import { normalizeColorScheme } from '../hooks/useColorScheme'
@@ -84,6 +95,55 @@ function ChatBackground ({
   return <ChatWallpaper step={step} />
 }
 
+/** Oldest first, the order Telegram copies and forwards a selection in. */
+const byDate = <TMessage extends IMessage>(a: TMessage, b: TMessage) =>
+  new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+
+/**
+ * The bar in the composer's place while messages are selected. Only this re-renders as messages
+ * are checked; `Chat` itself re-renders once on the way in and once on the way out.
+ */
+function ChatSelectionBar<TMessage extends IMessage> ({
+  store,
+  messagesRef,
+  canCopy,
+  onCopy,
+  onForward,
+  onDelete,
+  renderSelectionBar,
+}: {
+  store: MessageSelectionStore
+  messagesRef: React.RefObject<TMessage[]>
+  canCopy: boolean
+  onCopy: (messages: TMessage[]) => void
+  onForward?: (messages: TMessage[]) => void
+  onDelete?: (messages: TMessage[]) => void
+  renderSelectionBar?: ((props: SelectionBarProps & { messages: TMessage[] }) => React.ReactNode) | null
+}) {
+  const ids = useSelectedIds(store)
+  const messages = useMemo(() => {
+    const all = messagesRef.current ?? []
+    return ids
+      .map(id => all.find(message => message._id === id))
+      .filter((message): message is TMessage => !!message)
+  }, [ids, messagesRef])
+  const ordered = useMemo(() => [...messages].sort(byDate), [messages])
+
+  const actions: SelectionBarAction[] = []
+  if (canCopy && ordered.some(message => !!message.text))
+    actions.push({ key: 'copy', onPress: () => onCopy(ordered) })
+  if (onForward)
+    actions.push({ key: 'forward', onPress: () => onForward(ordered) })
+  if (onDelete)
+    actions.push({ key: 'delete', onPress: () => onDelete(ordered) })
+
+  const props = { count: ids.length, onClose: store.clear, actions }
+  if (renderSelectionBar)
+    return <>{renderSelectionBar({ ...props, messages: ordered })}</>
+
+  return <SelectionBar {...props} />
+}
+
 /** Seed for Chat's own SafeAreaProvider - real frame, but no insets claimed yet. */
 const INITIAL_SAFE_AREA_METRICS = {
   frame: initialWindowMetrics?.frame ?? { x: 0, y: 0, width: 0, height: 0 },
@@ -130,12 +190,17 @@ function Chat<TMessage extends IMessage = IMessage> (
     onDeleteMessage,
     onForwardMessage,
     onPinMessage,
+    onForwardMessages,
+    onDeleteMessages,
+    onSelectionChange,
+    renderSelectionBar,
     onLongPressMessage,
     isGroupChat: isGroupChatProp,
     isAvatarVisible: isAvatarVisibleProp,
     isUsernameVisible: isUsernameVisibleProp,
     renderAvatar,
     renderWallpaper,
+    emptyChatGreeting,
   } = props
 
   // One playlist per chat: players register by message id and the controller
@@ -219,7 +284,36 @@ function Chat<TMessage extends IMessage = IMessage> (
   const [editingMessage, setEditingMessage] = useState<TMessage | null>(null)
   const [highlightStore] = useState(createMessageHighlightStore)
   const [composerPanels] = useState(createComposerPanelsStore)
+  const [selectionStore] = useState(createMessageSelectionStore)
+  const isSelecting = useIsSelectionActive(selectionStore)
   useEffect(() => () => highlightStore.dispose(), [highlightStore])
+
+  // The selection's messages are looked up by id when it changes; deleted ones drop out of it.
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
+  useEffect(() => {
+    selectionStore.retain(new Set(messages.map(message => message._id)))
+  }, [messages, selectionStore])
+
+  const onSelectionChangeRef = useRef(onSelectionChange)
+  onSelectionChangeRef.current = onSelectionChange
+  useEffect(() => selectionStore.subscribe(() => {
+    const ids = selectionStore.getSelectedIds()
+    onSelectionChangeRef.current?.(
+      ids.map(id => messagesRef.current.find(message => message._id === id)).filter((m): m is TMessage => !!m)
+    )
+  }), [selectionStore])
+
+  // Android's back leaves selection mode first, as in Telegram.
+  useEffect(() => {
+    if (!isSelecting)
+      return
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      selectionStore.clear()
+      return true
+    })
+    return () => subscription.remove()
+  }, [isSelecting, selectionStore])
 
   // Use controlled or uncontrolled reply state
   const replyMessage = replyMessageProp !== undefined ? replyMessageProp : internalReplyMessage
@@ -398,12 +492,15 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   // The app's callbacks are read through a ref, so an inline arrow does not hand every row a
   // new `messageActions` (and re-render it) on each parent render.
-  const actionCallbacksRef = useRef({ onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage })
-  actionCallbacksRef.current = { onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage }
+  const actionCallbacksRef = useRef({ onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage, onForwardMessages, onDeleteMessages })
+  actionCallbacksRef.current = { onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage, onForwardMessages, onDeleteMessages }
   const hasPin = !!onPinMessage
   const hasEdit = !!onEditMessage
-  const hasDelete = !!onDeleteMessage
-  const hasForward = !!onForwardMessage
+  const hasDelete = !!onDeleteMessage || !!onDeleteMessages
+  const hasForward = !!onForwardMessage || !!onForwardMessages
+  const hasClipboard = !!getClipboard()
+  // Selecting is only offered when a selection can be acted on.
+  const canSelect = hasClipboard || hasDelete || hasForward
 
   // An app that already handles long-press itself keeps that, unless it asks for actions.
   const actionKeys = defaultMessageActions === false || (onLongPressMessage && messageActions === undefined)
@@ -420,6 +517,11 @@ function Chat<TMessage extends IMessage = IMessage> (
       return undefined
 
     const clipboard = keys.includes('copy') ? getClipboard() : null
+    const startSelection = (message: TMessage) => {
+      Keyboard.dismiss()
+      composerPanels.close()
+      selectionStore.start(message._id)
+    }
     const owner = userId != null ? { _id: userId } : undefined
     const defaultsFor = (message: TMessage): MessageMenuItem[] => keys.length === 0
       ? []
@@ -431,13 +533,26 @@ function Chat<TMessage extends IMessage = IMessage> (
         clipboard,
         onReply: isReplyEnabled ? startReply : undefined,
         onEdit: hasEdit ? startEdit : undefined,
-        onForward: hasForward ? m => actionCallbacksRef.current.onForwardMessage?.(m) : undefined,
+        onForward: hasForward
+          ? m => {
+            const { onForwardMessage, onForwardMessages } = actionCallbacksRef.current
+            if (onForwardMessage)
+              onForwardMessage(m)
+            else
+              onForwardMessages?.([m])
+          }
+          : undefined,
+        onSelect: canSelect ? startSelection : undefined,
         onPin: hasPin ? m => actionCallbacksRef.current.onPinMessage?.(m) : undefined,
         onDelete: hasDelete
           ? m => {
             if (editingMessage?._id === m._id)
               stopEdit()
-            actionCallbacksRef.current.onDeleteMessage?.(m)
+            const { onDeleteMessage, onDeleteMessages } = actionCallbacksRef.current
+            if (onDeleteMessage)
+              onDeleteMessage(m)
+            else
+              onDeleteMessages?.([m])
           }
           : undefined,
       })
@@ -460,12 +575,22 @@ function Chat<TMessage extends IMessage = IMessage> (
     hasDelete,
     hasForward,
     hasPin,
+    canSelect,
+    composerPanels,
+    selectionStore,
   ])
 
   useEffect(() => {
     mediaController.setScroller(scrollToMessage)
     return () => mediaController.setScroller(null)
   }, [mediaController, scrollToMessage])
+
+  // The greeting goes out like any typed message; `_onSend` is defined further down.
+  const sendRef = useRef<(messages: TMessage[]) => void>(() => {})
+  const sendGreeting = useCallback((greeting: string) => {
+    sendRef.current([{ text: greeting } as TMessage])
+  }, [])
+  const isChatEmptyShown = messages.length === 0 && props.renderChatEmpty === undefined
 
   const isNowPlayingBarEnabled = mediaPlayback?.isNowPlayingBarEnabled ?? true
   const isFloatingRoundNoteEnabled = mediaPlayback?.isFloatingRoundNoteEnabled ?? true
@@ -498,6 +623,11 @@ function Chat<TMessage extends IMessage = IMessage> (
             isTyping={isTyping}
             reply={replyForList}
           />
+          {isChatEmptyShown && (
+            <View style={styles.emptyOverlay} pointerEvents='box-none'>
+              <ChatEmpty greeting={emptyChatGreeting} onPressGreeting={sendGreeting} />
+            </View>
+          )}
           {isFloatingRoundNoteEnabled && <FloatingRoundNote />}
         </View>
         {renderComponentOrElement(renderChatFooter, {})}
@@ -521,6 +651,9 @@ function Chat<TMessage extends IMessage = IMessage> (
     resolvedReactions,
     isAvatarVisible,
     isUsernameVisible,
+    isChatEmptyShown,
+    emptyChatGreeting,
+    sendGreeting,
   ])
 
   const notifyInputTextReset = useCallback(() => {
@@ -599,14 +732,17 @@ function Chat<TMessage extends IMessage = IMessage> (
     [props.text, props.textInputProps]
   )
   changeTextRef.current = _onChangeText
+  sendRef.current = messages => _onSend(messages, false)
   clearReplyRef.current = () => {
     if (replyMessage)
       clearReply()
   }
 
   // Hints for a feature that was asked for but cannot work without its optional peer.
-  const isAudioRecordingRequested = !!props.audioRecording?.isEnabled
-  const isVideoRecordingRequested = !!props.videoRecording?.isEnabled
+  const isRequested = (config: boolean | { isEnabled?: boolean } | undefined) =>
+    config === true || (typeof config === 'object' && config.isEnabled === true)
+  const isAudioRecordingRequested = isRequested(props.audioRecording)
+  const isVideoRecordingRequested = isRequested(props.videoRecording)
   useEffect(() => {
     if (isAudioRecordingRequested && !hasVoiceRecording())
       devHint('voice-recording-peer', 'Chat: `audioRecording.isEnabled` is set but `expo-audio` is not installed - the mic button is hidden')
@@ -649,9 +785,57 @@ function Chat<TMessage extends IMessage = IMessage> (
     [isInitialized, initialText, notifyInputTextReset, getTextFromProp, measureKeyboardOffset]
   )
 
+  const copySelection = useCallback((selected: TMessage[]) => {
+    const text = selected.map(message => message.text).filter(Boolean).join('\n\n')
+    if (text)
+      getClipboard()?.setString(text)
+    selectionStore.clear()
+  }, [selectionStore])
+
+  const forwardSelection = useMemo(() => {
+    if (!hasForward)
+      return undefined
+    return (selected: TMessage[]) => {
+      const { onForwardMessage, onForwardMessages } = actionCallbacksRef.current
+      if (onForwardMessages)
+        onForwardMessages(selected)
+      else
+        selected.forEach(message => onForwardMessage?.(message))
+      selectionStore.clear()
+    }
+  }, [hasForward, selectionStore])
+
+  const deleteSelection = useMemo(() => {
+    if (!hasDelete)
+      return undefined
+    return (selected: TMessage[]) => {
+      if (editingMessage && selected.some(message => message._id === editingMessage._id))
+        stopEdit()
+      const { onDeleteMessage, onDeleteMessages } = actionCallbacksRef.current
+      if (onDeleteMessages)
+        onDeleteMessages(selected)
+      else
+        selected.forEach(message => onDeleteMessage?.(message))
+      selectionStore.clear()
+    }
+  }, [hasDelete, editingMessage, stopEdit, selectionStore])
+
   const inputToolbarFragment = useMemo(() => {
     if (!isInitialized)
       return null
+
+    if (isSelecting && renderSelectionBar !== null)
+      return (
+        <ChatSelectionBar<TMessage>
+          store={selectionStore}
+          messagesRef={messagesRef}
+          canCopy={hasClipboard}
+          onCopy={copySelection}
+          onForward={forwardSelection}
+          onDelete={deleteSelection}
+          renderSelectionBar={renderSelectionBar}
+        />
+      )
 
     const inputToolbarProps = {
       ...props,
@@ -693,6 +877,13 @@ function Chat<TMessage extends IMessage = IMessage> (
     renderReplyPreview,
     replyPreviewContainerStyle,
     replyPreviewTextStyle,
+    isSelecting,
+    renderSelectionBar,
+    selectionStore,
+    hasClipboard,
+    copySelection,
+    forwardSelection,
+    deleteSelection,
   ])
 
   const contextValues = useMemo(
@@ -757,12 +948,14 @@ function Chat<TMessage extends IMessage = IMessage> (
           >
             <MediaPlaybackContext.Provider value={mediaController}>
               <MessageHighlightContext.Provider value={highlightStore}>
-                <ComposerPanelsContext.Provider value={composerPanels}>
-                  <ChatOverlayProvider>
-                    {renderMessages}
-                    {inputToolbarFragment}
-                  </ChatOverlayProvider>
-                </ComposerPanelsContext.Provider>
+                <MessageSelectionContext.Provider value={selectionStore}>
+                  <ComposerPanelsContext.Provider value={composerPanels}>
+                    <ChatOverlayProvider>
+                      {renderMessages}
+                      {inputToolbarFragment}
+                    </ChatOverlayProvider>
+                  </ComposerPanelsContext.Provider>
+                </MessageSelectionContext.Provider>
               </MessageHighlightContext.Provider>
             </MediaPlaybackContext.Provider>
           </View>

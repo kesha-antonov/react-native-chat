@@ -70,4 +70,9 @@ export const ko: Partial<ChatLabels> = {
   attachChooseFromGallery: '갤러리에서 선택',
   attachChooseFile: '파일 선택',
   attachLocationDenied: '위치 접근이 꺼져 있습니다. 위치를 보내려면 설정에서 켜세요.',
+  emptyChatTitle: '아직 메시지가 없습니다...',
+  emptyChatText: '메시지를 보내거나 아래 인사를 탭하세요.',
+  unreadMessages: '읽지 않은 메시지',
+  actionSelect: '선택',
+  cancelSelection: '선택 취소',
 }

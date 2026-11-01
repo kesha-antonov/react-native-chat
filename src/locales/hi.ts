@@ -70,4 +70,9 @@ export const hi: Partial<ChatLabels> = {
   attachChooseFromGallery: 'गैलरी से चुनें',
   attachChooseFile: 'फ़ाइल चुनें',
   attachLocationDenied: 'स्थान की अनुमति बंद है। अपना स्थान भेजने के लिए इसे सेटिंग्स में चालू करें।',
+  emptyChatTitle: 'यहाँ अभी कोई संदेश नहीं है...',
+  emptyChatText: 'संदेश भेजें या नीचे दिए अभिवादन पर टैप करें।',
+  unreadMessages: 'अपठित संदेश',
+  actionSelect: 'चुनें',
+  cancelSelection: 'चयन रद्द करें',
 }

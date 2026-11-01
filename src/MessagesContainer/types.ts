@@ -87,8 +87,20 @@ export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
   scrollToBottomContentStyle?: StyleProp<ViewStyle>
   /** Distance from bottom before showing scroll to bottom button */
   scrollToBottomOffset?: number
-  /** Custom component to render when messages are empty */
-  renderChatEmpty?: () => React.ReactNode
+  /**
+   * What to show while there are no messages. `Chat` shows Telegram's greeting card by default
+   * ("No messages here yet..." and a 👋 that sends itself); pass your own render function to
+   * replace it, or `null` for nothing.
+   */
+  renderChatEmpty?: (() => React.ReactNode) | null
+  /**
+   * The first message the user has not read yet. Telegram's "Unread Messages" bar is drawn above
+   * it, and the chat opens scrolled so the bar is at the top. Keep it fixed while the chat is
+   * open (Telegram keeps the bar until you leave), e.g. from the unread count when it opened.
+   */
+  firstUnreadMessageId?: string | number | null
+  /** Custom "Unread Messages" bar, or `null` to only scroll to the first unread message. */
+  renderUnreadSeparator?: (() => React.ReactNode) | null
   /** Custom footer component on the ListView, e.g. 'User is typing...' */
   renderFooter?: (props: MessagesContainerProps<TMessage>) => React.ReactNode
   /** Custom message container */

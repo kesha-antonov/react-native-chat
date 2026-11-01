@@ -123,6 +123,16 @@ export interface ChatThemeColors {
   scrollToBottomBadge: string
   /** Unread counter text. */
   scrollToBottomBadgeText: string
+  /** The "Unread Messages" bar (`chat_unreadMessagesStartBackground`). */
+  unreadSeparatorBackground: string
+  /** Its label (`chat_unreadMessagesStartText`). */
+  unreadSeparatorText: string
+  /** Its arrow (`chat_unreadMessagesStartArrowIcon`). */
+  unreadSeparatorArrow: string
+  /** A selected message's check circle in selection mode (`checkbox`). */
+  selectionCheckbox: string
+  /** The check mark and the empty circle's ring (`checkboxCheck`). */
+  selectionCheckboxCheck: string
 }
 
 export interface ChatThemeAvatar {
@@ -251,6 +261,13 @@ export interface ChatThemeBubble {
    * (Telegram's `- 80dp`), and narrower by the avatar column when avatars show.
    */
   maxWidthInset: number
+  /**
+   * Telegram's big emoji: a message of at most this many emoji (and nothing else) drops its
+   * bubble and draws them large. `0` turns it off.
+   */
+  bigEmojiMaxCount: number
+  /** Font size of big emoji by count: index 0 for one emoji, the last entry for that many or more. */
+  bigEmojiSizes: number[]
 }
 
 export interface ChatThemeWallpaper {
@@ -463,6 +480,12 @@ const sharedBubble: Omit<ChatThemeBubble, 'outgoingGradient'> = {
   isTimeInline: true,
   outgoingGradientMode: 'screen',
   maxWidthInset: 80,
+  // `MessageObject.checkEmojiOnly` has no cap of its own; past a screenful it stops being a
+  // sticker-like moment and is just a lot of emoji, so the default stops at 20.
+  bigEmojiMaxCount: 20,
+  // `chat_msgTextPaintEmoji`, `.34/.28/.22/.19 × 120dp` (`Theme.java:8027`): plain emoji use the
+  // non-animated column (`MessageObject.getTextPaint`), 1-2 emoji at [2], 3 at [3], 4 at [4], 5+ at [5].
+  bigEmojiSizes: [40.8, 40.8, 33.6, 26.4, 22.8],
 }
 
 // `EmojiView`: 200 before any keyboard was measured, 45 per column, 32 glyphs (`EV:3013, 2819`).
@@ -526,6 +549,12 @@ export const defaultLightTheme: ChatTheme = {
     scrollToBottomIcon: 'rgba(27, 34, 39, 0.6)',
     scrollToBottomBadge: '#229AF0',
     scrollToBottomBadgeText: '#FFFFFF',
+    // `ThemeColors.java:470-472`, `:623-624`.
+    unreadSeparatorBackground: '#FFFFFF',
+    unreadSeparatorText: '#5695CC',
+    unreadSeparatorArrow: '#A2B5C7',
+    selectionCheckbox: '#5EC245',
+    selectionCheckboxCheck: '#FFFFFF',
   },
   radii: sharedRadii,
   spacing: sharedSpacing,
@@ -645,6 +674,12 @@ export const defaultDarkTheme: ChatTheme = {
     scrollToBottomIcon: 'rgba(255, 255, 255, 0.627)',
     scrollToBottomBadge: '#51AAEE',
     scrollToBottomBadgeText: '#FFFFFF',
+    // darkblue.attheme `chat_unreadMessagesStart*`.
+    unreadSeparatorBackground: '#253442',
+    unreadSeparatorText: 'rgba(255, 255, 255, 0.855)',
+    unreadSeparatorArrow: '#5A6B7A',
+    selectionCheckbox: '#5EC245',
+    selectionCheckboxCheck: '#FFFFFF',
   },
   radii: sharedRadii,
   spacing: sharedSpacing,

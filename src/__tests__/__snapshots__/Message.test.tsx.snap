@@ -5,19 +5,15 @@ exports[`Message component should NOT render <Message /> 1`] = `null`;
 exports[`Message component should render <Message /> and compare with snapshot 1`] = `
 <View>
   <View
+    collapsable={false}
     style={
-      [
-        {
-          "alignItems": "flex-end",
-          "flexDirection": "row",
-          "justifyContent": "flex-start",
-          "marginHorizontal": 8,
-        },
-        {
-          "marginBottom": 6,
-        },
-        undefined,
-      ]
+      {
+        "alignItems": "flex-end",
+        "flexDirection": "row",
+        "justifyContent": "flex-start",
+        "marginBottom": 6,
+        "marginHorizontal": 8,
+      }
     }
   >
     <View
@@ -62,6 +58,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
             null,
             null,
             undefined,
+            false,
             false,
             false,
           ]
@@ -240,19 +237,15 @@ exports[`Message component should render <Message /> and compare with snapshot 1
 exports[`Message component should render <Message /> with Avatar 1`] = `
 <View>
   <View
+    collapsable={false}
     style={
-      [
-        {
-          "alignItems": "flex-end",
-          "flexDirection": "row",
-          "justifyContent": "flex-start",
-          "marginHorizontal": 8,
-        },
-        {
-          "marginBottom": 6,
-        },
-        undefined,
-      ]
+      {
+        "alignItems": "flex-end",
+        "flexDirection": "row",
+        "justifyContent": "flex-start",
+        "marginBottom": 6,
+        "marginHorizontal": 8,
+      }
     }
   >
     <View
@@ -337,6 +330,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
             null,
             null,
             undefined,
+            false,
             false,
             false,
           ]
@@ -515,19 +509,15 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
 exports[`Message component should render null if user has no Avatar 1`] = `
 <View>
   <View
+    collapsable={false}
     style={
-      [
-        {
-          "alignItems": "flex-end",
-          "flexDirection": "row",
-          "justifyContent": "flex-start",
-          "marginHorizontal": 8,
-        },
-        {
-          "marginBottom": 6,
-        },
-        undefined,
-      ]
+      {
+        "alignItems": "flex-end",
+        "flexDirection": "row",
+        "justifyContent": "flex-start",
+        "marginBottom": 6,
+        "marginHorizontal": 8,
+      }
     }
   >
     <View
@@ -612,6 +602,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
             null,
             null,
             undefined,
+            false,
             false,
             false,
           ]

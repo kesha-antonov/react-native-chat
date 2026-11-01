@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { View } from 'react-native'
 import isEqual from 'lodash.isequal'
 import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated'
+import { UnreadSeparator } from '../../../components/UnreadSeparator'
 import { Day } from '../../../Day'
 import { Message, MessageProps } from '../../../Message'
 import { IMessage } from '../../../Models'
@@ -98,6 +99,8 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
     renderMessage: renderMessageProp,
     isDayAnimationEnabled,
     reply,
+    firstUnreadMessageId,
+    renderUnreadSeparator,
     /* eslint-disable @typescript-eslint/no-unused-vars */
     scrolledY: _scrolledY,
     daysPositions: _daysPositions,
@@ -129,12 +132,20 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
   const isDayBoundary = props.currentMessage?.createdAt != null &&
     !isSameDay(props.currentMessage, props.previousMessage)
 
+  // Telegram's unread bar is a row of its own right above the first unread message, under its
+  // date if it opens a day.
+  const isFirstUnread = firstUnreadMessageId != null && props.currentMessage._id === firstUnreadMessageId
+  const unreadSeparator = isFirstUnread
+    ? renderUnreadSeparator === undefined ? <UnreadSeparator /> : renderUnreadSeparator?.()
+    : null
+
   return (
     // do not remove key. it helps to get correct position of the day container
     <View key={props.currentMessage._id.toString()}>
       {isDayBoundary && (isDayAnimationEnabled
         ? <AnimatedDayWrapper<TMessage> {...props} />
         : <DayWrapper<TMessage> {...messageProps as MessageProps<TMessage>} />)}
+      {unreadSeparator}
       {
         renderMessageProp
           ? renderMessageProp(messageProps as MessageProps<TMessage>)

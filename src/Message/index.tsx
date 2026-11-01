@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useMemo } from 'react'
-import { View } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { Animated as RNAnimated, Easing as RNEasing, Pressable, StyleSheet, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { Avatar } from '../Avatar'
 import { Bubble } from '../Bubble'
 import { useIsNoteGrown } from '../components/mediaPlayback'
 import { HighlightOverlay, useMessageHighlightToken } from '../components/messageHighlight'
+import { useMessageSelection } from '../components/messageSelection'
+import { SELECTION_CHECKBOX_SIZE, SelectionCheckbox } from '../components/SelectionCheckbox'
 import { useIsRTL } from '../hooks/useIsRTL'
 import { useTheme } from '../hooks/useTheme'
 import { IMessage } from '../Models'
@@ -18,6 +20,14 @@ import { SwipeToReplyRow } from './SwipeToReply'
 import { MessageProps } from './types'
 
 export * from './types'
+
+// Selection mode (`ChatMessageCell.setCheckBoxVisible`): incoming rows slide 35dp aside for the
+// check, which sits 8dp from the edge, 8dp above the bubble's bottom; ease-out in, ease-in out.
+const SELECTION_SHIFT = 35
+const SELECTION_CHECK_INSET = 8
+const SELECTION_MS = 200
+const SELECTION_EASE_OUT = RNEasing.bezier(0, 0, 0.58, 1)
+const SELECTION_EASE_IN = RNEasing.bezier(0.42, 0, 1, 1)
 
 /** Telegram fades the avatar out as fast as the note grows over it. */
 const AVATAR_FADE_MS = 250
@@ -69,6 +79,45 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
 
   // Telegram's flash after jumping here from a reply quote.
   const highlightToken = useMessageHighlightToken(currentMessage?._id)
+
+  // Multi-select: a tap anywhere on the row checks it, and its chrome (check, tint, the slide
+  // aside) stays up until the exit animation has run.
+  const selection = useMessageSelection(currentMessage?.system ? undefined : currentMessage?._id)
+  const [isSelectionChromeShown, setIsSelectionChromeShown] = useState(selection.isActive)
+  if (selection.isActive && !isSelectionChromeShown)
+    setIsSelectionChromeShown(true)
+  const [selectionProgress] = useState(() => new RNAnimated.Value(selection.isActive ? 1 : 0))
+  useEffect(() => {
+    if (!isSelectionChromeShown)
+      return
+
+    const isActive = selection.isActive
+    const animation = RNAnimated.timing(selectionProgress, {
+      toValue: isActive ? 1 : 0,
+      duration: SELECTION_MS,
+      easing: isActive ? SELECTION_EASE_OUT : SELECTION_EASE_IN,
+      useNativeDriver: true,
+    })
+    animation.start(({ finished }) => {
+      if (finished && !isActive)
+        setIsSelectionChromeShown(false)
+    })
+    return () => animation.stop()
+  }, [selection.isActive, isSelectionChromeShown, selectionProgress])
+
+  // The check goes on the reading side; rows drawn on that side make room for it.
+  const checkSide = isRTL ? 'right' : 'left'
+  const isShiftedForCheck = visualPosition === checkSide
+  const shiftStyle = useMemo(() => {
+    if (!isSelectionChromeShown || !isShiftedForCheck)
+      return null
+    const direction = checkSide === 'left' ? 1 : -1
+    return {
+      transform: [{
+        translateX: selectionProgress.interpolate({ inputRange: [0, 1], outputRange: [0, SELECTION_SHIFT * direction] }),
+      }],
+    }
+  }, [isSelectionChromeShown, isShiftedForCheck, checkSide, selectionProgress])
 
   const renderBubble = useCallback(() => {
     const {
@@ -153,11 +202,12 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
       return renderSystemMessage()
 
     return (
-      <View
+      <RNAnimated.View
         style={[
           getStyleWithPosition(styles, 'container', visualPosition),
           { marginBottom: isGroupedWithNext ? theme.spacing.withinGroup : theme.spacing.betweenGroups },
           containerStyle?.[position],
+          shiftStyle,
         ]}
       >
         {!!highlightToken && (
@@ -166,9 +216,10 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
         {visualPosition === 'left' && renderAvatar()}
         {renderBubble()}
         {visualPosition === 'right' && renderAvatar()}
-      </View>
+      </RNAnimated.View>
     )
   }, [
+    shiftStyle,
     currentMessage?.system,
     renderSystemMessage,
     position,
@@ -184,25 +235,85 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
   if (!currentMessage)
     return null
 
-  // Don't wrap system messages in Swipeable
+  const bottomGap = isGroupedWithNext ? theme.spacing.withinGroup : theme.spacing.betweenGroups
+  const selectionTint = isSelectionChromeShown && selection.isSelected
+    ? <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.selectionBackground }]} pointerEvents='none' />
+    : null
+  const selectionChrome = isSelectionChromeShown
+    ? (
+      <>
+        <RNAnimated.View
+          pointerEvents='none'
+          style={[
+            selectionStyles.check,
+            checkSide === 'left' ? selectionStyles.checkLeft : selectionStyles.checkRight,
+            {
+              bottom: bottomGap + SELECTION_CHECK_INSET,
+              opacity: selectionProgress,
+              transform: [{
+                translateX: selectionProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [checkSide === 'left' ? -SELECTION_SHIFT : SELECTION_SHIFT, 0],
+                }),
+              }],
+            },
+          ]}
+        >
+          <SelectionCheckbox isChecked={selection.isSelected} />
+        </RNAnimated.View>
+        {/* Over the whole row, so a tap anywhere checks it and nothing in the bubble reacts. */}
+        {selection.isActive && (
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={selection.toggle}
+            accessibilityRole='checkbox'
+            accessibilityState={{ checked: selection.isSelected }}
+            testID='message-select-toggle'
+          />
+        )}
+      </>
+    )
+    : null
+
+  // Don't wrap system messages in Swipeable.
   if (currentMessage.system || !isSwipeToReplyEnabled)
     return (
       <View onLayout={onMessageLayout}>
+        {selectionTint}
         {messageContent}
+        {selectionChrome}
       </View>
     )
 
   return (
     <View onLayout={onMessageLayout}>
+      {selectionTint}
       <SwipeToReplyRow
         direction={swipeToReplyDirection}
         position={position}
         onReply={handleSwipeReply}
         renderAction={renderSwipeToReplyActionProp}
         actionContainerStyle={swipeToReplyActionContainerStyle}
+        // A row being selected does not swipe.
+        isEnabled={!selection.isActive}
       >
         {messageContent}
       </SwipeToReplyRow>
+      {selectionChrome}
     </View>
   )
 }
+
+const selectionStyles = StyleSheet.create({
+  check: {
+    position: 'absolute',
+    width: SELECTION_CHECKBOX_SIZE,
+    height: SELECTION_CHECKBOX_SIZE,
+  },
+  checkLeft: {
+    left: SELECTION_CHECK_INSET,
+  },
+  checkRight: {
+    right: SELECTION_CHECK_INSET,
+  },
+})

@@ -133,7 +133,12 @@ That is the whole setup - everything below is optional.
 - ⌨️ **[Emoji keyboard](#emoji-keyboard-and-attachment-menu)** - Telegram's emoji panel in the keyboard's place, with search, recents and skin tones
 - 📎 **[Attachment menu](#emoji-keyboard-and-attachment-menu)** - photo grid with numbered selection and a caption, files and location
 - 🎥 **[Video & audio messages](#-whats-new-vs-react-native-gifted-chat)** - real inline playback, with a tappable fallback
-- 🎙️ **[Voice & video recording](#-whats-new-vs-react-native-gifted-chat)** - Telegram-style hold-to-record notes (opt-in)
+- 🎙️ **[Voice & video recording](#-whats-new-vs-react-native-gifted-chat)** - Telegram-style hold-to-record notes, on once their peers are installed
+- 👋 **[Empty chat greeting](#messages--message-container)** - Telegram's "No messages here yet..." card with a tap-to-send 👋
+- 😍 **[Big emoji](#theming--dark-mode)** - emoji-only messages drop the bubble and draw large, Telegram's sizes
+- 🔵 **[Unread bar](#messages--message-container)** - "Unread Messages" above the first unread message, opened scrolled to it
+- 🔗 **[Link previews](#message-bubbles--content)** - Telegram's web page block under the text
+- ☑️ **[Multi-select](#message-bubbles--content)** - "Select" in the long-press menu: check circles, Copy / Forward / Delete bar
 - 📍 **[Location messages](#-whats-new-vs-react-native-gifted-chat)** - map card that opens the system maps app
 - ↩️ **[Swipe to reply](#reply-to-messages)** - reply preview and message threading
 - 📋 **[Long-press actions](#message-actions-long-press-context-menu)** - Telegram Android's context menu beside the finger, with a reactions bar
@@ -208,12 +213,13 @@ Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/Farid
 ### Voice, video and location
 
 <details>
-<summary><strong>Opt-in recording and media playback</strong></summary>
+<summary><strong>Recording and media playback</strong></summary>
+
+Voice notes (`expo-audio`) and round video notes (`react-native-vision-camera`) turn on by themselves once their peers are installed: the mic button records on hold, and a tap switches it to the camera, as in Telegram. Pass `false` to turn either off.
 
 ```jsx
 <Chat
-  audioRecording={{ isEnabled: true }}   // hold the mic to record a voice note (needs expo-audio)
-  videoRecording={{ isEnabled: true }}   // round video notes (needs react-native-vision-camera or expo-image-picker)
+  videoRecording={{ maxDuration: 30 }}   // optional: configure; `false` turns round notes off
   mediaPlayback={{ playbackRate: 1.5 }}  // optional: start notes at 1.5x, auto-play the next note
   // location messages render automatically for any IMessage with a `location`
   {...props}
@@ -419,7 +425,7 @@ npx pod-install
 
 ### Optional peers
 
-Every feature below turns itself on when its package is installed and stays hidden when it is not - there is nothing to configure. `getChatCapabilities()` reports what the current install can do, e.g. to build UI that matches the chat's. In development, a feature that was asked for but cannot work (say `audioRecording.isEnabled` without `expo-audio`) logs one hint.
+Every feature below turns itself on when its package is installed and stays hidden when it is not - there is nothing to configure. `getChatCapabilities()` reports what the current install can do, e.g. to build UI that matches the chat's. In development, a feature that was asked for but cannot work (say `audioRecording={{ isEnabled: true }}` without `expo-audio`) logs one hint.
 
 | Package | Feature | `getChatCapabilities()` key |
 |---|---|---|
@@ -528,6 +534,17 @@ interface IMessage {
     size?: number
     mimeType?: string
   }
+  /** Telegram's web page preview under the text (or fetched via `fetchLinkPreview`); `null` hides it */
+  linkPreview?: {
+    url?: string
+    siteName?: string
+    title?: string
+    description?: string
+    image?: string
+    imageWidth?: number
+    imageHeight?: number
+    imageSize?: 'large' | 'small'
+  } | null
 }
 
 interface ReplyMessage {
@@ -631,8 +648,8 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`renderAccessory`** _(Component | Function)_ - Custom second line of actions below the message composer
 - **`emojiKeyboard`** _(Bool | Object)_ - The built-in emoji keyboard behind the composer's emoji button, on by default. It opens in the system keyboard's place at the last keyboard height (200 + the bottom inset before a keyboard was seen) and inserts at the caret, whether or not you control `text`. `false` hides the emoji button. An object configures it: `{ isEnabled?, columns?, categories?, recents?, isSearchEnabled?, renderEmojiKeyboard? }` - `columns` fixes the column count (default: as many 45pt columns as fit); `categories` picks and orders the tabs (`'smileys' | 'animals' | 'food' | 'activities' | 'travel' | 'objects' | 'symbols' | 'flags'`); `recents` is `false` or `{ isEnabled?, storageKey?, isPersisted? }` (persisted through `@react-native-async-storage/async-storage` when installed); `isSearchEnabled` (default `true`); `renderEmojiKeyboard({ onSelect, onBackspace, onClose, height, bottomInset })` draws your own keyboard in the panel. Colors and sizes live in `theme.emojiKeyboard`.
 - **`onPressEmoji`** _(Function)_ - Called when the emoji button is pressed, instead of opening the built-in emoji keyboard. Passing it shows the button even with `emojiKeyboard={false}`.
-- **`audioRecording`** _(Object)_ - Enable Telegram-style hold-to-record voice notes. `{ isEnabled, minDurationMs?, maxDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `isViewOnceEnabled` shows Telegram's view-once toggle above the pause button while a take is locked or paused; a take sent with it on reaches `onSend` with `isViewOnce: true`. `minDurationMs` (default 700, as in Telegram) drops takes that long or shorter and calls `onTooShort`; `maxDurationMs` (default 600000) sends the take when reached. Requires the optional `expo-audio` peer (and `react-native-audio-api` for the playback waveform); the mic button is hidden when it is absent. A paused take can be resumed when `react-native-audio-api` is installed with FFmpeg (the M4A recordings are joined without re-encoding), and trimmed when `expo-file-system` is installed too; a trimmed take reaches `onSend` as a 16-bit mono WAV at 24kHz, an untrimmed one as the recorder's M4A.
-- **`videoRecording`** _(Object)_ - Enable round video notes. `{ isEnabled, maxDuration?, minDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `maxDuration` is in seconds (default 60); `minDurationMs` (default 800) drops shorter takes and calls `onTooShort`; `isViewOnceEnabled` works as in `audioRecording`, for round notes recorded with vision-camera. With `react-native-vision-camera` 5 or newer linked (plus its `react-native-nitro-modules` and `react-native-nitro-image` peers; it has no Expo config plugin, so add `NSCameraUsageDescription`/`NSMicrophoneUsageDescription` and the `CAMERA`/`RECORD_AUDIO` permissions yourself), the record button records a note on the first hold, like Telegram - shared with voice notes when both are enabled, on its own otherwise. Reaching `maxDuration` stops into a preview (sends directly without `expo-video`). Without vision-camera it falls back to `expo-image-picker`'s system camera, which sends a plain (non-round) video.
+- **`audioRecording`** _(Bool | Object)_ - Telegram-style hold-to-record voice notes, **on by default when `expo-audio` is installed**; `false` (or `{ isEnabled: false }`) turns them off. An object configures them: `{ isEnabled?, minDurationMs?, maxDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `isViewOnceEnabled` shows Telegram's view-once toggle above the pause button while a take is locked or paused; a take sent with it on reaches `onSend` with `isViewOnce: true`. `minDurationMs` (default 700, as in Telegram) drops takes that long or shorter and calls `onTooShort`; `maxDurationMs` (default 600000) sends the take when reached. Requires the optional `expo-audio` peer (and `react-native-audio-api` for the playback waveform); the mic button is hidden when it is absent. A paused take can be resumed when `react-native-audio-api` is installed with FFmpeg (the M4A recordings are joined without re-encoding), and trimmed when `expo-file-system` is installed too; a trimmed take reaches `onSend` as a 16-bit mono WAV at 24kHz, an untrimmed one as the recorder's M4A.
+- **`videoRecording`** _(Bool | Object)_ - Round video notes, **on by default when `react-native-vision-camera` is installed**; `false` (or `{ isEnabled: false }`) turns them off. `true` / `{ isEnabled: true }` also offers the system-camera fallback below when vision-camera is missing. An object configures them: `{ isEnabled?, maxDuration?, minDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `maxDuration` is in seconds (default 60); `minDurationMs` (default 800) drops shorter takes and calls `onTooShort`; `isViewOnceEnabled` works as in `audioRecording`, for round notes recorded with vision-camera. With `react-native-vision-camera` 5 or newer linked (plus its `react-native-nitro-modules` and `react-native-nitro-image` peers; it has no Expo config plugin, so add `NSCameraUsageDescription`/`NSMicrophoneUsageDescription` and the `CAMERA`/`RECORD_AUDIO` permissions yourself), the record button records a note on the first hold, like Telegram - shared with voice notes when both are enabled, on its own otherwise. Reaching `maxDuration` stops into a preview (sends directly without `expo-video`). Without vision-camera it falls back to `expo-image-picker`'s system camera, which sends a plain (non-round) video.
 - **`mediaPlayback`** _(Object)_ - How voice and round video notes play. `{ isAutoPlayNextEnabled?, playbackRate?, onPlaybackRateChange?, isRoundVideoAutoplayEnabled?, isNowPlayingBarEnabled?, isFloatingRoundNoteEnabled?, onMediaRead?, isNearEar?, onTranscribe?, onViewOnceEnd? }`. `isNowPlayingBarEnabled` (default `true`) shows Telegram's "now playing" bar at the top of the chat while a note plays or is paused. `isFloatingRoundNoteEnabled` (default `true`) keeps a round note that is playing or paused going in a small draggable circle over the list once its row scrolls out of view; set it to `false` to stop the note with its row instead. `isAutoPlayNextEnabled` (default `true`) starts the next newer voice or round note in the chat when one plays to its end. The playback speed is shared by every note; `playbackRate` sets it, and `onPlaybackRateChange` reports changes so the app can keep the speed across launches. `isRoundVideoAutoplayEnabled` (default `false`) loops round notes silently in the list instead of holding their first frame. `onMediaRead(message)` is called when an incoming note with `isMediaUnread` starts playing, so the app can mark it listened. `isNearEar` is Telegram's raise to listen: feed it from the app's proximity sensor, and while it is `true` the current voice or round note plays through the earpiece (restarting if it was under a second in); when it goes back to `false` the note pauses and the speaker route returns. `onTranscribe(message)` shows a transcribe button on voice notes and beside round notes; tapping it calls this, shows a loading outline until the app sets `message.transcription`, then opens the text under the waveform, or in a bubble under the round note (tap again to collapse or expand). `onViewOnceEnd(message)` is called once a view-once note (`isViewOnce`) has played to its end or been stopped after starting, so the app can remove it. A view-once round note carries the "1" marker on its play button, never autoplays or floats, and cannot be scrubbed.
 - **`textInputProps`** _(Object)_ - props to be passed to the [`<TextInput>`](https://reactnative.dev/docs/textinput).
 
@@ -656,7 +673,10 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`messagesContainerStyle`** _(Object)_ - Custom style for the messages container
 - **`renderMessage`** _(Component | Function)_ - Custom message container
 - **`renderLoading`** _(Component | Function)_ - Render a loading view when initializing
-- **`renderChatEmpty`** _(Component | Function)_ - Custom component to render in the ListView when messages are empty
+- **`renderChatEmpty`** _(Function | null)_ - What to show while there are no messages. By default Telegram's greeting card (`ChatGreetingsView`): "No messages here yet...", a line of help and a big 👋 that sends itself when tapped, centered over the wallpaper. Return your own element to replace it, or pass `null` for nothing. The card is exported as `ChatEmpty`.
+- **`emptyChatGreeting`** _(String | null)_ - The greeting on the empty-chat card, sent as a message when tapped; default `'👋'`. `null` keeps just the title.
+- **`firstUnreadMessageId`** _(String | Number | null)_ - The first message the user has not read. Telegram's full-width "Unread Messages" bar is drawn above it and the chat opens scrolled so the bar is at the top. Keep it fixed while the chat is open (Telegram keeps the bar until you leave), e.g. computed once from the unread count when the screen mounts.
+- **`renderUnreadSeparator`** _(Function | null)_ - Custom "Unread Messages" bar, or `null` to only scroll to the first unread message. The default is exported as `UnreadSeparator`.
 - **`renderChatFooter`** _(Component | Function)_ - Custom component to render below the MessagesContainer (separate from the ListView)
 - **`listProps`** _(Object)_ - Extra props to be passed to the messages [`<FlatList>`](https://reactnative.dev/docs/flatlist). Supports all FlatList props including `maintainVisibleContentPosition` for keeping scroll position when new messages arrive (useful for AI chatbots).
 - **`isFlashListEnabled`** _(Bool)_ - Render messages with [`@shopify/flash-list`](https://shopify.github.io/flash-list/) v2 instead of `FlatList`; default is `false`. See [FlashList](#flashlist-opt-in).
@@ -671,10 +691,17 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`renderMessageLocation`** _(Component | Function)_ - Custom renderer for `IMessage.location`; defaults to a map card that opens the system maps app on tap
 - **`renderMessageFile`** _(Component | Function)_ - Custom renderer for `IMessage.file`; defaults to Telegram's document bubble (a circle with the extension, the name, the size) that opens the file in the share sheet (`expo-sharing`) or through `Linking` on tap
 - **`messageActions`** _(Array | Function(`message`, `defaults`))_ - Long-press context menu actions. Each item is `{ key?, label, icon?, onPress, destructive? }`. An array **replaces** the built-in actions; a function receives the message and the built-in actions for it and returns what to show, so you can extend, filter or reorder them. See [Message actions](#message-actions-long-press-context-menu).
-- **`defaultMessageActions`** _(Bool | `MessageActionKey[]`)_ - The built-in actions, in Telegram's order: `reply`, `copy`, `forward`, `pin`, `edit`, `delete`. Default `true` (all that can work); an array picks and orders them; `false` turns them off. Each shows only when it can work: Reply when `reply.isEnabled` is not `false`; Copy for messages with text when `expo-clipboard` or `@react-native-clipboard/clipboard` is installed; Edit on your own text messages when `onEditMessage` is set; Forward / Pin / Delete when their callbacks are set. They are also off when `onLongPressMessage` is set and `messageActions` is not, so an app that handles long-press itself keeps doing so.
+- **`defaultMessageActions`** _(Bool | `MessageActionKey[]`)_ - The built-in actions, in Telegram's order: `reply`, `copy`, `forward`, `pin`, `edit`, `select`, `delete`. Default `true` (all that can work); an array picks and orders them; `false` turns them off. Each shows only when it can work: Reply when `reply.isEnabled` is not `false`; Copy for messages with text when `expo-clipboard` or `@react-native-clipboard/clipboard` is installed; Edit on your own text messages when `onEditMessage` is set; Forward / Pin / Delete when their callbacks are set; Select when a selection can be acted on (a clipboard, Forward or Delete). They are also off when `onLongPressMessage` is set and `messageActions` is not, so an app that handles long-press itself keeps doing so.
 - **`onEditMessage`** _(Function(`message`, `text`))_ - Turns on the "Edit" action for your own text messages. Edit puts the text in the composer under an "Editing" banner; sending then calls this instead of `onSend`. Closing the banner cancels the edit.
 - **`onDeleteMessage`** _(Function(`message`))_ - Turns on the "Delete" action (not red, as in Telegram Android).
 - **`onForwardMessage`** _(Function(`message`))_ - Turns on the "Forward" action.
+- **`onForwardMessages`** _(Function(`messages`))_ - Forwards the messages checked in selection mode, oldest first (also turns on "Forward"). Without it the selection bar's Forward calls `onForwardMessage` once per message.
+- **`onDeleteMessages`** _(Function(`messages`))_ - Deletes the messages checked in selection mode, oldest first (also turns on "Delete"). Without it the selection bar's Delete calls `onDeleteMessage` once per message.
+- **`onSelectionChange`** _(Function(`messages`))_ - Telegram's multi-select: "Select" in the long-press menu checks the message, a tap checks or unchecks others (check circles on the left, a tinted row), and a bar replaces the composer with the count, Copy (texts joined oldest first), Forward and Delete. Called on every change with the checked messages; with `[]` once it ends (the X, Android's back, or the last message unchecked).
+- **`renderSelectionBar`** _(Function(`{ count, actions, onClose, messages }`) | null)_ - Custom bar in the composer's place while selecting, or `null` to keep the composer and drive the selection from your own header through `onSelectionChange`.
+- **`fetchLinkPreview`** _(Function(`url`) => Promise<`LinkPreview` | null>)_ - Telegram's web page preview (accent bar, site name, bold title, description, picture full width or as a 48dp thumbnail) is drawn under the text for any message with `linkPreview` data. For messages without it, this fetches one for the first link in the text, e.g. from your server's Open Graph endpoint; each URL is fetched once per app run. `IMessage.linkPreview: null` turns it off for one message.
+- **`renderLinkPreview`** _(Function(`{ preview, currentMessage, position, maxWidth, onPress }`) | null)_ - Custom link preview, or `null` to draw none. The default is exported as `LinkPreviewCard`.
+- **`onPressLinkPreview`** _(Function(`preview`, `message`))_ - Called when a link preview is tapped, instead of opening its URL.
 - **`onPinMessage`** _(Function(`message`))_ - Turns on the "Pin" action; it reads "Unpin" on a message with `isPinned: true`. Toggle `isPinned` in the handler.
 - **`renderCustomView`** _(Component | Function)_ - Custom view inside the bubble
 - **`isCustomViewBottom`** _(Bool)_ - Determine whether renderCustomView is displayed before or after the text, image and video views; default is `false`
@@ -1181,7 +1208,7 @@ For full control, pass custom `matchers` (`{ type, pattern, getLinkUrl?, getLink
 <details>
 <summary><strong>Telegram-style floating menu</strong></summary>
 
-Long-press a message to open Telegram Android's context menu beside your finger. It opens by default with Telegram's actions (order from Telegram Android's `ChatActivity.fillMessageMenu`): **Reply**, **Copy** (with `expo-clipboard` or `@react-native-clipboard/clipboard` installed), **Forward**, **Pin / Unpin**, **Edit** (your own text messages) and **Delete** - the last four appear once you pass `onForwardMessage`, `onPinMessage`, `onEditMessage` and `onDeleteMessage`. When reactions are enabled, a reactions row is shown on top of the menu automatically.
+Long-press a message to open Telegram Android's context menu beside your finger. It opens by default with Telegram's actions (order from Telegram Android's `ChatActivity.fillMessageMenu`): **Reply**, **Copy** (with `expo-clipboard` or `@react-native-clipboard/clipboard` installed), **Forward**, **Pin / Unpin**, **Edit** (your own text messages), **Select** and **Delete** - Forward, Pin, Edit and Delete appear once you pass `onForwardMessage`, `onPinMessage`, `onEditMessage` and `onDeleteMessage`. **Select** starts Telegram's multi-select: check circles beside the messages and a Copy / Forward / Delete bar in the composer's place (see `onSelectionChange`). When reactions are enabled, a reactions row is shown on top of the menu automatically.
 
 ```tsx
 <Chat
@@ -1273,7 +1300,7 @@ The default look is Telegram for Android: the classic day theme (pale green outg
 
 Token groups: `colors`, `radii`, `spacing`, `typography`, `avatar`, `sendButton`, `composer`, `voice`, plus:
 
-- **`bubble`** - `hasTail` (Telegram's curled tail on the last bubble of a run; drawn with `react-native-svg` when installed), `isTimeInline` (the time on the last line of text when it fits; `false` gives it a row), `outgoingGradient` (stops, top to bottom, or `null` for the solid `colors.outgoingBubble`), `outgoingGradientMode` (`'screen'`: one gradient across the list, each bubble shows its slice, as in Telegram; `'bubble'`: each bubble carries the whole gradient), `maxWidthInset` (the text column is `min(width, height) - maxWidthInset`, 80 by default).
+- **`bubble`** - `hasTail` (Telegram's curled tail on the last bubble of a run; drawn with `react-native-svg` when installed), `isTimeInline` (the time on the last line of text when it fits; `false` gives it a row), `outgoingGradient` (stops, top to bottom, or `null` for the solid `colors.outgoingBubble`), `outgoingGradientMode` (`'screen'`: one gradient across the list, each bubble shows its slice, as in Telegram; `'bubble'`: each bubble carries the whole gradient), `maxWidthInset` (the text column is `min(width, height) - maxWidthInset`, 80 by default), `bigEmojiMaxCount` (a message of up to this many emoji and nothing else drops its bubble and draws them large, with the time in a service pill, as Telegram's `TYPE_EMOJIS`; 20 by default, `0` turns it off), `bigEmojiSizes` (font size by emoji count, Telegram's `40.8, 40.8, 33.6, 26.4, 22.8`).
 - **`wallpaper`** - `isEnabled`, `colors` (three or four, for Telegram's swirl gradient), `isAnimated` (one step per outgoing message), `pattern` (an image tiled over the gradient; Telegram's own doodles are GPL and not bundled), `patternOpacity`, `patternColor`. Off, the chat shows `colors.background`. Replace it entirely with the `renderWallpaper` prop, or draw it elsewhere with the exported `ChatWallpaper` component.
 - **`nameColors`** - the seven sender-name colors, picked per user id (Telegram's `avatar_nameInMessage*`). Empty uses `colors.senderName`.
 - **`avatar.palette` / `avatar.paletteEnd`** - initials avatar gradient stops, picked per user id. An empty `paletteEnd` draws flat colors.

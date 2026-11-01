@@ -70,4 +70,9 @@ export const tr: Partial<ChatLabels> = {
   attachChooseFromGallery: 'Galeriden seç',
   attachChooseFile: 'Dosya seç',
   attachLocationDenied: 'Konum erişimi kapalı. Konumunu göndermek için Ayarlar\'dan aç.',
+  emptyChatTitle: 'Burada henüz mesaj yok...',
+  emptyChatText: 'Bir mesaj gönderin veya aşağıdaki selama dokunun.',
+  unreadMessages: 'Okunmamış Mesajlar',
+  actionSelect: 'Seç',
+  cancelSelection: 'Seçimi iptal et',
 }

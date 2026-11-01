@@ -70,4 +70,9 @@ export const ja: Partial<ChatLabels> = {
   attachChooseFromGallery: 'ギャラリーから選択',
   attachChooseFile: 'ファイルを選択',
   attachLocationDenied: '位置情報へのアクセスがオフです。位置情報を送信するには設定でオンにしてください。',
+  emptyChatTitle: 'まだメッセージはありません...',
+  emptyChatText: 'メッセージを送信するか、下のあいさつをタップしてください。',
+  unreadMessages: '未読メッセージ',
+  actionSelect: '選択',
+  cancelSelection: '選択を解除',
 }

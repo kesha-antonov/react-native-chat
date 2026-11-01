@@ -92,6 +92,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     renderDay: renderDayProp,
     isDayAnimationEnabled = true,
     isFlashListEnabled = false,
+    firstUnreadMessageId,
   } = props
 
   const isFlashList = isFlashListEnabled && isFlashListAvailable
@@ -183,6 +184,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const distanceFromNewestSV = useSharedValue(0)
   const lastScrolledY = useSharedValue(0)
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false)
+  const [isListLaidOut, setIsListLaidOut] = useState(false)
   const scrollToBottomPressScale = useSharedValue(1)
   const scrollToBottomStyleAnim = useAnimatedStyle(() => ({
     opacity: scrollToBottomOpacity.value,
@@ -543,6 +545,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   const onLayoutList = useCallback((event: LayoutChangeEvent) => {
     listHeight.value = event.nativeEvent.layout.height
+    setIsListLaidOut(true)
 
     // Tied to an explicit `isScrollToBottomEnabled`, as it was before the button became a
     // default, so a non-inverted chat that never asked for it is not scrolled on every layout.
@@ -576,7 +579,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [loadEarlierMessagesProps])
 
   // `scrollToIndex` to a row that is not laid out yet (a quoted message far up the history)
-  // fails; jump to its estimated offset, then retry once the rows there have rendered.
+  // fails; jump to its estimated offset, then retry once the rows there have rendered, with the
+  // placement the request asked for.
+  const scrollRequestRef = useRef({ viewPosition: 0.5, animated: true })
   const scrollRetriesRef = useRef(0)
   const scrollRetryTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   useEffect(() => () => clearTimeout(scrollRetryTimeout.current), [])
@@ -586,17 +591,56 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       return
     }
     scrollRetriesRef.current += 1
-    forwardRef?.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true })
+    forwardRef?.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: scrollRequestRef.current.animated })
     clearTimeout(scrollRetryTimeout.current)
     scrollRetryTimeout.current = setTimeout(() => {
       try {
-        forwardRef?.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 })
+        forwardRef?.current?.scrollToIndex({ index: info.index, ...scrollRequestRef.current })
         scrollRetriesRef.current = 0
       } catch {
         // gave up; the list stays at the estimate
       }
     }, 250)
   }, [forwardRef])
+
+  // Telegram opens a chat with unread messages on its "Unread Messages" bar, scrolled to the top
+  // of the screen (`ChatActivity`, `scrollToMessage = unreadMessageObject`). The row has to be
+  // rendered to be scrolled to, so the first render reaches it.
+  const unreadIndex = firstUnreadMessageId != null
+    ? messages.findIndex(message => message._id === firstUnreadMessageId)
+    : -1
+  const scrolledToUnreadRef = useRef<string | number | null>(null)
+  const unreadScrollTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const scrollRequestResetTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => {
+    clearTimeout(unreadScrollTimeout.current)
+    clearTimeout(scrollRequestResetTimeout.current)
+  }, [])
+  useEffect(() => {
+    if (!isListLaidOut || unreadIndex < 0 || firstUnreadMessageId == null || scrolledToUnreadRef.current === firstUnreadMessageId)
+      return
+
+    scrolledToUnreadRef.current = firstUnreadMessageId
+    // The newest message already is the first unread one: the list starts there anyway.
+    if (unreadIndex === (isInverted ? 0 : messages.length - 1))
+      return
+
+    clearTimeout(unreadScrollTimeout.current)
+    // After the first rows have measured themselves.
+    unreadScrollTimeout.current = setTimeout(() => {
+      const request = { viewPosition: isInverted ? 1 : 0, animated: false }
+      scrollRequestRef.current = request
+      try {
+        forwardRef?.current?.scrollToIndex({ index: unreadIndex, ...request })
+      } catch {
+        // Not measured yet; `onScrollToIndexFailed` retries.
+      }
+      // Later jumps (to a quoted message) go back to the middle, animated.
+      scrollRequestResetTimeout.current = setTimeout(() => {
+        scrollRequestRef.current = { viewPosition: 0.5, animated: true }
+      }, 1500)
+    }, 50)
+  }, [isListLaidOut, unreadIndex, firstUnreadMessageId, isInverted, messages.length, forwardRef])
 
   const keyExtractor = useCallback((item: unknown) => (item as TMessage)._id.toString(), [])
 
@@ -867,7 +911,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
             // Virtualization defaults tuned for chat lists. All are overridable via
             // `listProps` below (spread last), so consumers keep full control.
             removeClippedSubviews={Platform.OS === 'android'}
-            initialNumToRender={12}
+            initialNumToRender={Math.max(12, unreadIndex + 4)}
             maxToRenderPerBatch={10}
             windowSize={9}
             updateCellsBatchingPeriod={50}

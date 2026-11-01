@@ -115,6 +115,10 @@ export const createBubbleStyles = (theme: ChatTheme) => {
     textAboveReactions: {
       marginBottom: 6,
     },
+    // `drawLinkPreview`: the block's box starts 6 below the last line of text.
+    textAboveLinkPreview: {
+      marginBottom: 4,
+    },
     textAboveMetaRow: {
       marginBottom: 2,
     },
@@ -162,6 +166,28 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       position: 'absolute',
       right: 0,
       bottom: 0,
+    },
+
+    // Big emoji float on the wallpaper like a sticker: no fill, no padding.
+    emojiWrapper: {
+      backgroundColor: 'transparent',
+    },
+    bigEmoji: {
+      paddingHorizontal: 2,
+      textAlign: 'left',
+    },
+    // The sticker time pill (`ChatMessageCell`, service paint for stickers): 17 tall, radius
+    // 8, 6 in, under the emoji at the end.
+    emojiMeta: {
+      alignSelf: 'flex-end',
+      height: 17,
+      borderRadius: radii.mediaTimePill,
+      paddingHorizontal: 6,
+      marginTop: 2,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      backgroundColor: colors.dayPillBackground,
     },
 
     // The time on a row of its own, for content the time cannot flow into.

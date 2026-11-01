@@ -99,25 +99,37 @@ export interface BasicMarkdownProps {
   /** Position-aware link style (color), forwarded from MessageText. */
   linkStyle?: StyleProp<TextStyle>
   onLinkPress?: (url: string) => void
+  /**
+   * Inline content after the last word (Bubble's reserved time). It flows onto the last line of a
+   * closing paragraph, heading or list item, as Telegram puts the time; after a code block or a
+   * quote it gets a line of its own.
+   */
+  trailing?: React.ReactNode
 }
 
-export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress }: BasicMarkdownProps) => {
+export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress, trailing }: BasicMarkdownProps) => {
   const styles = useThemedStyles(createStyles)
 
   const lines = text.split('\n')
   const blocks: React.ReactNode[] = []
   let paragraph: string[] = []
   let key = 0
+  // The last block, when it ends in text the trailing content can follow: rebuilt with it.
+  let lastTextBlock: ((trailing: React.ReactNode) => React.ReactNode) | null = null
+  const push = (block: React.ReactNode, withTrailing: ((trailing: React.ReactNode) => React.ReactNode) | null = null) => {
+    blocks.push(block)
+    lastTextBlock = withTrailing
+  }
 
   const flushParagraph = () => {
     if (paragraph.length === 0)
       return
 
     const k = `p${key++}`
-    blocks.push(
-      <Text key={k} style={[textStyle, styles.paragraph]}>
-        {parseInline(paragraph.join('\n'), styles, k, linkStyle, onLinkPress)}
-      </Text>
+    const content = parseInline(paragraph.join('\n'), styles, k, linkStyle, onLinkPress)
+    push(
+      <Text key={k} style={[textStyle, styles.paragraph]}>{content}</Text>,
+      end => <Text key={k} style={[textStyle, styles.paragraph, styles.last]}>{content}{end}</Text>
     )
     paragraph = []
   }
@@ -135,7 +147,7 @@ export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress }: Basic
         i++
       }
       i++ // skip closing fence if present
-      blocks.push(
+      push(
         <View key={`c${key++}`} style={styles.codeBlock}>
           <Text style={[textStyle, styles.codeBlockText]}>{codeLines.join('\n')}</Text>
         </View>
@@ -148,13 +160,11 @@ export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress }: Basic
       flushParagraph()
       const level = heading[1].length
       const k = `h${key++}`
-      blocks.push(
-        <Text
-          key={k}
-          style={[textStyle, styles.heading, level <= 1 ? styles.h1 : level === 2 ? styles.h2 : null]}
-        >
-          {parseInline(heading[2], styles, k, linkStyle, onLinkPress)}
-        </Text>
+      const headingStyle = [textStyle, styles.heading, level <= 1 ? styles.h1 : level === 2 ? styles.h2 : null]
+      const content = parseInline(heading[2], styles, k, linkStyle, onLinkPress)
+      push(
+        <Text key={k} style={headingStyle}>{content}</Text>,
+        end => <Text key={k} style={[headingStyle, styles.last]}>{content}{end}</Text>
       )
       i++
       continue
@@ -167,14 +177,14 @@ export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress }: Basic
       const k = `l${key++}`
       const marker = ordered ? `${ordered[1]}.` : '•'
       const content = ordered ? ordered[2] : bullet![1]
-      blocks.push(
-        <View key={k} style={styles.listItem}>
+      const inline = parseInline(content, styles, k, linkStyle, onLinkPress)
+      const item = (end?: React.ReactNode) => (
+        <View key={k} style={[styles.listItem, end != null && styles.last]}>
           <Text style={[textStyle, styles.listMarker]}>{marker}</Text>
-          <Text style={[textStyle, styles.listText]}>
-            {parseInline(content, styles, k, linkStyle, onLinkPress)}
-          </Text>
+          <Text style={[textStyle, styles.listText]}>{inline}{end}</Text>
         </View>
       )
+      push(item(), item)
       i++
       continue
     }
@@ -183,7 +193,7 @@ export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress }: Basic
     if (quote) {
       flushParagraph()
       const k = `q${key++}`
-      blocks.push(
+      push(
         <View key={k} style={styles.quote}>
           <Text style={[textStyle, styles.quoteText]}>
             {parseInline(quote[1], styles, k, linkStyle, onLinkPress)}
@@ -206,6 +216,15 @@ export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress }: Basic
 
   flushParagraph()
 
+  // TypeScript cannot see the assignment inside `push`.
+  const finishLastBlock = lastTextBlock as ((trailing: React.ReactNode) => React.ReactNode) | null
+  if (trailing != null) 
+    if (finishLastBlock)
+      blocks[blocks.length - 1] = finishLastBlock(trailing)
+    else
+      blocks.push(<Text key='trailing' style={textStyle}>{trailing}</Text>)
+  
+
   return <View style={styles.root}>{blocks}</View>
 }
 
@@ -219,6 +238,10 @@ const createStyles = (theme: ChatTheme) => {
     },
     paragraph: {
       marginBottom: 4,
+    },
+    // The closing block carries the time, so the bubble's own bottom padding is the gap.
+    last: {
+      marginBottom: 0,
     },
     bold: {
       fontWeight: '700',

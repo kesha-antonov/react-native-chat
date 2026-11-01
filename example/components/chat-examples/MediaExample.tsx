@@ -65,10 +65,10 @@ const INITIAL_MESSAGES: IMessage[] = [
   },
 ]
 
-// Telegram-style round video notes (react-native-vision-camera). On a simulator there is no
-// camera, so the recorder runs in POC mode.
-const AUDIO_RECORDING = { isEnabled: true }
-const VIDEO_RECORDING = { isEnabled: true, maxDuration: 30 }
+// Voice notes (expo-audio) and Telegram-style round video notes (react-native-vision-camera)
+// are on by default; this only shortens the round note limit from 60s to 30s. On a simulator
+// there is no camera, so the recorder runs in POC mode.
+const VIDEO_RECORDING = { maxDuration: 30 }
 
 export default function MediaExample () {
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
@@ -78,13 +78,12 @@ export default function MediaExample () {
   }, [])
 
   // Playback works out of the box with the optional peers installed: expo-audio for voice,
-  // expo-video for video and round notes, expo-sharing to open files. Recording is opt-in.
+  // expo-video for video and round notes, expo-sharing to open files.
   return (
     <Chat<IMessage>
       messages={messages}
       onSend={onSend}
       user={USER}
-      audioRecording={AUDIO_RECORDING}
       videoRecording={VIDEO_RECORDING}
     />
   )

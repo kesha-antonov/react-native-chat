@@ -70,4 +70,9 @@ export const pl: Partial<ChatLabels> = {
   attachChooseFromGallery: 'Wybierz z galerii',
   attachChooseFile: 'Wybierz plik',
   attachLocationDenied: 'Dostęp do lokalizacji jest wyłączony. Włącz go w Ustawieniach, aby wysłać lokalizację.',
+  emptyChatTitle: 'Brak wiadomości...',
+  emptyChatText: 'Wyślij wiadomość lub dotknij powitania poniżej.',
+  unreadMessages: 'Nieprzeczytane wiadomości',
+  actionSelect: 'Zaznacz',
+  cancelSelection: 'Anuluj zaznaczanie',
 }

@@ -70,4 +70,9 @@ export const es: Partial<ChatLabels> = {
   attachChooseFromGallery: 'Elegir de la galería',
   attachChooseFile: 'Elegir un archivo',
   attachLocationDenied: 'El acceso a la ubicación está desactivado. Actívalo en Ajustes para enviar tu ubicación.',
+  emptyChatTitle: 'Aún no hay mensajes aquí...',
+  emptyChatText: 'Envía un mensaje o toca el saludo de abajo.',
+  unreadMessages: 'Mensajes no leídos',
+  actionSelect: 'Seleccionar',
+  cancelSelection: 'Cancelar selección',
 }
