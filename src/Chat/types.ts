@@ -71,6 +71,12 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   /* Input text; default is undefined, but if specified, it will override Chat's internal state */
   text?: string
   initialText?: string
+  /**
+   * The user's draft changed: called as they type, with '' once it is sent. Editing a message
+   * sets the draft aside (this is not called with the edited text) and brings it back after.
+   * Save it with the chat and pass it back as `initialText` to restore it next time.
+   */
+  onDraftChange?: (draft: string) => void
   /* User sending the messages: { _id, name, avatar } */
   user?: User
   /*  Locale to localize the dates */

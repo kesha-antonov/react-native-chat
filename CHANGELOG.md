@@ -26,6 +26,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - **`textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`**
 
 ### ✨ Features
+- **Drafts**: `onDraftChange` reports the unsent text; editing a message sets the draft aside and restores it after saving or cancelling
 - **`ChatList`**: a ready chat list (search, selection actions, archive folder, swipe to archive, draggable pinned chats, unread counters, typing, drafts, loading placeholder) for your backend's chats (`ChatListItem`), plus `useChatList` for local state, `ChatListCell`, `ChatListAvatar`, `ChatListShimmer`, `theme.chatList` and new labels
 - **Built-in emoji keyboard** in the system keyboard's place, with search, recents and skin tones (`emojiKeyboard`, `theme.emojiKeyboard`, `EmojiGrid`)
 - **Built-in attachment menu**: photo grid, File, Location and camera, sending through `onSend` (`attachments`, `theme.attachments`, `AttachmentMenu`)

@@ -458,18 +458,44 @@ function Chat<TMessage extends IMessage = IMessage> (
   // `_onChangeText` (defined further down), reached through a ref.
   const changeTextRef = useRef<(text: string) => void>(() => {})
   const clearReplyRef = useRef<() => void>(() => {})
+  // The draft (what the user typed, never a message being edited): set aside while editing,
+  // put back when the edit is saved or cancelled, and reported through `onDraftChange`.
+  const isEditingRef = useRef(false)
+  const stashedDraftRef = useRef('')
+  const textValueRef = useRef(text ?? '')
+  textValueRef.current = text ?? ''
+  const draftRef = useRef(props.initialText ?? '')
+  const onDraftChangeRef = useRef(props.onDraftChange)
+  onDraftChangeRef.current = props.onDraftChange
+  const notifyDraft = useCallback((draft: string) => {
+    if (isEditingRef.current || draft === draftRef.current)
+      return
+    draftRef.current = draft
+    onDraftChangeRef.current?.(draft)
+  }, [])
 
   const startEdit = useCallback((message: TMessage) => {
     clearReplyRef.current()
+    if (!isEditingRef.current)
+      stashedDraftRef.current = textValueRef.current
+    isEditingRef.current = true
     setEditingMessage(message)
     changeTextRef.current(message.text ?? '')
     focusComposer()
   }, [focusComposer])
 
+  /** Leaves edit mode and gives the composer back the draft from before it. */
+  const restoreDraft = useCallback(() => {
+    isEditingRef.current = false
+    const draft = stashedDraftRef.current
+    stashedDraftRef.current = ''
+    changeTextRef.current(draft)
+  }, [])
+
   const stopEdit = useCallback(() => {
     setEditingMessage(null)
-    changeTextRef.current('')
-  }, [])
+    restoreDraft()
+  }, [restoreDraft])
 
   cancelEdit.current = () => {
     if (editingMessage)
@@ -694,10 +720,12 @@ function Chat<TMessage extends IMessage = IMessage> (
     notifyInputTextReset()
 
     setText(getTextFromProp(''))
+    notifyDraft('')
   }, [
     getTextFromProp,
     textInputRef,
     notifyInputTextReset,
+    notifyDraft,
   ])
 
   const _onSend = useCallback(
@@ -718,6 +746,7 @@ function Chat<TMessage extends IMessage = IMessage> (
           resetInputToolbar()
 
         setEditingMessage(null)
+        restoreDraft()
         actionCallbacksRef.current.onEditMessage?.(editingMessage, edit.text)
         return
       }
@@ -746,7 +775,7 @@ function Chat<TMessage extends IMessage = IMessage> (
       clearTimeout(scrollAfterSendTimeout.current)
       scrollAfterSendTimeout.current = setTimeout(() => scrollToBottom(), 10)
     },
-    [messageIdGenerator, onSend, user, resetInputToolbar, scrollToBottom, replyMessage, clearReply, editingMessage]
+    [messageIdGenerator, onSend, user, resetInputToolbar, scrollToBottom, replyMessage, clearReply, editingMessage, restoreDraft]
   )
 
   const _onChangeText = useCallback(
@@ -756,8 +785,9 @@ function Chat<TMessage extends IMessage = IMessage> (
       // Only set state if it's not being overridden by a prop.
       if (props.text === undefined)
         setText(text)
+      notifyDraft(text)
     },
-    [props.text, props.textInputProps]
+    [props.text, props.textInputProps, notifyDraft]
   )
   changeTextRef.current = _onChangeText
   sendRef.current = messages => _onSend(messages, false)

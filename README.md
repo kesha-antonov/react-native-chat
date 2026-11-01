@@ -660,6 +660,7 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 
 - **`text`** _(String)_ - Input text; default is `undefined`, but if specified, it will override Chat's internal state. Useful for managing text state outside of Chat (e.g. with Redux). Don't forget to implement `textInputProps.onChangeText` to update the text state.
 - **`initialText`** _(String)_ - Initial text to display in the input field
+- **`onDraftChange`** _(Function)_ - `(draft: string) => void`, the user's unsent text as it changes (`''` once sent). Editing a message sets the draft aside and brings it back afterwards, without reporting the edited text. Save it with the chat and pass it back as `initialText`
 - **`isSendButtonAlwaysVisible`** _(Bool)_ - Always show send button in input text composer; default `false`, show only when text input is not empty
 - **`isTextOptional`** _(Bool)_ - Allow sending messages without text (useful for media-only messages); default `false`. Use with `isSendButtonAlwaysVisible` for media attachments.
 - **`isMultiline`** _(Bool)_ - Whether the composer accepts multiple lines; default `true`. With `true` the return key inserts a newline and you send with the send button. Set `false` for a single-line composer whose **return key sends the message** (the keyboard's return key becomes "send" and stays open afterwards).

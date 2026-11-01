@@ -28,29 +28,25 @@ export default function ChatScreen ({ id }: { id: string }) {
     return unread > 0 ? messages[unread - 1]._id : undefined
   })
 
-  // The draft goes into the composer when the chat opens, and whatever is left unsent there is
-  // saved as the draft when you leave (the list shows it as "Draft:"). Sending clears it.
+  // The draft goes into the composer when the chat opens, and is saved when you leave (the list
+  // shows it as "Draft:"). `onDraftChange` reports only the draft: editing a message sets it
+  // aside, and sending clears it.
   const [initialDraft] = useState(() => dialog?.draft ?? '')
-  const textRef = useRef(initialDraft)
-  const textInputProps = useMemo(() => ({
-    onChangeText: (text: string) => {
-      textRef.current = text
-    },
-  }), [])
+  const draftRef = useRef(initialDraft)
+  const onDraftChange = useCallback((draft: string) => {
+    draftRef.current = draft
+  }, [])
 
   // Opening a chat reads it; while it is on screen, incoming messages do not count as unread.
   useFocusEffect(useCallback(() => {
     chatStore.open(id)
     return () => {
       chatStore.close(id)
-      chatStore.setDraft(id, textRef.current)
+      chatStore.setDraft(id, draftRef.current)
     }
   }, [id]))
 
-  const onSend = useCallback((newMessages: IMessage[]) => {
-    textRef.current = ''
-    chatStore.send(id, newMessages)
-  }, [id])
+  const onSend = useCallback((newMessages: IMessage[]) => chatStore.send(id, newMessages), [id])
   const reactions = useMemo(() => ({
     onReactionPress: (message: IMessage, emoji: string) => chatStore.toggleReaction(id, message, emoji),
   }), [id])
@@ -72,7 +68,7 @@ export default function ChatScreen ({ id }: { id: string }) {
         mediaTransfer={mediaTransfer}
         user={ME}
         initialText={initialDraft}
-        textInputProps={textInputProps}
+        onDraftChange={onDraftChange}
         isGroupChat={dialog.kind === 'group'}
         isTyping={!!typingUser}
         reactions={reactions}

@@ -244,6 +244,30 @@ describe('Chat defaults', () => {
     expect(queryByText('Editing')).toBeNull()
   })
 
+  it('sets the draft aside while editing and brings it back, reporting only the draft', async () => {
+    const onDraftChange = jest.fn()
+    const { getByText, getByDisplayValue } = await mountChat(
+      <Chat messages={[message(1, ME, 'typo')]} onSend={jest.fn()} user={ME} onEditMessage={jest.fn()} onDraftChange={onDraftChange} initialText='my draft' isMultiline={false} />
+    )
+    await settle()
+    expect(getByDisplayValue('my draft')).toBeTruthy()
+
+    await longPress()
+    await fireEvent.press(getByText('Edit'))
+    await settle()
+    const input = getByDisplayValue('typo')
+    await fireEvent.changeText(input, 'fixed')
+    await fireEvent(input, 'submitEditing')
+    await settle()
+
+    // The edited text was never reported as the draft, and the draft is back in the composer.
+    expect(onDraftChange).not.toHaveBeenCalled()
+    expect(getByDisplayValue('my draft')).toBeTruthy()
+
+    await fireEvent.changeText(getByDisplayValue('my draft'), 'my draft!')
+    expect(onDraftChange).toHaveBeenLastCalledWith('my draft!')
+  })
+
   it('turns reactions on once onReactionPress is passed', async () => {
     const { getByText } = await mountChat(
       <Chat messages={[message(1)]} onSend={() => {}} user={ME} reactions={{ onReactionPress: jest.fn() }} />
