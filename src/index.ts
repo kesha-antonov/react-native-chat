@@ -76,6 +76,8 @@ export type {
   StreamHandle
 } from './hooks/useStreamingMessages'
 export { useChatMessages } from './hooks/useChatMessages'
+export { getTypingText, TypingStatus } from './components/TypingStatus'
+export type { TypingAction, TypingStatusProps } from './components/TypingStatus'
 export {
   ChatList,
   ChatListAvatar,

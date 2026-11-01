@@ -182,10 +182,38 @@ export interface ChatLabels {
   chatListEmpty: string
   /** A search with no results */
   chatListNoResults: string
-  /** Someone typing in a private chat */
-  chatListTyping: string
-  /** Someone typing in a group; `{name}` is their first name */
-  chatListTypingName: string
+  /** Someone typing in a private chat (an animation stands before it) */
+  typingStatus: string
+  /** One person typing in a group; `{name}` is their first name */
+  typingStatusName: string
+  /** Two people typing; `{name}` and `{other}` are their first names */
+  typingStatusTwo: string
+  /** Several people typing; `{count}` is how many besides `{name}` */
+  typingStatusMany: string
+  /** Recording a voice message */
+  typingRecordingVoice: string
+  /** Recording a voice message, in a group */
+  typingRecordingVoiceName: string
+  /** Recording a video message */
+  typingRecordingVideo: string
+  /** Recording a video message, in a group */
+  typingRecordingVideoName: string
+  /** Sending a photo */
+  typingSendingPhoto: string
+  /** Sending a photo, in a group */
+  typingSendingPhotoName: string
+  /** Sending a video */
+  typingSendingVideo: string
+  /** Sending a video, in a group */
+  typingSendingVideoName: string
+  /** Sending a file */
+  typingSendingFile: string
+  /** Sending a file, in a group */
+  typingSendingFileName: string
+  /** Choosing a sticker */
+  typingChoosingSticker: string
+  /** Choosing a sticker, in a group */
+  typingChoosingStickerName: string
   /** Before an unsent draft */
   chatListDraft: string
   /** Before your own last message in a group */
@@ -288,8 +316,22 @@ export const defaultLabels: ChatLabels = {
   chatListBack: 'Back',
   chatListEmpty: 'No chats here yet',
   chatListNoResults: 'No chats found',
-  chatListTyping: 'typing…',
-  chatListTypingName: '{name} is typing…',
+  typingStatus: 'typing',
+  typingStatusName: '{name} is typing',
+  typingStatusTwo: '{name} and {other} are typing',
+  typingStatusMany: '{name} and {count} people are typing',
+  typingRecordingVoice: 'recording a voice message',
+  typingRecordingVoiceName: '{name} is recording a voice message',
+  typingRecordingVideo: 'recording a video message',
+  typingRecordingVideoName: '{name} is recording a video message',
+  typingSendingPhoto: 'sending a photo',
+  typingSendingPhotoName: '{name} is sending a photo',
+  typingSendingVideo: 'sending a video',
+  typingSendingVideoName: '{name} is sending a video',
+  typingSendingFile: 'sending a file',
+  typingSendingFileName: '{name} is sending a file',
+  typingChoosingSticker: 'choosing a sticker',
+  typingChoosingStickerName: '{name} is choosing a sticker',
   chatListDraft: 'Draft:',
   chatListYou: 'You',
   chatListPhoto: 'Photo',

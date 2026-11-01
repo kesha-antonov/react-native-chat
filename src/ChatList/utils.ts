@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 
-import { ChatLabels, formatLabel } from '../i18n'
+import { ChatLabels } from '../i18n'
 import { IMessage, User } from '../Models'
 import { ChatListItem } from './types'
 
@@ -89,14 +89,4 @@ export function getChatPreview (chat: ChatListItem, labels: ChatLabels, user?: U
     text: message.text ? message.text.replace(/\s+/g, ' ') : '',
     thumbnail: message.image,
   }
-}
-
-/** "typing…", or "Anna is typing…" in a group. */
-export function getTypingText (chat: ChatListItem, labels: ChatLabels): string | undefined {
-  const typing = chat.typingUsers?.[0]
-  if (!typing)
-    return undefined
-  return chat.kind === 'group'
-    ? formatLabel(labels.chatListTypingName, { name: firstName(typing.name) })
-    : labels.chatListTyping
 }

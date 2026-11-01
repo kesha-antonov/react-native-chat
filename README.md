@@ -869,6 +869,7 @@ Avatars and sender names show in group chats only: a one-to-one chat has neither
 - **`renderTypingIndicator`** _(Component | Function)_ - Custom typing indicator component
 - **`typingIndicatorStyle`** _(StyleProp<ViewStyle>)_ - Custom style for the TypingIndicator component.
 - **`renderFooter`** _(Component | Function)_ - Custom footer component on the ListView, e.g. `'User is typing...'`; see [CustomizedRenderingExample.tsx](example/components/chat-examples/CustomizedRenderingExample.tsx) for an example. Overrides default typing indicator that triggers when `isTyping` is true.
+- **`TypingStatus`** _(Component)_ - The messenger way to show it: in your chat header, three dots that swell in turn before "typing" (waves for a recording, arrows for an upload). `<TypingStatus users={typingUsers} action='recordingVoice' isGroup color={accent} />` reads "typing", "Anna is typing", "Anna and Max are typing", "recording a voice message"... `ChatList` rows use it for `typingUsers` / `typingAction`, and `getTypingText` gives the text alone
 
 ### Quick Replies
 
@@ -921,6 +922,7 @@ const chats: ChatListItem[] = conversations.map(c => ({
   isMuted: c.muted,
   isArchived: c.archived,
   typingUsers: c.typing,             // User[]
+  typingAction: c.action,            // 'typing' | 'recordingVoice' | 'sendingPhoto' | ...
   draft: drafts[c.id],
 }))
 

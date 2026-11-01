@@ -16,11 +16,12 @@ import Animated, {
 import { useChatContext } from '../ChatContext'
 import { selectionHaptic } from '../components/haptics'
 import { Icon } from '../components/Icon'
+import { TypingStatus } from '../components/TypingStatus'
 import { useLabels } from '../hooks/useLabels'
 import { useTheme } from '../hooks/useTheme'
 import { ChatListAvatar } from './ChatListAvatar'
 import { ChatListCellProps, ChatListDrag, ChatListItem } from './types'
-import { formatChatListDate, getChatPreview, getTypingText } from './utils'
+import { formatChatListDate, getChatPreview } from './utils'
 
 // A two-line row 70 tall: the avatar 11 in and 52 across, the text from 76.
 export const CHAT_LIST_ROW_HEIGHT = 70
@@ -201,7 +202,7 @@ function ChatListCellInner<TChat extends ChatListItem> ({
 
   const lastMessage = chat.lastMessage
   const preview = getChatPreview(chat, labels, user)
-  const typingText = getTypingText(chat, labels)
+  const typingUsers = chat.typingUsers ?? []
   const isOutgoing = !!user && lastMessage?.user?._id === user._id && chat.kind !== 'channel' && !lastMessage?.system
   const unreadCount = chat.unreadCount ?? 0
   const rowBackground = isSelected ? colors.selectedRow : 'transparent'
@@ -282,10 +283,16 @@ function ChatListCellInner<TChat extends ChatListItem> ({
 
               <View style={styles.bottomLine}>
                 <View style={styles.previewBox}>
-                  {typingText
+                  {typingUsers.length > 0
                     ? (
                       <Animated.View key='typing' entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={styles.previewLayer}>
-                        <Text style={[styles.message, { color: colors.typing }]} numberOfLines={1}>{typingText}</Text>
+                        <TypingStatus
+                          users={typingUsers}
+                          action={chat.typingAction}
+                          isGroup={chat.kind === 'group'}
+                          color={colors.typing}
+                          textStyle={styles.message}
+                        />
                       </Animated.View>
                     )
                     : (

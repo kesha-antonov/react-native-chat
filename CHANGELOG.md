@@ -26,6 +26,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - **`textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`**
 
 ### ✨ Features
+- **`TypingStatus`**: who is typing, for a chat header or list row: animated dots before "typing" / "Anna is typing" / "Anna and Max are typing", and its own animation and text for recording a note, sending media or choosing a sticker (`TypingAction`, `getTypingText`, `ChatListItem.typingAction`)
 - **Drafts**: `onDraftChange` reports the unsent text; editing a message sets the draft aside and restores it after saving or cancelling
 - **`ChatList`**: a ready chat list (search, selection actions, archive folder, swipe to archive, draggable pinned chats, unread counters, typing, drafts, loading placeholder) for your backend's chats (`ChatListItem`), plus `useChatList` for local state, `ChatListCell`, `ChatListAvatar`, `ChatListShimmer`, `theme.chatList` and new labels
 - **Built-in emoji keyboard** in the system keyboard's place, with search, recents and skin tones (`emojiKeyboard`, `theme.emojiKeyboard`, `EmojiGrid`)
@@ -86,6 +87,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10; TypeScript stays on 6.0 and Babel on 7 (see AGENTS.md)
 
 ### 📲 Example app
+- Chats: who is typing shows in the chat header and the list (with a voice-note recording in the demo), not as a bubble in the chat
 - The Chats tab is built on `ChatList`, with its store as the backend
 - New Chats tab: a small messenger built on the defaults
 - New Loading States screen

@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
-import { Chat, ChatListItem, IMessage, User } from '@kesha-antonov/react-native-chat'
+import { Chat, ChatListItem, IMessage, TypingAction, User } from '@kesha-antonov/react-native-chat'
 
-import { CANNED_REPLIES, Dialog, DIALOGS, INITIAL_MESSAGES, ME } from './data'
+import { CANNED_REPLIES, Dialog, DIALOGS, INITIAL_MESSAGES, ME, SAMPLE_AUDIO } from './data'
 
 /**
  * The demo's whole "backend": dialogs, their messages and who is typing, in one module with
@@ -11,6 +11,8 @@ interface State {
   dialogs: Record<string, Dialog>
   messages: Record<string, IMessage[]>
   typing: Record<string, User | undefined>
+  /** What the typing user is doing, when not typing (recording a note, sending a photo). */
+  typingAction: Record<string, TypingAction | undefined>
   /** The chat on screen, so incoming messages there do not count as unread. */
   openChatId?: string
   /** Pin order: pinned chats keep the order they were pinned in, until dragged. */
@@ -21,6 +23,7 @@ let state: State = {
   dialogs: Object.fromEntries(DIALOGS.map(dialog => [dialog.id, dialog])),
   messages: INITIAL_MESSAGES,
   typing: {},
+  typingAction: {},
   pinOrder: DIALOGS.filter(dialog => dialog.isPinned).map(dialog => dialog.id),
 }
 
@@ -51,13 +54,14 @@ export type DialogItem = ChatListItem & { dialog: Dialog }
 
 // Items are reused while their dialog, newest message and typing user stay the same, so a
 // change to one chat re-renders only that chat's row.
-const itemCache = new Map<string, { dialog: Dialog, lastMessage?: IMessage, typing?: User, item: DialogItem }>()
+const itemCache = new Map<string, { dialog: Dialog, lastMessage?: IMessage, typing?: User, action?: TypingAction, item: DialogItem }>()
 
 function toItem (s: State, dialog: Dialog): DialogItem {
   const lastMessage = s.messages[dialog.id]?.[0]
   const typing = s.typing[dialog.id]
+  const action = s.typingAction[dialog.id]
   const cached = itemCache.get(dialog.id)
-  if (cached && cached.dialog === dialog && cached.lastMessage === lastMessage && cached.typing === typing)
+  if (cached && cached.dialog === dialog && cached.lastMessage === lastMessage && cached.typing === typing && cached.action === action)
     return cached.item
   const item: DialogItem = {
     id: dialog.id,
@@ -73,9 +77,10 @@ function toItem (s: State, dialog: Dialog): DialogItem {
     isOnline: dialog.isOnline,
     draft: dialog.draft,
     typingUsers: typing ? [typing] : undefined,
+    typingAction: action,
     dialog,
   }
-  itemCache.set(dialog.id, { dialog, lastMessage, typing, item })
+  itemCache.set(dialog.id, { dialog, lastMessage, typing, action, item })
   return item
 }
 
@@ -99,6 +104,7 @@ export const useDialog = (id: string): Dialog | undefined => useStore(s => s.dia
 export const useMessages = (id: string): IMessage[] => useStore(s => s.messages[id] ?? EMPTY)
 export const useLastMessage = (id: string): IMessage | undefined => useStore(s => s.messages[id]?.[0])
 export const useTyping = (id: string): User | undefined => useStore(s => s.typing[id])
+export const useTypingAction = (id: string): TypingAction | undefined => useStore(s => s.typingAction[id])
 
 const EMPTY: IMessage[] = []
 
@@ -106,8 +112,8 @@ function setMessages (id: string, update: (messages: IMessage[]) => IMessage[]) 
   setState(s => ({ ...s, messages: { ...s.messages, [id]: update(s.messages[id] ?? EMPTY) } }))
 }
 
-function setTyping (id: string, user: User | undefined) {
-  setState(s => ({ ...s, typing: { ...s.typing, [id]: user } }))
+function setTyping (id: string, user: User | undefined, action?: TypingAction) {
+  setState(s => ({ ...s, typing: { ...s.typing, [id]: user }, typingAction: { ...s.typingAction, [id]: user ? action : undefined } }))
 }
 
 /** Adds an incoming message; it counts as unread unless the chat is open. */
@@ -303,4 +309,13 @@ export function startChatListDemo () {
   const max = state.dialogs.max?.peer
   if (max)
     simulateReply('max', max, 'Are you coming to the meetup tomorrow? 🍕', 2500, 3000)
+  // Anna records a voice note, so the list shows that status too.
+  const anna = state.dialogs.anna?.peer
+  if (anna) {
+    schedule('anna', 4000, () => setTyping('anna', anna, 'recordingVoice'))
+    schedule('anna', 9000, () => {
+      setTyping('anna', undefined)
+      receive('anna', { _id: `anna-voice-${Date.now()}`, text: '', audio: SAMPLE_AUDIO, duration: 6, createdAt: new Date(), user: anna })
+    })
+  }
 }

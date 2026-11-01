@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
-import { Chat, defaultDarkTheme, defaultLightTheme, IMessage } from '@kesha-antonov/react-native-chat'
+import { Chat, defaultDarkTheme, defaultLightTheme, IMessage, TypingAction, TypingStatus, User } from '@kesha-antonov/react-native-chat'
 import { ChatListAvatar } from '@kesha-antonov/react-native-chat'
 import { useFocusEffect, useRouter } from 'expo-router'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
@@ -10,18 +10,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Dialog, ME } from './data'
 import { formatSubscribers } from './format'
-import { chatStore, useDialog, useMessages, useTyping } from './store'
+import { chatStore, useDialog, useMessages, useTyping, useTypingAction } from './store'
 import { useChatListColors } from './theme'
 
 /**
  * One conversation from the Chats tab: a bare `<Chat>` fed from the demo store. Besides
  * `messages`, `onSend` and `user` it only passes what changes state the app owns (reactions,
- * edit, delete) and `isTyping` for the simulated reply.
+ * edit, delete). Who is typing shows in the header, as a messenger does, not as a bubble in the list.
  */
 export default function ChatScreen ({ id }: { id: string }) {
   const dialog = useDialog(id)
   const messages = useMessages(id)
   const typingUser = useTyping(id)
+  const typingAction = useTypingAction(id)
   const background = (useColorScheme() === 'dark' ? defaultDarkTheme : defaultLightTheme).colors.background
 
   // Opening the chat reads it, so the unread count is taken once, before that: the
@@ -65,7 +66,7 @@ export default function ChatScreen ({ id }: { id: string }) {
   return (
     // The chat's own background, so the screen is never black while the chat mounts.
     <View style={[styles.container, { backgroundColor: background }]}>
-      <ChatHeader dialog={dialog} typingName={typingUser?.name} />
+      <ChatHeader dialog={dialog} typingUser={typingUser} typingAction={typingAction} />
       <Chat
         messages={messages}
         onSend={onSend}
@@ -74,7 +75,6 @@ export default function ChatScreen ({ id }: { id: string }) {
         initialText={initialDraft}
         onDraftChange={onDraftChange}
         isGroupChat={dialog.kind === 'group'}
-        isTyping={!!typingUser}
         reactions={reactions}
         onEditMessage={onEditMessage}
         onDeleteMessage={onDeleteMessage}
@@ -90,19 +90,17 @@ export default function ChatScreen ({ id }: { id: string }) {
  * The chat header: back arrow, a 42dp avatar 8dp after it,
  * the name in 18dp Medium and a 14dp status line - "typing…" and "online" in the accent color.
  */
-function ChatHeader ({ dialog, typingName }: { dialog: Dialog, typingName?: string }) {
+function ChatHeader ({ dialog, typingUser, typingAction }: { dialog: Dialog, typingUser?: User, typingAction?: TypingAction }) {
   const colors = useChatListColors()
   const insets = useSafeAreaInsets()
   const router = useRouter()
 
-  const isActive = !!typingName || !!dialog.isOnline
-  const subtitle = typingName
-    ? dialog.kind === 'group' ? `${typingName.split(' ')[0]} is typing…` : 'typing…'
-    : dialog.kind === 'group'
-      ? `${(dialog.members?.length ?? 0) + 1} members`
-      : dialog.kind === 'channel'
-        ? formatSubscribers(dialog.subscribers ?? 0)
-        : dialog.isOnline ? 'online' : dialog.lastSeen ?? 'last seen recently'
+  const isActive = !!typingUser || !!dialog.isOnline
+  const subtitle = dialog.kind === 'group'
+    ? `${(dialog.members?.length ?? 0) + 1} members`
+    : dialog.kind === 'channel'
+      ? formatSubscribers(dialog.subscribers ?? 0)
+      : dialog.isOnline ? 'online' : dialog.lastSeen ?? 'last seen recently'
 
   const openMenu = () => {
     Alert.alert(dialog.title, undefined, [
@@ -127,15 +125,23 @@ function ChatHeader ({ dialog, typingName }: { dialog: Dialog, typingName?: stri
             {dialog.isVerified && <MaterialCommunityIcons name='check-decagram' size={16} color={colors.verified} style={styles.headerTitleIcon} />}
             {dialog.isMuted && <MaterialCommunityIcons name='volume-off' size={15} color={colors.muteIcon} style={styles.headerTitleIcon} />}
           </View>
-          <Animated.Text
-            key={subtitle}
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(100)}
-            style={[styles.headerSubtitle, { color: isActive ? colors.subtitleActive : colors.subtitle }]}
-            numberOfLines={1}
-          >
-            {subtitle}
-          </Animated.Text>
+          {typingUser
+            ? (
+              <Animated.View key='typing' entering={FadeIn.duration(200)} exiting={FadeOut.duration(100)}>
+                <TypingStatus users={[typingUser]} action={typingAction} isGroup={dialog.kind === 'group'} color={colors.subtitleActive} textStyle={styles.headerSubtitle} />
+              </Animated.View>
+            )
+            : (
+              <Animated.Text
+                key={subtitle}
+                entering={FadeIn.duration(200)}
+                exiting={FadeOut.duration(100)}
+                style={[styles.headerSubtitle, { color: isActive ? colors.subtitleActive : colors.subtitle }]}
+                numberOfLines={1}
+              >
+                {subtitle}
+              </Animated.Text>
+            )}
         </View>
         {dialog.kind === 'user' && (
           <Pressable style={styles.headerButton} hitSlop={4} accessibilityRole='button' accessibilityLabel='Call' onPress={() => Alert.alert('Calls are not part of this demo')}>

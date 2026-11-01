@@ -195,7 +195,7 @@ Map your conversations to `ChatListItem` and pass a callback per action you supp
 ```tsx
 <ChatList
   chats={chats}            // ChatListItem[]: { id, title, avatar?, kind?, lastMessage?, unreadCount?,
-                           //   isPinned?, isMuted?, isArchived?, isOnline?, typingUsers?, draft? }
+                           //   isPinned?, isMuted?, isArchived?, isOnline?, typingUsers?, typingAction?, draft? }
   user={me}
   onPressChat={chat => openChat(chat.id)}
   onArchiveChats={(selected, isArchived) => api.archive(selected, isArchived)}

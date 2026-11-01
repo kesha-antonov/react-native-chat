@@ -1,6 +1,7 @@
 import React from 'react'
 import { ColorSchemeName, FlatListProps, StyleProp, ViewStyle } from 'react-native'
 
+import { TypingAction } from '../components/TypingStatus'
 import { ChatLabels } from '../i18n'
 import { ChatIcons } from '../Icons'
 import { IMessage, User } from '../Models'
@@ -32,6 +33,8 @@ export interface ChatListItem {
   draft?: string
   /** Who is typing right now; shown in place of the last message. */
   typingUsers?: User[]
+  /** What they are doing, when not typing: recording a note, sending media... */
+  typingAction?: TypingAction
 }
 
 /** The props a custom `renderChat` receives: the built-in row's own. */

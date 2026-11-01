@@ -31,7 +31,7 @@ describe('ChatList', () => {
     const { getByText, getByLabelText } = await render(<ChatList chats={CHATS} user={ME} />)
     expect(getByText('Chats')).toBeTruthy()
     expect(getByText('See you at 7!')).toBeTruthy()
-    expect(getByText('typing…')).toBeTruthy()
+    expect(getByText('typing')).toBeTruthy()
     expect(getByText('2')).toBeTruthy()
     expect(getByLabelText('Archived Chats')).toBeTruthy()
   })
