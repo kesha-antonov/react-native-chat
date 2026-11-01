@@ -746,7 +746,7 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                     keyboardShouldPersistTaps="handled"
                     maintainScrollAtEnd={
                       {
-                        "animated": true,
+                        "animated": false,
                       }
                     }
                     maintainVisibleContentPosition={true}
@@ -1747,7 +1747,7 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                     keyboardShouldPersistTaps="handled"
                     maintainScrollAtEnd={
                       {
-                        "animated": true,
+                        "animated": false,
                       }
                     }
                     maintainVisibleContentPosition={true}

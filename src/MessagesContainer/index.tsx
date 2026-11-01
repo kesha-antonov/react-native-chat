@@ -35,8 +35,14 @@ import { MessagesContainerProps, DaysPositions } from './types'
 interface ListState {
   positionByKey: (key: string) => number | undefined
   listenToPosition: (key: string, callback: (position: number) => void) => () => void
+  listen: (type: 'totalSize', callback: (value: number) => void) => () => void
   sizes: Map<string, number>
+  isFollowingEnd: boolean
+  isNearEnd: boolean
 }
+
+/** The bottom padding of the list's content (`styles.messagesContainer`). */
+const CONTENT_PADDING_BOTTOM = 10
 
 
 export * from './types'
@@ -168,11 +174,15 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // The list's scroll offset, from the top, kept on the UI thread by the list itself.
   const scrollOffset = useSharedValue(0)
   const sharedValues = useMemo(() => ({ scrollOffset }), [scrollOffset])
-  // Rows' positions count from the first row, below the list's header ("Load earlier"); the
-  // scroll offset counts from the very top. The day header, the inline separators and the
-  // gradient bubbles read the offset in the rows' terms.
-  const headerSize = useSharedValue(0)
-  const scrolledY = useDerivedValue(() => scrollOffset.value - headerSize.value)
+  // Rows' positions count from the first row; the scroll offset counts from the very top, above
+  // the list's header ("Load earlier") and, in a conversation shorter than the list, the space
+  // that holds it at the bottom. The rows end where the content does, less the footer and the
+  // bottom padding, so the offset in the rows' terms is measured from there. The day header, the
+  // inline separators and the gradient bubbles read it.
+  const rowsHeight = useSharedValue(0)
+  const footerSize = useSharedValue(0)
+  const scrolledY = useDerivedValue(() =>
+    scrollOffset.value - (contentHeight.value - rowsHeight.value - footerSize.value - CONTENT_PADDING_BOTTOM))
   // The date (createdAt ms) the floating day header is currently rendering. Used to
   // keep the inline separator visible until the header's text has caught up, hiding
   // the 1-frame JS-thread lag of the header on each day change.
@@ -413,7 +423,11 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     // At the newest message (within 5dp), or after sending one yourself, there is nothing to
     // count: the list follows the new message.
     const isFromMe = arrived.some(message => message.user?._id === userId)
-    if (isFromMe || distanceFromNewestSV.value <= NEWEST_SLOP) {
+    // The list follows a new message with an animated scroll, so the distance is not back to 0
+    // yet when it lands; whether the list is following the end is what says it was seen.
+    const state = listState()
+    const isAtNewest = state ? state.isFollowingEnd || state.isNearEnd : distanceFromNewestSV.value <= NEWEST_SLOP
+    if (isFromMe || isAtNewest) {
       unreadIdsRef.current.clear()
       setUnreadCount(0)
       return
@@ -429,7 +443,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     }
     isShownByScroll.value = false
     isScrollToBottomShown.value = true
-  }, [newestMessageId, messages, isInverted, userId, isScrollToBottomEnabled, isScrollToBottomBadgeEnabled, distanceFromNewestSV, isShownByScroll, isScrollToBottomShown])
+  }, [newestMessageId, messages, isInverted, userId, isScrollToBottomEnabled, isScrollToBottomBadgeEnabled, distanceFromNewestSV, isShownByScroll, isScrollToBottomShown, listState])
 
   // Read as they come into view.
   markRowsSeenRef.current = (ids: (string | number)[]) => {
@@ -699,10 +713,21 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [isScrollActive])
   const onContentSizeChange = useCallback((_width: number, height: number) => {
     contentHeight.value = height
-  }, [contentHeight])
-  const onMetricsChange = useCallback((metrics: { headerSize: number }) => {
-    headerSize.value = metrics.headerSize
-  }, [headerSize])
+    // The space holding a short chat at the bottom makes its content exactly as tall as the list.
+    const isShort = height <= listHeight.value + 1
+    setIsContentShort(previous => previous === isShort ? previous : isShort)
+  }, [contentHeight, listHeight])
+  const onMetricsChange = useCallback((metrics: { footerSize: number }) => {
+    footerSize.value = metrics.footerSize
+  }, [footerSize])
+  useEffect(() => {
+    const state = isListLaidOut ? listState() : undefined
+    if (!state)
+      return
+    return state.listen('totalSize', size => {
+      rowsHeight.value = size
+    })
+  }, [isListLaidOut, listState, rowsHeight])
 
   // A tap on the chat (not a scroll) closes the emoji keyboard.
   const composerPanels = useComposerPanels()
@@ -728,9 +753,13 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       isScrollActive.value = true
   }, [isScrollActive])
 
-  // New messages keep the list at the newest one while it is there (or near), and the
-  // newest message comes up from below with the scroll, as the rows above it make room.
-  const maintainScrollAtEnd = useMemo(() => ({ animated: true }), [])
+  // New messages keep the list at the newest one while it is there (or near), and the newest
+  // message comes up from below with the scroll, as the rows above it make room. While the
+  // whole conversation still fits, the follow is immediate: an animated one holds back the space
+  // that keeps a short chat at the bottom until it ends, and a reply streaming in restarts it
+  // every few frames, so the reply grew off screen until it was done.
+  const [isContentShort, setIsContentShort] = useState(true)
+  const maintainScrollAtEnd = useMemo(() => ({ animated: !isContentShort }), [isContentShort])
 
   // Memoized, so a render of the container that leaves the list's inputs alone - a status
   // change or a reaction, which keep the data's identity - does not walk the list's rows.
