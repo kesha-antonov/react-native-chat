@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Keyboard, Platform, Pressable, StyleProp, StyleSheet, View, ViewStyle, useWindowDimensions } from 'react-native'
 import { GestureDetector, GestureStateManager, usePanGesture } from 'react-native-gesture-handler'
-import Animated, { ReduceMotion, SharedValue, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { cancelAnimation, Easing, ReduceMotion, SharedValue, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useRaiseToListen } from './components/earpiece'
 import { MediaCard } from './components/MediaCard'
 import { isRemoteUri } from './components/mediaDownload'
@@ -80,6 +80,8 @@ const PLAYING_NOTE_INSET = 28
 const NOTE_CENTRE_DELAY_MS = 260
 /** Seeks while dragging the ring are throttled to one per 100ms. */
 const SEEK_THROTTLE_MS = 100
+/** How often a playing note checks the player's real position. */
+const PROGRESS_SYNC_MS = 250
 /** The transcription opens with the cell's height change, about 220ms. */
 const TRANSCRIPTION_OPEN_MS = 220
 const TRANSCRIPTION_GAP = 4
@@ -220,7 +222,8 @@ const RoundNotePlayer = ({
   const [growShift, setGrowShift] = useState(0)
   // How far the grown circle's right edge moves, for the bubble's sent time.
   const [timeShift, setTimeShift] = useState(0)
-  const rafRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null)
+  const tickTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const rateRef = useRef(1)
   const noteRef = useRef<React.ComponentRef<typeof View>>(null)
   /** Taken back from the floating note: grow, but do not centre the list. */
   const skipCentreRef = useRef(false)
@@ -270,26 +273,40 @@ const RoundNotePlayer = ({
   const chrome = useRoundNoteChrome({ isCurrent, isPlaying, isGrown })
 
   const stopRaf = useCallback(() => {
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
+    if (tickTimerRef.current != null) {
+      clearInterval(tickTimerRef.current)
+      tickTimerRef.current = null
     }
-  }, [])
+    // Where the UI thread had it: the ring holds its last position after a stop.
+    cancelAnimation(chrome.progress)
+  }, [chrome.progress])
 
-  // Drives the ring and the countdown. expo-video has no per-frame callback,
-  // so the position is sampled on the display link while playing. The ring
-  // takes every sample straight into a shared value; React only re-renders
-  // when the countdown's whole second changes.
+  // Drives the ring and the countdown. expo-video has no progress callback, so the ring runs
+  // to the end on the UI thread at the playback rate, and the JS thread only checks in four
+  // times a second: to put the ring back on the player's real position (a stall, a rate
+  // change) and to re-render the countdown when its whole second changes.
   const tick = useCallback(() => {
     const time = player.currentTime || 0
     const length = totalRef.current
-    if (length > 0)
+    if (length > 0) {
       chrome.progress.value = Math.min(1, time / length)
+      chrome.progress.value = withTiming(1, {
+        duration: Math.max(0, length - time) * 1000 / (rateRef.current || 1),
+        easing: Easing.linear,
+        // It shows where playback is, not motion for its own sake.
+        reduceMotion: ReduceMotion.Never,
+      })
+    }
     setCurrentTime(previous =>
       Math.floor(length - previous) === Math.floor(length - time) ? previous : time
     )
-    rafRef.current = requestAnimationFrame(tick)
   }, [player, chrome.progress])
+
+  const startTicking = useCallback(() => {
+    stopRaf()
+    tick()
+    tickTimerRef.current = setInterval(tick, PROGRESS_SYNC_MS)
+  }, [stopRaf, tick])
 
   /** Back to rest at the original size: the silent loop, or paused. */
   const reset = useCallback(() => {
@@ -344,11 +361,11 @@ const RoundNotePlayer = ({
     } catch {
       return
     }
+    rateRef.current = rate
     setIsPlaying(true)
     claimPlayback(playerId, onStop)
-    stopRaf()
-    rafRef.current = requestAnimationFrame(tick)
-  }, [player, rate, playerId, onStop, stopRaf, tick])
+    startTicking()
+  }, [player, rate, playerId, onStop, startTicking])
 
   /** Current and grown, kept alive past this row until it stops. */
   const becomeCurrent = useCallback(() => {
@@ -461,7 +478,10 @@ const RoundNotePlayer = ({
     } catch {
       // player already torn down
     }
-  }, [isCurrent, isPlaying, player, rate])
+    rateRef.current = rate
+    // The ring's run to the end was timed at the old rate.
+    tick()
+  }, [isCurrent, isPlaying, player, rate, tick])
 
   useEffect(() => () => {
     stopRaf()

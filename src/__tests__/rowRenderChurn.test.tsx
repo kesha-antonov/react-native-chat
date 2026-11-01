@@ -4,6 +4,7 @@ import { act, fireEvent, render } from '@testing-library/react-native'
 
 import { Chat } from '..'
 import { IMessage } from '../Models'
+import { waitForRows } from './waitForRows'
 
 // The shipped Reanimated jest mock returns a BRAND NEW object from `useSharedValue` on every
 // call - it is not a hook, unlike the real implementation, which returns one stable object for
@@ -91,6 +92,7 @@ it('does not re-render message rows when the composer text changes', async () =>
   )
 
   await fireEvent(getByTestId('GC_WRAPPER'), 'layout', LAYOUT)
+  await waitForRows()
 
   expect(counts.renders).toBeGreaterThan(0) // guard: rows really mounted
   counts.renders = 0
@@ -109,6 +111,7 @@ it('does not re-render message rows when the composer text changes', async () =>
 it('does not re-render or remount message rows when the parent re-renders', async () => {
   const { counts, renderMessage } = makeRowSpy()
   let toolbarRenders = 0
+  let chatRenders = 0
   let bump: (() => void) | undefined
 
   const onSend = () => {}
@@ -119,6 +122,11 @@ it('does not re-render or remount message rows when the parent re-renders', asyn
   // `reply` is rebuilt on the way down to the list, so a consumer passing it is the case
   // most likely to regress.
   const reply = { swipe: { onSwipe: () => {} } }
+  // Drawn by `Chat` on each of its renders: the probe that the parent re-render reached it.
+  const renderChatFooter = () => {
+    chatRenders++
+    return null
+  }
 
   const Parent = () => {
     const [, setTick] = useState(0)
@@ -132,6 +140,7 @@ it('does not re-render or remount message rows when the parent re-renders', asyn
         reply={reply}
         renderMessage={renderMessage}
         renderSend={renderSend}
+        renderChatFooter={renderChatFooter}
       />
     )
   }
@@ -139,18 +148,22 @@ it('does not re-render or remount message rows when the parent re-renders', asyn
   const { getByTestId } = await render(<Parent />)
 
   await fireEvent(getByTestId('GC_WRAPPER'), 'layout', LAYOUT)
+  await waitForRows()
 
   expect(counts.renders).toBeGreaterThan(0) // guard: rows really mounted
   counts.renders = 0
   counts.mounts = 0
   toolbarRenders = 0
+  chatRenders = 0
 
   await act(async () => {
     bump!()
   })
 
   // Sensitivity guard: the parent re-render must actually have reached Chat.
-  expect(toolbarRenders).toBeGreaterThan(0)
+  expect(chatRenders).toBeGreaterThan(0)
+  // Neither the rows nor the composer have anything new to draw.
+  expect(toolbarRenders).toBe(0)
   expect(counts.renders).toBe(0)
   expect(counts.mounts).toBe(0)
 })
@@ -175,6 +188,7 @@ it('re-renders only the new row and its neighbour when a message is sent', async
 
   const { getByTestId } = await render(<Parent />)
   await fireEvent(getByTestId('GC_WRAPPER'), 'layout', LAYOUT)
+  await waitForRows()
 
   expect(rendered.length).toBeGreaterThan(0) // guard: rows really mounted
   rendered.length = 0
@@ -186,4 +200,80 @@ it('re-renders only the new row and its neighbour when a message is sent', async
 
   // The new row, and the previous newest one, whose `nextMessage` is now the new message.
   expect(new Set(rendered)).toEqual(new Set([100, 20]))
+})
+
+describe('row store', () => {
+  // The newest message first, as the list keeps it.
+  const initial = [...MESSAGES].reverse()
+
+  async function setup (extraProps?: (tick: number) => Record<string, unknown>) {
+    const rendered: Array<string | number> = []
+    const RowSpy = ({ id }: { id: string | number }) => {
+      rendered.push(id)
+      return <View />
+    }
+    const renderMessage = (props: { currentMessage: IMessage }) => <RowSpy id={props.currentMessage._id} />
+    let setMessages: ((messages: IMessage[]) => void) | undefined
+    let bump: (() => void) | undefined
+
+    const Parent = () => {
+      const [messages, set] = useState(initial)
+      const [tick, setTick] = useState(0)
+      setMessages = set
+      bump = () => setTick(t => t + 1)
+      return (
+        <Chat
+          messages={messages}
+          user={USER}
+          onSend={() => {}}
+          renderMessage={renderMessage}
+          {...extraProps?.(tick)}
+        />
+      )
+    }
+
+    const { getByTestId } = await render(<Parent />)
+    await fireEvent(getByTestId('GC_WRAPPER'), 'layout', LAYOUT)
+    await waitForRows()
+    expect(rendered.length).toBeGreaterThan(0) // guard: rows really mounted
+    rendered.length = 0
+    return { rendered, setMessages: (m: IMessage[]) => setMessages!(m), bump: () => bump!() }
+  }
+
+  it('re-renders only the row whose status changed', async () => {
+    const { rendered, setMessages } = await setup()
+    await act(async () => {
+      setMessages(initial.map(m => (m._id === 18 ? { ...m, sent: true } : m)))
+    })
+    expect(rendered).toEqual([18])
+  })
+
+  it('re-renders nothing when every message object is rebuilt with the same content', async () => {
+    const { rendered, setMessages } = await setup()
+    await act(async () => {
+      setMessages(initial.map(m => ({ ...m, user: { ...m.user } })))
+    })
+    expect(rendered).toEqual([])
+  })
+
+  it('ignores inline handlers and inline styles passed to Chat', async () => {
+    const { rendered, bump } = await setup(() => ({
+      onPressMessage: () => {},
+      onLongPressAvatar: () => {},
+      messagesContainerStyle: { flex: 1 },
+      timeTextStyle: { left: { color: 'red' } },
+    }))
+    await act(async () => {
+      bump()
+    })
+    expect(rendered).toEqual([])
+  })
+
+  it('re-renders the rows when a new render function is passed', async () => {
+    const { rendered, bump } = await setup(tick => ({ renderTime: () => <View testID={`time-${tick}`} /> }))
+    await act(async () => {
+      bump()
+    })
+    expect(rendered.length).toBeGreaterThan(0)
+  })
 })

@@ -5,6 +5,7 @@ import { KeyboardContext } from 'react-native-keyboard-controller'
 import * as SafeAreaContext from 'react-native-safe-area-context'
 
 import { Chat } from '..'
+import { waitForRows } from './waitForRows'
 
 // Stands in for what a mounted `KeyboardProvider` puts in the context: one Reanimated
 // shared value per field.
@@ -111,6 +112,7 @@ it('should render <Chat/> with light colorScheme and compare with snapshot', asy
       colorScheme='light'
     />
   )
+  await waitForRows()
 
   expect(toJSON()).toMatchSnapshot()
 })
@@ -126,6 +128,7 @@ it('should render <Chat/> with dark colorScheme and compare with snapshot', asyn
       colorScheme='dark'
     />
   )
+  await waitForRows()
 
   expect(toJSON()).toMatchSnapshot()
 })

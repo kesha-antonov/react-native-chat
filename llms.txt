@@ -215,12 +215,15 @@ Same props, same `IMessage`. Swap the package and rename: `GiftedChat` → `Chat
 
 ## Common mistakes
 
-- **Unstable render props.** Each row is `React.memo`'d with a comparator that
-  reference-compares every prop except the message. An inline `renderBubble={props => …}` or
-  `reactions={{ … }}` re-renders every row on every parent render - wrap them in `useCallback` /
-  `useMemo`.
-- **Mutating messages in place.** The comparator detects updates by value, so always build new
-  arrays and objects.
+- **Unstable render functions.** Rows share their props through a context kept stable between
+  renders: inline handlers (`onPressMessage={() => …}`) and inline style/config objects are free,
+  but a new render function (`renderBubble={props => …}`) re-renders every row - wrap render
+  functions in `useCallback`.
+- **Mutating messages in place.** Each row subscribes to its own message and notices a change
+  when the message object is replaced, so always build new arrays and objects.
+- **Drawing a neighbour's content.** `previousMessage` / `nextMessage` are kept current only for
+  grouping (sender, day, time apart); a row does not re-render when a neighbour's text or status
+  changes.
 - **Setting `keyboardVerticalOffset` by hand.** Chat measures its own position on screen; a
   manual value replaces the measured one and usually leaves the toolbar floating. Pass one only
   to add deliberate extra space.

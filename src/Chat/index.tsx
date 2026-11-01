@@ -67,6 +67,9 @@ import { ChatSafeAreaProvider } from './ChatSafeAreaProvider'
 import styles from './styles'
 import { ChatProps } from './types'
 
+// Memoized: the composer re-renders on its own state, not because the chat around it did.
+const MemoInputToolbar = React.memo(InputToolbar) as typeof InputToolbar
+
 dayjs.extend(localizedFormat)
 
 /**
@@ -918,6 +921,20 @@ function Chat<TMessage extends IMessage = IMessage> (
     }
   }, [hasDelete, editingMessage, stopEdit, selectionStore])
 
+  // The composer's send keeps one identity: it is an event handler, and a new one each time
+  // the app's `onSend` or the reply/edit state changed re-rendered the whole composer.
+  const onSendRef = useRef(_onSend)
+  onSendRef.current = _onSend
+  const composerOnSend = useCallback((messages?: TMessage[], shouldResetInputToolbar?: boolean) =>
+    onSendRef.current(messages, shouldResetInputToolbar)
+  , [])
+
+  const composerTextInputProps = useMemo(() => ({
+    ...textInputProps,
+    onChangeText: _onChangeText,
+    ref: textInputRef,
+  }), [textInputProps, _onChangeText, textInputRef])
+
   const inputToolbarFragment = useMemo(() => {
     if (isSelecting && renderSelectionBar !== null)
       return (
@@ -935,12 +952,8 @@ function Chat<TMessage extends IMessage = IMessage> (
     const inputToolbarProps = {
       ...props,
       text: getTextFromProp(text!),
-      onSend: _onSend,
-      textInputProps: {
-        ...textInputProps,
-        onChangeText: _onChangeText,
-        ref: textInputRef,
-      },
+      onSend: composerOnSend,
+      textInputProps: composerTextInputProps,
       // Reply preview props
       replyMessage,
       onClearReply: clearReply,
@@ -954,16 +967,18 @@ function Chat<TMessage extends IMessage = IMessage> (
     if (renderInputToolbar)
       return renderComponentOrElement(renderInputToolbar, inputToolbarProps)
 
-    return <InputToolbar {...inputToolbarProps} />
+    // The built-in composer has no use for the messages, and leaving them out lets its memo
+    // skip the render a new message would otherwise cost it.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { messages: _messages, ...composerProps } = inputToolbarProps
+    return <MemoInputToolbar {...composerProps} />
   }, [
-    _onSend,
+    composerOnSend,
     getTextFromProp,
     props,
     text,
     renderInputToolbar,
-    textInputRef,
-    textInputProps,
-    _onChangeText,
+    composerTextInputProps,
     replyMessage,
     clearReply,
     editingMessage,

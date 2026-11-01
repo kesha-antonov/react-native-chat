@@ -6,6 +6,7 @@ import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-han
 
 import { Chat, IMessage } from '..'
 import { createMessageSelectionStore } from '../components/messageSelection'
+import { waitForRows } from './waitForRows'
 
 const mockSetStringAsync = jest.fn(() => Promise.resolve(true))
 jest.mock('expo-clipboard', () => ({
@@ -31,6 +32,7 @@ const mountChat = async (ui: React.ReactElement) => {
   await fireEvent(utils.getByTestId('GC_WRAPPER'), 'layout', {
     nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } },
   })
+  await waitForRows()
   return utils
 }
 

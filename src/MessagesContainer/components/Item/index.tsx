@@ -1,12 +1,13 @@
-import React, { useMemo } from 'react'
+import React, { useContext, useMemo } from 'react'
 import { View } from 'react-native'
-import isEqual from 'lodash.isequal'
 import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated'
 import { UnreadSeparator } from '../../../components/UnreadSeparator'
 import { Day } from '../../../Day'
 import { Message, MessageProps } from '../../../Message'
 import { IMessage } from '../../../Models'
 import { isSameDay } from '../../../utils'
+import { MessageRowConfigContext } from '../../rowConfig'
+import { useRowEntry } from '../../rowStore'
 import { DAY_HANDOFF_OFFSET, dayPositionScreenTop, findDayPosition } from '../dayLayout'
 import { ItemProps } from './types'
 
@@ -117,10 +118,8 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
     ...rest
   } = props
 
-  // Transform reply props for Message and Bubble.
-  // `rest` is rebuilt by the destructuring above on every render, so memoising on it never hit -
-  // the object was recomputed each time *and* paid for a dependency comparison. The row only
-  // renders when `arePropsEqual` already decided something changed, so there is nothing to cache.
+  // Transform reply props for Message and Bubble. Not memoised: the row only renders when its
+  // entry or the shared row config changed (see MessageRow), so there is nothing to cache.
   const messageProps = {
     ...rest,
     // Swipe to reply for Message component
@@ -163,44 +162,31 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
   )
 }
 
-// Message data is deep-compared (so any content change - text, status, reactions
-// - re-renders), and every other prop is compared by reference. So the only time
-// a row is skipped is a genuine no-op: identical message data AND all other props
-// (render functions, config, styles, shared values) referentially unchanged. Any
-// new prop reference, added/removed prop, or content change forces a re-render -
-// there's no path where new props leave stale content on screen.
-const MESSAGE_KEYS: Array<keyof ItemProps<IMessage>> = ['currentMessage', 'previousMessage', 'nextMessage']
+/**
+ * One row of the list. Its only prop is the message id: the message and its neighbours come
+ * from the row store, and everything else from the shared row config, so the row re-renders
+ * when its own message (or its grouping) changes or when the config does - never because the
+ * list around it did.
+ */
+const MessageRowComponent = ({ id }: { id: string }) => {
+  const entry = useRowEntry(id)
+  const config = useContext(MessageRowConfigContext) as unknown as Omit<ItemProps<IMessage>, 'currentMessage' | 'position'>
 
-function arePropsEqual (prev: ItemProps<IMessage>, next: ItemProps<IMessage>): boolean {
-  for (const key of MESSAGE_KEYS)
-    if (!isEqual(prev[key], next[key]))
-      return false
+  if (!entry)
+    return null
 
-  const prevRecord = prev as unknown as Record<string, unknown>
-  const nextRecord = next as unknown as Record<string, unknown>
-  const prevKeys = Object.keys(prev)
-  const nextKeys = Object.keys(next)
+  const userId = config.user?._id
+  const position = userId != null && entry.message.user?._id === userId ? 'right' : 'left'
 
-  // Walks the same ground as the union of both key sets, without building it: equal counts plus
-  // every prev key present on next means the sets are identical, so comparing prev's keys covers
-  // next's too. This runs once per mounted row per commit over ~60 props, and the Set it used to
-  // allocate for that (plus the two spreads feeding it) was pure garbage on the scroll path.
-  if (prevKeys.length !== nextKeys.length)
-    return false
-
-  for (const key of nextKeys)
-    if (!Object.prototype.hasOwnProperty.call(prev, key))
-      return false
-
-  for (const key of prevKeys) {
-    if ((MESSAGE_KEYS as string[]).includes(key))
-      continue
-
-    if (!Object.is(prevRecord[key], nextRecord[key]))
-      return false
-  }
-
-  return true
+  return (
+    <ItemComponent
+      {...config}
+      currentMessage={entry.message}
+      previousMessage={entry.previousMessage}
+      nextMessage={entry.nextMessage}
+      position={position}
+    />
+  )
 }
 
-export const Item = React.memo(ItemComponent, arePropsEqual) as typeof ItemComponent
+export const MessageRow = React.memo(MessageRowComponent)

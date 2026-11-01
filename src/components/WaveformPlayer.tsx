@@ -5,6 +5,7 @@ import Animated, {
   Easing,
   SharedValue,
   cancelAnimation,
+  ReduceMotion,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -91,6 +92,8 @@ const decodeAudio = (source: string | ArrayBuffer): Promise<any> => {
 }
 
 const ROW_PADDING_H = 8
+/** How often a playing note checks the audio clock; the bars move on the UI thread between. */
+const PROGRESS_SYNC_MS = 250
 
 // Bars of a just-sent note grow left to right
 // over 600ms after a 125ms delay, eased out-quint.
@@ -276,7 +279,7 @@ export function WaveformPlayer ({
   const bufferRef = useRef<any>(null)
   const sourceRef = useRef<any>(null)
   const startedAtRef = useRef(0)
-  const rafRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null)
+  const tickTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const durationRef = useRef(durationProp ?? 0)
   const rateRef = useRef(rate)
   rateRef.current = rate
@@ -333,11 +336,12 @@ export function WaveformPlayer ({
   }, [progress])
 
   const stopRaf = useCallback(() => {
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
+    if (tickTimerRef.current != null) {
+      clearInterval(tickTimerRef.current)
+      tickTimerRef.current = null
     }
-  }, [])
+    cancelAnimation(progress)
+  }, [progress])
 
   useEffect(() => {
     if (!shouldLoad)
@@ -428,9 +432,16 @@ export function WaveformPlayer ({
     const elapsed = (ctx.currentTime - startedAtRef.current) * rateRef.current
     const next = Math.min(1, elapsed / duration)
     progressRef.current = next
-    // A drag owns the visible progress, and the time, until it is released.
+    // A drag owns the visible progress, and the time, until it is released. Otherwise the
+    // bars run to the end on the UI thread at the playback rate, and this check-in - four
+    // times a second, not every frame - puts them back on the audio clock and moves the time.
     if (!isDragging.value) {
       progress.value = next
+      progress.value = withTiming(1, {
+        duration: (1 - next) * duration * 1000 / (rateRef.current || 1),
+        easing: Easing.linear,
+        reduceMotion: ReduceMotion.Never,
+      })
       setShownProgress(prev =>
         Math.floor(prev * duration) === Math.floor(next * duration) ? prev : next
       )
@@ -438,13 +449,11 @@ export function WaveformPlayer ({
 
     if (next >= 1) {
       setIsPlaying(false)
-      setProgressValue(0)
       setShownProgress(0)
+      // After the stop, which leaves the bars where the UI thread had them.
       stopRaf()
-      return
+      setProgressValue(0)
     }
-
-    rafRef.current = requestAnimationFrame(tick)
   }, [stopRaf, isDragging, progress, setProgressValue])
 
   // Lets the chat start this note when the previous one ends. `playFrom` is
@@ -545,7 +554,8 @@ export function WaveformPlayer ({
       // Starting stops whatever else was playing.
       claimPlayback(playerId, onStop)
       stopRaf()
-      rafRef.current = requestAnimationFrame(tick)
+      tick()
+      tickTimerRef.current = setInterval(tick, PROGRESS_SYNC_MS)
 
       // An incoming note is marked read the moment it starts playing.
       if (isIncoming && isMediaUnread) {
@@ -651,6 +661,7 @@ export function WaveformPlayer ({
     testID: 'voice-waveform-pan',
     onActivate: () => {
       isDragging.value = true
+      cancelAnimation(progress)
       dragStart.value = progress.value
     },
     onUpdate: event => {

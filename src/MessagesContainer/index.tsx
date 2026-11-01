@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   FlatListProps,
@@ -25,12 +25,13 @@ import { TypingIndicator, TypingIndicatorListAnimationContext } from '../TypingI
 import { isSameDay } from '../utils'
 import { DayAnimated } from './components/DayAnimated'
 import { useScrollGatedOpacity } from './components/DayAnimated/useScrollGatedOpacity'
-import { Item } from './components/Item'
-import { ItemProps } from './components/Item/types'
+import { MessageRow } from './components/Item'
 import { PageDownCounter } from './components/PageDownCounter'
 import { AnimatedFlashList, isFlashListAvailable } from './FlashList'
 import { isArrivingMessage, listCellTransition, newestCellEntering } from './listTransitions'
 import { PageDownReturnContext } from './pageDownReturn'
+import { MessageRowConfigContext, useStableRowConfig } from './rowConfig'
+import { MessageRowStore, MessageRowStoreContext, sameOrder } from './rowStore'
 import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions, AnimatedFlatList } from './types'
 
@@ -66,9 +67,6 @@ const overshoot = (tension: number) => (t: number) => {
 }
 const SCROLL_BUTTON_PRESS_IN = { duration: 80 }
 const SCROLL_BUTTON_PRESS_OUT = { duration: 350, easing: overshoot(2) }
-
-// Stable reference for the missing prev/next message at the list edges.
-const EMPTY_MESSAGE = Object.freeze({}) as IMessage
 
 /** Props FlashList hands to its `CellRendererComponent`. */
 interface FlashListCellProps {
@@ -241,12 +239,15 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     return <TypingIndicator isTyping={isTyping} style={[props.isAvatarVisible && typingIndicatorAvatarInset, props.typingIndicatorStyle]} />
   }, [isTyping, renderTypingIndicatorProp, props.isAvatarVisible, typingIndicatorAvatarInset, props.typingIndicatorStyle])
 
+  // Only a custom footer is handed the props, so only then does it depend on them - the
+  // typing indicator would otherwise be rebuilt, and the list with it, on every render.
+  const footerProps = renderFooterProp ? props : undefined
   const ListFooterComponent = useMemo(() => {
     if (renderFooterProp)
-      return renderFooterProp(props)
+      return renderFooterProp(footerProps!)
 
     return renderTypingIndicator()
-  }, [renderFooterProp, renderTypingIndicator, props])
+  }, [renderFooterProp, renderTypingIndicator, footerProps])
 
   const renderLoadEarlier = useCallback(() => {
     if (loadEarlierMessagesProps?.isAvailable) {
@@ -350,58 +351,62 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     previousLatestMessageId.current = latestMessageId
   }, [latestMessageId, isInverted, doScrollToBottom, contentHeight, lastScrolledY, listHeight, scrollToBottomOffset])
 
-  const restProps = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { messages: _, ...rest } = props
-    return rest
-  }, [props])
+  // The messages by id, for the rows to subscribe to (see rowStore). Synced while rendering so
+  // rows mounting now read the new messages; rows already on screen hear about it on commit.
+  const [rowStore] = useState(() => new MessageRowStore<TMessage>())
+  rowStore.sync(messages, isInverted)
+  useLayoutEffect(() => {
+    rowStore.flush()
+  })
 
-  const renderItem = useCallback(({ item, index }: ListRenderItemInfo<unknown>): React.ReactElement | null => {
-    const messageItem = item as TMessage
+  // The list's data keeps its identity while the ids and their order do: a status change,
+  // a reaction or a streamed token then leaves the list and its cells alone.
+  const listDataRef = useRef<TMessage[] | undefined>(undefined)
+  const listData = sameOrder(listDataRef.current, messages)
+  listDataRef.current = listData
+  // For the callbacks that need the messages but should not change with them.
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
 
-    if (!messageItem._id && messageItem._id !== 0)
-      warning('Chat: `_id` is missing for message', JSON.stringify(item))
+  // What every row shares, kept stable across renders that change nothing a row can see.
+  const {
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    messages: _messages,
+    forwardRef: _forwardRef,
+    listProps: _listProps,
+    // The list's own chrome; no row draws any of it.
+    isTyping: _isTyping,
+    renderChatEmpty: _renderChatEmpty,
+    renderFooter: _renderFooter,
+    renderLoadEarlier: _renderLoadEarlier,
+    loadEarlierMessagesProps: _loadEarlierMessagesProps,
+    renderTypingIndicator: _renderTypingIndicator,
+    typingIndicatorStyle: _typingIndicatorStyle,
+    scrollToBottomComponent: _scrollToBottomComponent,
+    scrollToBottomStyle: _scrollToBottomStyle,
+    scrollToBottomContentStyle: _scrollToBottomContentStyle,
+    scrollToBottomOffset: _scrollToBottomOffset,
+    isScrollToBottomEnabled: _isScrollToBottomEnabled,
+    isScrollToBottomBadgeEnabled: _isScrollToBottomBadgeEnabled,
+    isAlignedTop: _isAlignedTop,
+    isFlashListEnabled: _isFlashListEnabled,
+    /* eslint-enable @typescript-eslint/no-unused-vars */
+    ...sharedRowProps
+  } = props
+  const rowConfig = useStableRowConfig({
+    ...sharedRowProps,
+    isInverted,
+    isDayAnimationEnabled,
+    scrolledY,
+    daysPositions,
+    listHeight,
+    floatingRenderedDate,
+    floatingDayOpacity,
+  })
 
-    if (!messageItem.user) {
-      if (!messageItem.system)
-        warning(
-          'Chat: `user` is missing for message',
-          JSON.stringify(messageItem)
-        )
-
-      messageItem.user = { _id: 0 }
-    }
-
-    if (messages) {
-      // Use a shared frozen empty message for the edges so missing prev/next
-      // keep a stable reference (a fresh `{}` each render would defeat the
-      // Item memo's deep-compare fast path).
-      const previousMessage =
-        (isInverted ? messages[index + 1] : messages[index - 1]) || EMPTY_MESSAGE
-      const nextMessage =
-        (isInverted ? messages[index - 1] : messages[index + 1]) || EMPTY_MESSAGE
-
-      const messageProps: ItemProps<TMessage> = {
-        position: user?._id != null && messageItem.user?._id === user._id ? 'right' : 'left',
-        ...restProps,
-        currentMessage: messageItem,
-        previousMessage,
-        nextMessage,
-        scrolledY,
-        daysPositions,
-        listHeight,
-        floatingRenderedDate,
-        floatingDayOpacity,
-        isDayAnimationEnabled,
-      }
-
-      return (
-        <Item<TMessage> {...messageProps} />
-      )
-    }
-
-    return null
-  }, [messages, restProps, isInverted, scrolledY, daysPositions, listHeight, floatingRenderedDate, floatingDayOpacity, isDayAnimationEnabled, user])
+  const renderItem = useCallback(({ item }: ListRenderItemInfo<unknown>): React.ReactElement =>
+    <MessageRow id={String((item as TMessage)._id)} />
+  , [])
 
   const emptyContent = useMemo(() => {
     if (!renderChatEmptyProp)
@@ -600,7 +605,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     // default, so a non-inverted chat that never asked for it is not scrolled on every layout.
     if (
       !isInverted &&
-      messages?.length &&
+      messagesRef.current.length &&
       props.isScrollToBottomEnabled === true
     ) {
       // Layout fires repeatedly (keyboard, rotation, content growth), so this is
@@ -615,7 +620,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     // listProps.onLayout may be a SharedValue in Reanimated types, but we only accept functions
     const onLayoutProp = listProps?.onLayout as ((event: LayoutChangeEvent) => void) | undefined
     onLayoutProp?.(event)
-  }, [isInverted, messages, doScrollToBottom, listHeight, listProps, props.isScrollToBottomEnabled])
+  }, [isInverted, doScrollToBottom, listHeight, listProps, props.isScrollToBottomEnabled])
 
   const onEndReached = useCallback(() => {
     if (
@@ -769,7 +774,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
     const handleOnLayout = (event: LayoutChangeEvent) => {
       onLayoutProp?.(event)
-      trackDayPosition(item as IMessage, event.nativeEvent.layout)
+      // The list's own item can be an older copy of the message (its data keeps its identity
+      // while the order does); the store has the current one.
+      trackDayPosition(rowStore.getMessage((item as IMessage)._id) ?? item as IMessage, event.nativeEvent.layout)
     }
 
     if (!areCellsAnimated)
@@ -794,14 +801,11 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         {children}
       </Animated.View>
     )
-  }, [trackDayPosition, areCellsAnimated])
+  }, [trackDayPosition, areCellsAnimated, rowStore])
 
   // FlashList recycles cells and hands its CellRendererComponent only an
   // `index` (no `item`), so the message is looked up through a ref to keep the
   // component identity stable - recreating it would remount every row.
-  const messagesRef = useRef(messages)
-  messagesRef.current = messages
-
   const FlashListCell = useMemo(() => {
     const Cell = React.forwardRef<React.ComponentRef<typeof View>, FlashListCellProps>(({ index, onLayout: onLayoutProp, children, ...rest }, ref) => {
       const handleOnLayout = (event: LayoutChangeEvent) => {
@@ -937,24 +941,75 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   // Props shared by both list engines. FlatList-only virtualization knobs and
   // FlashList-only options are added at the call sites below.
-  const commonListProps = {
-    ref: forwardRef,
-    keyExtractor,
-    data: messages,
-    renderItem,
-    inverted: isInverted,
-    style: stylesCommon.fill,
-    contentContainerStyle: [styles.messagesContainer, alignmentStyle],
-    ListEmptyComponent: renderChatEmpty,
-    ListFooterComponent: isInverted ? ListHeaderComponent : <>{ListFooterComponent}</>,
-    ListHeaderComponent: isInverted ? <>{ListFooterComponent}</> : ListHeaderComponent,
-    scrollEventThrottle: 1,
-    onEndReached,
-    onEndReachedThreshold: 0.1,
-    keyboardDismissMode: 'interactive' as const,
-    keyboardShouldPersistTaps: 'handled' as const,
-    onScrollToIndexFailed,
-  }
+  const contentContainerStyle = useMemo(() => [styles.messagesContainer, alignmentStyle], [alignmentStyle])
+  const listFooter = useMemo(() => isInverted ? ListHeaderComponent : <>{ListFooterComponent}</>, [isInverted, ListHeaderComponent, ListFooterComponent])
+  const listHeader = useMemo(() => isInverted ? <>{ListFooterComponent}</> : ListHeaderComponent, [isInverted, ListHeaderComponent, ListFooterComponent])
+  const initialNumToRender = Math.max(12, unreadIndex + 4)
+
+  // Memoized, so a render of the container that leaves the list's inputs alone - a status
+  // change or a reaction, which keep the data's identity - does not walk the list's cells.
+  const listEngine = useMemo(() => {
+    const commonListProps = {
+      ref: forwardRef,
+      keyExtractor,
+      data: listData,
+      renderItem,
+      inverted: isInverted,
+      style: stylesCommon.fill,
+      contentContainerStyle,
+      ListEmptyComponent: renderChatEmpty,
+      ListFooterComponent: listFooter,
+      ListHeaderComponent: listHeader,
+      scrollEventThrottle: 1,
+      onEndReached,
+      onEndReachedThreshold: 0.1,
+      keyboardDismissMode: 'interactive' as const,
+      keyboardShouldPersistTaps: 'handled' as const,
+      onScrollToIndexFailed,
+    }
+
+    return (isFlashList
+      ? (
+        <AnimatedFlashList
+          {...commonListProps}
+          // FlashList v2 keeps the viewport pinned to the newest message on
+          // its own; a non-inverted chat additionally wants the first render
+          // to start at the bottom. Overridable through `listProps`.
+          maintainVisibleContentPosition={{
+            startRenderingFromBottom: !isInverted,
+            autoscrollToBottomThreshold: 0.2,
+          }}
+          {...listProps}
+          onScroll={scrollHandler}
+          onViewableItemsChanged={undefined}
+          viewabilityConfig={undefined}
+          viewabilityConfigCallbackPairs={viewabilityPairs}
+          onLayout={onLayoutList}
+          CellRendererComponent={FlashListCell}
+        />
+      )
+      : (
+        <AnimatedFlatList
+          {...commonListProps}
+          automaticallyAdjustContentInsets={false}
+          // Virtualization defaults tuned for chat lists. All are overridable via
+          // `listProps` below (spread last), so consumers keep full control.
+          removeClippedSubviews={Platform.OS === 'android'}
+          initialNumToRender={initialNumToRender}
+          maxToRenderPerBatch={10}
+          windowSize={9}
+          updateCellsBatchingPeriod={50}
+          {...listProps}
+          onScroll={scrollHandler}
+          onViewableItemsChanged={undefined}
+          viewabilityConfig={undefined}
+          viewabilityConfigCallbackPairs={viewabilityPairs}
+          onLayout={onLayoutList}
+          CellRendererComponent={renderCell}
+        />
+      )
+    )
+  }, [forwardRef, keyExtractor, listData, renderItem, isInverted, contentContainerStyle, renderChatEmpty, listFooter, listHeader, onEndReached, onScrollToIndexFailed, isFlashList, listProps, scrollHandler, viewabilityPairs, onLayoutList, FlashListCell, renderCell, initialNumToRender])
 
   const list = (
     <View
@@ -962,46 +1017,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       onTouchStart={onListTouchStart}
       onTouchEnd={onListTouchEnd}
     >
-      {isFlashList
-        ? (
-          <AnimatedFlashList
-            {...commonListProps}
-            // FlashList v2 keeps the viewport pinned to the newest message on
-            // its own; a non-inverted chat additionally wants the first render
-            // to start at the bottom. Overridable through `listProps`.
-            maintainVisibleContentPosition={{
-              startRenderingFromBottom: !isInverted,
-              autoscrollToBottomThreshold: 0.2,
-            }}
-            {...listProps}
-            onScroll={scrollHandler}
-            onViewableItemsChanged={undefined}
-            viewabilityConfig={undefined}
-            viewabilityConfigCallbackPairs={viewabilityPairs}
-            onLayout={onLayoutList}
-            CellRendererComponent={FlashListCell}
-          />
-        )
-        : (
-          <AnimatedFlatList
-            {...commonListProps}
-            automaticallyAdjustContentInsets={false}
-            // Virtualization defaults tuned for chat lists. All are overridable via
-            // `listProps` below (spread last), so consumers keep full control.
-            removeClippedSubviews={Platform.OS === 'android'}
-            initialNumToRender={Math.max(12, unreadIndex + 4)}
-            maxToRenderPerBatch={10}
-            windowSize={9}
-            updateCellsBatchingPeriod={50}
-            {...listProps}
-            onScroll={scrollHandler}
-            onViewableItemsChanged={undefined}
-            viewabilityConfig={undefined}
-            viewabilityConfigCallbackPairs={viewabilityPairs}
-            onLayout={onLayoutList}
-            CellRendererComponent={renderCell}
-          />
-        )}
+      {listEngine}
       <ScrollToBottomWrapper />
       {isDayAnimationEnabled && (
         <DayAnimated
@@ -1031,7 +1047,11 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // the whole list - back at the newest message, wherever the user had scrolled.
   return (
     <BubbleGradientContext.Provider value={gradientStore}>
-      {animatedList}
+      <MessageRowStoreContext.Provider value={rowStore as unknown as MessageRowStore}>
+        <MessageRowConfigContext.Provider value={rowConfig}>
+          {animatedList}
+        </MessageRowConfigContext.Provider>
+      </MessageRowStoreContext.Provider>
     </BubbleGradientContext.Provider>
   )
 }

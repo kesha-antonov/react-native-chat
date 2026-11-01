@@ -699,11 +699,533 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
           >
             <View
               style={
-                {
-                  "flex": 1,
-                }
+                [
+                  {
+                    "flex": 1,
+                  },
+                  undefined,
+                ]
               }
-            />
+            >
+              <View
+                style={
+                  {
+                    "flex": 1,
+                  }
+                }
+              >
+                <View
+                  onTouchEnd={[Function]}
+                  onTouchStart={[Function]}
+                  style={
+                    [
+                      {
+                        "flexGrow": 1,
+                        "justifyContent": "flex-start",
+                      },
+                      {
+                        "backgroundColor": "transparent",
+                      },
+                      {
+                        "flex": 1,
+                      },
+                    ]
+                  }
+                >
+                  <View
+                    collapsable={false}
+                    onResponderRelease={[Function]}
+                    onResponderTerminate={[Function]}
+                    onStartShouldSetResponder={[Function]}
+                    onStartShouldSetResponderCapture={[Function]}
+                    pointerEvents="box-none"
+                    style={
+                      {
+                        "display": "contents",
+                      }
+                    }
+                  >
+                    <View
+                      handlerTags={
+                        [
+                          23,
+                        ]
+                      }
+                      moduleId={-1}
+                      onGestureHandlerEvent={[Function]}
+                      onGestureHandlerStateChange={[Function]}
+                      onGestureHandlerTouchEvent={[Function]}
+                      pointerEvents="box-none"
+                      style={
+                        {
+                          "display": "contents",
+                        }
+                      }
+                      virtualChildren={[]}
+                    >
+                      <RCTScrollView
+                        CellRendererComponent={[Function]}
+                        ListEmptyComponent={[Function]}
+                        ListHeaderComponent={
+                          <React.Fragment>
+                            <TypingIndicator
+                              isTyping={false}
+                              style={
+                                [
+                                  false,
+                                  undefined,
+                                ]
+                              }
+                            />
+                          </React.Fragment>
+                        }
+                        automaticallyAdjustContentInsets={false}
+                        contentContainerStyle={
+                          [
+                            {
+                              "paddingBottom": 10,
+                            },
+                            undefined,
+                          ]
+                        }
+                        data={
+                          [
+                            {
+                              "_id": 1,
+                              "createdAt": 2024-01-01T12:00:00.000Z,
+                              "text": "Hello developer",
+                              "user": {
+                                "_id": 2,
+                                "name": "John Doe",
+                              },
+                            },
+                          ]
+                        }
+                        disableScrollViewPanResponder={true}
+                        getItem={[Function]}
+                        getItemCount={[Function]}
+                        initialNumToRender={12}
+                        invertStickyHeaders={true}
+                        inverted={true}
+                        isInvertedVirtualizedList={true}
+                        keyExtractor={[Function]}
+                        keyboardDismissMode="interactive"
+                        keyboardShouldPersistTaps="handled"
+                        maxToRenderPerBatch={10}
+                        onContentSizeChange={[Function]}
+                        onEndReached={[Function]}
+                        onEndReachedThreshold={0.1}
+                        onLayout={[Function]}
+                        onMomentumScrollBegin={[Function]}
+                        onMomentumScrollEnd={[Function]}
+                        onScroll={[Function]}
+                        onScrollBeginDrag={[Function]}
+                        onScrollEndDrag={[Function]}
+                        onScrollToIndexFailed={[Function]}
+                        removeClippedSubviews={false}
+                        renderItem={[Function]}
+                        renderScrollComponent={[Function]}
+                        scrollEventThrottle={1}
+                        stickyHeaderIndices={[]}
+                        style={
+                          [
+                            {
+                              "transform": [
+                                {
+                                  "scaleY": -1,
+                                },
+                              ],
+                            },
+                            {
+                              "flex": 1,
+                            },
+                          ]
+                        }
+                        updateCellsBatchingPeriod={50}
+                        viewabilityConfigCallbackPairs={
+                          [
+                            {
+                              "onViewableItemsChanged": [Function],
+                              "viewabilityConfig": {
+                                "itemVisiblePercentThreshold": 0,
+                              },
+                            },
+                          ]
+                        }
+                        windowSize={9}
+                      >
+                        <View>
+                          <View
+                            collapsable={false}
+                            onLayout={[Function]}
+                            style={
+                              {
+                                "transform": [
+                                  {
+                                    "scaleY": -1,
+                                  },
+                                ],
+                              }
+                            }
+                          />
+                          <View
+                            cellKey="1"
+                            index={0}
+                            item={
+                              {
+                                "_id": 1,
+                                "createdAt": 2024-01-01T12:00:00.000Z,
+                                "text": "Hello developer",
+                                "user": {
+                                  "_id": 2,
+                                  "name": "John Doe",
+                                },
+                              }
+                            }
+                            layout={BaseAnimationMock {}}
+                            onFocusCapture={[Function]}
+                            onLayout={[Function]}
+                            style={
+                              [
+                                {
+                                  "flexDirection": "column-reverse",
+                                },
+                                {
+                                  "transform": [
+                                    {
+                                      "scaleY": -1,
+                                    },
+                                  ],
+                                },
+                              ]
+                            }
+                          >
+                            <View>
+                              <View
+                                style={
+                                  {
+                                    "opacity": 1,
+                                  }
+                                }
+                              >
+                                <View>
+                                  <View
+                                    style={
+                                      [
+                                        {
+                                          "alignItems": "center",
+                                          "justifyContent": "center",
+                                        },
+                                        {
+                                          "marginBottom": 7,
+                                          "marginTop": 1,
+                                        },
+                                        undefined,
+                                      ]
+                                    }
+                                  >
+                                    <View
+                                      style={
+                                        [
+                                          {
+                                            "backgroundColor": "rgba(53, 66, 81, 0.51)",
+                                            "borderRadius": 11,
+                                            "paddingHorizontal": 8,
+                                            "paddingVertical": 3,
+                                          },
+                                          undefined,
+                                        ]
+                                      }
+                                    >
+                                      <Text
+                                        style={
+                                          [
+                                            {
+                                              "color": "#FFFFFF",
+                                              "fontSize": 14,
+                                              "fontWeight": "500",
+                                              "lineHeight": 17,
+                                            },
+                                            undefined,
+                                          ]
+                                        }
+                                      >
+                                        1 January 2024
+                                      </Text>
+                                    </View>
+                                  </View>
+                                </View>
+                              </View>
+                              <View>
+                                <View
+                                  handlerTags={
+                                    [
+                                      24,
+                                    ]
+                                  }
+                                  moduleId={-1}
+                                  onGestureHandlerEvent={[Function]}
+                                  onGestureHandlerStateChange={[Function]}
+                                  onGestureHandlerTouchEvent={[Function]}
+                                  onStartShouldSetResponder={[Function]}
+                                  pointerEvents="box-none"
+                                  style={
+                                    {
+                                      "display": "contents",
+                                    }
+                                  }
+                                >
+                                  <View>
+                                    <View
+                                      style={
+                                        {
+                                          "transform": [
+                                            {
+                                              "translateX": 0,
+                                            },
+                                          ],
+                                        }
+                                      }
+                                    >
+                                      <View
+                                        collapsable={false}
+                                        style={
+                                          {
+                                            "alignItems": "flex-end",
+                                            "flexDirection": "row",
+                                            "justifyContent": "flex-start",
+                                            "marginBottom": 6,
+                                            "marginHorizontal": 8,
+                                          }
+                                        }
+                                      >
+                                        <View
+                                          style={
+                                            [
+                                              {
+                                                "alignItems": "flex-start",
+                                                "flex": 1,
+                                              },
+                                              undefined,
+                                            ]
+                                          }
+                                        >
+                                          <View
+                                            handlerTags={
+                                              [
+                                                26,
+                                                25,
+                                              ]
+                                            }
+                                            moduleId={-1}
+                                            onGestureHandlerEvent={[Function]}
+                                            onGestureHandlerStateChange={[Function]}
+                                            onGestureHandlerTouchEvent={[Function]}
+                                            onStartShouldSetResponder={[Function]}
+                                            pointerEvents="box-none"
+                                            style={
+                                              {
+                                                "display": "contents",
+                                              }
+                                            }
+                                          >
+                                            <View
+                                              style={
+                                                {
+                                                  "alignItems": "flex-start",
+                                                  "alignSelf": "stretch",
+                                                }
+                                              }
+                                            >
+                                              <View>
+                                                <View
+                                                  style={
+                                                    [
+                                                      {
+                                                        "backgroundColor": "#232E3B",
+                                                        "borderRadius": 17,
+                                                        "justifyContent": "flex-end",
+                                                        "minHeight": 20,
+                                                      },
+                                                      {
+                                                        "maxWidth": 688,
+                                                      },
+                                                      {
+                                                        "borderBottomLeftRadius": 0,
+                                                        "borderBottomRightRadius": 17,
+                                                        "borderTopLeftRadius": 17,
+                                                        "borderTopRightRadius": 17,
+                                                      },
+                                                      {
+                                                        "boxShadow": [
+                                                          {
+                                                            "blurRadius": 0.5,
+                                                            "color": "rgba(0, 0, 0, 0.196)",
+                                                            "offsetX": 0,
+                                                            "offsetY": 1,
+                                                          },
+                                                        ],
+                                                      },
+                                                      null,
+                                                      null,
+                                                      undefined,
+                                                      false,
+                                                      false,
+                                                      false,
+                                                    ]
+                                                  }
+                                                >
+                                                  <View
+                                                    pointerEvents="none"
+                                                    style={
+                                                      [
+                                                        {
+                                                          "bottom": 0,
+                                                          "height": 12,
+                                                          "marginBottom": -1,
+                                                          "position": "absolute",
+                                                          "width": 7,
+                                                        },
+                                                        {
+                                                          "left": -6,
+                                                        },
+                                                        {
+                                                          "borderRightWidth": 6,
+                                                          "borderTopColor": "transparent",
+                                                          "borderTopWidth": 11,
+                                                          "height": 0,
+                                                          "left": -6,
+                                                          "marginBottom": 0,
+                                                          "width": 0,
+                                                        },
+                                                        {
+                                                          "borderRightColor": "#232E3B",
+                                                        },
+                                                      ]
+                                                    }
+                                                  />
+                                                  <View
+                                                    style={
+                                                      [
+                                                        {
+                                                          "marginBottom": 8.5,
+                                                          "marginHorizontal": 9,
+                                                          "marginTop": 5,
+                                                        },
+                                                        undefined,
+                                                      ]
+                                                    }
+                                                  >
+                                                    <Text
+                                                      style={
+                                                        [
+                                                          {
+                                                            "fontSize": 16,
+                                                            "fontWeight": "400",
+                                                            "lineHeight": 19,
+                                                          },
+                                                          {
+                                                            "color": "#FAFAFA",
+                                                          },
+                                                          undefined,
+                                                          undefined,
+                                                        ]
+                                                      }
+                                                    >
+                                                      <Text
+                                                        style={
+                                                          [
+                                                            {
+                                                              "fontSize": 16,
+                                                              "fontWeight": "400",
+                                                              "lineHeight": 19,
+                                                            },
+                                                            {
+                                                              "color": "#FAFAFA",
+                                                            },
+                                                            undefined,
+                                                            undefined,
+                                                          ]
+                                                        }
+                                                      >
+                                                        Hello developer
+                                                      </Text>
+                                                      <Text
+                                                        style={
+                                                          [
+                                                            {
+                                                              "fontSize": 12,
+                                                              "fontWeight": "400",
+                                                            },
+                                                            undefined,
+                                                            {
+                                                              "color": "rgba(0, 0, 0, 0.004)",
+                                                            },
+                                                          ]
+                                                        }
+                                                      >
+                                                        ​  1:00 PM
+                                                      </Text>
+                                                    </Text>
+                                                  </View>
+                                                  <View
+                                                    accessibilityElementsHidden={true}
+                                                    importantForAccessibility="no-hide-descendants"
+                                                    pointerEvents="none"
+                                                    style={
+                                                      [
+                                                        {
+                                                          "alignItems": "center",
+                                                          "bottom": 3.5,
+                                                          "flexDirection": "row",
+                                                          "gap": 4,
+                                                          "position": "absolute",
+                                                        },
+                                                        {
+                                                          "right": 7,
+                                                        },
+                                                        undefined,
+                                                      ]
+                                                    }
+                                                  >
+                                                    <View>
+                                                      <Text
+                                                        style={
+                                                          [
+                                                            {
+                                                              "color": "rgba(128, 145, 160, 0.85)",
+                                                              "fontSize": 12,
+                                                              "fontWeight": "400",
+                                                              "lineHeight": 14,
+                                                              "textAlign": "right",
+                                                            },
+                                                            undefined,
+                                                          ]
+                                                        }
+                                                      >
+                                                        1:00 PM
+                                                      </Text>
+                                                    </View>
+                                                  </View>
+                                                </View>
+                                              </View>
+                                            </View>
+                                          </View>
+                                        </View>
+                                      </View>
+                                    </View>
+                                  </View>
+                                </View>
+                              </View>
+                            </View>
+                          </View>
+                        </View>
+                      </RCTScrollView>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </View>
             <View
               style={
                 [
@@ -1001,7 +1523,7 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                           <View
                             handlerTags={
                               [
-                                17,
+                                21,
                               ]
                             }
                             moduleId={-1}
@@ -1086,7 +1608,7 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                     <View
                       handlerTags={
                         [
-                          18,
+                          22,
                         ]
                       }
                       moduleId={-1}
@@ -1295,11 +1817,533 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
           >
             <View
               style={
-                {
-                  "flex": 1,
-                }
+                [
+                  {
+                    "flex": 1,
+                  },
+                  undefined,
+                ]
               }
-            />
+            >
+              <View
+                style={
+                  {
+                    "flex": 1,
+                  }
+                }
+              >
+                <View
+                  onTouchEnd={[Function]}
+                  onTouchStart={[Function]}
+                  style={
+                    [
+                      {
+                        "flexGrow": 1,
+                        "justifyContent": "flex-start",
+                      },
+                      {
+                        "backgroundColor": "transparent",
+                      },
+                      {
+                        "flex": 1,
+                      },
+                    ]
+                  }
+                >
+                  <View
+                    collapsable={false}
+                    onResponderRelease={[Function]}
+                    onResponderTerminate={[Function]}
+                    onStartShouldSetResponder={[Function]}
+                    onStartShouldSetResponderCapture={[Function]}
+                    pointerEvents="box-none"
+                    style={
+                      {
+                        "display": "contents",
+                      }
+                    }
+                  >
+                    <View
+                      handlerTags={
+                        [
+                          17,
+                        ]
+                      }
+                      moduleId={-1}
+                      onGestureHandlerEvent={[Function]}
+                      onGestureHandlerStateChange={[Function]}
+                      onGestureHandlerTouchEvent={[Function]}
+                      pointerEvents="box-none"
+                      style={
+                        {
+                          "display": "contents",
+                        }
+                      }
+                      virtualChildren={[]}
+                    >
+                      <RCTScrollView
+                        CellRendererComponent={[Function]}
+                        ListEmptyComponent={[Function]}
+                        ListHeaderComponent={
+                          <React.Fragment>
+                            <TypingIndicator
+                              isTyping={false}
+                              style={
+                                [
+                                  false,
+                                  undefined,
+                                ]
+                              }
+                            />
+                          </React.Fragment>
+                        }
+                        automaticallyAdjustContentInsets={false}
+                        contentContainerStyle={
+                          [
+                            {
+                              "paddingBottom": 10,
+                            },
+                            undefined,
+                          ]
+                        }
+                        data={
+                          [
+                            {
+                              "_id": 1,
+                              "createdAt": 2024-01-01T12:00:00.000Z,
+                              "text": "Hello developer",
+                              "user": {
+                                "_id": 2,
+                                "name": "John Doe",
+                              },
+                            },
+                          ]
+                        }
+                        disableScrollViewPanResponder={true}
+                        getItem={[Function]}
+                        getItemCount={[Function]}
+                        initialNumToRender={12}
+                        invertStickyHeaders={true}
+                        inverted={true}
+                        isInvertedVirtualizedList={true}
+                        keyExtractor={[Function]}
+                        keyboardDismissMode="interactive"
+                        keyboardShouldPersistTaps="handled"
+                        maxToRenderPerBatch={10}
+                        onContentSizeChange={[Function]}
+                        onEndReached={[Function]}
+                        onEndReachedThreshold={0.1}
+                        onLayout={[Function]}
+                        onMomentumScrollBegin={[Function]}
+                        onMomentumScrollEnd={[Function]}
+                        onScroll={[Function]}
+                        onScrollBeginDrag={[Function]}
+                        onScrollEndDrag={[Function]}
+                        onScrollToIndexFailed={[Function]}
+                        removeClippedSubviews={false}
+                        renderItem={[Function]}
+                        renderScrollComponent={[Function]}
+                        scrollEventThrottle={1}
+                        stickyHeaderIndices={[]}
+                        style={
+                          [
+                            {
+                              "transform": [
+                                {
+                                  "scaleY": -1,
+                                },
+                              ],
+                            },
+                            {
+                              "flex": 1,
+                            },
+                          ]
+                        }
+                        updateCellsBatchingPeriod={50}
+                        viewabilityConfigCallbackPairs={
+                          [
+                            {
+                              "onViewableItemsChanged": [Function],
+                              "viewabilityConfig": {
+                                "itemVisiblePercentThreshold": 0,
+                              },
+                            },
+                          ]
+                        }
+                        windowSize={9}
+                      >
+                        <View>
+                          <View
+                            collapsable={false}
+                            onLayout={[Function]}
+                            style={
+                              {
+                                "transform": [
+                                  {
+                                    "scaleY": -1,
+                                  },
+                                ],
+                              }
+                            }
+                          />
+                          <View
+                            cellKey="1"
+                            index={0}
+                            item={
+                              {
+                                "_id": 1,
+                                "createdAt": 2024-01-01T12:00:00.000Z,
+                                "text": "Hello developer",
+                                "user": {
+                                  "_id": 2,
+                                  "name": "John Doe",
+                                },
+                              }
+                            }
+                            layout={BaseAnimationMock {}}
+                            onFocusCapture={[Function]}
+                            onLayout={[Function]}
+                            style={
+                              [
+                                {
+                                  "flexDirection": "column-reverse",
+                                },
+                                {
+                                  "transform": [
+                                    {
+                                      "scaleY": -1,
+                                    },
+                                  ],
+                                },
+                              ]
+                            }
+                          >
+                            <View>
+                              <View
+                                style={
+                                  {
+                                    "opacity": 1,
+                                  }
+                                }
+                              >
+                                <View>
+                                  <View
+                                    style={
+                                      [
+                                        {
+                                          "alignItems": "center",
+                                          "justifyContent": "center",
+                                        },
+                                        {
+                                          "marginBottom": 7,
+                                          "marginTop": 1,
+                                        },
+                                        undefined,
+                                      ]
+                                    }
+                                  >
+                                    <View
+                                      style={
+                                        [
+                                          {
+                                            "backgroundColor": "rgba(0, 0, 0, 0.18)",
+                                            "borderRadius": 11,
+                                            "paddingHorizontal": 8,
+                                            "paddingVertical": 3,
+                                          },
+                                          undefined,
+                                        ]
+                                      }
+                                    >
+                                      <Text
+                                        style={
+                                          [
+                                            {
+                                              "color": "#FFFFFF",
+                                              "fontSize": 14,
+                                              "fontWeight": "500",
+                                              "lineHeight": 17,
+                                            },
+                                            undefined,
+                                          ]
+                                        }
+                                      >
+                                        1 January 2024
+                                      </Text>
+                                    </View>
+                                  </View>
+                                </View>
+                              </View>
+                              <View>
+                                <View
+                                  handlerTags={
+                                    [
+                                      18,
+                                    ]
+                                  }
+                                  moduleId={-1}
+                                  onGestureHandlerEvent={[Function]}
+                                  onGestureHandlerStateChange={[Function]}
+                                  onGestureHandlerTouchEvent={[Function]}
+                                  onStartShouldSetResponder={[Function]}
+                                  pointerEvents="box-none"
+                                  style={
+                                    {
+                                      "display": "contents",
+                                    }
+                                  }
+                                >
+                                  <View>
+                                    <View
+                                      style={
+                                        {
+                                          "transform": [
+                                            {
+                                              "translateX": 0,
+                                            },
+                                          ],
+                                        }
+                                      }
+                                    >
+                                      <View
+                                        collapsable={false}
+                                        style={
+                                          {
+                                            "alignItems": "flex-end",
+                                            "flexDirection": "row",
+                                            "justifyContent": "flex-start",
+                                            "marginBottom": 6,
+                                            "marginHorizontal": 8,
+                                          }
+                                        }
+                                      >
+                                        <View
+                                          style={
+                                            [
+                                              {
+                                                "alignItems": "flex-start",
+                                                "flex": 1,
+                                              },
+                                              undefined,
+                                            ]
+                                          }
+                                        >
+                                          <View
+                                            handlerTags={
+                                              [
+                                                20,
+                                                19,
+                                              ]
+                                            }
+                                            moduleId={-1}
+                                            onGestureHandlerEvent={[Function]}
+                                            onGestureHandlerStateChange={[Function]}
+                                            onGestureHandlerTouchEvent={[Function]}
+                                            onStartShouldSetResponder={[Function]}
+                                            pointerEvents="box-none"
+                                            style={
+                                              {
+                                                "display": "contents",
+                                              }
+                                            }
+                                          >
+                                            <View
+                                              style={
+                                                {
+                                                  "alignItems": "flex-start",
+                                                  "alignSelf": "stretch",
+                                                }
+                                              }
+                                            >
+                                              <View>
+                                                <View
+                                                  style={
+                                                    [
+                                                      {
+                                                        "backgroundColor": "#FFFFFF",
+                                                        "borderRadius": 17,
+                                                        "justifyContent": "flex-end",
+                                                        "minHeight": 20,
+                                                      },
+                                                      {
+                                                        "maxWidth": 688,
+                                                      },
+                                                      {
+                                                        "borderBottomLeftRadius": 0,
+                                                        "borderBottomRightRadius": 17,
+                                                        "borderTopLeftRadius": 17,
+                                                        "borderTopRightRadius": 17,
+                                                      },
+                                                      {
+                                                        "boxShadow": [
+                                                          {
+                                                            "blurRadius": 0.5,
+                                                            "color": "rgba(29, 55, 83, 0.16)",
+                                                            "offsetX": 0,
+                                                            "offsetY": 1,
+                                                          },
+                                                        ],
+                                                      },
+                                                      null,
+                                                      null,
+                                                      undefined,
+                                                      false,
+                                                      false,
+                                                      false,
+                                                    ]
+                                                  }
+                                                >
+                                                  <View
+                                                    pointerEvents="none"
+                                                    style={
+                                                      [
+                                                        {
+                                                          "bottom": 0,
+                                                          "height": 12,
+                                                          "marginBottom": -1,
+                                                          "position": "absolute",
+                                                          "width": 7,
+                                                        },
+                                                        {
+                                                          "left": -6,
+                                                        },
+                                                        {
+                                                          "borderRightWidth": 6,
+                                                          "borderTopColor": "transparent",
+                                                          "borderTopWidth": 11,
+                                                          "height": 0,
+                                                          "left": -6,
+                                                          "marginBottom": 0,
+                                                          "width": 0,
+                                                        },
+                                                        {
+                                                          "borderRightColor": "#FFFFFF",
+                                                        },
+                                                      ]
+                                                    }
+                                                  />
+                                                  <View
+                                                    style={
+                                                      [
+                                                        {
+                                                          "marginBottom": 8.5,
+                                                          "marginHorizontal": 9,
+                                                          "marginTop": 5,
+                                                        },
+                                                        undefined,
+                                                      ]
+                                                    }
+                                                  >
+                                                    <Text
+                                                      style={
+                                                        [
+                                                          {
+                                                            "fontSize": 16,
+                                                            "fontWeight": "400",
+                                                            "lineHeight": 19,
+                                                          },
+                                                          {
+                                                            "color": "#000000",
+                                                          },
+                                                          undefined,
+                                                          undefined,
+                                                        ]
+                                                      }
+                                                    >
+                                                      <Text
+                                                        style={
+                                                          [
+                                                            {
+                                                              "fontSize": 16,
+                                                              "fontWeight": "400",
+                                                              "lineHeight": 19,
+                                                            },
+                                                            {
+                                                              "color": "#000000",
+                                                            },
+                                                            undefined,
+                                                            undefined,
+                                                          ]
+                                                        }
+                                                      >
+                                                        Hello developer
+                                                      </Text>
+                                                      <Text
+                                                        style={
+                                                          [
+                                                            {
+                                                              "fontSize": 12,
+                                                              "fontWeight": "400",
+                                                            },
+                                                            undefined,
+                                                            {
+                                                              "color": "rgba(0, 0, 0, 0.004)",
+                                                            },
+                                                          ]
+                                                        }
+                                                      >
+                                                        ​  1:00 PM
+                                                      </Text>
+                                                    </Text>
+                                                  </View>
+                                                  <View
+                                                    accessibilityElementsHidden={true}
+                                                    importantForAccessibility="no-hide-descendants"
+                                                    pointerEvents="none"
+                                                    style={
+                                                      [
+                                                        {
+                                                          "alignItems": "center",
+                                                          "bottom": 3.5,
+                                                          "flexDirection": "row",
+                                                          "gap": 4,
+                                                          "position": "absolute",
+                                                        },
+                                                        {
+                                                          "right": 7,
+                                                        },
+                                                        undefined,
+                                                      ]
+                                                    }
+                                                  >
+                                                    <View>
+                                                      <Text
+                                                        style={
+                                                          [
+                                                            {
+                                                              "color": "#A1AAB3",
+                                                              "fontSize": 12,
+                                                              "fontWeight": "400",
+                                                              "lineHeight": 14,
+                                                              "textAlign": "right",
+                                                            },
+                                                            undefined,
+                                                          ]
+                                                        }
+                                                      >
+                                                        1:00 PM
+                                                      </Text>
+                                                    </View>
+                                                  </View>
+                                                </View>
+                                              </View>
+                                            </View>
+                                          </View>
+                                        </View>
+                                      </View>
+                                    </View>
+                                  </View>
+                                </View>
+                              </View>
+                            </View>
+                          </View>
+                        </View>
+                      </RCTScrollView>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </View>
             <View
               style={
                 [

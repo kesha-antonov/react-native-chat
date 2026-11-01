@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native'
 import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
+  cancelAnimation,
   Easing,
+  ReduceMotion,
   SharedValue,
   runOnJS,
   useAnimatedProps,
@@ -138,22 +140,32 @@ const FloatingNoteView = ({ entry, isVisible, area, onHidden }: FloatingNoteView
     })
   }, [isVisible, visibility, onHidden])
 
-  // The ring follows playback; expo-video has no progress callback, so it is
-  // sampled each frame, as the row does.
+  // The ring follows playback. expo-video has no progress callback, so, as in the row, the ring
+  // runs to the end on the UI thread and the JS thread puts it back on the player's real
+  // position four times a second.
   const progress = useSharedValue(0)
   useEffect(() => {
-    let frame: ReturnType<typeof requestAnimationFrame>
-    const tick = () => {
+    const sync = () => {
       try {
         const length = player.duration || 0
-        progress.value = length > 0 ? Math.min(1, (player.currentTime || 0) / length) : 0
+        const time = player.currentTime || 0
+        progress.value = length > 0 ? Math.min(1, time / length) : 0
+        if (length > 0 && player.playing)
+          progress.value = withTiming(1, {
+            duration: Math.max(0, length - time) * 1000 / (player.playbackRate || 1),
+            easing: Easing.linear,
+            reduceMotion: ReduceMotion.Never,
+          })
       } catch {
         // player released
       }
-      frame = requestAnimationFrame(tick)
     }
-    tick()
-    return () => cancelAnimationFrame(frame)
+    sync()
+    const timer = setInterval(sync, 250)
+    return () => {
+      clearInterval(timer)
+      cancelAnimation(progress)
+    }
   }, [player, progress])
 
   const pan = usePanGesture({

@@ -48,7 +48,9 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - New theme tokens, icons, exports (`ChatEmpty`, `countEmojiOnly`, `findFirstUrl`, `formatFileSize`...) and labels in all 15 locales
 
 ### ⚡ Performance
-- Sending or receiving a message re-rendered every message on screen; now only the new row and its neighbour render. The reply config no longer changes with `messages`, and composer props (`onSend`, `text`, `textInputProps`…) no longer reach the rows, so an inline `onSend` is free
+- **Rows render only what changed.** Each row subscribes to its own message by id: a send, a status tick, a reaction or a streamed token re-renders that row (plus a neighbour only when grouping changes), while the list and the composer stay put. Shared row props reach rows through a context kept stable between renders: inline event handlers go through stable proxies and inline style/config objects are compared by content, so only a new render function re-renders every row. On a Pixel 7 debug build a send went from three ~220ms commits re-rendering all 17 visible rows to ~60–110ms commits touching only the new row; a status change is a ~30ms commit of one row
+- The composer is memoized and no longer receives `messages`, so incoming messages and status changes no longer re-render it
+- Voice and round-note progress runs on the UI thread between four-times-a-second syncs, instead of a JS callback every frame
 - **Chats open much faster.** Voice notes share one audio context made on first play (each one used to start its own worklet runtime, a few hundred ms of blocked JS per bubble); the long-press menu and the swipe-to-reply arrow mount on first use instead of with every row; the list and composer no longer wait a layout pass; the wallpaper and composer paint first and the messages follow a frame later
 - `ChatList` rows re-render only when their own chat changes
 - The expanded reactions panel lays out once instead of on every frame

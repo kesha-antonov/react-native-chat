@@ -116,6 +116,13 @@ describe('WaveformPlayer', () => {
   })
 
   it('a drag mid-playback restarts the source once, at release', async () => {
+    // While playing, the bars run to the end on the UI thread. The Reanimated mock finishes
+    // every animation at once, which would put the bars at the end the moment play starts;
+    // hold the playback run where it starts, as it is on a device a moment after the tap.
+    const reanimated = require('react-native-reanimated')
+    const realWithTiming = reanimated.withTiming
+    jest.spyOn(reanimated, 'withTiming').mockImplementation((...args: any[]) =>
+      args[1]?.reduceMotion === reanimated.ReduceMotion.Never ? 0 : realWithTiming(...args))
     const { getByLabelText } = await renderPlayer()
     await fireEvent.press(getByLabelText('play'))
     expect(sources).toHaveLength(1)

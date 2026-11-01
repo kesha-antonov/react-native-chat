@@ -1592,25 +1592,25 @@ Three things to know:
 
 ## ⚡ Performance
 
-The chat is built for long lists. The one habit that matters most: **memoize your render props and config**, because each message row is `React.memo`'d with a comparator that deep-compares the message and reference-compares everything else - so an inline function or object re-renders that row on every parent render.
+A message re-renders only when something it shows changes. Each row subscribes to its own message by id, so a send, a status tick, a reaction or a streamed token renders that one row (plus a neighbour only when the bubbles' grouping changes) and leaves the list and the composer alone. Everything the rows share - render props, styles, actions, labels - reaches them through context, kept stable between renders:
+
+- **Event handlers can be inline.** `onPressMessage={() => ...}`, `reply={{ onPress: ... }}`, an action's `onPress`: they are called through a stable proxy that always reaches your latest handler.
+- **Style and config objects can be inline.** `timeTextStyle={{ left: { color } }}`, `reactions={{ isEnabled: true }}` are compared by content.
+- **Memoize render functions.** A new `renderBubble` may draw something new, so a new reference re-renders every row - wrap it in `useCallback`.
 
 ```jsx
-// ❌ New reference every render - the row can't skip
-<Chat renderBubble={props => <MyBubble {...props} />} reactions={{ isEnabled: true, onReactionPress }} />
-
-// ✅ Stable references - unchanged rows skip re-renders
+// ✅ Handlers and objects inline; the render function memoized
 const renderBubble = useCallback(props => <MyBubble {...props} />, [])
-const reactions = useMemo(() => ({ isEnabled: true, onReactionPress }), [onReactionPress])
 
-<Chat renderBubble={renderBubble} reactions={reactions} />
+<Chat renderBubble={renderBubble} onPressMessage={message => open(message)} timeTextStyle={{ left: { color: 'gray' } }} />
 ```
 
 <details>
-<summary><strong>Immutability, context props and virtualization tuning</strong></summary>
+<summary><strong>Messages, neighbours, context props and virtualization tuning</strong></summary>
 
-The memoization advice applies to all render props (`renderBubble`, `renderMessageText`, `renderAvatar`, ...), the `reactions` / `audioRecording` / `videoRecording` / `messageActions` config objects, and any style objects.
+**Keep messages immutable.** Update a message by replacing its object (e.g. `Chat.append(...)`, or `messages.map(m => m._id === id ? { ...m, sent: true } : m)`), never by mutating it in place. A store that rebuilds every message object on each update still only re-renders what changed - unchanged messages are compared by content.
 
-**Keep messages immutable.** Update messages by creating new arrays/objects (e.g. `Chat.append(...)`), never by mutating an existing message in place - the row comparator relies on value changes to detect updates.
+**Neighbours are for grouping.** `previousMessage` / `nextMessage` handed to `renderMessage`, `renderBubble` or `renderAvatar` are kept current for what decides grouping (sender, day, time apart, whether there is one). A row does not re-render because a neighbour's text, status or reactions changed, so do not draw those from a neighbour.
 
 **Theme, icons and labels don't need drilling.** `theme` / `darkTheme`, `icons`, and `labels` are read from context (`useTheme`, `useIcons`, `useLabels`), so passing them once on `<Chat>` is enough; they don't cause per-row churn.
 
