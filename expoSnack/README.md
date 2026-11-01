@@ -51,7 +51,7 @@ Add these dependencies to your Expo Snack or project:
 Snack's dependency checker doesn't understand `peerDependenciesMeta.optional`, so it
 will nag about every peer dependency `@kesha-antonov/react-native-chat` declares -
 even ones this example doesn't use, like `@lodev09/react-native-true-sheet`,
-`@shopify/flash-list`, `expo-audio`, `expo-device`, `expo-video`,
+`expo-audio`, `expo-device`, `expo-video`,
 `react-native-audio-api`, `react-native-streamdown`, `react-native-svg`, and
 `react-native-vision-camera`. These power optional features (voice messages, video
 notes, markdown rendering, reactions sheets, etc.) that this demo doesn't exercise.

@@ -454,7 +454,6 @@ Every feature below turns itself on when its package is installed and stays hidd
 | `expo-image-picker` | System camera fallback for video notes | `videoRecording` |
 | `react-native-streamdown` | Rich streaming markdown | `markdown` |
 | `@lodev09/react-native-true-sheet` | Native attachment sheet | `nativeSheet` |
-| `@shopify/flash-list` | The FlashList list engine | `flashList` |
 | `expo-media-library` | The attachment menu's photo grid | `mediaLibrary` |
 | `expo-image-picker` | The attachment menu's system photo picker and camera | `imagePicker` |
 | `expo-document-picker` | The attachment menu's File tab | `documentPicker` |
@@ -632,7 +631,7 @@ Every group below is collapsed - open the one you need.
 - **`enableKeyboardProvider`** _(Bool)_ - Render the built-in `KeyboardProvider`; default is `true`. You do **not** need to turn this off just because your app mounts its own provider - that case is detected and reused. Set it to `false` only to opt out completely, e.g. when the provider's edge-to-edge behavior causes layout shift or a header jump on Android/Expo.
 - **`enableGestureHandlerRootView`** _(Bool)_ - Render the `GestureHandlerRootView` Chat mounts around itself; default is `true`. Unlike `KeyboardProvider`, an existing one can't be auto-detected - `react-native-gesture-handler` doesn't expose that publicly - so set this to `false` yourself if your app (or a library it uses, e.g. a bottom sheet) already mounts one at the root. Nesting a second one changes the native view hierarchy around the composer, which has been observed to make a rare Fabric/Yoga layout assertion on iOS more likely, especially when Chat is mounted and unmounted while the keyboard is open ([#17](https://github.com/kesha-antonov/react-native-chat/issues/17)).
 - **`keyboardAvoidingViewProps`** _(Object)_ - Props to be passed to the [`KeyboardAvoidingView`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-avoiding-view). See **keyboardVerticalOffset** below for proper keyboard handling.
-- **`isAlignedTop`** _(`boolean | 'auto'`)_ - Where the bubbles sit **while the whole conversation fits on screen**; once it is taller than the list this has no effect. `false` (default) keeps the usual bottom-anchored chat, `true` pins the messages to the top, and `'auto'` pins them to the top while the keyboard is closed and re-anchors them to the bottom while it is open - so a short conversation starts under the header and moves above the keyboard when the composer is focused ([#2736](https://github.com/FaridSafi/react-native-gifted-chat/issues/2736)). Works with either `isInverted` setting; ignored when `isFlashListEnabled` is set, since FlashList positions its own items.
+- **`isAlignedTop`** _(`boolean | 'auto'`)_ - Where the bubbles sit **while the whole conversation fits on screen**; once it is taller than the list this has no effect. `false` (default) keeps the usual bottom-anchored chat, `true` pins the messages to the top, and `'auto'` pins them to the top while the keyboard is closed and re-anchors them to the bottom while it is open - so a short conversation starts under the header and moves above the keyboard when the composer is focused ([#2736](https://github.com/FaridSafi/react-native-gifted-chat/issues/2736)). Works with either `isInverted` setting.
 - **`isInverted`** _(Bool)_ - Reverses display order of `messages`; default is `true`
 
 #### Understanding `keyboardVerticalOffset`
@@ -704,7 +703,6 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`renderUnreadSeparator`** _(Function | null)_ - Custom "Unread Messages" bar, or `null` to only scroll to the first unread message. The default is exported as `UnreadSeparator`.
 - **`renderChatFooter`** _(Component | Function)_ - Custom component to render below the MessagesContainer (separate from the ListView)
 - **`listProps`** _(Object)_ - Extra props to be passed to the messages [`<FlatList>`](https://reactnative.dev/docs/flatlist). Supports all FlatList props including `maintainVisibleContentPosition` for keeping scroll position when new messages arrive (useful for AI chatbots).
-- **`isFlashListEnabled`** _(Bool)_ - Render messages with [`@shopify/flash-list`](https://shopify.github.io/flash-list/) v2 instead of `FlatList`; default is `false`. See [FlashList](#flashlist-opt-in).
 
 ### Message Bubbles & Content
 
@@ -1619,46 +1617,6 @@ const renderBubble = useCallback(props => <MyBubble {...props} />, [])
 ```jsx
 <Chat listProps={{ windowSize: 7, removeClippedSubviews: true }} {...props} />
 ```
-
-</details>
-
-### FlashList (opt-in)
-
-<details>
-<summary><strong>Recycling rows on very long histories</strong></summary>
-
-On long histories `FlatList` can log `VirtualizedList: You have a large list that is slow to update`. [FlashList](https://shopify.github.io/flash-list/) v2 recycles rows instead of keeping them mounted, which removes that class of stall. It is supported as an **optional** dependency - install it yourself and flip one prop:
-
-```bash
-yarn add @shopify/flash-list
-```
-
-```jsx
-<Chat messages={messages} user={user} isFlashListEnabled />
-```
-
-Everything else keeps working: `isInverted`, the floating day header, `loadEarlierMessagesProps` infinite scroll, the scroll-to-bottom button, and `listProps` (spread last, so it overrides the defaults below).
-
-The chat sets FlashList's `maintainVisibleContentPosition` for you - `startRenderingFromBottom` when `isInverted={false}`, plus `autoscrollToBottomThreshold: 0.2` so new messages follow the viewport only when you are already at the bottom. Override it through `listProps` if you want different thresholds:
-
-```jsx
-<Chat
-  isFlashListEnabled
-  listProps={{
-    maintainVisibleContentPosition: {
-      autoscrollToBottomThreshold: 0.1,
-      animateAutoScrollToBottom: false,
-    },
-  }}
-  {...props}
-/>
-```
-
-Notes:
-
-- FlashList v2 requires the **New Architecture**. On the old architecture it falls back to a slower JS path.
-- `FlatList`-only knobs (`windowSize`, `maxToRenderPerBatch`, `initialNumToRender`, `updateCellsBatchingPeriod`, `removeClippedSubviews`) are not forwarded to FlashList - it sizes its own render window.
-- If `@shopify/flash-list` is not installed, the prop is ignored, a warning is logged, and `FlatList` is used.
 
 </details>
 

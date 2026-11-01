@@ -5,8 +5,6 @@ import {
   GestureResponderEvent,
   LayoutChangeEvent,
   ListRenderItemInfo,
-  StyleProp,
-  ViewStyle,
   Platform } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 import Animated, { Easing, runOnJS, ScrollEvent, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -18,7 +16,6 @@ import { MediaPlaybackContext } from '../components/mediaPlayback'
 import { useIsKeyboardVisible } from '../hooks/useIsKeyboardVisible'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { LoadEarlierMessages } from '../LoadEarlierMessages'
-import { warning } from '../logging'
 import { IMessage } from '../Models'
 import stylesCommon from '../styles'
 import { TypingIndicator, TypingIndicatorListAnimationContext } from '../TypingIndicator'
@@ -27,7 +24,6 @@ import { DayAnimated } from './components/DayAnimated'
 import { useScrollGatedOpacity } from './components/DayAnimated/useScrollGatedOpacity'
 import { MessageRow } from './components/Item'
 import { PageDownCounter } from './components/PageDownCounter'
-import { AnimatedFlashList, isFlashListAvailable } from './FlashList'
 import { isArrivingMessage, listCellTransition, newestCellEntering } from './listTransitions'
 import { PageDownReturnContext } from './pageDownReturn'
 import { MessageRowConfigContext, useStableRowConfig } from './rowConfig'
@@ -68,14 +64,6 @@ const overshoot = (tension: number) => (t: number) => {
 const SCROLL_BUTTON_PRESS_IN = { duration: 80 }
 const SCROLL_BUTTON_PRESS_OUT = { duration: 350, easing: overshoot(2) }
 
-/** Props FlashList hands to its `CellRendererComponent`. */
-interface FlashListCellProps {
-  index: number
-  style?: StyleProp<ViewStyle>
-  onLayout?: (event: LayoutChangeEvent) => void
-  children?: React.ReactNode
-}
-
 export const MessagesContainer = <TMessage extends IMessage>(props: MessagesContainerProps<TMessage>) => {
   const {
     messages = [],
@@ -99,28 +87,11 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     scrollToBottomComponent: scrollToBottomComponentProp,
     renderDay: renderDayProp,
     isDayAnimationEnabled = true,
-    isFlashListEnabled = false,
     firstUnreadMessageId,
   } = props
 
-  const isFlashList = isFlashListEnabled && isFlashListAvailable
-
-  useEffect(() => {
-    if (isFlashListEnabled && !isFlashListAvailable)
-      warning(
-        'Chat: `isFlashListEnabled` is set but `@shopify/flash-list` is not installed - falling back to FlatList'
-      )
-  }, [isFlashListEnabled])
-
   const themedStyles = useThemedStyles(createThemedStyles)
   const theme = useTheme()
-
-  useEffect(() => {
-    if (isFlashList && isAlignedTop)
-      warning(
-        'Chat: `isAlignedTop` is ignored when `isFlashListEnabled` is set - FlashList lays its items out itself and does not honour `contentContainerStyle` alignment'
-      )
-  }, [isFlashList, isAlignedTop])
 
   // `'auto'` is the only mode that cares about the keyboard, so the other two never
   // subscribe - and never re-render the whole list when the keyboard moves.
@@ -136,19 +107,19 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // long chats scrollable instead of letting the list size itself to its content.
   // An inverted list is flipped, so its content-container start is the visual bottom.
   const alignmentStyle = useMemo(() => {
-    if (!isAlignedTop || isFlashList)
+    if (!isAlignedTop)
       return undefined
 
     return {
       flexGrow: 1,
       justifyContent: isTopAligned === isInverted ? 'flex-end' : 'flex-start',
     } as const
-  }, [isAlignedTop, isFlashList, isTopAligned, isInverted])
+  }, [isAlignedTop, isTopAligned, isInverted])
 
   const listPropsOnScrollProp = listProps?.onScroll
 
-  // Which rows are on screen, for the floating round note. Both list engines
-  // read viewability callbacks once, at mount, and FlatList refuses
+  // Which rows are on screen, for the floating round note. The list reads viewability
+  // callbacks once, at mount, and FlatList refuses
   // `onViewableItemsChanged` alongside `viewabilityConfigCallbackPairs`, so a
   // consumer's own handler is folded into the pairs here, read through a ref.
   const mediaController = useContext(MediaPlaybackContext)
@@ -389,7 +360,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     isScrollToBottomEnabled: _isScrollToBottomEnabled,
     isScrollToBottomBadgeEnabled: _isScrollToBottomBadgeEnabled,
     isAlignedTop: _isAlignedTop,
-    isFlashListEnabled: _isFlashListEnabled,
     /* eslint-enable @typescript-eslint/no-unused-vars */
     ...sharedRowProps
   } = props
@@ -764,10 +734,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [messages])
 
   // Rows slide to their new place when one arrives or changes height, and the newest
-  // message rises in from below. Only the inverted
-  // FlatList: a non-inverted chat scrolls to a new message instead, and FlashList
-  // recycles its cells.
-  const areCellsAnimated = isInverted && !isFlashList
+  // message rises in from below. Only inverted: a non-inverted chat scrolls to a new
+  // message instead.
+  const areCellsAnimated = isInverted
 
   const renderCell = useCallback((props: CellRendererProps) => {
     const { item, index, onLayout: onLayoutProp, children } = props
@@ -802,27 +771,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       </Animated.View>
     )
   }, [trackDayPosition, areCellsAnimated, rowStore])
-
-  // FlashList recycles cells and hands its CellRendererComponent only an
-  // `index` (no `item`), so the message is looked up through a ref to keep the
-  // component identity stable - recreating it would remount every row.
-  const FlashListCell = useMemo(() => {
-    const Cell = React.forwardRef<React.ComponentRef<typeof View>, FlashListCellProps>(({ index, onLayout: onLayoutProp, children, ...rest }, ref) => {
-      const handleOnLayout = (event: LayoutChangeEvent) => {
-        onLayoutProp?.(event)
-        trackDayPosition(messagesRef.current[index], event.nativeEvent.layout)
-      }
-
-      return (
-        <View ref={ref} {...rest} onLayout={handleOnLayout}>
-          {children}
-        </View>
-      )
-    })
-
-    Cell.displayName = 'FlashListCell'
-    return Cell
-  }, [trackDayPosition])
 
   // No dependency array: on native Reanimated logs a warning for one on every render,
   // and it compares the handlers' worklet closures itself to pick up changes.
@@ -939,8 +887,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       composerPanels.close()
   }, [composerPanels])
 
-  // Props shared by both list engines. FlatList-only virtualization knobs and
-  // FlashList-only options are added at the call sites below.
   const contentContainerStyle = useMemo(() => [styles.messagesContainer, alignmentStyle], [alignmentStyle])
   const listFooter = useMemo(() => isInverted ? ListHeaderComponent : <>{ListFooterComponent}</>, [isInverted, ListHeaderComponent, ListFooterComponent])
   const listHeader = useMemo(() => isInverted ? <>{ListFooterComponent}</> : ListHeaderComponent, [isInverted, ListHeaderComponent, ListFooterComponent])
@@ -949,67 +895,42 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // Memoized, so a render of the container that leaves the list's inputs alone - a status
   // change or a reaction, which keep the data's identity - does not walk the list's cells.
   const listEngine = useMemo(() => {
-    const commonListProps = {
-      ref: forwardRef,
-      keyExtractor,
-      data: listData,
-      renderItem,
-      inverted: isInverted,
-      style: stylesCommon.fill,
-      contentContainerStyle,
-      ListEmptyComponent: renderChatEmpty,
-      ListFooterComponent: listFooter,
-      ListHeaderComponent: listHeader,
-      scrollEventThrottle: 1,
-      onEndReached,
-      onEndReachedThreshold: 0.1,
-      keyboardDismissMode: 'interactive' as const,
-      keyboardShouldPersistTaps: 'handled' as const,
-      onScrollToIndexFailed,
-    }
-
-    return (isFlashList
-      ? (
-        <AnimatedFlashList
-          {...commonListProps}
-          // FlashList v2 keeps the viewport pinned to the newest message on
-          // its own; a non-inverted chat additionally wants the first render
-          // to start at the bottom. Overridable through `listProps`.
-          maintainVisibleContentPosition={{
-            startRenderingFromBottom: !isInverted,
-            autoscrollToBottomThreshold: 0.2,
-          }}
-          {...listProps}
-          onScroll={scrollHandler}
-          onViewableItemsChanged={undefined}
-          viewabilityConfig={undefined}
-          viewabilityConfigCallbackPairs={viewabilityPairs}
-          onLayout={onLayoutList}
-          CellRendererComponent={FlashListCell}
-        />
-      )
-      : (
-        <AnimatedFlatList
-          {...commonListProps}
-          automaticallyAdjustContentInsets={false}
-          // Virtualization defaults tuned for chat lists. All are overridable via
-          // `listProps` below (spread last), so consumers keep full control.
-          removeClippedSubviews={Platform.OS === 'android'}
-          initialNumToRender={initialNumToRender}
-          maxToRenderPerBatch={10}
-          windowSize={9}
-          updateCellsBatchingPeriod={50}
-          {...listProps}
-          onScroll={scrollHandler}
-          onViewableItemsChanged={undefined}
-          viewabilityConfig={undefined}
-          viewabilityConfigCallbackPairs={viewabilityPairs}
-          onLayout={onLayoutList}
-          CellRendererComponent={renderCell}
-        />
-      )
+    return (
+      <AnimatedFlatList
+        ref={forwardRef}
+        keyExtractor={keyExtractor}
+        data={listData}
+        renderItem={renderItem}
+        inverted={isInverted}
+        style={stylesCommon.fill}
+        contentContainerStyle={contentContainerStyle}
+        ListEmptyComponent={renderChatEmpty}
+        ListFooterComponent={listFooter}
+        ListHeaderComponent={listHeader}
+        scrollEventThrottle={1}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.1}
+        keyboardDismissMode='interactive'
+        keyboardShouldPersistTaps='handled'
+        onScrollToIndexFailed={onScrollToIndexFailed}
+        automaticallyAdjustContentInsets={false}
+        // Virtualization defaults tuned for chat lists. All are overridable via
+        // `listProps` below (spread last), so consumers keep full control.
+        removeClippedSubviews={Platform.OS === 'android'}
+        initialNumToRender={initialNumToRender}
+        maxToRenderPerBatch={10}
+        windowSize={9}
+        updateCellsBatchingPeriod={50}
+        {...listProps}
+        onScroll={scrollHandler}
+        onViewableItemsChanged={undefined}
+        viewabilityConfig={undefined}
+        viewabilityConfigCallbackPairs={viewabilityPairs}
+        onLayout={onLayoutList}
+        CellRendererComponent={renderCell}
+      />
     )
-  }, [forwardRef, keyExtractor, listData, renderItem, isInverted, contentContainerStyle, renderChatEmpty, listFooter, listHeader, onEndReached, onScrollToIndexFailed, isFlashList, listProps, scrollHandler, viewabilityPairs, onLayoutList, FlashListCell, renderCell, initialNumToRender])
+  }, [forwardRef, keyExtractor, listData, renderItem, isInverted, contentContainerStyle, renderChatEmpty, listFooter, listHeader, onEndReached, onScrollToIndexFailed, listProps, scrollHandler, viewabilityPairs, onLayoutList, renderCell, initialNumToRender])
 
   const list = (
     <View

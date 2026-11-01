@@ -5,6 +5,7 @@
 A new default look and built-in messenger features: emoji keyboard, attachment menu, link previews, multi-select, media transfer states, and reworked voice and round video notes.
 
 ### 💥 Breaking
+- **FlashList support is removed**: the `isFlashListEnabled` prop, the optional `@shopify/flash-list` peer, and the `flashList` key of the optional-features report. With the chat's message rows it stopped drawing after fast flings on Android, and recycling cells breaks the rows' arrival and slide animations and the floating date header. Rows now re-render only for their own message, so `FlatList` handles long histories well. Drop the prop; `listProps` still tunes the list's virtualization
 - **New default look**: pale green day / purple-blue gradient night outgoing bubbles, a swirl wallpaper, bubble tails, inline time, in-bubble reactions, seven per-user name colors and a floating composer island. Restore any of it through `theme` / `darkTheme` (e.g. `colors.outgoingBubble`, `wallpaper.isEnabled: false`, `bubble.hasTail: false`, `bubble.isTimeInline: false`, `colors.senderName`)
 - **Requires `react-native-gesture-handler` 3, React Native 0.82+ and React 19.** Lower-level components rendered outside `Chat` (or with `enableGestureHandlerRootView={false}`) now need a `GestureHandlerRootView` above them
 - **Round video notes require `react-native-vision-camera` 5** (plus `react-native-nitro-modules` / `react-native-nitro-image`); add the camera and microphone permission keys yourself. Round notes also need expo-video's `createVideoPlayer`

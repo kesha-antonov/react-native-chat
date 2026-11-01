@@ -99,13 +99,6 @@ export const getTrueSheet = (): any => resolve('@lodev09/react-native-true-sheet
     return null
   }
 })
-export const getFlashList = (): any => resolve('@shopify/flash-list', () => {
-  try {
-    return require('@shopify/flash-list')
-  } catch {
-    return null
-  }
-})
 export const getAsyncStorage = (): any => resolve('@react-native-async-storage/async-storage', () => {
   try {
     return require('@react-native-async-storage/async-storage')
@@ -254,8 +247,6 @@ export interface ChatCapabilities {
   markdown: boolean
   /** Native bottom sheet for attachments (`@lodev09/react-native-true-sheet`). */
   nativeSheet: boolean
-  /** The FlashList list engine (`@shopify/flash-list`). */
-  flashList: boolean
   /** Emoji keyboard recents and skin tones kept across launches (`@react-native-async-storage/async-storage`). */
   persistentEmojiRecents: boolean
   /** The attachment menu's in-sheet photo grid (`expo-media-library`). */
@@ -333,7 +324,6 @@ export function getChatCapabilities (): ChatCapabilities {
     markdown: !!(getStreamdown()?.Streamdown ?? getStreamdown()?.default) ||
       (!!getStreamdown()?.StreamdownText && (globalThis as { _WORKLETS_BUNDLE_MODE_ENABLED?: boolean })._WORKLETS_BUNDLE_MODE_ENABLED === true),
     nativeSheet: !!getTrueSheet()?.TrueSheet,
-    flashList: !!getFlashList()?.FlashList,
     persistentEmojiRecents: hasAsyncStorage(),
     mediaLibrary: hasMediaLibrary(),
     imagePicker: hasImagePicker(),

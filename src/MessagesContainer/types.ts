@@ -50,15 +50,6 @@ export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
   user?: User
   /** Additional props for FlatList */
   listProps?: AnimatedListProps<TMessage>
-  /**
-   * Render messages with `@shopify/flash-list` (v2) instead of `FlatList`.
-   * Requires the optional `@shopify/flash-list` peer dependency and the New
-   * Architecture; falls back to `FlatList` with a warning when it is missing.
-   * FlashList recycles rows, which removes the `VirtualizedList: You have a
-   * large list that is slow to update` warning on long histories.
-   * @default false
-   */
-  isFlashListEnabled?: boolean
   /** Reverses display order of messages; default is true */
   isInverted?: boolean
   /**
@@ -71,7 +62,7 @@ export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
    *   conversation starts under the header and re-anchors above the keyboard when the
    *   composer is focused.
    *
-   * Works with both `isInverted` settings. Ignored when `isFlashListEnabled` is set.
+   * Works with both `isInverted` settings.
    */
   isAlignedTop?: boolean | 'auto'
   /** Show the scroll-to-bottom button once scrolled away from the newest message; default is true */

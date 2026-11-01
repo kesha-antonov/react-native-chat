@@ -2810,7 +2810,6 @@ __metadata:
     "@react-native/jest-preset": "npm:0.88.1"
     "@react-native/metro-config": "npm:0.88.1"
     "@react-native/typescript-config": "npm:0.88.1"
-    "@shopify/flash-list": "npm:^2.3.3"
     "@stylistic/eslint-plugin": "npm:^5.10.0"
     "@testing-library/dom": "npm:^10.4.2"
     "@testing-library/react": "npm:^16.3.3"
@@ -2851,7 +2850,6 @@ __metadata:
     "@lodev09/react-native-true-sheet": ">=3.0.0"
     "@react-native-async-storage/async-storage": "*"
     "@react-native-clipboard/clipboard": "*"
-    "@shopify/flash-list": "*"
     expo-audio: "*"
     expo-blur: "*"
     expo-clipboard: "*"
@@ -2881,8 +2879,6 @@ __metadata:
     "@react-native-async-storage/async-storage":
       optional: true
     "@react-native-clipboard/clipboard":
-      optional: true
-    "@shopify/flash-list":
       optional: true
     expo-audio:
       optional: true
@@ -3588,17 +3584,6 @@ __metadata:
   version: 1.1.0
   resolution: "@rtsao/scc@npm:1.1.0"
   checksum: 10c0/b5bcfb0d87f7d1c1c7c0f7693f53b07866ed9fec4c34a97a8c948fb9a7c0082e416ce4d3b60beb4f5e167cbe04cdeefbf6771320f3ede059b9ce91188c409a5b
-  languageName: node
-  linkType: hard
-
-"@shopify/flash-list@npm:^2.3.3":
-  version: 2.3.3
-  resolution: "@shopify/flash-list@npm:2.3.3"
-  peerDependencies:
-    "@babel/runtime": "*"
-    react: "*"
-    react-native: "*"
-  checksum: 10c0/c94af22f8b034d9f24e8ea3628ac20597cdb00f8c250d24a8e7adb86bc2a41cf10234c2fd87315bf7a34211db87d7eba40bddda610847cb6afedd2d6a1a3ffe5
   languageName: node
   linkType: hard
 

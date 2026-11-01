@@ -90,7 +90,6 @@
     "@react-native/jest-preset": "0.88.1",
     "@react-native/metro-config": "0.88.1",
     "@react-native/typescript-config": "0.88.1",
-    "@shopify/flash-list": "^2.3.3",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
@@ -128,7 +127,6 @@
     "@lodev09/react-native-true-sheet": ">=3.0.0",
     "@react-native-async-storage/async-storage": "*",
     "@react-native-clipboard/clipboard": "*",
-    "@shopify/flash-list": "*",
     "expo-audio": "*",
     "expo-blur": "*",
     "expo-clipboard": "*",
@@ -161,9 +159,6 @@
       "optional": true
     },
     "@react-native-clipboard/clipboard": {
-      "optional": true
-    },
-    "@shopify/flash-list": {
       "optional": true
     },
     "expo-audio": {

@@ -919,8 +919,8 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
         ? isNote
           ? (
             <RoundNotePlayer
-              // A recycled cell (FlashList) gets a fresh player and state
-              // rather than inheriting another message's.
+              // A new note in this bubble (the uri changed) gets a fresh player and state
+              // rather than inheriting the previous one's.
               key={`${String(currentMessage?._id)}:${uri}`}
               uri={uri}
               videoProps={videoProps}

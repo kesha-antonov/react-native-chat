@@ -54,7 +54,7 @@ the root `yarn lint` yourself.
 src/                     library source - the only thing published (as compiled lib/)
   Chat/                  the top-level <Chat> component
   ChatList/              <ChatList>, the list of chats, and useChatList
-  MessagesContainer/     list engine (FlatList / FlashList), day header, scroll handling
+  MessagesContainer/     the message list (FlatList), day header, scroll handling
   Bubble/ Message/       a single message row and its bubble
   Day/                   the date separator; the animated floating header lives in
                          MessagesContainer/components/DayAnimated
@@ -221,7 +221,6 @@ Deliberately **ahead** of `expo install --check`:
 | `react-native-keyboard-controller` | 1.22.x | 1.22.7 | the version the keyboard work in `src/` targets |
 | `react-native-safe-area-context` | 5.11.x | ~5.10.1 | matches the library's toolchain |
 | `@react-native-async-storage/async-storage` | 3.x | 2.2.0 | v3 is the current major; the example uses its default (legacy) storage, whose API is unchanged |
-| `@shopify/flash-list` | 2.3.3 | 2.3.2 | matches the library's toolchain |
 | `react` / `react-dom` | 19.3.1 | 19.3.0 | patch release; React Native 0.88 accepts `^19.3.0` |
 
 Metro resolves package `exports` (`unstable_enablePackageExports` is left at its default): SDK 58

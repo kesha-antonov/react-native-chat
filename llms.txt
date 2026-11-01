@@ -94,7 +94,7 @@ prepends correctly for that ordering.
 - `renderBubble`, `renderMessageText`, `renderAvatar`, `renderInputToolbar`, … - override any component
 - `isTyping` - typing indicator
 - `loadEarlierMessagesProps` - `{ isAvailable, onPress, isLoading, isInfiniteScrollEnabled }`
-- `isScrollToBottomEnabled` (default on, with an unread badge), `listProps`, `isFlashListEnabled`
+- `isScrollToBottomEnabled` (default on, with an unread badge), `listProps`
 - `onEditMessage`, `onDeleteMessage`, `onForwardMessage`, `onPinMessage` - add Edit / Delete / Forward / Pin to the long-press menu
 - `isGroupChat` (auto), `isAvatarVisible`, `isUsernameVisible` - avatars and names show in group chats only by default
 
@@ -143,7 +143,6 @@ Each is inert until you install its peer; most then turn on by themselves, and e
 | Attachment menu tabs | on by default | `expo-media-library` / `expo-image-picker`, `expo-document-picker`, `expo-location` |
 | File messages | `IMessage.file` | none; `expo-sharing` opens them in the share sheet |
 | Rich markdown for AI replies | `messageTextProps={{ markdown: true }}` | none (built-in), `react-native-streamdown` upgrades it |
-| Recycling list for huge histories | `isFlashListEnabled` | `@shopify/flash-list` |
 | Custom icons | `icons={{ send: … }}` | `react-native-svg` for the built-in Lucide glyphs |
 
 ## Streaming (AI) replies

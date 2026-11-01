@@ -4,7 +4,6 @@
     "@expo/react-native-action-sheet": "^4.1.1",
     "@expo/vector-icons": "^15.1.1",
     "@lodev09/react-native-true-sheet": "^3.11.12",
-    "@shopify/flash-list": "^2.3.2",
     "dayjs": "^1.11.23",
     "expo-audio": "57.0.4",
     "expo-device": "57.0.1",
