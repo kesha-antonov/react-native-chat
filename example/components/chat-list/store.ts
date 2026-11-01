@@ -243,6 +243,13 @@ export const chatStore = {
     patchDialog(id, { isArchived })
   },
 
+  /** An unsent message left in the composer, shown in the list as "Draft:". */
+  setDraft (id: string, text: string) {
+    const draft = text.trim() ? text : undefined
+    if (state.dialogs[id] && state.dialogs[id].draft !== draft)
+      patchDialog(id, { draft })
+  },
+
   markRead (id: string) {
     patchDialog(id, { unreadCount: 0 })
   },
