@@ -54,7 +54,7 @@ the root `yarn lint` yourself.
 src/                     library source - the only thing published (as compiled lib/)
   Chat/                  the top-level <Chat> component
   ChatList/              <ChatList>, the list of chats, and useChatList
-  MessagesContainer/     the message list (FlatList), day header, scroll handling
+  MessagesContainer/     the message list (Legend List, oldest first), day header, scroll handling
   Bubble/ Message/       a single message row and its bubble
   Day/                   the date separator; the animated floating header lives in
                          MessagesContainer/components/DayAnimated
@@ -229,7 +229,7 @@ packages import each other through `exports` subpaths. Import deep paths the way
 from its `dist/` files.
 
 The chat stack uses `headerTransparent: false`. Expo Router 58's default transparent header makes
-iOS 26 blur scroll content under it, and on the inverted chat list that blur covers every message.
+iOS 26 blur scroll content under it.
 
 No native patches are carried any more. Worklets 0.12 renamed `WorkletRuntime::executeSync` to
 `runSync`; `react-native-audio-api` 0.13.6 and `expo-modules-core` 58 call `runSync` upstream,

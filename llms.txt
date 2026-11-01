@@ -94,7 +94,7 @@ prepends correctly for that ordering.
 - `renderBubble`, `renderMessageText`, `renderAvatar`, `renderInputToolbar`, … - override any component
 - `isTyping` - typing indicator
 - `loadEarlierMessagesProps` - `{ isAvailable, onPress, isLoading, isInfiniteScrollEnabled }`
-- `isScrollToBottomEnabled` (default on, with an unread badge), `listProps`
+- `isScrollToBottomEnabled` (default on, with an unread badge), `listProps` (props for the underlying [Legend List](https://legendapp.com/open-source/list/), which renders oldest first)
 - `onEditMessage`, `onDeleteMessage`, `onForwardMessage`, `onPinMessage` - add Edit / Delete / Forward / Pin to the long-press menu
 - `isGroupChat` (auto), `isAvatarVisible`, `isUsernameVisible` - avatars and names show in group chats only by default
 

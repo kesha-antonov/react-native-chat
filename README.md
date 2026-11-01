@@ -615,7 +615,7 @@ Every group below is collapsed - open the one you need.
 
 ### Refs
 
-- **`messagesContainerRef`** _(FlatList ref)_ - Ref to the flatlist
+- **`messagesContainerRef`** _(`LegendListRef`)_ - Ref to the message list, a [Legend List](https://legendapp.com/open-source/list/) ref: `scrollToEnd`, `scrollToKey` (keys are message `_id`s as strings), `scrollToIndex`, `getState`. Indexes count from the oldest message
 - **`textInputRef`** _(TextInput ref)_ - Ref to the text input
 
 </details>
@@ -702,7 +702,7 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`firstUnreadMessageId`** _(String | Number | null)_ - The first message the user has not read. A full-width "Unread Messages" bar is drawn above it and the chat opens scrolled so the bar is at the top. Keep it fixed while the chat is open (the bar stays until you leave), e.g. computed once from the unread count when the screen mounts.
 - **`renderUnreadSeparator`** _(Function | null)_ - Custom "Unread Messages" bar, or `null` to only scroll to the first unread message. The default is exported as `UnreadSeparator`.
 - **`renderChatFooter`** _(Component | Function)_ - Custom component to render below the MessagesContainer (separate from the ListView)
-- **`listProps`** _(Object)_ - Extra props to be passed to the messages [`<FlatList>`](https://reactnative.dev/docs/flatlist). Supports all FlatList props including `maintainVisibleContentPosition` for keeping scroll position when new messages arrive (useful for AI chatbots).
+- **`listProps`** _(Object)_ - Extra props for the message list, an [`AnimatedLegendList`](https://legendapp.com/open-source/list/api/props/) (e.g. `drawDistance`, `maintainScrollAtEnd`, `onViewableItemsChanged`). The list renders oldest first, not inverted, so `onEndReached` fires at the newest message.
 
 ### Message Bubbles & Content
 
@@ -1093,41 +1093,11 @@ The reply preview animates automatically - it expands from zero height with a fa
 <details>
 <summary><strong>Keep the reading position while long answers stream in</strong></summary>
 
-For AI chat interfaces where long responses arrive and you don't want to disrupt the user's reading position, use [`maintainVisibleContentPosition`](https://reactnative.dev/docs/scrollview#maintainvisiblecontentposition) via `listProps`:
+The list follows new content only while it is at the newest message. Scrolled up, the reading position stays put while a long answer streams in or new messages arrive, and the scroll-to-bottom button counts them. Both are Legend List behaviours (`maintainScrollAtEnd`, `maintainVisibleContentPosition`) that the chat turns on; override them through `listProps`:
 
 ```tsx
-// Basic usage - always maintain scroll position
-<Chat
-  listProps={{
-    maintainVisibleContentPosition: {
-      minIndexForVisible: 0,
-    },
-  }}
-/>
-
-// With auto-scroll threshold - auto-scroll if within 10 pixels of newest content
-<Chat
-  listProps={{
-    maintainVisibleContentPosition: {
-      minIndexForVisible: 0,
-      autoscrollToTopThreshold: 10,
-    },
-  }}
-/>
-
-// Conditionally enable based on scroll state (recommended for chatbots)
-const [isScrolledUp, setIsScrolledUp] = useState(false)
-
-<Chat
-  listProps={{
-    onScroll: (event) => {
-      setIsScrolledUp(event.contentOffset.y > 50)
-    },
-    maintainVisibleContentPosition: isScrolledUp
-      ? { minIndexForVisible: 0, autoscrollToTopThreshold: 10 }
-      : undefined,
-  }}
-/>
+// Never follow new content, even at the newest message
+<Chat listProps={{ maintainScrollAtEnd: false }} />
 ```
 
 </details>
@@ -1612,10 +1582,10 @@ const renderBubble = useCallback(props => <MyBubble {...props} />, [])
 
 **Theme, icons and labels don't need drilling.** `theme` / `darkTheme`, `icons`, and `labels` are read from context (`useTheme`, `useIcons`, `useLabels`), so passing them once on `<Chat>` is enough; they don't cause per-row churn.
 
-**Tune virtualization if needed.** Sensible `FlatList` defaults ship out of the box (`removeClippedSubviews` on Android, `initialNumToRender`, `maxToRenderPerBatch`, `windowSize`, `updateCellsBatchingPeriod`). `windowSize` is measured in screen-heights (not messages); the default keeps a few screens of content mounted around the viewport. Override any of them via `listProps`:
+**Tune virtualization if needed.** The list is [Legend List](https://legendapp.com/open-source/list/), which keeps only what is near the viewport mounted. `drawDistance` (in pixels) sets how far beyond the screen it renders; raise it if fast flings show blank space, lower it to mount less. Leave `recycleItems` off: message rows hold state (players, animations) that must not move to another message.
 
 ```jsx
-<Chat listProps={{ windowSize: 7, removeClippedSubviews: true }} {...props} />
+<Chat listProps={{ drawDistance: 500 }} {...props} />
 ```
 
 </details>
@@ -1687,7 +1657,7 @@ This means the package threw while it was being loaded, so the import came back 
 <details>
 <summary><strong>The whole message list is blurred on iOS 26</strong></summary>
 
-The chat sits under a transparent navigation header - Expo Router 58's default is a transparent Liquid Glass header the screen scrolls under. iOS 26 then blurs scroll content beneath the header with a scroll edge effect, and because the message list is inverted, that blur covers every message instead of a strip at the top. Give the chat screen an opaque header:
+The chat sits under a transparent navigation header - Expo Router 58's default is a transparent Liquid Glass header the screen scrolls under. iOS 26 then blurs scroll content beneath the header with a scroll edge effect, so the messages under the header are blurred. Give the chat screen an opaque header:
 
 ```tsx
 <Stack.Screen name='chat' options={{ headerTransparent: false }} />
