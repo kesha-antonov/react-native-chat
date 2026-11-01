@@ -402,13 +402,15 @@ function Chat<TMessage extends IMessage = IMessage> (
     onClearReply?.()
   }, [replyMessageProp, onClearReply])
 
+  // Read through a ref: these end up in the reply config every row gets, and depending on
+  // `messages` re-rendered every mounted row each time a message was sent or arrived.
   const getSenderName = useCallback((messageId: string | number) =>
-    messages.find(message => message._id === messageId)?.user?.name
-  , [messages])
+    messagesRef.current.find(message => message._id === messageId)?.user?.name
+  , [])
 
   // The now-playing bar scrolls to the playing message.
   const scrollToMessage = useCallback((messageId: string | number) => {
-    const index = messages.findIndex(message => message._id === messageId)
+    const index = messagesRef.current.findIndex(message => message._id === messageId)
     if (index < 0)
       return
 
@@ -417,7 +419,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     } catch {
       // Not laid out yet (virtualized away); nothing to jump to.
     }
-  }, [messages, messagesContainerRef])
+  }, [messagesContainerRef])
 
   // Tapping a quote jumps to the message it quotes and flashes it. The scroll-to-bottom button
   // then comes up and takes you back to where you tapped it (`returnToMessageId`).
@@ -654,7 +656,40 @@ function Chat<TMessage extends IMessage = IMessage> (
   }, [])
 
   const renderMessages = useMemo(() => {
-    const { messagesContainerStyle, ...messagesContainerProps } = props
+    // The composer's props stay out of the list: whatever reaches `MessagesContainer` is handed
+    // to every row, and `Item` compares each prop by reference, so a consumer's inline `onSend`
+    // or the controlled `text` changing on a keystroke re-rendered every message on screen.
+    const {
+      messagesContainerStyle,
+      /* eslint-disable @typescript-eslint/no-unused-vars */
+      text: _text,
+      initialText: _initialText,
+      onDraftChange: _onDraftChange,
+      onSend: _onSend,
+      textInputProps: _textInputProps,
+      textInputRef: _textInputRef,
+      messageIdGenerator: _messageIdGenerator,
+      minInputToolbarHeight: _minInputToolbarHeight,
+      minComposerHeight: _minComposerHeight,
+      maxComposerHeight: _maxComposerHeight,
+      isSendButtonAlwaysVisible: _isSendButtonAlwaysVisible,
+      isMultiline: _isMultiline,
+      renderInputToolbar: _renderInputToolbar,
+      renderComposer: _renderComposer,
+      renderActions: _renderActions,
+      renderSend: _renderSend,
+      renderAccessory: _renderAccessory,
+      renderChatFooter: _renderChatFooter,
+      onPressActionButton: _onPressActionButton,
+      actions: _actions,
+      actionSheetOptionTintColor: _actionSheetOptionTintColor,
+      emojiKeyboard: _emojiKeyboard,
+      attachments: _attachments,
+      keyboardProviderProps: _keyboardProviderProps,
+      keyboardAvoidingViewProps: _keyboardAvoidingViewProps,
+      /* eslint-enable @typescript-eslint/no-unused-vars */
+      ...messagesContainerProps
+    } = props
 
     return (
       <View style={[stylesCommon.fill, messagesContainerStyle]}>

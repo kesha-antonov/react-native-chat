@@ -154,3 +154,36 @@ it('does not re-render or remount message rows when the parent re-renders', asyn
   expect(counts.renders).toBe(0)
   expect(counts.mounts).toBe(0)
 })
+
+it('re-renders only the new row and its neighbour when a message is sent', async () => {
+  const rendered: Array<string | number> = []
+  const RowSpy = ({ id }: { id: string | number }) => {
+    rendered.push(id)
+    return <View />
+  }
+  const renderMessage = (props: { currentMessage: IMessage }) => <RowSpy id={props.currentMessage._id} />
+  // The list keeps the newest message first.
+  const initial = [...MESSAGES].reverse()
+  let setMessages: ((messages: IMessage[]) => void) | undefined
+
+  const Parent = () => {
+    const [messages, set] = useState(initial)
+    setMessages = set
+    // An inline `onSend`, as most apps write it: composer props must not reach the rows.
+    return <Chat messages={messages} user={USER} onSend={() => {}} renderMessage={renderMessage} />
+  }
+
+  const { getByTestId } = await render(<Parent />)
+  await fireEvent(getByTestId('GC_WRAPPER'), 'layout', LAYOUT)
+
+  expect(rendered.length).toBeGreaterThan(0) // guard: rows really mounted
+  rendered.length = 0
+
+  const sent: IMessage = { _id: 100, text: 'new', createdAt: new Date(2024, 0, 1, 12, 1), user: USER }
+  await act(async () => {
+    setMessages!([sent, ...initial])
+  })
+
+  // The new row, and the previous newest one, whose `nextMessage` is now the new message.
+  expect(new Set(rendered)).toEqual(new Set([100, 20]))
+})
