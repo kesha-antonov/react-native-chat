@@ -9,21 +9,12 @@
  * encoder to reach from JS.
  */
 
-// Optional natives. Resolved through try/catch requires so the bundle works
-// whether or not the consumer installed them.
-let audioApi: any = null
-try {
-  audioApi = require('react-native-audio-api')
-} catch {
-  audioApi = null
-}
+import { getAudioApi, getExpoFileSystem } from '../optional'
 
-let fileSystem: any = null
-try {
-  fileSystem = require('expo-file-system')
-} catch {
-  fileSystem = null
-}
+// Optional natives. Resolved through the optional-peer registry (`src/optional`) so the bundle works
+// whether or not the consumer installed them.
+const audioApi = getAudioApi()
+const fileSystem = getExpoFileSystem()
 
 /** Spacing of the recorder's amplitude samples (its timer interval). */
 export const LEVEL_INTERVAL_MS = 100

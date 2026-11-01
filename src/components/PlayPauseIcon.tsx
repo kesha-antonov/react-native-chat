@@ -2,20 +2,14 @@ import React, { useEffect, useRef } from 'react'
 import Animated, { Easing, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { useIcons } from '../hooks/useIcons'
+import { getSvg } from '../optional'
 import { Icon } from './Icon'
 import { PauseIcon, PlayIcon } from './MediaControls'
 
 // Optional SVG, as everywhere else: without it the button swaps static glyphs.
-let Svg: any = null
-let AnimatedPath: any = null
-try {
-  const svg = require('react-native-svg')
-  Svg = svg.Svg ?? svg.default
-  AnimatedPath = Animated.createAnimatedComponent(svg.Path)
-} catch {
-  Svg = null
-  AnimatedPath = null
-}
+const svg = getSvg()
+const Svg: any = svg ? svg.Svg ?? svg.default : null
+const AnimatedPath: any = svg?.Path ? Animated.createAnimatedComponent(svg.Path) : null
 
 /** Telegram's play <-> pause transition (`MediaActionDrawable.setIcon`). */
 const MORPH_MS = 300

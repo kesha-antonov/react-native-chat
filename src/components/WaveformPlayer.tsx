@@ -15,6 +15,7 @@ import Animated, {
 
 import { useThemedStyles } from '../hooks/useTheme'
 import { IMessage } from '../Models'
+import { getAudioApi } from '../optional'
 import { ChatTheme } from '../Theme'
 import { useRaiseToListen } from './earpiece'
 import { MediaCard } from './MediaCard'
@@ -60,15 +61,11 @@ import {
   voiceTrackWidth,
 } from './voiceWaveform'
 
-// Optional waveform engine. Resolved through a try/catch require so the bundle
+// Optional waveform engine. Resolved through the optional-peer registry (`src/optional`) so the bundle
 // works whether or not the consumer installed `react-native-audio-api`.
-let audioApi: any = null
-try {
-  audioApi = require('react-native-audio-api')
-} catch {
-  audioApi = null
-}
+const audioApi = getAudioApi()
 
+/** @deprecated Use `getChatCapabilities().waveform`. */
 export const isWaveformAvailable = !!audioApi?.AudioContext
 
 const ROW_PADDING_H = 8

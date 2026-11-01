@@ -1,10 +1,6 @@
 import React, { useCallback, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
-import { Chat, IMessage, MessageMenuItem, MessageReaction } from '@kesha-antonov/react-native-chat'
-import * as Clipboard from 'expo-clipboard'
-// Deep imports, not the `lucide-react-native` barrel, which would ship every icon.
-import CopyIcon from 'lucide-react-native/icons/copy'
-import TrashIcon from 'lucide-react-native/icons/trash'
+import { Chat, IMessage, MessageReaction } from '@kesha-antonov/react-native-chat'
 
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
@@ -18,7 +14,7 @@ const BOT = { _id: 2, name: 'Bot' }
 const CURRENT_USER_ID = 1
 
 const INITIAL_MESSAGES: ChatMessage[] = [
-  { _id: 2, text: 'Long-press me: Copy, Delete, and a reactions row on top.', createdAt: new Date(Date.now() - 1000 * 30), user: BOT },
+  { _id: 2, text: 'Long-press me: Reply, Copy, Pin, Delete, and a reactions row on top.', createdAt: new Date(Date.now() - 1000 * 30), user: BOT },
   { _id: 1, text: 'Long-press a message to open the context menu.', createdAt: new Date(Date.now() - 1000 * 60), user: BOT },
 ]
 
@@ -36,47 +32,21 @@ export default function ContextMenuExample () {
   }, [])
 
   const handleReactionPress = useCallback((message: ChatMessage, emoji: string) => {
-    setMessages(previous => previous.map(m => {
-      if (m._id !== message._id)
-        return m
-
-      const existing = (m.reactions ?? []).find(r => r.emoji === emoji)
-      if (!existing)
-        return { ...m, reactions: [...(m.reactions ?? []), { emoji, userIds: [CURRENT_USER_ID] }] }
-
-      const userIds = existing.userIds.includes(CURRENT_USER_ID)
-        ? existing.userIds.filter(id => id !== CURRENT_USER_ID)
-        : [...existing.userIds, CURRENT_USER_ID]
-
-      return {
-        ...m,
-        reactions: userIds.length === 0
-          ? (m.reactions ?? []).filter(r => r.emoji !== emoji)
-          : (m.reactions ?? []).map(r => (r.emoji === emoji ? { ...r, userIds } : r)),
-      }
-    }))
+    setMessages(previous => Chat.toggleReaction(previous, message._id, emoji, CURRENT_USER_ID))
   }, [])
 
-  const messageActions = useCallback((message: ChatMessage): MessageMenuItem[] => {
-    const items: MessageMenuItem[] = []
+  // The menu's Reply and Copy are built in; these callbacks add Edit (on your own messages),
+  // Pin / Unpin, and a red Delete.
+  const handleEditMessage = useCallback((message: ChatMessage, text: string) => {
+    setMessages(previous => previous.map(m => (m._id === message._id ? { ...m, text } : m)))
+  }, [])
 
-    if (message.text)
-      items.push({
-        label: 'Copy',
-        icon: ({ color, size }) => <CopyIcon color={color} size={size} />,
-        onPress: () => Clipboard.setStringAsync(message.text),
-      })
+  const handlePinMessage = useCallback((message: ChatMessage) => {
+    setMessages(previous => previous.map(m => (m._id === message._id ? { ...m, isPinned: !m.isPinned } : m)))
+  }, [])
 
-    // Telegram draws each action with its glyph on the trailing edge, and a
-    // destructive one - label and glyph - in red.
-    items.push({
-      label: 'Delete',
-      icon: ({ color, size }) => <TrashIcon color={color} size={size} />,
-      destructive: true,
-      onPress: () => setMessages(previous => previous.filter(m => m._id !== message._id)),
-    })
-
-    return items
+  const handleDeleteMessage = useCallback((message: ChatMessage) => {
+    setMessages(previous => previous.filter(m => m._id !== message._id))
   }, [])
 
   return (
@@ -85,8 +55,10 @@ export default function ContextMenuExample () {
         messages={messages}
         onSend={onSend}
         user={USER}
-        messageActions={messageActions}
-        reactions={{ isEnabled: true, onReactionPress: handleReactionPress }}
+        onEditMessage={handleEditMessage}
+        onPinMessage={handlePinMessage}
+        onDeleteMessage={handleDeleteMessage}
+        reactions={{ onReactionPress: handleReactionPress }}
       />
     </View>
   )

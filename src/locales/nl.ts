@@ -34,4 +34,11 @@ export const nl: Partial<ChatLabels> = {
   viewOnceVideoEnabledHint: 'De ontvanger kan het maar één keer afspelen.',
   activateViewOnce: 'Eenmalig afspelen inschakelen',
   deactivateViewOnce: 'Eenmalig afspelen uitschakelen',
+  actionReply: 'Beantwoorden',
+  actionCopy: 'Kopiëren',
+  actionPin: 'Vastzetten',
+  actionUnpin: 'Losmaken',
+  actionEdit: 'Bewerken',
+  actionForward: 'Doorsturen',
+  actionDelete: 'Verwijderen',
 }

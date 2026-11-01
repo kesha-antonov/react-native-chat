@@ -13,7 +13,28 @@ jest.mock('react-native-reanimated', () => {
 
   Object.getPrototypeOf(createJSReanimatedModule()).setCSSEventHandler = () => {}
 
-  return require('react-native-reanimated/mock')
+  const mock = require('react-native-reanimated/mock')
+
+  // gesture-handler 3 subscribes to the shared values it creates for its own JS responder
+  // state; the mock's values have no listener API, which throws from a mocked animation
+  // frame once a `GestureDetector` mounts inside a full `Chat` (every bubble has one since
+  // the long-press menu became a default). Listening is never needed here, so no-ops do.
+  const baseUseSharedValue = mock.useSharedValue
+  const listenerMethods: Record<string, () => void> = {
+    addListener: () => {},
+    removeListener: () => {},
+  }
+  mock.useSharedValue = (init: unknown) => {
+    const value = baseUseSharedValue(init)
+    return new Proxy(value, {
+      get: (target, prop) =>
+        typeof prop === 'string' && prop in listenerMethods && !(prop in target)
+          ? listenerMethods[prop]
+          : Reflect.get(target, prop),
+    })
+  }
+
+  return mock
 })
 
 jest.mock('react-native-safe-area-context', () => {

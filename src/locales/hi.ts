@@ -34,4 +34,11 @@ export const hi: Partial<ChatLabels> = {
   viewOnceVideoEnabledHint: 'प्राप्तकर्ता इसे केवल एक बार चला पाएगा।',
   activateViewOnce: 'एक बार चलाएं चालू करें',
   deactivateViewOnce: 'एक बार चलाएं बंद करें',
+  actionReply: 'जवाब दें',
+  actionCopy: 'कॉपी करें',
+  actionPin: 'पिन करें',
+  actionUnpin: 'अनपिन करें',
+  actionEdit: 'संपादित करें',
+  actionForward: 'फ़ॉरवर्ड करें',
+  actionDelete: 'हटाएँ',
 }

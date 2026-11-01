@@ -28,6 +28,9 @@ export type IconName =
   | 'pencil'
   | 'lock'
   | 'trash'
+  | 'copy'
+  | 'pinOff'
+  | 'forward'
 
 /**
  * Icon override registry. Supply a render function for any icon to replace the

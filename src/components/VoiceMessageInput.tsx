@@ -15,6 +15,7 @@ import { SharedValue } from 'react-native-reanimated'
 import { useLabels } from '../hooks/useLabels'
 import { useThemedStyles } from '../hooks/useTheme'
 import { AudioRecordingProps, IMessage } from '../Models'
+import { getExpoAudio, hasVoiceRecording } from '../optional'
 import { ChatTheme } from '../Theme'
 import { claimPlayback, releasePlayback, stopAllPlayback } from './mediaPlayback'
 import { PlayPauseIcon } from './PlayPauseIcon'
@@ -31,21 +32,13 @@ import {
   VoiceClip,
 } from './voiceEditing'
 
-// Optional recorder. Resolved through a try/catch require so the bundle works
+// Optional recorder. Resolved through the optional-peer registry (`src/optional`) so the bundle works
 // whether or not the consumer installed `expo-audio` (Metro treats
 // try/catch-wrapped requires as optional dependencies).
-let expoAudio: any = null
-try {
-  expoAudio = require('expo-audio')
-} catch {
-  expoAudio = null
-}
+const expoAudio = getExpoAudio()
 
-export const isVoiceRecordingAvailable = !!(
-  expoAudio?.useAudioRecorder &&
-  expoAudio?.RecordingPresets &&
-  expoAudio?.AudioModule
-)
+/** @deprecated Use `getChatCapabilities().voiceRecording`. */
+export const isVoiceRecordingAvailable = hasVoiceRecording()
 
 export const formatElapsed = (ms: number) => {
   const total = Math.floor(ms / 1000)

@@ -47,18 +47,14 @@ import { useViewOnce } from './components/viewOnce'
 import { isFreshOutgoingNote } from './components/voiceWaveform'
 import { useTheme } from './hooks/useTheme'
 import { IMessage, MessageVideoProps } from './Models'
+import { getExpoVideo } from './optional'
 
-// Optional inline player. Resolved through a try/catch require so the bundle
+// Optional inline player. Resolved through the optional-peer registry (`src/optional`) so the bundle
 // works whether or not the consumer installed `expo-video` - Metro treats
 // try/catch-wrapped requires as optional dependencies and won't fail the build
 // when the module is absent. When present, messages render a real inline
 // player; otherwise they fall back to a tappable MediaCard.
-let expoVideo: any = null
-try {
-  expoVideo = require('expo-video')
-} catch {
-  expoVideo = null
-}
+const expoVideo = getExpoVideo()
 
 const isExpoVideoAvailable = !!(expoVideo?.VideoView && expoVideo?.useVideoPlayer)
 // Round notes create their players directly, so a playing one can outlive its

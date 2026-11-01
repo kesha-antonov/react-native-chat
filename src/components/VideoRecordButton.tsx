@@ -12,30 +12,21 @@ import Animated, {
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { useThemedStyles } from '../hooks/useTheme'
 import { IMessage, VideoRecordingProps } from '../Models'
+import { getExpoDevice, getExpoImagePicker } from '../optional'
 import { ChatTheme } from '../Theme'
 import { Icon } from './Icon'
 import { CameraIcon } from './MediaControls'
 import { VideoNoteRecorder } from './VideoNoteRecorder'
 import { isVisionCameraAvailable, isVisionCameraNativeReady } from './visionCamera'
 
-// Optional camera-roll/launcher fallback. Resolved through a try/catch require.
-let imagePicker: any = null
-try {
-  imagePicker = require('expo-image-picker')
-} catch {
-  imagePicker = null
-}
+// Optional camera-roll/launcher fallback. Resolved through the optional-peer registry (`src/optional`).
+const imagePicker = getExpoImagePicker()
 
 // Optional expo-device, used only to detect a simulator/emulator. The system
 // camera (UIImagePickerController) throws an uncaught native exception on the
 // iOS simulator ("No available types for source 1") that can't be caught in JS,
 // so we skip launching it there and surface an error instead of crashing.
-let device: any = null
-try {
-  device = require('expo-device')
-} catch {
-  device = null
-}
+const device = getExpoDevice()
 
 const RECORDER_FADE_IN = { duration: 250, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System }
 const RECORDER_FADE_OUT = { duration: 200, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.System }

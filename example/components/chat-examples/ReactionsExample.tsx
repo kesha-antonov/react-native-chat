@@ -32,31 +32,7 @@ export default function ReactionsExample () {
   // Toggle the current user's reaction for the given emoji on a message.
   const handleReactionPress = useCallback((message: IChatMessage, emoji: string) => {
     setMessages(previousMessages =>
-      previousMessages.map(m => {
-        if (m._id !== message._id)
-          return m
-
-        const existing = (m.reactions ?? []).find(r => r.emoji === emoji)
-        if (existing) {
-          const newUserIds = existing.userIds.includes(CURRENT_USER_ID)
-            ? existing.userIds.filter(id => id !== CURRENT_USER_ID)
-            : [...existing.userIds, CURRENT_USER_ID]
-
-          return {
-            ...m,
-            reactions: newUserIds.length === 0
-              ? (m.reactions ?? []).filter(r => r.emoji !== emoji)
-              : (m.reactions ?? []).map(r =>
-                r.emoji === emoji ? { ...r, userIds: newUserIds } : r
-              ),
-          }
-        }
-
-        return {
-          ...m,
-          reactions: [...(m.reactions ?? []), { emoji, userIds: [CURRENT_USER_ID] }],
-        }
-      })
+      Chat.toggleReaction(previousMessages, message._id, emoji, CURRENT_USER_ID)
     )
   }, [])
 

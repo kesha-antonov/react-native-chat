@@ -6,6 +6,7 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 
 import { useLabels } from '../hooks/useLabels'
 import { useTheme } from '../hooks/useTheme'
 import { IMessage, VideoRecordingProps } from '../Models'
+import { getSvg } from '../optional'
 import { Icon } from './Icon'
 import { CameraIcon, CloseIcon, FlashIcon, FlipCameraIcon, PauseIcon, PlayIcon } from './MediaControls'
 import { stopAllPlayback } from './mediaPlayback'
@@ -19,16 +20,9 @@ import {
 
 // Optional SVG, used to draw the circular progress ring around the note. When
 // absent the recorder still works, just without the ring.
-let Svg: any = null
-let SvgCircle: any = null
-try {
-  const svg = require('react-native-svg')
-  Svg = svg.Svg ?? svg.default
-  SvgCircle = svg.Circle
-} catch {
-  Svg = null
-  SvgCircle = null
-}
+const svg = getSvg()
+const Svg: any = svg ? svg.Svg ?? svg.default : null
+const SvgCircle: any = svg?.Circle ?? null
 
 // The preview fills most of the screen width, as Telegram's does.
 const NOTE_WIDTH_RATIO = 0.88

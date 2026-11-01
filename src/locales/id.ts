@@ -34,4 +34,11 @@ export const id: Partial<ChatLabels> = {
   viewOnceVideoEnabledHint: 'Penerima hanya dapat memutarnya sekali.',
   activateViewOnce: 'Aktifkan Putar Sekali',
   deactivateViewOnce: 'Nonaktifkan Putar Sekali',
+  actionReply: 'Balas',
+  actionCopy: 'Salin',
+  actionPin: 'Sematkan',
+  actionUnpin: 'Lepas sematan',
+  actionEdit: 'Edit',
+  actionForward: 'Teruskan',
+  actionDelete: 'Hapus',
 }

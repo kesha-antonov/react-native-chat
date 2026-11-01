@@ -34,4 +34,11 @@ export const ja: Partial<ChatLabels> = {
   viewOnceVideoEnabledHint: '受信者は1回だけ再生できます。',
   activateViewOnce: '1回再生をオンにする',
   deactivateViewOnce: '1回再生をオフにする',
+  actionReply: '返信',
+  actionCopy: 'コピー',
+  actionPin: 'ピン留め',
+  actionUnpin: 'ピン留めを解除',
+  actionEdit: '編集',
+  actionForward: '転送',
+  actionDelete: '削除',
 }

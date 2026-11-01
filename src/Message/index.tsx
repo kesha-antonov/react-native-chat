@@ -1,21 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react'
-import { View, StyleSheet } from 'react-native'
-import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable'
-import Animated, { SharedValue, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import React, { useCallback, useEffect, useMemo } from 'react'
+import { View } from 'react-native'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { Avatar } from '../Avatar'
 import { Bubble } from '../Bubble'
 import { useIsNoteGrown } from '../components/mediaPlayback'
+import { HighlightOverlay, useMessageHighlightToken } from '../components/messageHighlight'
 import { useIsRTL } from '../hooks/useIsRTL'
-import { useTheme, useThemedStyles } from '../hooks/useTheme'
+import { useTheme } from '../hooks/useTheme'
 import { IMessage } from '../Models'
-import { SwipeToReplyProps } from '../Reply'
 import { mirrorPosition } from '../rtl'
 import { getStyleWithPosition } from '../styles'
 import { SystemMessage } from '../SystemMessage'
-import { ChatTheme } from '../Theme'
 import { isSameUser, renderComponentOrElement } from '../utils'
 import styles from './styles'
+import { SwipeToReplyRow } from './SwipeToReply'
 import { MessageProps } from './types'
 
 export * from './types'
@@ -39,46 +38,6 @@ const NoteAvatar = ({ messageId, children }: { messageId: string | number, child
   return <Animated.View style={style}>{children}</Animated.View>
 }
 
-interface ReplyIconProps {
-  progress: SharedValue<number>
-  translation: SharedValue<number>
-  direction: 'left' | 'right'
-  position: 'left' | 'right'
-  style?: SwipeToReplyProps<IMessage>['actionContainerStyle']
-}
-
-const ReplyIcon = ({ progress, direction, position, style }: ReplyIconProps) => {
-  const localStyles = useThemedStyles(createLocalStyles)
-
-  const animatedStyle = useAnimatedStyle(() => {
-    'worklet'
-
-    const scale = Math.min(progress.value, 1)
-    // When swiping left (icon on right), icon should move left (negative)
-    // When swiping right (icon on left), icon should move right (positive)
-    const translateX = direction === 'left'
-      ? Math.min(progress.value * -12, -12)
-      : Math.max(progress.value * 12, 12)
-
-    return {
-      transform: [{ scale }, { translateX }],
-      marginLeft: position === 'left' ? 0 : 16,
-      marginRight: position === 'right' ? 0 : 16,
-    }
-  })
-
-  return (
-    <Animated.View style={[localStyles.swipeActionContainer, animatedStyle, style]}>
-      <View style={localStyles.replyIconContainer}>
-        <View style={localStyles.replyIcon}>
-          <View style={localStyles.replyIconArrow} />
-          <View style={localStyles.replyIconLine} />
-        </View>
-      </View>
-    </Animated.View>
-  )
-}
-
 export const Message = <TMessage extends IMessage = IMessage>(props: MessageProps<TMessage>) => {
   const {
     currentMessage,
@@ -90,6 +49,7 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
     containerStyle,
     user,
     isUserAvatarVisible,
+    isAvatarVisible = true,
     swipeToReply,
   } = props
 
@@ -107,7 +67,8 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
   // below, since that is "my message vs. theirs", not a physical screen side.
   const visualPosition = mirrorPosition(position, isRTL)
 
-  const swipeableRef = useRef<SwipeableMethods>(null)
+  // Telegram's flash after jumping here from a reply quote.
+  const highlightToken = useMessageHighlightToken(currentMessage?._id)
 
   const renderBubble = useCallback(() => {
     const {
@@ -142,6 +103,9 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
   }, [props, renderSystemMessageProp])
 
   const renderAvatar = useCallback(() => {
+    if (!isAvatarVisible)
+      return null
+
     if (
       user?._id &&
       currentMessage?.user &&
@@ -171,31 +135,10 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
     user,
     currentMessage,
     isUserAvatarVisible,
+    isAvatarVisible,
   ])
 
-  const renderSwipeAction = useCallback((
-    progress: SharedValue<number>,
-    translation: SharedValue<number>
-  ) => {
-    if (renderSwipeToReplyActionProp)
-      return renderSwipeToReplyActionProp(progress, translation, position)
-
-    return (
-      <ReplyIcon
-        progress={progress}
-        translation={translation}
-        direction={swipeToReplyDirection}
-        position={position}
-        style={swipeToReplyActionContainerStyle}
-      />
-    )
-  }, [position, renderSwipeToReplyActionProp, swipeToReplyDirection, swipeToReplyActionContainerStyle])
-
-  const handleSwipeableOpen = useCallback(() => {
-    swipeableRef.current?.close()
-  }, [])
-
-  const handleSwipeableWillOpen = useCallback(() => {
+  const handleSwipeReply = useCallback(() => {
     if (onSwipeToReply && currentMessage)
       onSwipeToReply(currentMessage)
   }, [onSwipeToReply, currentMessage])
@@ -216,6 +159,9 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
           containerStyle?.[position],
         ]}
       >
+        {!!highlightToken && (
+          <HighlightOverlay token={highlightToken} color={theme.colors.accent} />
+        )}
         {visualPosition === 'left' && renderAvatar()}
         {renderBubble()}
         {visualPosition === 'right' && renderAvatar()}
@@ -231,6 +177,7 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
     containerStyle,
     renderAvatar,
     renderBubble,
+    highlightToken,
   ])
 
   if (!currentMessage)
@@ -246,63 +193,15 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
 
   return (
     <View onLayout={onMessageLayout}>
-      <ReanimatedSwipeable
-        ref={swipeableRef}
-        friction={2}
-        overshootFriction={8}
-        renderRightActions={swipeToReplyDirection === 'left' ? renderSwipeAction : undefined}
-        renderLeftActions={swipeToReplyDirection === 'right' ? renderSwipeAction : undefined}
-        onSwipeableOpen={handleSwipeableOpen}
-        onSwipeableWillOpen={handleSwipeableWillOpen}
+      <SwipeToReplyRow
+        direction={swipeToReplyDirection}
+        position={position}
+        onReply={handleSwipeReply}
+        renderAction={renderSwipeToReplyActionProp}
+        actionContainerStyle={swipeToReplyActionContainerStyle}
       >
         {messageContent}
-      </ReanimatedSwipeable>
+      </SwipeToReplyRow>
     </View>
   )
 }
-
-const createLocalStyles = (theme: ChatTheme) => StyleSheet.create({
-  swipeActionContainer: {
-    width: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  replyIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: theme.colors.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  replyIcon: {
-    width: 14,
-    height: 10,
-    transform: [{ scaleX: -1 }],
-  },
-  replyIconArrow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 0,
-    height: 0,
-    borderTopWidth: 5,
-    borderTopColor: 'transparent',
-    borderBottomWidth: 5,
-    borderBottomColor: 'transparent',
-    borderRightWidth: 6,
-    borderRightColor: '#fff',
-  },
-  replyIconLine: {
-    position: 'absolute',
-    top: 3,
-    left: 5,
-    width: 9,
-    height: 4,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderTopColor: '#fff',
-    borderRightColor: '#fff',
-    borderTopRightRadius: 4,
-  },
-})

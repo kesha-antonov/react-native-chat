@@ -3,8 +3,19 @@ import { IconRenderer } from './Icons'
 
 export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>
 
+/**
+ * The actions the chat can put in the long-press menu by itself, in Telegram's order:
+ * `reply`, `copy`, `forward`, `pin`, `edit`, `delete`.
+ */
+export type MessageActionKey = 'reply' | 'copy' | 'forward' | 'pin' | 'edit' | 'delete'
+
 /** An action shown in the message long-press context menu (Telegram style). */
 export interface MessageMenuItem {
+  /**
+   * Identifies the action. The built-in ones carry their `MessageActionKey`, so a
+   * `messageActions` function can find, drop or reorder them.
+   */
+  key?: MessageActionKey | string
   label: string
   /** Optional leading icon, e.g. a lucide-react-native component. */
   icon?: IconRenderer
@@ -77,6 +88,8 @@ export interface IMessage {
    */
   duration?: number
   system?: boolean
+  /** The message is pinned; the menu's pin action then reads "Unpin". */
+  isPinned?: boolean
   sent?: boolean
   received?: boolean
   pending?: boolean

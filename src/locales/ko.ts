@@ -34,4 +34,11 @@ export const ko: Partial<ChatLabels> = {
   viewOnceVideoEnabledHint: '받는 사람은 한 번만 재생할 수 있습니다.',
   activateViewOnce: '한 번 재생 켜기',
   deactivateViewOnce: '한 번 재생 끄기',
+  actionReply: '답장',
+  actionCopy: '복사',
+  actionPin: '고정',
+  actionUnpin: '고정 해제',
+  actionEdit: '편집',
+  actionForward: '전달',
+  actionDelete: '삭제',
 }

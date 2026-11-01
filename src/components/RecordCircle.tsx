@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { useTheme } from '../hooks/useTheme'
+import { getSvg } from '../optional'
 import { Icon } from './Icon'
 import { CameraIcon, MicIcon } from './MediaControls'
 import { PlayPauseIcon } from './PlayPauseIcon'
@@ -19,16 +20,9 @@ import { SendIcon } from './SendIcon'
 // Optional SVG for the morphing blobs behind the circle. Without it the circle
 // still grows with the voice, just without the blobs - the same optional-require
 // pattern `VideoNoteOverlay` uses.
-let Svg: any = null
-let AnimatedPath: any = null
-try {
-  const svg = require('react-native-svg')
-  Svg = svg.Svg ?? svg.default
-  AnimatedPath = svg.Path ? Animated.createAnimatedComponent(svg.Path) : null
-} catch {
-  Svg = null
-  AnimatedPath = null
-}
+const svg = getSvg()
+const Svg: any = svg ? svg.Svg ?? svg.default : null
+const AnimatedPath: any = svg?.Path ? Animated.createAnimatedComponent(svg.Path) : null
 
 /** `RecordCircle.circleRadius` / `circleRadiusAmplitude`: 41dp, plus up to 30 with loudness. */
 export const CIRCLE_RADIUS = 41

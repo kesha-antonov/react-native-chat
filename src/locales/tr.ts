@@ -34,4 +34,11 @@ export const tr: Partial<ChatLabels> = {
   viewOnceVideoEnabledHint: 'Alıcı bunu yalnızca bir kez oynatabilecek.',
   activateViewOnce: 'Bir Kez Oynat\'ı etkinleştir',
   deactivateViewOnce: 'Bir Kez Oynat\'ı devre dışı bırak',
+  actionReply: 'Yanıtla',
+  actionCopy: 'Kopyala',
+  actionPin: 'Sabitle',
+  actionUnpin: 'Sabitlemeyi kaldır',
+  actionEdit: 'Düzenle',
+  actionForward: 'İlet',
+  actionDelete: 'Sil',
 }

@@ -78,6 +78,20 @@ export interface ChatLabels {
   activateViewOnce: string
   /** Accessibility label of the view-once toggle while on. */
   deactivateViewOnce: string
+  /** Message context menu: reply to the message. */
+  actionReply: string
+  /** Message context menu: copy the message text. */
+  actionCopy: string
+  /** Message context menu: pin the message. */
+  actionPin: string
+  /** Message context menu: unpin a pinned message. */
+  actionUnpin: string
+  /** Message context menu: edit your own message. */
+  actionEdit: string
+  /** Message context menu: forward the message. */
+  actionForward: string
+  /** Message context menu: delete the message. */
+  actionDelete: string
 }
 
 export const defaultLabels: ChatLabels = {
@@ -114,6 +128,13 @@ export const defaultLabels: ChatLabels = {
   viewOnceVideoEnabledHint: 'The recipient will be able to play it only once.',
   activateViewOnce: 'Activate Play Once',
   deactivateViewOnce: 'Deactivate Play Once',
+  actionReply: 'Reply',
+  actionCopy: 'Copy',
+  actionPin: 'Pin',
+  actionUnpin: 'Unpin',
+  actionEdit: 'Edit',
+  actionForward: 'Forward',
+  actionDelete: 'Delete',
 }
 
 /**

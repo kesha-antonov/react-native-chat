@@ -352,6 +352,8 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const [isLifted, setIsLifted] = useState(false)
 
   const openPicker = useCallback(() => {
+    // Telegram Android's long-press tick, `HapticFeedbackConstants.LONG_PRESS`
+    // (`RecyclerListView`'s item long-click), mapped to a medium impact.
     impactHaptic('Medium')
     setIsPickerVisible(true)
   }, [])
@@ -641,6 +643,14 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       if (user && currentMessage.user._id === user._id)
         return null
 
+      // Telegram names the sender once, on the first message of their run.
+      if (
+        previousMessage &&
+        isSameUser(currentMessage, previousMessage) &&
+        isSameDay(currentMessage, previousMessage)
+      )
+        return null
+
       if (renderUsername)
         return renderComponentOrElement(renderUsername, currentMessage.user)
 
@@ -658,6 +668,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return null
   }, [
     currentMessage,
+    previousMessage,
     props,
     styles,
   ])

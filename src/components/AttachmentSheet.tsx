@@ -14,18 +14,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { useThemedStyles } from '../hooks/useTheme'
 import { IconRenderer } from '../Icons'
+import { getTrueSheet } from '../optional'
 import { ChatTheme } from '../Theme'
 
 // Optional native bottom sheet (Telegram-style: native grabber, dimmed backdrop,
-// drag-to-dismiss, detents). Resolved through a try/catch require so the bundle
+// drag-to-dismiss, detents). Resolved through the optional-peer registry (`src/optional`) so the bundle
 // works whether or not it's installed; without it we fall back to a Modal sheet.
-let trueSheetMod: any = null
-try {
-  trueSheetMod = require('@lodev09/react-native-true-sheet')
-} catch {
-  trueSheetMod = null
-}
-const TrueSheet = trueSheetMod?.TrueSheet ?? null
+const TrueSheet = getTrueSheet()?.TrueSheet ?? null
 
 export const isTrueSheetAvailable = !!TrueSheet
 

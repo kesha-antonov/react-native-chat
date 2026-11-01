@@ -30,25 +30,14 @@ export default function ReplyExample () {
     )
   }, [user])
 
-  const handlePressReply = useCallback((reply: ReplyMessage) => {
-    console.log('Pressed reply:', reply)
-    // Could scroll to the original message here
-  }, [])
-
   return (
     <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
       <Chat<IChatMessage>
         messages={messages}
         onSend={onSend}
         user={user}
-        // New grouped reply props
-        reply={{
-          swipe: {
-            isEnabled: true,
-            direction: 'left', // swipe left to reply
-          },
-          onPress: handlePressReply,
-        }}
+        // Swipe left to reply and the menu's Reply are on by default; tapping a quote jumps
+        // to the quoted message.
       />
     </View>
   )

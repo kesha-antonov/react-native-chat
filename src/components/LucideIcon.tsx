@@ -1,30 +1,20 @@
 import React from 'react'
 
 import { IconName } from '../Icons'
+import { getSvg } from '../optional'
 
-// Optional react-native-svg, resolved through a try/catch require so the bundle
+// Optional react-native-svg, resolved through the optional-peer registry (`src/optional`) so the bundle
 // works whether or not it's installed. When present, all built-in icons render
 // as their official Lucide glyphs (https://lucide.dev); otherwise the caller's
 // drawn fallback is used, so there's never a hard dependency.
-let Svg: any = null
-let Path: any = null
-let Circle: any = null
-let Rect: any = null
-let Line: any = null
-let Polyline: any = null
-let Polygon: any = null
-try {
-  const svg = require('react-native-svg')
-  Svg = svg.default ?? svg.Svg
-  Path = svg.Path
-  Circle = svg.Circle
-  Rect = svg.Rect
-  Line = svg.Line
-  Polyline = svg.Polyline
-  Polygon = svg.Polygon
-} catch {
-  Svg = null
-}
+const svg = getSvg()
+const Svg: any = svg ? svg.default ?? svg.Svg : null
+const Path: any = svg?.Path
+const Circle: any = svg?.Circle
+const Rect: any = svg?.Rect
+const Line: any = svg?.Line
+const Polyline: any = svg?.Polyline
+const Polygon: any = svg?.Polygon
 
 export const isSvgAvailable = !!(Svg && Path)
 
@@ -110,6 +100,20 @@ const glyphs: Record<IconName, () => React.ReactNode> = {
     <Path key='c' d='M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' />,
     <Line key='d' x1={10} x2={10} y1={11} y2={17} />,
     <Line key='e' x1={14} x2={14} y1={11} y2={17} />,
+  ],
+  copy: () => [
+    <Rect key='a' width={14} height={14} x={8} y={8} rx={2} ry={2} />,
+    <Path key='b' d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2' />,
+  ],
+  pinOff: () => [
+    <Path key='a' d='M12 17v5' />,
+    <Path key='b' d='M15 9.34V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H7.89' />,
+    <Path key='c' d='m2 2 20 20' />,
+    <Path key='d' d='M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h11' />,
+  ],
+  forward: () => [
+    <Path key='a' d='m15 17 5-5-5-5' />,
+    <Path key='b' d='M4 18v-2a4 4 0 0 1 4-4h12' />,
   ],
 }
 

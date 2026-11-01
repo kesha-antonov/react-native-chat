@@ -1,4 +1,4 @@
-// Optional camera for round video notes, resolved through a try/catch require so
+// Optional camera for round video notes, resolved through the optional-peer registry (`src/optional`) so
 // the bundle works whether or not the consumer installed `react-native-vision-camera`.
 //
 // Version 5 rebuilt the library on Nitro: recording goes through a video output
@@ -7,15 +7,16 @@
 // loads, so a JS package without the native module behind it (a binary built
 // before the dependency was added) throws here and counts as not installed - the
 // recorder then falls back to the system camera.
-let visionCamera: any = null
-try {
-  visionCamera = require('react-native-vision-camera')
-} catch {
-  visionCamera = null
-}
 
-/** vision-camera 5 or newer is installed and its native module is linked. */
-export const isVisionCameraAvailable = !!(visionCamera?.Camera && visionCamera?.useVideoOutput && visionCamera?.VisionCamera)
+import { getVisionCamera as resolveVisionCamera, hasRoundVideoCapture } from '../optional'
+
+const visionCamera = resolveVisionCamera()
+
+/**
+ * vision-camera 5 or newer is installed and its native module is linked.
+ * @deprecated Use `getChatCapabilities().roundVideoCapture`.
+ */
+export const isVisionCameraAvailable = hasRoundVideoCapture()
 
 // Reading a permission status is the cheapest call that crosses into native code.
 export const isVisionCameraNativeReady = (() => {

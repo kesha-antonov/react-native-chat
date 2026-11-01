@@ -34,4 +34,11 @@ export const it: Partial<ChatLabels> = {
   viewOnceVideoEnabledHint: 'Il destinatario potrà riprodurlo solo una volta.',
   activateViewOnce: 'Attiva Riproduci una volta',
   deactivateViewOnce: 'Disattiva Riproduci una volta',
+  actionReply: 'Rispondi',
+  actionCopy: 'Copia',
+  actionPin: 'Fissa',
+  actionUnpin: 'Rimuovi fissato',
+  actionEdit: 'Modifica',
+  actionForward: 'Inoltra',
+  actionDelete: 'Elimina',
 }

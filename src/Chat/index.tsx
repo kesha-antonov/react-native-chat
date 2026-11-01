@@ -21,6 +21,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { ChatOverlayProvider, ChatOverlaySlot } from '../components/ChatOverlay'
+import { buildDefaultMessageActions, DEFAULT_MESSAGE_ACTION_KEYS } from '../components/defaultMessageActions'
 import { FloatingRoundNote } from '../components/FloatingRoundNote'
 import {
   MediaPlaybackContext,
@@ -28,6 +29,7 @@ import {
   setPlaybackRate,
   subscribePlaybackRate,
 } from '../components/mediaPlayback'
+import { createMessageHighlightStore, MessageHighlightContext } from '../components/messageHighlight'
 import { NowPlayingBar } from '../components/NowPlayingBar'
 import { TEST_ID } from '../Constant'
 import { normalizeColorScheme } from '../hooks/useColorScheme'
@@ -35,8 +37,11 @@ import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
 import { useKeyboardVerticalOffset } from '../hooks/useKeyboardVerticalOffset'
 import { resolveLabels } from '../i18n'
 import { InputToolbar } from '../InputToolbar'
+import { devHint } from '../logging'
 import { MessagesContainer, AnimatedList } from '../MessagesContainer'
-import { IMessage, ReplyMessage } from '../Models'
+import { appendMessages, prependMessages, toggleReaction } from '../messageUtils'
+import { IMessage, MessageMenuItem, ReplyMessage, User } from '../Models'
+import { getClipboard, hasRoundVideoCapture, hasVoiceRecording, getExpoImagePicker } from '../optional'
 import { isRTLLocale } from '../rtl'
 import stylesCommon from '../styles'
 import { resolveTheme } from '../Theme'
@@ -85,6 +90,19 @@ function Chat<TMessage extends IMessage = IMessage> (
     // Reply props
     reply,
     mediaPlayback,
+
+    reactions,
+    messageActions,
+    defaultMessageActions = true,
+    onEditMessage,
+    onDeleteMessage,
+    onForwardMessage,
+    onPinMessage,
+    onLongPressMessage,
+    isGroupChat: isGroupChatProp,
+    isAvatarVisible: isAvatarVisibleProp,
+    isUsernameVisible: isUsernameVisibleProp,
+    renderAvatar,
   } = props
 
   // One playlist per chat: players register by message id and the controller
@@ -164,6 +182,10 @@ function Chat<TMessage extends IMessage = IMessage> (
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
   const [text, setText] = useState<string | undefined>(() => props.text || '')
   const [internalReplyMessage, setInternalReplyMessage] = useState<ReplyMessage | null>(null)
+  // The message being edited in the composer (Telegram's edit mode), or null.
+  const [editingMessage, setEditingMessage] = useState<TMessage | null>(null)
+  const [highlightStore] = useState(createMessageHighlightStore)
+  useEffect(() => () => highlightStore.dispose(), [highlightStore])
 
   // Use controlled or uncontrolled reply state
   const replyMessage = replyMessageProp !== undefined ? replyMessageProp : internalReplyMessage
@@ -201,8 +223,22 @@ function Chat<TMessage extends IMessage = IMessage> (
     clearTimeout(scrollAfterSendTimeout.current)
   }, [])
 
-  const handleSwipeToReply = useCallback(
+  const isReplyEnabled = reply?.isEnabled !== false
+  const onReplyRef = useRef(reply?.onReply)
+  onReplyRef.current = reply?.onReply
+
+  const focusComposer = useCallback(() => {
+    // After the menu's exit, so the keyboard does not fight the lifted bubble flying back.
+    requestAnimationFrame(() => textInputRef.current?.focus())
+  }, [textInputRef])
+
+  // A reply replaces an edit in progress, as in Telegram.
+  const cancelEdit = useRef<() => void>(() => {})
+
+  const startReply = useCallback(
     (message: TMessage) => {
+      cancelEdit.current()
+
       if (replyMessageProp === undefined)
         // Uncontrolled mode: manage state internally
         setInternalReplyMessage({
@@ -213,9 +249,18 @@ function Chat<TMessage extends IMessage = IMessage> (
           audio: message.audio,
         })
 
+      onReplyRef.current?.(message)
+      focusComposer()
+    },
+    [replyMessageProp, focusComposer]
+  )
+
+  const handleSwipeToReply = useCallback(
+    (message: TMessage) => {
+      startReply(message)
       onSwipeToReply?.(message)
     },
-    [replyMessageProp, onSwipeToReply]
+    [startReply, onSwipeToReply]
   )
 
   const clearReply = useCallback(() => {
@@ -225,17 +270,6 @@ function Chat<TMessage extends IMessage = IMessage> (
 
     onClearReply?.()
   }, [replyMessageProp, onClearReply])
-
-  // Rebuilt on the way down to the list, so it has to keep its identity across renders that
-  // change nothing: it is passed through `MessagesContainer` into every row, and `Item`'s memo
-  // compares it by reference, so a fresh object here re-renders every mounted row whenever the
-  // parent re-renders. See rowRenderChurn.test.tsx.
-  const replyForList = useMemo(() => ({
-    ...reply,
-    swipe: reply?.swipe
-      ? { ...reply.swipe, onSwipe: handleSwipeToReply }
-      : undefined,
-  }), [reply, handleSwipeToReply])
 
   const getSenderName = useCallback((messageId: string | number) =>
     messages.find(message => message._id === messageId)?.user?.name
@@ -253,6 +287,139 @@ function Chat<TMessage extends IMessage = IMessage> (
       // Not laid out yet (virtualized away); nothing to jump to.
     }
   }, [messages, messagesContainerRef])
+
+  // Tapping a quote jumps to the message it quotes and flashes it.
+  const jumpToQuotedMessage = useCallback((replyMessage: ReplyMessage) => {
+    scrollToMessage(replyMessage._id)
+    highlightStore.highlight(replyMessage._id)
+  }, [scrollToMessage, highlightStore])
+
+  // Rebuilt on the way down to the list, so it has to keep its identity across renders that
+  // change nothing: it is passed through `MessagesContainer` into every row, and `Item`'s memo
+  // compares it by reference, so a fresh object here re-renders every mounted row whenever the
+  // parent re-renders. See rowRenderChurn.test.tsx.
+  const isSwipeEnabled = isReplyEnabled && (reply?.swipe?.isEnabled ?? true)
+  const replyForList = useMemo(() => ({
+    ...reply,
+    onPress: reply?.onPress ?? jumpToQuotedMessage,
+    swipe: { ...reply?.swipe, isEnabled: isSwipeEnabled, onSwipe: handleSwipeToReply },
+  }), [reply, handleSwipeToReply, isSwipeEnabled, jumpToQuotedMessage])
+
+  // Telegram's edit mode: the message's text goes into the composer under an "Editing"
+  // banner, and sending saves it instead of posting a new message. Text changes go through
+  // `_onChangeText` (defined further down), reached through a ref.
+  const changeTextRef = useRef<(text: string) => void>(() => {})
+  const clearReplyRef = useRef<() => void>(() => {})
+
+  const startEdit = useCallback((message: TMessage) => {
+    clearReplyRef.current()
+    setEditingMessage(message)
+    changeTextRef.current(message.text ?? '')
+    focusComposer()
+  }, [focusComposer])
+
+  const stopEdit = useCallback(() => {
+    setEditingMessage(null)
+    changeTextRef.current('')
+  }, [])
+
+  cancelEdit.current = () => {
+    if (editingMessage)
+      stopEdit()
+  }
+
+  // A group is any chat with more than one other sender; Telegram shows avatars and sender
+  // names only there.
+  const userId = (user as Partial<User> | undefined)?._id
+  const isGroupChat = useMemo(() => {
+    if (isGroupChatProp !== undefined)
+      return isGroupChatProp
+
+    const others = new Set<string | number>()
+    for (const message of messages) {
+      if (message.system || !message.user || message.user._id === userId)
+        continue
+
+      others.add(message.user._id)
+      if (others.size > 1)
+        return true
+    }
+    return false
+  }, [isGroupChatProp, messages, userId])
+  const isAvatarVisible = isAvatarVisibleProp ?? (renderAvatar ? true : isGroupChat)
+  const isUsernameVisible = isUsernameVisibleProp ?? isGroupChat
+
+  // Reactions turn on by themselves once the app can apply them.
+  const resolvedReactions = useMemo(() => reactions
+    ? { ...reactions, isEnabled: reactions.isEnabled ?? !!reactions.onReactionPress }
+    : undefined
+  , [reactions])
+
+  // The app's callbacks are read through a ref, so an inline arrow does not hand every row a
+  // new `messageActions` (and re-render it) on each parent render.
+  const actionCallbacksRef = useRef({ onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage })
+  actionCallbacksRef.current = { onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage }
+  const hasPin = !!onPinMessage
+  const hasEdit = !!onEditMessage
+  const hasDelete = !!onDeleteMessage
+  const hasForward = !!onForwardMessage
+
+  // An app that already handles long-press itself keeps that, unless it asks for actions.
+  const actionKeys = defaultMessageActions === false || (onLongPressMessage && messageActions === undefined)
+    ? []
+    : defaultMessageActions === true ? DEFAULT_MESSAGE_ACTION_KEYS : defaultMessageActions
+  const actionKeysId = actionKeys.join(',')
+
+  const resolvedMessageActions = useMemo(() => {
+    if (Array.isArray(messageActions))
+      return messageActions
+
+    const keys = (actionKeysId ? actionKeysId.split(',') : []) as typeof DEFAULT_MESSAGE_ACTION_KEYS
+    if (keys.length === 0 && !messageActions)
+      return undefined
+
+    const clipboard = keys.includes('copy') ? getClipboard() : null
+    const owner = userId != null ? { _id: userId } : undefined
+    const defaultsFor = (message: TMessage): MessageMenuItem[] => keys.length === 0
+      ? []
+      : buildDefaultMessageActions({
+        message,
+        user: owner,
+        labels: resolvedLabels,
+        keys,
+        clipboard,
+        onReply: isReplyEnabled ? startReply : undefined,
+        onEdit: hasEdit ? startEdit : undefined,
+        onForward: hasForward ? m => actionCallbacksRef.current.onForwardMessage?.(m) : undefined,
+        onPin: hasPin ? m => actionCallbacksRef.current.onPinMessage?.(m) : undefined,
+        onDelete: hasDelete
+          ? m => {
+            if (editingMessage?._id === m._id)
+              stopEdit()
+            actionCallbacksRef.current.onDeleteMessage?.(m)
+          }
+          : undefined,
+      })
+
+    if (typeof messageActions === 'function')
+      return (message: TMessage) => messageActions(message, defaultsFor(message))
+
+    return defaultsFor
+  }, [
+    messageActions,
+    actionKeysId,
+    userId,
+    resolvedLabels,
+    isReplyEnabled,
+    startReply,
+    startEdit,
+    stopEdit,
+    editingMessage,
+    hasEdit,
+    hasDelete,
+    hasForward,
+    hasPin,
+  ])
 
   useEffect(() => {
     mediaController.setScroller(scrollToMessage)
@@ -278,6 +445,12 @@ function Chat<TMessage extends IMessage = IMessage> (
         <View style={stylesCommon.fill}>
           <MessagesContainer<TMessage>
             {...messagesContainerProps}
+            {...{
+              messageActions: resolvedMessageActions,
+              reactions: resolvedReactions,
+              isAvatarVisible,
+              isUsernameVisible,
+            }}
             isInverted={isInverted}
             messages={messages}
             forwardRef={messagesContainerRef}
@@ -303,6 +476,10 @@ function Chat<TMessage extends IMessage = IMessage> (
     isFloatingRoundNoteEnabled,
     getSenderName,
     scrollToMessage,
+    resolvedMessageActions,
+    resolvedReactions,
+    isAvatarVisible,
+    isUsernameVisible,
   ])
 
   const notifyInputTextReset = useCallback(() => {
@@ -325,6 +502,23 @@ function Chat<TMessage extends IMessage = IMessage> (
     (messages: TMessage[] = [], shouldResetInputToolbar = false) => {
       if (!Array.isArray(messages))
         messages = [messages]
+
+      // In edit mode the composer saves the edited text instead of posting a message.
+      const [edit] = messages
+      if (
+        editingMessage &&
+        messages.length === 1 &&
+        typeof edit?.text === 'string' &&
+        !edit.audio &&
+        !edit.video
+      ) {
+        if (shouldResetInputToolbar === true)
+          resetInputToolbar()
+
+        setEditingMessage(null)
+        actionCallbacksRef.current.onEditMessage?.(editingMessage, edit.text)
+        return
+      }
 
       const newMessages: TMessage[] = messages.map(message => {
         return {
@@ -350,7 +544,7 @@ function Chat<TMessage extends IMessage = IMessage> (
       clearTimeout(scrollAfterSendTimeout.current)
       scrollAfterSendTimeout.current = setTimeout(() => scrollToBottom(), 10)
     },
-    [messageIdGenerator, onSend, user, resetInputToolbar, scrollToBottom, replyMessage, clearReply]
+    [messageIdGenerator, onSend, user, resetInputToolbar, scrollToBottom, replyMessage, clearReply, editingMessage]
   )
 
   const _onChangeText = useCallback(
@@ -363,6 +557,23 @@ function Chat<TMessage extends IMessage = IMessage> (
     },
     [props.text, props.textInputProps]
   )
+  changeTextRef.current = _onChangeText
+  clearReplyRef.current = () => {
+    if (replyMessage)
+      clearReply()
+  }
+
+  // Hints for a feature that was asked for but cannot work without its optional peer.
+  const isAudioRecordingRequested = !!props.audioRecording?.isEnabled
+  const isVideoRecordingRequested = !!props.videoRecording?.isEnabled
+  useEffect(() => {
+    if (isAudioRecordingRequested && !hasVoiceRecording())
+      devHint('voice-recording-peer', 'Chat: `audioRecording.isEnabled` is set but `expo-audio` is not installed - the mic button is hidden')
+  }, [isAudioRecordingRequested])
+  useEffect(() => {
+    if (isVideoRecordingRequested && !hasRoundVideoCapture() && !getExpoImagePicker()?.launchCameraAsync)
+      devHint('video-recording-peer', 'Chat: `videoRecording.isEnabled` is set but neither `react-native-vision-camera` nor `expo-image-picker` is installed - the camera button is hidden')
+  }, [isVideoRecordingRequested])
 
   // Measures where the chat starts in the window, which is what the
   // KeyboardAvoidingView needs to keep the toolbar on the keyboard.
@@ -413,6 +624,8 @@ function Chat<TMessage extends IMessage = IMessage> (
       // Reply preview props
       replyMessage,
       onClearReply: clearReply,
+      editMessage: editingMessage,
+      onCancelEdit: stopEdit,
       renderReplyPreview,
       replyPreviewContainerStyle,
       replyPreviewTextStyle,
@@ -434,6 +647,8 @@ function Chat<TMessage extends IMessage = IMessage> (
     _onChangeText,
     replyMessage,
     clearReply,
+    editingMessage,
+    stopEdit,
     renderReplyPreview,
     replyPreviewContainerStyle,
     replyPreviewTextStyle,
@@ -493,10 +708,12 @@ function Chat<TMessage extends IMessage = IMessage> (
             style={[stylesCommon.fill, !isReady && styles.hidden]}
           >
             <MediaPlaybackContext.Provider value={mediaController}>
-              <ChatOverlayProvider>
-                {renderMessages}
-                {inputToolbarFragment}
-              </ChatOverlayProvider>
+              <MessageHighlightContext.Provider value={highlightStore}>
+                <ChatOverlayProvider>
+                  {renderMessages}
+                  {inputToolbarFragment}
+                </ChatOverlayProvider>
+              </MessageHighlightContext.Provider>
             </MediaPlaybackContext.Provider>
           </View>
           {!isReady && renderComponentOrElement(renderLoading, {})}
@@ -581,31 +798,22 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
   )
 }
 
-ChatWrapper.append = <TMessage extends IMessage>(
-  currentMessages: TMessage[] = [],
-  messages: TMessage[],
-  isInverted = true
-) => {
-  if (!Array.isArray(messages))
-    messages = [messages]
+/** Append messages at the newest end of the list (the end `onSend` messages go to). */
+ChatWrapper.append = appendMessages
 
-  return isInverted
-    ? messages.concat(currentMessages)
-    : currentMessages.concat(messages)
-}
+/** Prepend messages at the oldest end of the list (for loading history). */
+ChatWrapper.prepend = prependMessages
 
-ChatWrapper.prepend = <TMessage extends IMessage>(
-  currentMessages: TMessage[] = [],
-  messages: TMessage[],
-  isInverted = true
-) => {
-  if (!Array.isArray(messages))
-    messages = [messages]
-
-  return isInverted
-    ? currentMessages.concat(messages)
-    : messages.concat(currentMessages)
-}
+/**
+ * Add or remove a user's reaction on one message, returning a new messages array - the
+ * reducer behind `reactions.onReactionPress`:
+ *
+ * ```ts
+ * onReactionPress: (message, emoji) =>
+ *   setMessages(previous => Chat.toggleReaction(previous, message._id, emoji, user._id))
+ * ```
+ */
+ChatWrapper.toggleReaction = toggleReaction
 
 export {
   ChatWrapper as Chat

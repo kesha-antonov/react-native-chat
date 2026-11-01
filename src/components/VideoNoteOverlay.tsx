@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import Animated, { SharedValue, useAnimatedProps, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { useTheme } from '../hooks/useTheme'
+import { getSvg } from '../optional'
 import { PlayIcon } from './MediaControls'
 import { PlayingBars, UnreadDot } from './NoteIndicators'
 import {
@@ -40,25 +41,13 @@ const FadingBadge = ({ isVisible, style, children }: { isVisible: boolean, style
 // Optional SVG, used to draw the ring, the paused knob and its vignette. When
 // absent the note still plays, just without them - the same optional-require
 // pattern the recorder uses.
-let Svg: any = null
-let SvgCircle: any = null
-let SvgDefs: any = null
-let SvgRadialGradient: any = null
-let SvgStop: any = null
-let AnimatedCircle: any = null
-try {
-  const svg = require('react-native-svg')
-  Svg = svg.Svg ?? svg.default
-  SvgCircle = svg.Circle
-  SvgDefs = svg.Defs
-  SvgRadialGradient = svg.RadialGradient
-  SvgStop = svg.Stop
-  AnimatedCircle = SvgCircle ? Animated.createAnimatedComponent(SvgCircle) : null
-} catch {
-  Svg = null
-  SvgCircle = null
-  AnimatedCircle = null
-}
+const svg = getSvg()
+const Svg: any = svg ? svg.Svg ?? svg.default : null
+const SvgCircle: any = svg?.Circle ?? null
+const SvgDefs: any = svg?.Defs ?? null
+const SvgRadialGradient: any = svg?.RadialGradient ?? null
+const SvgStop: any = svg?.Stop ?? null
+const AnimatedCircle: any = SvgCircle ? Animated.createAnimatedComponent(SvgCircle) : null
 
 const formatTime = (seconds: number) => {
   if (!Number.isFinite(seconds) || seconds < 0)

@@ -24,6 +24,7 @@ import {
   MediaPlaybackProps,
   IMessage,
   LeftRightStyle,
+  MessageActionKey,
   MessageAudioProps,
   MessageLocationProps,
   MessageMenuItem,
@@ -44,8 +45,21 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   messagesContainerRef?: RefObject<AnimatedList<TMessage>>
   /* text input ref */
   textInputRef?: RefObject<React.ComponentRef<typeof TextInput> | null>
-  /* Controls whether or not to show user.name property in the message bubble */
+  /**
+   * Show the sender's name on the first message of each run of incoming messages.
+   * Default: on in group chats, off in one-to-one chats (see `isGroupChat`).
+   */
   isUsernameVisible?: boolean
+  /**
+   * Show avatars beside incoming messages. Default: on in group chats, off in one-to-one
+   * chats (see `isGroupChat`), and on whenever a custom `renderAvatar` is passed.
+   */
+  isAvatarVisible?: boolean
+  /**
+   * Whether this is a group chat, which turns on avatars and sender names. Default:
+   * auto-detected - more than one other sender in `messages` means a group.
+   */
+  isGroupChat?: boolean
   /* Messages container style */
   messagesContainerStyle?: StyleProp<ViewStyle>
   /* Input text; default is undefined, but if specified, it will override Chat's internal state */
@@ -212,8 +226,41 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   reply?: ReplyProps<TMessage>
   /** Emoji reactions configuration */
   reactions?: ReactionsProps<TMessage>
-  /** Telegram-style long-press context menu actions (array or per-message function) */
-  messageActions?: MessageMenuItem[] | ((message: TMessage) => MessageMenuItem[])
+  /**
+   * Long-press context menu actions. An array replaces the built-in actions. A function gets
+   * the message and the built-in actions for it, and returns what to show - so you can add to,
+   * filter or reorder them:
+   *
+   * ```tsx
+   * messageActions={(message, defaults) => [...defaults.filter(a => a.key !== 'copy'), myAction]}
+   * ```
+   */
+  messageActions?: MessageMenuItem[] | ((message: TMessage, defaults: MessageMenuItem[]) => MessageMenuItem[])
+  /**
+   * The built-in long-press actions, in Telegram's order: Reply, Copy, Forward, Pin / Unpin,
+   * Edit, Delete. Each shows only when it can work (Copy needs text and a clipboard peer; Edit
+   * needs your own text message and `onEditMessage`; Forward, Pin and Delete need their
+   * callbacks).
+   * `true` (default) offers them all; an array picks and orders them; `false` turns them off.
+   * They are also off when `onLongPressMessage` is set and `messageActions` is not, so an app
+   * that already handles long-press keeps doing so.
+   */
+  defaultMessageActions?: boolean | MessageActionKey[]
+  /**
+   * Turns on the "Edit" action for your own text messages. Edit puts the text into the
+   * composer under an "Editing" banner; sending calls this with the message and the new text
+   * instead of `onSend`.
+   */
+  onEditMessage?: (message: TMessage, text: string) => void
+  /** Turns on the red "Delete" action. */
+  onDeleteMessage?: (message: TMessage) => void
+  /** Turns on the "Forward" action. */
+  onForwardMessage?: (message: TMessage) => void
+  /**
+   * Turns on the "Pin" action; it reads "Unpin" on a message with `isPinned`. Called with the
+   * message either way - flip its `isPinned` to toggle.
+   */
+  onPinMessage?: (message: TMessage) => void
   /**
    * Controls whether message bubbles attach the tap / long-press gestures that
    * `reactions` and `messageActions` rely on. Pass `false` (or a predicate

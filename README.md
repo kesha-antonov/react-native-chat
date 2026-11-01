@@ -358,6 +358,25 @@ npx pod-install
 
 </details>
 
+### Optional peers
+
+Every feature below turns itself on when its package is installed and stays hidden when it is not - there is nothing to configure. `getChatCapabilities()` reports what the current install can do, e.g. to build UI that matches the chat's. In development, a feature that was asked for but cannot work (say `audioRecording.isEnabled` without `expo-audio`) logs one hint.
+
+| Package | Feature | `getChatCapabilities()` key |
+|---|---|---|
+| `expo-clipboard` or `@react-native-clipboard/clipboard` | "Copy" in the long-press menu | `clipboard` |
+| `expo-haptics` | Haptic ticks (long-press, swipe-to-reply, recording) | `haptics` |
+| `expo-blur` | Blurred backdrop behind the menu and the round video recorder | `blur` |
+| `react-native-svg` | Lucide icons and vector rings | `svg` |
+| `expo-audio` | Voice playback and hold-to-record voice notes | `audioPlayback`, `voiceRecording` |
+| `react-native-audio-api` | Voice waveforms, resume and trim | `waveform` |
+| `expo-video` | Inline video and round video notes | `videoPlayback` |
+| `react-native-vision-camera` 5 | In-chat round video capture | `roundVideoCapture` |
+| `expo-image-picker` | System camera fallback for video notes | `videoRecording` |
+| `react-native-streamdown` | Rich streaming markdown | `markdown` |
+| `@lodev09/react-native-true-sheet` | Native attachment sheet | `nativeSheet` |
+| `@shopify/flash-list` | The FlashList list engine | `flashList` |
+
 ---
 
 ## 🔄 Migrating from react-native-gifted-chat
@@ -569,11 +588,16 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`renderMessageVideo`** _(Component | Function)_ - Custom message video
 - **`renderMessageAudio`** _(Component | Function)_ - Custom message audio
 - **`renderMessageLocation`** _(Component | Function)_ - Custom renderer for `IMessage.location`; defaults to a map card that opens the system maps app on tap
-- **`messageActions`** _(Array | Function(`message`))_ - Telegram-style long-press context menu. Each item is `{ label, icon?, onPress, destructive? }`. See [Message actions](#message-actions-long-press-context-menu).
+- **`messageActions`** _(Array | Function(`message`, `defaults`))_ - Long-press context menu actions. Each item is `{ key?, label, icon?, onPress, destructive? }`. An array **replaces** the built-in actions; a function receives the message and the built-in actions for it and returns what to show, so you can extend, filter or reorder them. See [Message actions](#message-actions-long-press-context-menu).
+- **`defaultMessageActions`** _(Bool | `MessageActionKey[]`)_ - The built-in actions, in Telegram's order: `reply`, `copy`, `forward`, `pin`, `edit`, `delete`. Default `true` (all that can work); an array picks and orders them; `false` turns them off. Each shows only when it can work: Reply when `reply.isEnabled` is not `false`; Copy for messages with text when `expo-clipboard` or `@react-native-clipboard/clipboard` is installed; Edit on your own text messages when `onEditMessage` is set; Forward / Pin / Delete when their callbacks are set. They are also off when `onLongPressMessage` is set and `messageActions` is not, so an app that handles long-press itself keeps doing so.
+- **`onEditMessage`** _(Function(`message`, `text`))_ - Turns on the "Edit" action for your own text messages. Edit puts the text in the composer under an "Editing" banner; sending then calls this instead of `onSend`. Closing the banner cancels the edit.
+- **`onDeleteMessage`** _(Function(`message`))_ - Turns on the red "Delete" action.
+- **`onForwardMessage`** _(Function(`message`))_ - Turns on the "Forward" action.
+- **`onPinMessage`** _(Function(`message`))_ - Turns on the "Pin" action; it reads "Unpin" on a message with `isPinned: true`. Toggle `isPinned` in the handler.
 - **`renderCustomView`** _(Component | Function)_ - Custom view inside the bubble
 - **`isCustomViewBottom`** _(Bool)_ - Determine whether renderCustomView is displayed before or after the text, image and video views; default is `false`
 - **`onPressMessage`** _(Function(`context`, `message`))_ - Callback when a message bubble is pressed
-- **`onLongPressMessage`** _(Function(`context`, `message`))_ - Callback when a message bubble is long-pressed; you can use this to show action sheets (e.g., copy, delete, reply)
+- **`onLongPressMessage`** _(Function(`context`, `message`))_ - Callback when a message bubble is long-pressed; you can use this to show action sheets (e.g., copy, delete, reply). Setting it (without `messageActions`) turns the built-in long-press menu off
 - **`isMessageGestureEnabled`** _(Bool | Function(`message`))_ - Whether the bubble itself is part of the row's tap / long-press surface that `reactions` and `messageActions` rely on; default is `true`. Pass `false`, or a predicate, for messages that render natively interactive content - the row beside the bubble stays pressable either way. See [Interactive content inside bubbles](#interactive-content-inside-bubbles-video-players-maps).
 - **`imageProps`** _(Object)_ - Extra props to be passed to the [`<Image>`](https://reactnative.dev/docs/image) component created by the default `renderMessageImage`
 - **`imageStyle`** _(Object)_ - Custom style for message images
@@ -644,6 +668,10 @@ See the full example in [LinksExample](example/components/chat-examples/LinksExa
 
 ### Avatars
 
+Following Telegram, avatars and sender names show in group chats only: a one-to-one chat has neither.
+
+- **`isGroupChat`** _(Bool)_ - Whether this is a group chat; default is auto-detected (more than one other sender in `messages` means a group)
+- **`isAvatarVisible`** _(Bool)_ - Show avatars beside incoming messages; default `true` in group chats, `false` in one-to-one chats, and `true` whenever `renderAvatar` is a function. Pass `true` to keep avatars in one-to-one chats
 - **`renderAvatar`** _(Component | Function)_ - Custom message avatar; set to `null` to not render any avatar for the message
 - **`isUserAvatarVisible`** _(Bool)_ - Whether to render an avatar for the current user; default is `false`, only show avatars for other users
 - **`isAvatarVisibleForEveryMessage`** _(Bool)_ - When false, avatars will only be displayed when a consecutive message is from the same user on the same day; default is `false`
@@ -653,7 +681,7 @@ See the full example in [LinksExample](example/components/chat-examples/LinksExa
 
 ### Username
 
-- **`isUsernameVisible`** _(Bool)_ - Indicate whether to show the user's username inside the message bubble; default is `false`
+- **`isUsernameVisible`** _(Bool)_ - Show the sender's name on the first message of each run of incoming messages; default `true` in group chats and `false` in one-to-one chats (see `isGroupChat`)
 - **`renderUsername`** _(Component | Function)_ - Custom Username container
 
 ### Date & Time
@@ -721,9 +749,12 @@ See the [quick replies example in messages.ts](example/example-expo/data/message
 
 ### Scroll to Bottom
 
-- **`isScrollToBottomEnabled`** _(Bool)_ - Enables the scroll to bottom Component (Default is false)
+The button behaves like Telegram Android's: it comes up after you scroll back towards the newest message by `scrollToBottomOffset`, or when a message arrives while you are away from the newest one, and goes away at the newest message (or after scrolling away again by the same distance, when scrolling brought it up). Messages that arrive while you are away are counted in a badge, which counts down as each one scrolls into view.
+
+- **`isScrollToBottomEnabled`** _(Bool)_ - Show the scroll-to-bottom button; default `true`. Passing `true` explicitly also keeps the older behaviour of a non-inverted list scrolling to its end on layout
+- **`isScrollToBottomBadgeEnabled`** _(Bool)_ - Count new messages in a badge on the button; default `true`
 - **`scrollToBottomComponent`** _(Function)_ - Custom Scroll To Bottom Component container
-- **`scrollToBottomOffset`** _(Integer)_ - Custom Height Offset upon which to begin showing Scroll To Bottom Component (Default is 200)
+- **`scrollToBottomOffset`** _(Integer)_ - How far to scroll before the button shows or hides (Telegram Android's `scrollValue`); default `100`
 - **`scrollToBottomStyle`** _(Object)_ - Custom style for Scroll To Bottom wrapper (position, bottom, right, etc.)
 - **`scrollToBottomContentStyle`** _(Object)_ - Custom style for Scroll To Bottom content (size, background, shadow, etc.)
 
@@ -756,13 +787,20 @@ Swipe on a message to reply to it, showing a reply preview in the input toolbar 
 />
 ```
 
+Replying works out of the box: long-press a message and pick **Reply**, or swipe it left. The swipe follows Telegram Android (`ChatActivity`): it takes over from the list after 0.4cm (about 25pt) of mostly sideways travel, the row follows the finger up to 80pt, a reply arrow fades in from 20pt and fills by 50pt, where a light haptic ticks; letting go past 50pt starts the reply, and the row slides back over 180ms. Turn the swipe off with `reply={{ swipe: { isEnabled: false } }}`, or all replying with `reply={{ isEnabled: false }}`.
+
+Tapping a quote inside a bubble scrolls to the quoted message and highlights its row for a second, then fades it out over 300ms, as Telegram Android does. Pass `reply.onPress` to do something else.
+
 #### Reply Props (Grouped)
 
 ```typescript
 interface ReplyProps<TMessage> {
+  isEnabled?: boolean                // The menu's Reply and swipe-to-reply; default true
+  onReply?: (message: TMessage) => void  // A reply started (menu or swipe); use with a controlled `message`
+
   // Swipe gesture configuration
   swipe?: {
-    isEnabled?: boolean              // Enable swipe-to-reply; default false
+    isEnabled?: boolean              // Swipe-to-reply; default true (false to turn it off)
     direction?: 'left' | 'right'     // Swipe direction; default 'left'
     onSwipe?: (message: TMessage) => void  // Callback when swiped
     renderAction?: (                 // Custom swipe action component
@@ -794,7 +832,7 @@ interface ReplyProps<TMessage> {
   // Callbacks and state
   message?: ReplyMessage             // Controlled reply state
   onClear?: () => void               // Called when reply cleared
-  onPress?: (message: TMessage) => void  // Called when reply preview tapped
+  onPress?: (message: ReplyMessage) => void  // Quote tapped; default jumps to the quoted message and flashes it
 
   // Custom renderers
   renderPreview?: (props: ReplyPreviewProps) => React.ReactNode
@@ -982,7 +1020,7 @@ Long-press a message to open a quick emoji picker; selected reactions render as 
 <details>
 <summary><strong>Wiring up the toggle, and the full prop list</strong></summary>
 
-Store reactions on each message as a `reactions` array, then enable the feature and handle the toggle. Reaction state is owned by you, so it works with any backend:
+Store reactions on each message as a `reactions` array and pass `reactions.onReactionPress` - that alone turns reactions on. `Chat.toggleReaction(messages, messageId, emoji, userId)` is the reducer, so the handler is one line. Reaction state is owned by you, so it works with any backend:
 
 ```tsx
 interface IChatMessage extends IMessage {
@@ -992,27 +1030,7 @@ interface IChatMessage extends IMessage {
 const CURRENT_USER_ID = 1
 
 const handleReactionPress = useCallback((message: IChatMessage, emoji: string) => {
-  setMessages(prev =>
-    prev.map(m => {
-      if (m._id !== message._id)
-        return m
-
-      const existing = (m.reactions ?? []).find(r => r.emoji === emoji)
-      if (!existing)
-        return { ...m, reactions: [...(m.reactions ?? []), { emoji, userIds: [CURRENT_USER_ID] }] }
-
-      const userIds = existing.userIds.includes(CURRENT_USER_ID)
-        ? existing.userIds.filter(id => id !== CURRENT_USER_ID)
-        : [...existing.userIds, CURRENT_USER_ID]
-
-      return {
-        ...m,
-        reactions: userIds.length === 0
-          ? (m.reactions ?? []).filter(r => r.emoji !== emoji)
-          : (m.reactions ?? []).map(r => (r.emoji === emoji ? { ...r, userIds } : r)),
-      }
-    })
-  )
+  setMessages(prev => Chat.toggleReaction(prev, message._id, emoji, CURRENT_USER_ID))
 }, [])
 
 <Chat
@@ -1020,7 +1038,6 @@ const handleReactionPress = useCallback((message: IChatMessage, emoji: string) =
   onSend={onSend}
   user={{ _id: CURRENT_USER_ID }}
   reactions={{
-    isEnabled: true,
     onReactionPress: handleReactionPress,
     // Optional: provide a richer picker (e.g. a full emoji browser).
     // See example/components/chat-examples/ReactionsExample.tsx
@@ -1029,11 +1046,15 @@ const handleReactionPress = useCallback((message: IChatMessage, emoji: string) =
 />
 ```
 
+`Chat.toggleReaction` (also exported as `toggleReaction`) returns a new array and leaves other messages untouched. Like Telegram, a user has one reaction per message by default - picking another replaces it; pass `{ maxPerUser: Infinity }` (or any limit) as a fifth argument to allow more.
+
+For a prototype, `useChatMessages({ initialMessages, user })` keeps the messages in local state and returns `chatProps` wired to sending, reactions, editing and deleting: `<Chat {...chatProps} />`.
+
 #### Reactions Props (Grouped)
 
-- **`isEnabled`** _(Bool)_ - Enable emoji reactions (default `false`)
+- **`isEnabled`** _(Bool)_ - Enable emoji reactions; default is on whenever `onReactionPress` is passed
 - **`emojis`** _(String[])_ - Emojis shown in the quick picker (default `['👍', '❤️', '😂', '😮', '😢', '👎']`)
-- **`onReactionPress`** _(Function)_ - `(message, emoji) => void` called when an emoji is selected or a pill is tapped. Toggle logic is left to you
+- **`onReactionPress`** _(Function)_ - `(message, emoji) => void` called when an emoji is selected or a pill is tapped. Apply it with `Chat.toggleReaction`
 - **`renderReactions`** _(Function)_ - Override the reactions-display component rendered below the bubble
 - **`renderReactionPicker`** _(Function)_ - Override the picker shown on long-press (use for a full emoji browser). It receives [`ReactionPickerProps`](src/Reactions/types.ts): `visible`, `message`, `emojis`, `onSelect`, `onDismiss`, `position`, the bubble's on-screen box (`pageX`, `pageY`, `bubbleWidth`, `bubbleHeight`), the two picker styles and:
   - **`messagePreview`** _(ReactNode, optional)_ - A copy of the pressed bubble to draw lifted above your backdrop at the bubble's box. While it is mounted the original bubble is hidden, so the message seems to rise out of the list; if you never render it, the original simply stays put. The easiest way to get the built-in look is to render the exported `ContextMenu` with `items={[]}`, as the example app's `EmojiReactionPicker` does (see [Message actions](#message-actions-long-press-context-menu) for its props)
@@ -1078,9 +1099,32 @@ For full control, pass custom `matchers` (`{ type, pattern, getLinkUrl?, getLink
 <details>
 <summary><strong>Telegram-style floating menu</strong></summary>
 
-Long-press a message to open a floating, themed context menu anchored to the bubble. Provide the actions via `messageActions` - an array, or a function of the message - each `{ label, icon?, onPress, destructive? }`. When reactions are enabled, a reactions row is shown on top of the menu automatically.
+Long-press a message to open a floating, themed context menu anchored to the bubble. It opens by default with Telegram's actions (order from Telegram Android's `ChatActivity.fillMessageMenu`): **Reply**, **Copy** (with `expo-clipboard` or `@react-native-clipboard/clipboard` installed), **Forward**, **Pin / Unpin**, **Edit** (your own text messages) and a red **Delete** - the last four appear once you pass `onForwardMessage`, `onPinMessage`, `onEditMessage` and `onDeleteMessage`. When reactions are enabled, a reactions row is shown on top of the menu automatically.
+
+```tsx
+<Chat
+  messages={messages}
+  onSend={onSend}
+  user={user}
+  onEditMessage={(message, text) => setMessages(prev => prev.map(m => m._id === message._id ? { ...m, text } : m))}
+  onDeleteMessage={message => setMessages(prev => prev.filter(m => m._id !== message._id))}
+/>
+```
+
+To change the set, pass `messageActions`. A function receives the built-in actions for the message (each with its `key`), so you can add, drop or reorder; an array replaces them. `defaultMessageActions` picks the built-ins by key, or turns them off with `false`.
+
+```tsx
+<Chat
+  messageActions={(message, defaults) => [
+    ...defaults.filter(action => action.key !== 'forward'),
+    { label: 'Report', icon: ({ color, size }) => <Flag color={color} size={size} />, onPress: () => report(message) },
+  ]}
+/>
+```
 
 It follows Telegram's iOS client, timings included: the bubble shrinks by 15pt of its width while you hold it, and after 0.32s the menu opens with a medium haptic (if `expo-haptics` is installed). The chat blurs (`expo-blur`, optional; a stronger dim without it) and dims, and the message is lifted above it in place. The reactions bar grows out of a circle at the bubble's corner with its emojis rippling in, and the actions - each with its icon on the left, a destructive one in red, with a highlight while pressed - scale out of the corner below the message. When they don't all fit, the message, the bar and the menu move together until they do. A picked reaction is applied and flies to the message; an action runs once the menu has closed; a tap on the backdrop plays it all in reverse. Every animation runs on Reanimated and follows the system Reduce Motion setting. The reaction-only picker (`reactions` without `messageActions`) is the same overlay without actions.
+
+A fully custom menu - each item is `{ key?, label, icon?, onPress, destructive? }`:
 
 ```tsx
 import { setStringAsync } from 'expo-clipboard'

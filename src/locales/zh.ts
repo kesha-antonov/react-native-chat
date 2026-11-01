@@ -34,4 +34,11 @@ export const zh: Partial<ChatLabels> = {
   viewOnceVideoEnabledHint: '对方只能播放一次。',
   activateViewOnce: '开启仅播放一次',
   deactivateViewOnce: '关闭仅播放一次',
+  actionReply: '回复',
+  actionCopy: '复制',
+  actionPin: '置顶',
+  actionUnpin: '取消置顶',
+  actionEdit: '编辑',
+  actionForward: '转发',
+  actionDelete: '删除',
 }

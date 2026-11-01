@@ -149,6 +149,10 @@ export interface InputToolbarProps<TMessage extends IMessage> {
   replyMessage?: ReplyMessage | null
   /** Callback to clear reply */
   onClearReply?: () => void
+  /** The message being edited; shows the "Editing" banner instead of the reply one. */
+  editMessage?: ReplyMessage | null
+  /** Called when the editing banner is closed. */
+  onCancelEdit?: () => void
   /** Custom render for reply preview */
   renderReplyPreview?: (props: ReplyPreviewProps) => React.ReactNode
   /** Style for reply preview container */
@@ -193,6 +197,8 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     containerStyle,
     replyMessage,
     onClearReply,
+    editMessage,
+    onCancelEdit,
     renderReplyPreview: renderReplyPreviewProp,
     replyPreviewContainerStyle,
     replyPreviewTextStyle,
@@ -548,13 +554,20 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     onClearReply?.()
   }, [onClearReply])
 
+  const handleCancelEdit = useCallback(() => {
+    onCancelEdit?.()
+  }, [onCancelEdit])
+
   const replyPreviewFragment = useMemo(() => {
-    if (!replyMessage)
+    const isEditing = !!editMessage
+    const previewMessage = editMessage ?? replyMessage
+    if (!previewMessage)
       return null
 
     const replyPreviewProps: ReplyPreviewProps = {
-      replyMessage,
-      onClearReply: handleClearReply,
+      replyMessage: previewMessage,
+      onClearReply: isEditing ? handleCancelEdit : handleClearReply,
+      mode: isEditing ? 'edit' : 'reply',
       containerStyle: replyPreviewContainerStyle,
       textStyle: replyPreviewTextStyle,
     }
@@ -562,10 +575,13 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     if (renderReplyPreviewProp)
       return renderComponentOrElement(renderReplyPreviewProp, replyPreviewProps)
 
-    return <ReplyPreview {...replyPreviewProps} />
+    // Keyed by mode, so switching between replying and editing plays the banner in again.
+    return <ReplyPreview key={isEditing ? 'edit' : 'reply'} {...replyPreviewProps} />
   }, [
     replyMessage,
+    editMessage,
     handleClearReply,
+    handleCancelEdit,
     renderReplyPreviewProp,
     replyPreviewContainerStyle,
     replyPreviewTextStyle,

@@ -125,9 +125,11 @@
   },
   "peerDependencies": {
     "@lodev09/react-native-true-sheet": ">=3.0.0",
+    "@react-native-clipboard/clipboard": "*",
     "@shopify/flash-list": "*",
     "expo-audio": "*",
     "expo-blur": "*",
+    "expo-clipboard": "*",
     "expo-device": "*",
     "expo-file-system": "*",
     "expo-haptics": "*",
@@ -148,6 +150,9 @@
     "@lodev09/react-native-true-sheet": {
       "optional": true
     },
+    "@react-native-clipboard/clipboard": {
+      "optional": true
+    },
     "@shopify/flash-list": {
       "optional": true
     },
@@ -155,6 +160,9 @@
       "optional": true
     },
     "expo-blur": {
+      "optional": true
+    },
+    "expo-clipboard": {
       "optional": true
     },
     "expo-device": {

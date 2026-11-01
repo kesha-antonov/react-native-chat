@@ -5,6 +5,7 @@ import {
   LayoutChangeEvent,
   ListRenderItemInfo,
   StyleProp,
+  Text,
   ViewStyle,
   Platform } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
@@ -42,6 +43,9 @@ export * from './types'
 // `foundTextureViewMessage` scan before `setCurrentVideoVisible(false)`).
 const ROW_ON_SCREEN_CONFIG = { itemVisiblePercentThreshold: 0 }
 
+/** Telegram Android treats the list as at the newest message within `dp(5)`. */
+const NEWEST_SLOP = 5
+
 // Stable reference for the missing prev/next message at the list edges.
 const EMPTY_MESSAGE = Object.freeze({}) as IMessage
 
@@ -61,8 +65,10 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     renderChatEmpty: renderChatEmptyProp,
     isInverted = true,
     listProps,
-    isScrollToBottomEnabled = false,
-    scrollToBottomOffset = 200,
+    isScrollToBottomEnabled = true,
+    isScrollToBottomBadgeEnabled = true,
+    // Telegram Android's `scrollValue`, `dp(100)` (`ChatActivity`'s list scroll listener).
+    scrollToBottomOffset = 100,
     isAlignedTop = false,
     scrollToBottomStyle,
     scrollToBottomContentStyle,
@@ -127,6 +133,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const mediaController = useContext(MediaPlaybackContext)
   const mediaControllerRef = useRef(mediaController)
   mediaControllerRef.current = mediaController
+  const markRowsSeenRef = useRef<(ids: (string | number)[]) => void>(() => {})
   const consumerViewableRef = useRef(listProps?.onViewableItemsChanged)
   consumerViewableRef.current = listProps?.onViewableItemsChanged
   const [viewabilityPairs] = useState(() => {
@@ -140,6 +147,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
             ids.push(id)
         }
         mediaControllerRef.current?.setViewableMessages(ids)
+        markRowsSeenRef.current(ids)
       },
     }]
     if (listProps?.viewabilityConfigCallbackPairs)
@@ -155,6 +163,12 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   const scrollToBottomOpacity = useSharedValue(0)
   const isScrollingDown = useSharedValue(false)
+  // Telegram Android's pagedown logic (`ChatActivity` list `onScrolled`): scroll travelled
+  // since the last change, whether the button came up from scrolling, and how far the viewport
+  // is from the newest message.
+  const scrollTravel = useSharedValue(0)
+  const isShownByScroll = useSharedValue(false)
+  const distanceFromNewestSV = useSharedValue(0)
   const lastScrolledY = useSharedValue(0)
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false)
   const scrollToBottomStyleAnim = useAnimatedStyle(() => ({
@@ -229,12 +243,14 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const doScrollToBottom = useCallback((animated: boolean = true) => {
     isScrollingDown.value = true
     isScrollToBottomShown.value = false
+    isShownByScroll.value = false
+    scrollTravel.value = 0
 
     if (isInverted)
       scrollTo({ offset: 0, animated })
     else if (forwardRef?.current)
       forwardRef.current.scrollToEnd({ animated })
-  }, [forwardRef, isInverted, scrollTo, isScrollingDown, isScrollToBottomShown])
+  }, [forwardRef, isInverted, scrollTo, isScrollingDown, isScrollToBottomShown, isShownByScroll, scrollTravel])
 
   // The only part of scroll handling that genuinely needs the JS thread: handing the
   // event to a consumer's own `onScroll`. Everything else is shared-value arithmetic
@@ -362,6 +378,69 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     )
   }, [renderLoadEarlier])
 
+  // Telegram Android's counter on the pagedown button (`newUnreadMessageCount`): messages that
+  // arrive while away from the newest one count up and bring the button up; each counts down
+  // as it scrolls into view (read), and the count clears when the button goes.
+  const unreadIdsRef = useRef(new Set<string | number>())
+  const [unreadCount, setUnreadCount] = useState(0)
+  const newestMessageId = messages.length > 0
+    ? (isInverted ? messages[0] : messages[messages.length - 1])?._id
+    : undefined
+  const previousNewestIdRef = useRef(newestMessageId)
+  const userId = user?._id
+  useEffect(() => {
+    const previousNewestId = previousNewestIdRef.current
+    previousNewestIdRef.current = newestMessageId
+
+    if (!isScrollToBottomEnabled || previousNewestId == null || newestMessageId === previousNewestId)
+      return
+
+    const previousIndex = messages.findIndex(message => message._id === previousNewestId)
+    if (previousIndex < 0)
+      return
+
+    const arrived = isInverted ? messages.slice(0, previousIndex) : messages.slice(previousIndex + 1)
+    // At the newest message (within 5dp), or after sending one yourself, there is nothing to
+    // count: the list follows the new message (`diff <= dp(5) || hasFromMe`).
+    const isFromMe = arrived.some(message => message.user?._id === userId)
+    if (isFromMe || distanceFromNewestSV.value <= NEWEST_SLOP) {
+      unreadIdsRef.current.clear()
+      setUnreadCount(0)
+      return
+    }
+
+    const incoming = arrived.filter(message => !message.system)
+    if (incoming.length === 0)
+      return
+
+    if (isScrollToBottomBadgeEnabled) {
+      incoming.forEach(message => unreadIdsRef.current.add(message._id))
+      setUnreadCount(unreadIdsRef.current.size)
+    }
+    isShownByScroll.value = false
+    isScrollToBottomShown.value = true
+  }, [newestMessageId, messages, isInverted, userId, isScrollToBottomEnabled, isScrollToBottomBadgeEnabled, distanceFromNewestSV, isShownByScroll, isScrollToBottomShown])
+
+  // Read as they come into view.
+  markRowsSeenRef.current = (ids: (string | number)[]) => {
+    if (unreadIdsRef.current.size === 0)
+      return
+
+    let changed = false
+    for (const id of ids)
+      changed = unreadIdsRef.current.delete(id) || changed
+
+    if (changed)
+      setUnreadCount(unreadIdsRef.current.size)
+  }
+
+  useEffect(() => {
+    if (!isScrollToBottomVisible) {
+      unreadIdsRef.current.clear()
+      setUnreadCount(0)
+    }
+  }, [isScrollToBottomVisible])
+
   const renderScrollBottomComponent = useCallback(() => {
     if (scrollToBottomComponentProp)
       return scrollToBottomComponentProp()
@@ -393,9 +472,16 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         ]}
       >
         {renderScrollBottomComponent()}
+        {unreadCount > 0 && (
+          <View style={[styles.scrollToBottomBadge, themedStyles.scrollToBottomBadge]}>
+            <Text style={themedStyles.scrollToBottomBadgeText} numberOfLines={1}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Text>
+          </View>
+        )}
       </Animated.View>
     )
-  }, [scrollToBottomStyleAnim, scrollToBottomContentStyle, renderScrollBottomComponent, themedStyles])
+  }, [scrollToBottomStyleAnim, scrollToBottomContentStyle, renderScrollBottomComponent, themedStyles, unreadCount])
 
   const ScrollToBottomWrapper = useCallback(() => {
     if (!isScrollToBottomEnabled)
@@ -417,10 +503,12 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const onLayoutList = useCallback((event: LayoutChangeEvent) => {
     listHeight.value = event.nativeEvent.layout.height
 
+    // Tied to an explicit `isScrollToBottomEnabled`, as it was before the button became a
+    // default, so a non-inverted chat that never asked for it is not scrolled on every layout.
     if (
       !isInverted &&
       messages?.length &&
-      isScrollToBottomEnabled
+      props.isScrollToBottomEnabled === true
     ) {
       // Layout fires repeatedly (keyboard, rotation, content growth), so this is
       // re-armed rather than stacked, and cancelled on unmount - otherwise every
@@ -434,7 +522,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     // listProps.onLayout may be a SharedValue in Reanimated types, but we only accept functions
     const onLayoutProp = listProps?.onLayout as ((event: LayoutChangeEvent) => void) | undefined
     onLayoutProp?.(event)
-  }, [isInverted, messages, doScrollToBottom, listHeight, listProps, isScrollToBottomEnabled])
+  }, [isInverted, messages, doScrollToBottom, listHeight, listProps, props.isScrollToBottomEnabled])
 
   const onEndReached = useCallback(() => {
     if (
@@ -445,6 +533,29 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     )
       loadEarlierMessagesProps.onPress()
   }, [loadEarlierMessagesProps])
+
+  // `scrollToIndex` to a row that is not laid out yet (a quoted message far up the history)
+  // fails; jump to its estimated offset, then retry once the rows there have rendered.
+  const scrollRetriesRef = useRef(0)
+  const scrollRetryTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(scrollRetryTimeout.current), [])
+  const onScrollToIndexFailed = useCallback((info: { index: number, averageItemLength: number }) => {
+    if (scrollRetriesRef.current >= 5) {
+      scrollRetriesRef.current = 0
+      return
+    }
+    scrollRetriesRef.current += 1
+    forwardRef?.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true })
+    clearTimeout(scrollRetryTimeout.current)
+    scrollRetryTimeout.current = setTimeout(() => {
+      try {
+        forwardRef?.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 })
+        scrollRetriesRef.current = 0
+      } catch {
+        // gave up; the list stays at the estimate
+      }
+    }, 250)
+  }, [forwardRef])
 
   const keyExtractor = useCallback((item: unknown) => (item as TMessage)._id.toString(), [])
 
@@ -559,14 +670,35 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         ? y
         : contentSizeHeight - layoutHeight - y
 
-      let next = distanceFromNewest > scrollToBottomOffset!
+      const delta = distanceFromNewest - distanceFromNewestSV.value
+      distanceFromNewestSV.value = distanceFromNewest
 
-      // Don't pop the button up while the user is already on their way back down -
-      // it would appear only to be dismissed a moment later.
-      if (next && isScrollingDown.value)
-        next = isScrollToBottomShown.value
-
-      isScrollToBottomShown.value = next
+      // Telegram Android: the button hides once the newest message is reached; it comes up
+      // after scrolling back towards the newest by `scrollValue`, and goes again after scrolling
+      // away by as much if scrolling is what brought it up.
+      if (distanceFromNewest <= NEWEST_SLOP) {
+        if (delta <= 0) {
+          isScrollToBottomShown.value = false
+          isShownByScroll.value = false
+          scrollTravel.value = 0
+        }
+      } else if (delta < 0) {
+        if (!isScrollToBottomShown.value) {
+          scrollTravel.value += -delta
+          if (scrollTravel.value > scrollToBottomOffset!) {
+            scrollTravel.value = 0
+            isScrollToBottomShown.value = true
+            isShownByScroll.value = true
+          }
+        }
+      } else if (delta > 0 && isShownByScroll.value && isScrollToBottomShown.value) {
+        scrollTravel.value -= delta
+        if (scrollTravel.value < -scrollToBottomOffset!) {
+          scrollTravel.value = 0
+          isScrollToBottomShown.value = false
+          isShownByScroll.value = false
+        }
+      }
 
       if (hasConsumerOnScroll)
         runOnJS(notifyConsumerScroll)(event)
@@ -631,6 +763,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     onEndReachedThreshold: 0.1,
     keyboardDismissMode: 'interactive' as const,
     keyboardShouldPersistTaps: 'handled' as const,
+    onScrollToIndexFailed,
   }
 
   return (

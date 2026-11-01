@@ -57,3 +57,10 @@ export type {
   UseStreamingMessagesResult,
   StreamHandle
 } from './hooks/useStreamingMessages'
+export { useChatMessages } from './hooks/useChatMessages'
+export type { UseChatMessagesOptions, UseChatMessagesResult } from './hooks/useChatMessages'
+export { toggleReaction } from './messageUtils'
+export type { ToggleReactionOptions } from './messageUtils'
+export { getChatCapabilities } from './optional'
+export type { ChatCapabilities } from './optional'
+export { DEFAULT_MESSAGE_ACTION_KEYS } from './components/defaultMessageActions'

@@ -14,6 +14,7 @@ import { useColorScheme } from '../hooks/useColorScheme'
 import { useLabels } from '../hooks/useLabels'
 import { useTheme } from '../hooks/useTheme'
 import { IMessage, VideoRecordingProps } from '../Models'
+import { getExpoBlur, getExpoVideo, getSvg } from '../optional'
 import { FlashIcon, FlipCameraIcon } from './MediaControls'
 import { stopAllPlayback } from './mediaPlayback'
 import { RecordButtonPhase } from './RecordButton'
@@ -42,37 +43,18 @@ import {
 } from './visionCamera'
 
 // Optional player for the paused take's preview.
-let expoVideo: any = null
-try {
-  expoVideo = require('expo-video')
-} catch {
-  expoVideo = null
-}
+const expoVideo = getExpoVideo()
 
 const canPreview = !!(expoVideo?.VideoView && expoVideo?.useVideoPlayer)
 
 // Optional blur for the layer behind the circle; without it a plain dim stands
 // in for Telegram's blurred chat.
-let expoBlur: any = null
-try {
-  expoBlur = require('expo-blur')
-} catch {
-  expoBlur = null
-}
-
-const BlurView = expoBlur?.BlurView ?? null
+const BlurView = getExpoBlur()?.BlurView ?? null
 
 // Optional SVG for the progress ring; without it the note still records.
-let Svg: any = null
-let SvgCircle: any = null
-try {
-  const svg = require('react-native-svg')
-  Svg = svg.Svg ?? svg.default
-  SvgCircle = svg.Circle
-} catch {
-  Svg = null
-  SvgCircle = null
-}
+const svg = getSvg()
+const Svg: any = svg ? svg.Svg ?? svg.default : null
+const SvgCircle: any = svg?.Circle ?? null
 
 const MAX_ROUND_SIZE = 360
 const RING_GAP = 8

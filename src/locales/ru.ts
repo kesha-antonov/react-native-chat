@@ -34,4 +34,11 @@ export const ru: Partial<ChatLabels> = {
   viewOnceVideoEnabledHint: 'Получатель сможет воспроизвести его только один раз.',
   activateViewOnce: 'Включить однократное воспроизведение',
   deactivateViewOnce: 'Выключить однократное воспроизведение',
+  actionReply: 'Ответить',
+  actionCopy: 'Копировать',
+  actionPin: 'Закрепить',
+  actionUnpin: 'Открепить',
+  actionEdit: 'Изменить',
+  actionForward: 'Переслать',
+  actionDelete: 'Удалить',
 }

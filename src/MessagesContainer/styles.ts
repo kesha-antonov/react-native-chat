@@ -18,6 +18,15 @@ export const createThemedStyles = (theme: ChatTheme) => StyleSheet.create({
     borderBottomWidth: 2,
     transform: [{ rotate: '45deg' }],
   },
+  scrollToBottomBadge: {
+    backgroundColor: theme.colors.accent,
+  },
+  scrollToBottomBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
   // Carries the accent color for an overridden chevron icon.
   chevronColor: {
     color: theme.colors.accent,
@@ -40,6 +49,18 @@ export default StyleSheet.create({
     right: 10,
     bottom: 30,
     zIndex: 999,
+  },
+  // Telegram's counter sits centred on the button's top edge.
+  scrollToBottomBadge: {
+    position: 'absolute',
+    top: -9,
+    alignSelf: 'center',
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollToBottomContent: {
     height: 40,

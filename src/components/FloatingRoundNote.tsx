@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
+import { getExpoVideo, getSvg } from '../optional'
 import {
   DEFAULT_FLOATING_DOCK,
   FLOATING_NOTE_HIDDEN_SCALE,
@@ -34,23 +35,11 @@ import { RING_EDGE_INSET, RING_OPACITY, RING_STROKE } from './roundNoteChrome'
 // Both optional, resolved the way MessageVideo and VideoNoteOverlay do: without
 // expo-video there are no round note players to float, and without SVG the
 // floating note simply has no progress ring.
-let expoVideo: any = null
-try {
-  expoVideo = require('expo-video')
-} catch {
-  expoVideo = null
-}
+const expoVideo = getExpoVideo()
 
-let Svg: any = null
-let AnimatedCircle: any = null
-try {
-  const svg = require('react-native-svg')
-  Svg = svg.Svg ?? svg.default
-  AnimatedCircle = svg.Circle ? Animated.createAnimatedComponent(svg.Circle) : null
-} catch {
-  Svg = null
-  AnimatedCircle = null
-}
+const svg = getSvg()
+const Svg: any = svg ? svg.Svg ?? svg.default : null
+const AnimatedCircle: any = svg?.Circle ? Animated.createAnimatedComponent(svg.Circle) : null
 
 /** `DecelerateInterpolator`, Telegram's curve for every PiP animation. */
 const decelerate = Easing.out(Easing.quad)

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 
+import { getAudioApi, getExpoAudio } from '../optional'
 import { useIsNearEar } from './mediaPlayback'
 
 /**
@@ -11,19 +12,8 @@ import { useIsNearEar } from './mediaPlayback'
  */
 
 // Both audio engines are optional peers, resolved like everywhere else.
-let audioApi: any = null
-try {
-  audioApi = require('react-native-audio-api')
-} catch {
-  audioApi = null
-}
-
-let expoAudio: any = null
-try {
-  expoAudio = require('expo-audio')
-} catch {
-  expoAudio = null
-}
+const audioApi = getAudioApi()
+const expoAudio = getExpoAudio()
 
 /**
  * `startAudioAgain` seeks to 0 when `audioProgress * duration` is under a

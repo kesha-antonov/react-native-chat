@@ -1,18 +1,14 @@
 import React from 'react'
 import { StyleProp, Text, TextStyle, View, ViewStyle } from 'react-native'
+import { getStreamdown } from '../optional'
 import { StreamingCursor } from './StreamingCursor'
 
 // Optional markdown renderer for AI/streamed replies. Resolved through a
-// try/catch require so the bundle works whether or not the consumer installed
+// optional-peer registry (`src/optional`) so the bundle works whether or not the consumer installed
 // `react-native-streamdown` (Metro treats try/catch-wrapped requires as optional
 // dependencies). Streamdown renders streaming-incomplete markdown gracefully
 // (unterminated code fences, half-written bold, partial tables).
-let streamdown: any = null
-try {
-  streamdown = require('react-native-streamdown')
-} catch {
-  streamdown = null
-}
+const streamdown = getStreamdown()
 
 const Streamdown = streamdown?.Streamdown ?? streamdown?.default ?? null
 

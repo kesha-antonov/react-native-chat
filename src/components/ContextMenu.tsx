@@ -33,6 +33,7 @@ import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { useColorScheme } from '../hooks/useColorScheme'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { MessageMenuItem } from '../Models'
+import { getExpoBlur } from '../optional'
 import { ChatTheme } from '../Theme'
 import { selectionHaptic } from './haptics'
 import { Icon } from './Icon'
@@ -47,14 +48,7 @@ import { Icon } from './Icon'
 
 // Optional blur behind the menu; without it a plain dim stands in, the same
 // fallback the round video recorder uses.
-let expoBlur: any = null
-try {
-  expoBlur = require('expo-blur')
-} catch {
-  expoBlur = null
-}
-
-const BlurView = expoBlur?.BlurView ?? null
+const BlurView = getExpoBlur()?.BlurView ?? null
 
 const REDUCE_MOTION = ReduceMotion.System
 

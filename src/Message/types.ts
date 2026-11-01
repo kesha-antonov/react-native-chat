@@ -10,6 +10,11 @@ import { SystemMessageProps } from '../SystemMessage'
 
 export interface MessageProps<TMessage extends IMessage> {
   isUserAvatarVisible?: boolean
+  /**
+   * Whether incoming messages carry an avatar. `Chat` turns them on for group chats only
+   * (see `isGroupChat`); a `Message` rendered on its own shows them unless this is `false`.
+   */
+  isAvatarVisible?: boolean
   position: 'left' | 'right'
   currentMessage: TMessage
   nextMessage?: TMessage

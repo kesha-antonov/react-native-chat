@@ -1,16 +1,10 @@
 import Animated from 'react-native-reanimated'
+import { getFlashList } from '../optional'
 
-// Optional high-performance list engine. Resolved through a try/catch require so
+// Optional high-performance list engine. Resolved through the optional-peer registry (`src/optional`) so
 // the bundle works whether or not the consumer installed `@shopify/flash-list`
 // (Metro treats try/catch-wrapped requires as optional dependencies).
-let flashList: any = null
-try {
-  flashList = require('@shopify/flash-list')
-} catch {
-  flashList = null
-}
-
-const FlashListComponent = flashList?.FlashList ?? null
+const FlashListComponent = getFlashList()?.FlashList ?? null
 
 export const isFlashListAvailable = !!FlashListComponent
 

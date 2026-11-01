@@ -33,19 +33,15 @@ import {
 import { WaveformPlayer, isWaveformAvailable } from './components/WaveformPlayer'
 import { useThemedStyles } from './hooks/useTheme'
 import { IMessage, MessageAudioProps } from './Models'
+import { getExpoAudio } from './optional'
 import { ChatTheme } from './Theme'
 
-// Optional inline player. Resolved through a try/catch require so the bundle
+// Optional inline player. Resolved through the optional-peer registry (`src/optional`) so the bundle
 // works whether or not the consumer installed `expo-audio` (Metro treats
 // try/catch-wrapped requires as optional dependencies). When present, audio
 // messages get a real play/pause control with a progress bar; otherwise they
 // fall back to a tappable MediaCard that opens the audio in the system player.
-let expoAudio: any = null
-try {
-  expoAudio = require('expo-audio')
-} catch {
-  expoAudio = null
-}
+const expoAudio = getExpoAudio()
 
 const isExpoAudioAvailable = !!(expoAudio?.useAudioPlayer && expoAudio?.useAudioPlayerStatus)
 

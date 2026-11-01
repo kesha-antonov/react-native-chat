@@ -74,8 +74,13 @@ export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
    * Works with both `isInverted` settings. Ignored when `isFlashListEnabled` is set.
    */
   isAlignedTop?: boolean | 'auto'
-  /** Enables the isScrollToBottomEnabled Component */
+  /** Show the scroll-to-bottom button once scrolled away from the newest message; default is true */
   isScrollToBottomEnabled?: boolean
+  /**
+   * Count incoming messages that arrive while scrolled up, in a badge on the scroll-to-bottom
+   * button; default is true
+   */
+  isScrollToBottomBadgeEnabled?: boolean
   /** Scroll to bottom wrapper style */
   scrollToBottomStyle?: StyleProp<ViewStyle>
   /** Scroll to bottom content style */
