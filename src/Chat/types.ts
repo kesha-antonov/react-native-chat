@@ -25,6 +25,7 @@ import { MessageTextProps } from '../MessageText'
 import {
   AudioRecordingProps,
   MediaPlaybackProps,
+  MediaTransferProps,
   IMessage,
   LeftRightStyle,
   MessageActionKey,
@@ -347,6 +348,16 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   videoRecording?: boolean | VideoRecordingProps
   /** Playback speed and auto-play-next for voice and round video notes */
   mediaPlayback?: MediaPlaybackProps
+  /**
+   * Handlers for Telegram's media buttons: the download arrow of a message with
+   * `isDownloadRequired` and the cancel ✕ of one with `transfer`.
+   */
+  mediaTransfer?: MediaTransferProps
+  /**
+   * The history is loading: Telegram's spinner in a service-colored circle, centred over the
+   * empty list (`ChatActivity.progressView`). Messages already passed stay visible under it.
+   */
+  isLoading?: boolean
   /**
    * The chat background. By default Chat draws Telegram's swirl gradient wallpaper from
    * `theme.wallpaper` (turning one step per message you send). Return your own element to

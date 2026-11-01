@@ -98,10 +98,43 @@ function schedule (id: string, delay: number, run: () => void) {
   timers.set(id, [...(timers.get(id) ?? []), handle])
 }
 
+/** How long a text message shows its clock, and an upload takes. */
+const SEND_MS = 700
+const UPLOAD_MS = 3000
+const UPLOAD_STEP_MS = 200
+/** The demo's photos are about 1.4 MB, for the "0.7 MB / 1.4 MB" pill. */
+const PHOTO_BYTES = 1_450_000
+const uploads = new Map<IMessage['_id'], ReturnType<typeof setTimeout>[]>()
+
+function markSent (id: string, messageId: IMessage['_id']) {
+  setMessages(id, messages => messages.map(m => (m._id === messageId && !m.isFailed ? { ...m, pending: false, sent: true, transfer: undefined } : m)))
+}
+
+/** Steps an upload's progress unevenly, as a real network does; returns when it ends. */
+function simulateUpload (id: string, messageId: IMessage['_id']) {
+  const steps = UPLOAD_MS / UPLOAD_STEP_MS
+  const handles: ReturnType<typeof setTimeout>[] = []
+  let progress = 0
+  for (let step = 1; step <= steps; step++) {
+    progress = step === steps ? 1 : Math.min(0.97, progress + (0.4 + Math.random() * 1.2) / steps)
+    const value = progress
+    handles.push(setTimeout(() => {
+      setMessages(id, messages => messages.map(m => (m._id === messageId && m.transfer ? { ...m, transfer: { ...m.transfer, progress: value } } : m)))
+    }, step * UPLOAD_STEP_MS))
+  }
+  const doneAt = UPLOAD_MS + UPLOAD_STEP_MS
+  handles.push(setTimeout(() => {
+    uploads.delete(messageId)
+    markSent(id, messageId)
+  }, doneAt))
+  uploads.set(messageId, handles)
+  return doneAt
+}
+
 /** Someone types for a moment, then answers - and reads everything you sent. */
 function simulateReply (id: string, from: User, text: string, typingAfter = 900, typingFor = 2200) {
   schedule(id, typingAfter, () => {
-    setMessages(id, messages => messages.map(m => (m.user._id === ME._id && !m.received ? { ...m, received: true } : m)))
+    setMessages(id, messages => messages.map(m => (m.user._id === ME._id && m.sent && !m.received ? { ...m, received: true } : m)))
     setTyping(id, from)
   })
   schedule(id, typingAfter + typingFor, () => {
@@ -115,14 +148,38 @@ export const chatStore = {
 
   send (id: string, newMessages: IMessage[]) {
     const dialog = state.dialogs[id]
-    setMessages(id, messages => Chat.append(messages, newMessages.map(m => ({ ...m, sent: true, received: false }))))
+    // A new message shows Telegram's clock until the server has it; media uploads first, with
+    // the progress ring on it, and only then gets its check.
+    const isMedia = (m: IMessage) => !!(m.image || m.video || m.file || m.audio)
+    setMessages(id, messages => Chat.append(messages, newMessages.map(m => ({
+      ...m,
+      pending: true,
+      sent: false,
+      received: false,
+      transfer: isMedia(m) ? { type: 'upload' as const, progress: 0, totalBytes: m.file?.size ?? PHOTO_BYTES } : undefined,
+    }))))
     patchDialog(id, { draft: undefined, isArchived: false })
+
+    let doneAt = SEND_MS
+    newMessages.forEach(message => {
+      if (isMedia(message))
+        doneAt = Math.max(doneAt, simulateUpload(id, message._id))
+      else
+        schedule(id, SEND_MS, () => markSent(id, message._id))
+    })
 
     // Pick someone to answer: the other person, or a group member in turn.
     const responder = dialog.peer ?? dialog.members?.[replyIndex % dialog.members.length]
     if (!responder || dialog.kind === 'channel')
       return
-    simulateReply(id, responder, CANNED_REPLIES[replyIndex++ % CANNED_REPLIES.length])
+    simulateReply(id, responder, CANNED_REPLIES[replyIndex++ % CANNED_REPLIES.length], doneAt + 600)
+  },
+
+  /** The cancel ✕ on an upload: the message is left failed, with Telegram's red badge. */
+  cancelUpload (id: string, message: IMessage) {
+    uploads.get(message._id)?.forEach(clearTimeout)
+    uploads.delete(message._id)
+    setMessages(id, messages => messages.map(m => (m._id === message._id ? { ...m, transfer: undefined, pending: false, isFailed: true } : m)))
   },
 
   editMessage (id: string, message: IMessage, text: string) {

@@ -102,6 +102,12 @@ export interface IMessage {
   createdAt: Date | number
   user: User
   image?: string
+  /**
+   * A tiny stand-in shown under `image` until it has loaded, as Telegram draws a photo's
+   * blurred thumbnail: a small image uri (drawn blurred), or a blurhash string when
+   * `expo-image` is installed.
+   */
+  imagePlaceholder?: string
   video?: string
   /** Render `video` as a Telegram-style round video note (circular, autoplay/muted) instead of a rectangular player. */
   videoNote?: boolean
@@ -150,6 +156,35 @@ export interface IMessage {
   file?: IMessageFile
   /** A preview of the first link in `text`, drawn under it. `null` hides the preview for this message. */
   linkPreview?: LinkPreview | null
+  /**
+   * The message's media (photo, video, file, voice or round note) is uploading or downloading.
+   * Draws Telegram's progress ring with a cancel ✕ over it; a tap calls `mediaTransfer.onCancel`.
+   */
+  transfer?: MediaTransfer
+  /**
+   * The media is not on the device and is not fetched by itself: Telegram's download arrow,
+   * which calls `mediaTransfer.onDownload` when tapped. Without that handler a voice note
+   * downloads itself on the tap.
+   */
+  isDownloadRequired?: boolean
+}
+
+/** An upload or download of a message's media, `IMessage.transfer`. */
+export interface MediaTransfer {
+  /** `upload` while sending, `download` while fetching. Both draw the same ring. */
+  type: 'upload' | 'download'
+  /** 0..1. Leave it out while unknown: the ring then shows Telegram's 4-degree dot, still turning. */
+  progress?: number
+  /** The file's size in bytes: a photo or video then shows "1.2 MB / 4.5 MB" while it moves. */
+  totalBytes?: number
+}
+
+/** Handlers for the media buttons of messages with `transfer` or `isDownloadRequired`. */
+export interface MediaTransferProps {
+  /** The download arrow was tapped: start fetching, and set `transfer` while it runs. */
+  onDownload?: (message: IMessage) => void
+  /** The cancel ✕ was tapped during an upload or download. */
+  onCancel?: (message: IMessage) => void
 }
 
 export type IChatMessage = IMessage

@@ -1,7 +1,9 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 
+import { clampProgress, transferState, useMediaTransfer } from './components/mediaTransfer'
 import { suppressPressAfterHold } from './components/messagePress'
+import { RadialProgress } from './components/RadialProgress'
 import { useIsRTL } from './hooks/useIsRTL'
 import { useThemedStyles } from './hooks/useTheme'
 import { IMessage, IMessageFile as MessageFileData, MessageFileProps } from './Models'
@@ -58,21 +60,40 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
   const styles = useThemedStyles(position === 'right' ? createRightStyles : createLeftStyles)
   const isRTL = useIsRTL()
   const file = currentMessage?.file
+  const mediaTransfer = useMediaTransfer()
+  // Telegram's document button (`getIconForCurrentState`, documents): the download arrow, the
+  // cancel ✕ with a ring while it moves, and the file icon once it is here (`ICON_FILE`).
+  const transfer = transferState(currentMessage)
+  // Kept mounted after a transfer so its circle fades back to the file icon (cancel -> none).
+  const [hasShownButton, setHasShownButton] = useState(!!transfer)
+  if (transfer && !hasShownButton)
+    setHasShownButton(true)
 
   const handlePress = useCallback(() => {
     if (!file)
       return
+    if (currentMessage?.transfer) {
+      mediaTransfer.onCancel(currentMessage)
+      return
+    }
+    if (currentMessage?.isDownloadRequired) {
+      mediaTransfer.onDownload(currentMessage)
+      return
+    }
     if (onPress)
       onPress(file)
     else
       openFile(file)
-  }, [file, onPress])
+  }, [file, onPress, currentMessage, mediaTransfer])
 
   if (!file)
     return null
 
   const extension = fileExtension(file.name)
-  const size = formatFileSize(file.size)
+  // "1.2 MB / 4.5 MB" in place of the size while it moves (`ChatMessageCell.java:18363-18367`).
+  const size = currentMessage?.transfer && file.size
+    ? `${formatFileSize(Math.round(clampProgress(currentMessage.transfer.progress) * file.size))} / ${formatFileSize(file.size)}`
+    : formatFileSize(file.size)
   const hasText = !!currentMessage?.text
 
   return (
@@ -87,6 +108,16 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
         {extension
           ? <Text style={styles.extension} numberOfLines={1} adjustsFontSizeToFit>{extension}</Text>
           : <View style={styles.page}><View style={styles.pageFold} /></View>}
+        {hasShownButton && (
+          <RadialProgress
+            style={StyleSheet.absoluteFill}
+            icon={transfer?.icon ?? 'none'}
+            progress={transfer?.progress ?? 0}
+            size={ICON_SIZE}
+            color={styles.extension.color as string}
+            backgroundColor={styles.icon.backgroundColor as string}
+          />
+        )}
       </View>
       <View style={[styles.meta, !hasText && styles.metaReserve]}>
         <Text style={[styles.name, isRTL && styles.textRTL]} numberOfLines={2} ellipsizeMode='middle'>

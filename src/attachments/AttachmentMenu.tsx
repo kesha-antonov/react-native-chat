@@ -1,6 +1,5 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
   Image,
   ListRenderItemInfo,
   Modal,
@@ -28,6 +27,7 @@ import Animated, {
 import { withAlpha } from '../colorUtils'
 import { Icon } from '../components/Icon'
 import { CameraIcon, PinIcon } from '../components/MediaControls'
+import { Spinner } from '../components/Spinner'
 import { useWindowInsets } from '../components/windowInsets'
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { useColorScheme } from '../hooks/useColorScheme'
@@ -36,6 +36,7 @@ import { useLabels } from '../hooks/useLabels'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { formatLabel } from '../i18n'
 import { IconName } from '../Icons'
+import { warning } from '../logging'
 import { getExpoImage, hasImagePicker, hasImagePickerCamera, hasMediaLibrary } from '../optional'
 import { ChatTheme } from '../Theme'
 import { CurrentLocation, getCurrentLocation, pickDocuments, pickFromSystemGallery, takePhoto } from './buildMessages'
@@ -331,10 +332,25 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
       onSend(attachments, withCaption)
   }, [onSend])
 
+  // The system picker opens over the sheet, and the sheet closes only once something was
+  // picked. Closing first unmounted the sheet's Modal in the same tick as the picker was
+  // presented, and iOS refuses to present while a controller is being dismissed - so the File
+  // tab just closed the sheet. Cancelling the picker also leaves the sheet open, as in Telegram.
+  const isPickingRef = useRef(false)
   const runPicker = useCallback((picker: () => Promise<PickedAttachment[]>) => {
-    closeThen(() => {
-      picker().then(picked => sendPicked(picked)).catch(() => {})
-    })
+    if (isPickingRef.current)
+      return
+
+    isPickingRef.current = true
+    picker()
+      .then(picked => {
+        if (picked.length)
+          closeThen(() => sendPicked(picked))
+      })
+      .catch(reason => warning('The attachment picker failed:', reason))
+      .finally(() => {
+        isPickingRef.current = false
+      })
   }, [closeThen, sendPicked])
 
   const fetchLocation = useCallback(() => {
@@ -497,7 +513,8 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
             <Text style={[styles.locationTitle, isRTL && styles.textRTL]} numberOfLines={1}>{labels.attachSendLocation}</Text>
             {!!subtitle && <Text style={[styles.locationSubtitle, isRTL && styles.textRTL]} numberOfLines={2}>{subtitle}</Text>}
           </View>
-          {location === 'locating' && <ActivityIndicator color={theme.attachments.secondaryText} />}
+          {/* Telegram's send-location cell has no spinner: "Locating…" under the title is the
+              whole fetching state (`SendLocationCell`). */}
         </Pressable>
       )
     }
@@ -516,7 +533,8 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
             <Text style={styles.panelButtonText}>{labels.attachChooseFromGallery}</Text>
           </Pressable>
         )}
-        {gallery.status === 'loading' && <ActivityIndicator color={theme.attachments.secondaryText} />}
+        {/* `EmptyTextProgressView.showProgress`: a 40 `RadialProgressView` in `progressCircle`. */}
+        {gallery.status === 'loading' && <Spinner size={40} color={theme.colors.accent} />}
       </View>
     )
   }

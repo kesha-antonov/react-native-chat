@@ -509,6 +509,8 @@ interface IMessage {
   createdAt: Date | number
   user: User
   image?: string
+  /** Tiny stand-in drawn blurred under `image` until it loads: a small image uri, or a blurhash with expo-image */
+  imagePlaceholder?: string
   video?: string
   /** Render `video` as a round video note */
   videoNote?: boolean
@@ -532,6 +534,10 @@ interface IMessage {
   editedAt?: Date | number
   /** True while the text is still streaming in (shows a typing cursor) */
   streaming?: boolean
+  /** Media uploading or downloading: Telegram's progress ring with a cancel ✕ ({ type: 'upload' | 'download', progress?, totalBytes? }) */
+  transfer?: MediaTransfer
+  /** Media not fetched by itself: Telegram's download arrow, which calls `mediaTransfer.onDownload` */
+  isDownloadRequired?: boolean
   quickReplies?: QuickReplies
   replyMessage?: ReplyMessage
   reactions?: MessageReaction[]
@@ -684,7 +690,9 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 
 - **`messagesContainerStyle`** _(Object)_ - Custom style for the messages container
 - **`renderMessage`** _(Component | Function)_ - Custom message container
-- **`renderLoading`** _(Component | Function)_ - Render a loading view when initializing
+- **`renderLoading`** _(Component | Function)_ - Render a loading view while the chat measures its layout on mount
+- **`isLoading`** _(Boolean)_ - The history is loading. Over an empty list the chat shows Telegram's spinner in a service-colored circle (`ChatActivity.progressView`: a 28 arc in a 36 circle, growing in from 0.3 over 150ms) in place of the empty-chat card. Messages already passed stay visible, without the spinner
+- **`mediaTransfer`** _(Object)_ - Handlers for Telegram's media buttons. `{ onDownload?, onCancel? }`. A message with `transfer: { type, progress?, totalBytes? }` draws the progress ring with a cancel ✕ over its photo, video, file, voice or round note (with "1.2 MB / 4.5 MB" when `totalBytes` or the file size is known); tapping it calls `onCancel(message)`. A message with `isDownloadRequired` draws the download arrow; tapping it calls `onDownload(message)`. Without `onDownload`, a voice note or photo then fetches itself. Remote voice notes, photos and round notes that need no app handling show the same ring while they load, from the request's own progress
 - **`renderChatEmpty`** _(Function | null)_ - What to show while there are no messages. By default Telegram's greeting card (`ChatGreetingsView`): "No messages here yet...", a line of help and a big 👋 that sends itself when tapped, centered over the wallpaper. Return your own element to replace it, or pass `null` for nothing. The card is exported as `ChatEmpty`.
 - **`emptyChatGreeting`** _(String | null)_ - The greeting on the empty-chat card, sent as a message when tapped; default `'👋'`. `null` keeps just the title.
 - **`firstUnreadMessageId`** _(String | Number | null)_ - The first message the user has not read. Telegram's full-width "Unread Messages" bar is drawn above it and the chat opens scrolled so the bar is at the top. Keep it fixed while the chat is open (Telegram keeps the bar until you leave), e.g. computed once from the unread count when the screen mounts.
@@ -841,13 +849,13 @@ Following Telegram, avatars and sender names show in group chats only: a one-to-
 - **`loadEarlierMessagesProps`** _(Object)_ - Props to pass to the LoadEarlierMessages component. The button is only visible when `isAvailable` is `true`:
   - `isAvailable` - Controls button visibility (default: false)
   - `onPress` - Callback when button is pressed
-  - `isLoading` - Display loading indicator (default: false)
-  - `isInfiniteScrollEnabled` - Enable infinite scroll up when reaching the top of messages container, automatically calls `onPress` (not yet supported for web)
+  - `isLoading` - Shows Telegram's loading cell, a spinner in a 36 service circle, in place of the button (default: false)
+  - `isInfiniteScrollEnabled` - Enable infinite scroll up when reaching the top of messages container, automatically calls `onPress` (not yet supported for web). As in Telegram, the list then ends in the loading cell instead of a button while `isAvailable`
   - `label` - Override the default "Load earlier messages" text
   - `containerStyle` / `wrapperStyle` / `textStyle` - Custom styles for the button
   - `activityIndicatorStyle` - Custom style for the loading indicator
-  - `activityIndicatorColor` - Color of the loading indicator (default: 'white')
-  - `activityIndicatorSize` - Size of the loading indicator (default: 'small')
+  - `activityIndicatorColor` - Color of the spinner's arc (default: the date pill's text color)
+  - `activityIndicatorSize` - Deprecated and ignored: the spinner is Telegram's 28 arc
 - **`renderLoadEarlier`** _(Component | Function)_ - Custom "Load earlier messages" button
 
 ### Typing Indicator

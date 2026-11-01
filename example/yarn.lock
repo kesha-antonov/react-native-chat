@@ -5207,6 +5207,7 @@ __metadata:
     expo-constants: "npm:~58.0.14"
     expo-device: "npm:~58.0.5"
     expo-document-picker: "npm:~58.0.4"
+    expo-file-system: "npm:~58.0.13"
     expo-font: "npm:~58.0.11"
     expo-haptics: "npm:~58.0.7"
     expo-image: "npm:~58.0.18"

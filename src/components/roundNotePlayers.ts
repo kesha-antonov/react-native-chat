@@ -23,7 +23,11 @@ export interface NotePlayer {
   currentTime: number
   playbackRate: number
   duration?: number
-  addListener?: (event: string, listener: () => void) => { remove?: () => void } | undefined
+  /** `idle`, `loading`, `readyToPlay` or `error`. */
+  status?: string
+  /** Seconds buffered ahead. */
+  bufferedPosition?: number
+  addListener?: (event: string, listener: (payload?: any) => void) => { remove?: () => void } | undefined
 }
 
 /** A detached note, waiting for its row to come back or for playback to end. */

@@ -4,6 +4,15 @@ import { GestureDetector, GestureStateManager, usePanGesture } from 'react-nativ
 import Animated, { ReduceMotion, SharedValue, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useRaiseToListen } from './components/earpiece'
 import { MediaCard } from './components/MediaCard'
+import { isRemoteUri } from './components/mediaDownload'
+import {
+  MEDIA_BUTTON_SIZE,
+  MEDIA_LOADER_BACKGROUND,
+  MEDIA_LOADER_ICON,
+  MediaInfoPill,
+  ROUND_BUTTON_SIZE,
+  transferLabel,
+} from './components/MediaLoader'
 import {
   StopReason,
   claimPlayback,
@@ -19,7 +28,9 @@ import {
   useReportNowPlaying,
   useScrollToMessage,
 } from './components/mediaPlayback'
+import { transferState, useMediaTransfer } from './components/mediaTransfer'
 import { suppressPressAfterHold } from './components/messagePress'
+import { MediaActionIcon, RadialProgress } from './components/RadialProgress'
 import { recordingHaptic } from './components/recordingFeedback'
 import {
   FADE_MS,
@@ -172,6 +183,31 @@ const RoundNotePlayer = ({
     playerCache.retain(playerKey)
     return () => playerCache.release(playerKey)
   }, [playerCache, playerKey])
+  // Telegram's round note button while the file is not here (`updateButtonState`, round):
+  // the cancel ✕ with a ring as it downloads, the arrow when it waits for a tap. expo-video
+  // streams, so the ring follows how much of the clip is buffered until it can play.
+  const [isPlayerLoading, setIsPlayerLoading] = useState(() => player.status === 'loading' || player.status === 'idle')
+  const bufferProgress = useSharedValue(0)
+  useEffect(() => {
+    const subscription = player.addListener?.('statusChange', (event?: { status?: string }) => {
+      setIsPlayerLoading(event?.status === 'loading' || event?.status === 'idle')
+    })
+    setIsPlayerLoading(player.status === 'loading' || player.status === 'idle')
+    return () => subscription?.remove?.()
+  }, [player])
+  useEffect(() => {
+    if (!isPlayerLoading)
+      return
+    const timer = setInterval(() => {
+      const total = player.duration || duration || 0
+      if (total > 0)
+        bufferProgress.value = Math.min(1, (player.bufferedPosition || 0) / total)
+    }, 200)
+    return () => clearInterval(timer)
+  }, [isPlayerLoading, player, duration, bufferProgress])
+  const roundTransfer = transferState(message)
+  const mediaTransfer = useMediaTransfer()
+
   const VideoView = expoVideo.VideoView
   const rate = usePlaybackRate()
   const { width: windowWidth, height: windowHeight } = useWindowDimensions()
@@ -608,13 +644,37 @@ const RoundNotePlayer = ({
 
   const isPlayDisabled = viewOnce.isSpent
 
+  let buttonIcon: MediaActionIcon
+  if (roundTransfer)
+    buttonIcon = roundTransfer.icon
+  else if (isPlayerLoading && !isCurrent && isRemoteUri(uri))
+    buttonIcon = 'cancel'
+  else
+    buttonIcon = !isCurrent && !isAutoplay ? 'play' : 'none'
+  // Once the ring has shown, it stays to morph into the play button.
+  const [hasShownButton, setHasShownButton] = useState(buttonIcon === 'cancel' || buttonIcon === 'download')
+  if (!hasShownButton && (buttonIcon === 'cancel' || buttonIcon === 'download'))
+    setHasShownButton(true)
+
+  const onPressNote = () => {
+    if (message?.transfer) {
+      mediaTransfer.onCancel(message)
+      return
+    }
+    if (message?.isDownloadRequired) {
+      mediaTransfer.onDownload(message)
+      return
+    }
+    onPress()
+  }
+
   return (
     <View style={isIncoming ? styles.noteColumnLeft : styles.noteColumnRight}>
       <Animated.View style={[styles.noteWrapper, shiftStyle, flightRevealStyle]}>
         <GestureDetector gesture={seekGesture}>
           <Animated.View ref={noteRef} onLayout={onNoteLayout} style={[styles.note, sizeStyle, videoStyle]}>
             <Pressable
-              onPress={onPress}
+              onPress={onPressNote}
               {...suppressPressAfterHold}
               disabled={isPlayDisabled}
               accessibilityRole='button'
@@ -641,7 +701,19 @@ const RoundNotePlayer = ({
                 isViewOnce={isViewOnce}
                 hasViewOnceStarted={viewOnce.hasStarted || viewOnce.isSpent}
                 isDisabled={isPlayDisabled}
+                isPlayHidden={hasShownButton}
               />
+              {hasShownButton && (
+                <View style={[StyleSheet.absoluteFill, styles.noteButton]} pointerEvents='none'>
+                  <RadialProgress
+                    icon={buttonIcon}
+                    progress={roundTransfer ? roundTransfer.progress : bufferProgress}
+                    size={ROUND_BUTTON_SIZE}
+                    color={MEDIA_LOADER_ICON}
+                    backgroundColor={MEDIA_LOADER_BACKGROUND}
+                  />
+                </View>
+              )}
             </Pressable>
           </Animated.View>
         </GestureDetector>
@@ -755,6 +827,46 @@ const RoundTranscription = ({
   )
 }
 
+/**
+ * A video's media button while it uploads or waits to download (`transfer`,
+ * `isDownloadRequired`): Telegram's 48 ring over the frame and the size pill. A tap on the
+ * video is then the button's.
+ */
+const VideoTransferOverlay = ({ message }: { message: IMessage }) => {
+  const mediaTransfer = useMediaTransfer()
+  const state = transferState(message)
+  const [hasShown, setHasShown] = useState(!!state)
+  if (state && !hasShown)
+    setHasShown(true)
+  if (!hasShown)
+    return null
+
+  const label = message.transfer ? transferLabel(state?.progress ?? 0, message.transfer.totalBytes) : null
+  return (
+    <Pressable
+      style={[StyleSheet.absoluteFill, styles.videoOverlay]}
+      pointerEvents={state ? 'auto' : 'none'}
+      accessibilityRole='button'
+      accessibilityLabel={state?.icon === 'cancel' ? 'cancel' : 'download video'}
+      onPress={() => {
+        if (message.transfer)
+          mediaTransfer.onCancel(message)
+        else if (message.isDownloadRequired)
+          mediaTransfer.onDownload(message)
+      }}
+    >
+      <RadialProgress
+        icon={state?.icon ?? 'none'}
+        progress={state?.progress ?? 0}
+        size={MEDIA_BUTTON_SIZE}
+        color={MEDIA_LOADER_ICON}
+        backgroundColor={MEDIA_LOADER_BACKGROUND}
+      />
+      {label != null && <View style={styles.videoPill}><MediaInfoPill label={label} /></View>}
+    </Pressable>
+  )
+}
+
 export function MessageVideo<TMessage extends IMessage = IMessage> ({
   currentMessage,
   position = 'left',
@@ -807,7 +919,12 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
               transcription={currentMessage?.transcription}
             />
           )
-          : <ExpoVideoPlayer uri={uri} style={[styles.video, videoStyle]} videoProps={videoProps} />
+          : (
+            <View>
+              <ExpoVideoPlayer uri={uri} style={[styles.video, videoStyle]} videoProps={videoProps} />
+              {currentMessage && <VideoTransferOverlay message={currentMessage} />}
+            </View>
+          )
         : <MediaCard kind='video' uri={uri} position={position} style={[isNote && noteStyle, videoStyle]} />}
     </View>
   )
@@ -844,6 +961,22 @@ const styles = StyleSheet.create({
   // Drawn above the avatar when shifted over it while playing.
   noteWrapper: {
     zIndex: 1,
+  },
+  videoOverlay: {
+    margin: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoPill: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  noteButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   noteColumnLeft: {
     alignItems: 'flex-start',

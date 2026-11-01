@@ -84,6 +84,8 @@ export interface VideoNoteOverlayProps {
   isViewOnce?: boolean
   /** The view-once note has started; its marker is gone for good. */
   hasViewOnceStarted?: boolean
+  /** The note draws its own media button (a download ring) in place of the play badge. */
+  isPlayHidden?: boolean
   /** Can no longer be played (a spent view-once note): the play button dims. */
   isDisabled?: boolean
 }
@@ -247,6 +249,7 @@ export function VideoNoteOverlay ({
   isViewOnce = false,
   hasViewOnceStarted = false,
   isDisabled = false,
+  isPlayHidden = false,
 }: VideoNoteOverlayProps) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents='none'>
@@ -256,7 +259,7 @@ export function VideoNoteOverlay ({
       <FadingBadge isVisible={!isCurrent && isMuted} style={styles.muteBadge}>
         <SpeakerIcon isMuted size={14} />
       </FadingBadge>
-      <FadingBadge isVisible={!isCurrent && !isMuted} style={styles.centerBadge}>
+      <FadingBadge isVisible={!isCurrent && !isMuted && !isPlayHidden} style={styles.centerBadge}>
         <View style={isDisabled && styles.disabled}>
           <PlayIcon color='#fff' size={18} />
         </View>

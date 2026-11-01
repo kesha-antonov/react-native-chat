@@ -38,25 +38,40 @@ exports[`MessageImage should  render <MessageImage /> and compare with snapshot 
           ]
         }
       >
-        <Image
-          onLayout={[Function]}
-          resizeMode="cover"
-          source={
-            {
-              "uri": "url://to/image.png",
-            }
-          }
-          style={
-            [
+        <View>
+          <View
+            style={
               {
-                "borderRadius": 15,
-                "height": 180,
-                "minWidth": 240,
-              },
-              undefined,
-            ]
-          }
-        />
+                "opacity": 1,
+              }
+            }
+          >
+            <Image
+              onError={[Function]}
+              onLayout={[Function]}
+              onLoad={[Function]}
+              onLoadStart={[Function]}
+              onProgress={[Function]}
+              resizeMode="cover"
+              source={
+                {
+                  "uri": "url://to/image.png",
+                }
+              }
+              style={
+                [
+                  {
+                    "borderRadius": 15,
+                    "height": 180,
+                    "minWidth": 240,
+                  },
+                  undefined,
+                ]
+              }
+              testID="message-image"
+            />
+          </View>
+        </View>
       </View>
     </RNGestureHandlerButton>
   </View>

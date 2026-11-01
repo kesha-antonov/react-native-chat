@@ -16,6 +16,9 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { useColorScheme } from '@/hooks/use-color-scheme'
+
+import { ChatListShimmer, SHIMMER_COLORS } from './ChatListShimmer'
 import { Dialog } from './data'
 import { DialogAvatar } from './DialogAvatar'
 import { DialogCell, ROW_HEIGHT } from './DialogCell'
@@ -34,8 +37,25 @@ const ARCHIVE_ROW_ID = '__archive__'
 
 type Row = Dialog | { id: typeof ARCHIVE_ROW_ID }
 
+// Telegram shows its flicker placeholder while the dialogs load; the demo plays it once, on
+// the first open of the tab in a session, for a short simulated load.
+const SIMULATED_LOAD_MS = 1500
+let hasLoadedDialogs = false
+
 export default function ChatListScreen () {
   const colors = useChatListColors()
+  const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light'
+  const [isLoading, setIsLoading] = useState(!hasLoadedDialogs)
+
+  useEffect(() => {
+    if (hasLoadedDialogs)
+      return
+    const timer = setTimeout(() => {
+      hasLoadedDialogs = true
+      setIsLoading(false)
+    }, SIMULATED_LOAD_MS)
+    return () => clearTimeout(timer)
+  }, [])
   const insets = useSafeAreaInsets()
   const router = useRouter()
 
@@ -225,7 +245,7 @@ export default function ChatListScreen () {
       </View>
 
       <Animated.FlatList
-        data={rows}
+        data={isLoading ? EMPTY_ROWS : rows}
         keyExtractor={item => item.id}
         renderItem={renderItem}
         itemLayoutAnimation={LIST_TRANSITION}
@@ -233,12 +253,20 @@ export default function ChatListScreen () {
         scrollEventThrottle={16}
         keyboardShouldPersistTaps='handled'
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={(
-          <Text style={[styles.empty, { color: colors.message }]}>
-            {query ? 'No chats found' : 'No chats here yet'}
-          </Text>
-        )}
+        ListEmptyComponent={isLoading
+          ? undefined
+          : (
+            <Text style={[styles.empty, { color: colors.message }]}>
+              {query ? 'No chats found' : 'No chats here yet'}
+            </Text>
+          )}
       />
+      {isLoading && (
+        // The list fades its rows in over the placeholder (`setAnimateEmptyView(true, ALPHA)`).
+        <Animated.View exiting={FadeOut.duration(150)} style={[styles.shimmer, { top: insets.top + 56 }]} pointerEvents='none'>
+          <ChatListShimmer colors={SHIMMER_COLORS[colorScheme]} />
+        </Animated.View>
+      )}
 
       {!isArchiveOpen && !isSelectionMode && (
         <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={[styles.fabWrap, fabStyle]}>
@@ -293,9 +321,17 @@ function ArchiveRow ({ dialogs, onPress }: { dialogs: Dialog[], onPress: () => v
   )
 }
 
+const EMPTY_ROWS: Row[] = []
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  shimmer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   header: {
     zIndex: 1,

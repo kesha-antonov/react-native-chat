@@ -21,7 +21,6 @@ exports[`should render <LoadEarlierMessages /> and compare with snapshot 1`] = `
 >
   <RNGestureHandlerButton
     accessibilityRole="button"
-    enabled={true}
     needsOffscreenAlphaCompositing={true}
   >
     <View

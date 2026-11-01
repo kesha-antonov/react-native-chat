@@ -22,6 +22,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { ChatContext } from '../ChatContext'
 import { ChatEmpty } from '../components/ChatEmpty'
+import { ChatLoadingOverlay } from '../components/ChatLoadingOverlay'
 import { ChatOverlayProvider, ChatOverlaySlot } from '../components/ChatOverlay'
 import { ChatWallpaper, useOutgoingStep } from '../components/ChatWallpaper'
 import { ComposerPanelsContext, createComposerPanelsStore } from '../components/composerPanels'
@@ -33,6 +34,7 @@ import {
   setPlaybackRate,
   subscribePlaybackRate,
 } from '../components/mediaPlayback'
+import { createMediaTransferController, MediaTransferContext } from '../components/mediaTransfer'
 import { createMessageHighlightStore, MessageHighlightContext } from '../components/messageHighlight'
 import {
   createMessageSelectionStore,
@@ -176,6 +178,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     // Reply props
     reply,
     mediaPlayback,
+    mediaTransfer,
 
     reactions,
     messageActions,
@@ -211,6 +214,11 @@ function Chat<TMessage extends IMessage = IMessage> (
     onViewOnceEnd: mediaPlayback?.onViewOnceEnd,
     isFloatingRoundNoteEnabled: mediaPlayback?.isFloatingRoundNoteEnabled ?? true,
   })
+
+  // Media button handlers, read at press time; written per render like the
+  // playback options so rows never re-render for a new handler.
+  const [mediaTransferController] = useState(createMediaTransferController)
+  mediaTransferController.set(mediaTransfer)
 
   // A round note kept playing past its row is stopped with the chat, and rows
   // unmounting along with it stop theirs rather than floating them.
@@ -584,7 +592,10 @@ function Chat<TMessage extends IMessage = IMessage> (
   const sendGreeting = useCallback((greeting: string) => {
     sendRef.current([{ text: greeting } as TMessage])
   }, [])
-  const isChatEmptyShown = messages.length === 0 && props.renderChatEmpty === undefined
+  // Telegram shows its spinner instead of the empty-chat card while history loads, and only
+  // over an empty list (`showProgressView(loading && messages.isEmpty())`, `ChatActivity.java:9268`).
+  const isHistoryLoading = !!props.isLoading && messages.length === 0
+  const isChatEmptyShown = messages.length === 0 && props.renderChatEmpty === undefined && !props.isLoading
 
   const isNowPlayingBarEnabled = mediaPlayback?.isNowPlayingBarEnabled ?? true
   const isFloatingRoundNoteEnabled = mediaPlayback?.isFloatingRoundNoteEnabled ?? true
@@ -622,6 +633,7 @@ function Chat<TMessage extends IMessage = IMessage> (
               <ChatEmpty greeting={emptyChatGreeting} onPressGreeting={sendGreeting} />
             </View>
           )}
+          <ChatLoadingOverlay isVisible={isHistoryLoading} />
           {isFloatingRoundNoteEnabled && <FloatingRoundNote />}
         </View>
         {renderComponentOrElement(renderChatFooter, {})}
@@ -646,6 +658,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     isAvatarVisible,
     isUsernameVisible,
     isChatEmptyShown,
+    isHistoryLoading,
     emptyChatGreeting,
     sendGreeting,
   ])
@@ -941,16 +954,18 @@ function Chat<TMessage extends IMessage = IMessage> (
             style={[stylesCommon.fill, !isReady && styles.hidden]}
           >
             <MediaPlaybackContext.Provider value={mediaController}>
-              <MessageHighlightContext.Provider value={highlightStore}>
-                <MessageSelectionContext.Provider value={selectionStore}>
-                  <ComposerPanelsContext.Provider value={composerPanels}>
-                    <ChatOverlayProvider>
-                      {renderMessages}
-                      {inputToolbarFragment}
-                    </ChatOverlayProvider>
-                  </ComposerPanelsContext.Provider>
-                </MessageSelectionContext.Provider>
-              </MessageHighlightContext.Provider>
+              <MediaTransferContext.Provider value={mediaTransferController}>
+                <MessageHighlightContext.Provider value={highlightStore}>
+                  <MessageSelectionContext.Provider value={selectionStore}>
+                    <ComposerPanelsContext.Provider value={composerPanels}>
+                      <ChatOverlayProvider>
+                        {renderMessages}
+                        {inputToolbarFragment}
+                      </ChatOverlayProvider>
+                    </ComposerPanelsContext.Provider>
+                  </MessageSelectionContext.Provider>
+                </MessageHighlightContext.Provider>
+              </MediaTransferContext.Provider>
             </MediaPlaybackContext.Provider>
           </View>
           {!isReady && renderComponentOrElement(renderLoading, {})}

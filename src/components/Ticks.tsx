@@ -50,37 +50,51 @@ export const Ticks = ({ double = false, color, size = 9 }: TicksProps) => {
 
 export interface PendingClockProps {
   color: string
+  /** Face diameter; Telegram's is 12 (`MsgClockDrawable.getIntrinsicWidth`). */
   size?: number
 }
 
-/**
- * A minimal clock-outline icon for the "pending" (sending) state, replacing the
- * old "🕓" emoji. The hands rotate continuously while the message is sending,
- * mirroring Telegram's spinning clock. Respects the system reduce-motion
- * setting (the hands simply hold still).
+/*
+ * Telegram's sending clock, `ui/Components/MsgClockDrawable.java`: a 1-wide ring of radius
+ * `size / 2 - 0.5` with two round-capped hands from the centre. The minute hand (3 long,
+ * pointing up) turns once every 1.5s, the hour hand (2.3 long, pointing right) once every
+ * 4.5s (`rotateTime`, `rotateHourTime`, `:40-50`).
  */
-export const PendingClock = ({ color, size = 11 }: PendingClockProps) => {
-  const styles = useMemo(() => createClockStyles(color, size), [color, size])
-  const rotation = useSharedValue(0)
+export const CLOCK_MINUTE_MS = 1500
+export const CLOCK_HOUR_MS = CLOCK_MINUTE_MS * 3
+const STROKE = 1
 
+const useTurn = (duration: number) => {
+  const rotation = useSharedValue(0)
   useEffect(() => {
     rotation.value = withRepeat(
-      withTiming(360, { duration: 1200, easing: Easing.linear, reduceMotion: ReduceMotion.System }),
+      withTiming(360, { duration, easing: Easing.linear, reduceMotion: ReduceMotion.System }),
       -1,
       false
     )
-
     return () => cancelAnimation(rotation)
-  }, [rotation])
-
-  const handsStyle = useAnimatedStyle(() => ({
+  }, [rotation, duration])
+  return useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
   }))
+}
+
+/**
+ * Telegram's animated sending clock. Respects the system reduce-motion setting (the hands
+ * then hold still).
+ */
+export const PendingClock = ({ color, size = 12 }: PendingClockProps) => {
+  const styles = useMemo(() => createClockStyles(color, size), [color, size])
+  const minuteStyle = useTurn(CLOCK_MINUTE_MS)
+  const hourStyle = useTurn(CLOCK_HOUR_MS)
 
   return (
-    <View style={styles.face}>
-      <Animated.View style={[styles.hands, StyleSheet.absoluteFill, handsStyle]}>
+    <View testID='pending-clock' style={styles.box}>
+      <View style={styles.face} />
+      <Animated.View style={[StyleSheet.absoluteFill, minuteStyle]}>
         <View style={styles.minuteHand} />
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, hourStyle]}>
         <View style={styles.hourHand} />
       </Animated.View>
     </View>
@@ -115,35 +129,43 @@ const createTicksStyles = (size: number) => StyleSheet.create({
 })
 
 const createClockStyles = (color: string, size: number) => {
-  const hand = Math.max(1, Math.round(size * 0.09))
-
+  const centre = size / 2
+  // The ring is stroked on radius `size / 2 - 0.5`, so it fills the box exactly.
+  const minute = 3
+  const hour = 2.3
   return StyleSheet.create({
-    face: {
+    box: {
       width: size,
       height: size,
-      borderRadius: size / 2,
+    },
+    face: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      width: size,
+      height: size,
+      borderRadius: centre,
       borderColor: color,
-      borderWidth: hand,
-      alignItems: 'center',
-      justifyContent: 'center',
+      borderWidth: STROKE,
     },
-    hands: {
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+    // Each hand runs from the centre, its round caps reaching half the stroke past both ends.
     minuteHand: {
       position: 'absolute',
-      width: hand,
-      height: size * 0.32,
+      left: centre - STROKE / 2,
+      top: centre - minute - STROKE / 2,
+      width: STROKE,
+      height: minute + STROKE,
+      borderRadius: STROKE / 2,
       backgroundColor: color,
-      bottom: '50%',
     },
     hourHand: {
       position: 'absolute',
-      height: hand,
-      width: size * 0.24,
+      left: centre - STROKE / 2,
+      top: centre - STROKE / 2,
+      width: hour + STROKE,
+      height: STROKE,
+      borderRadius: STROKE / 2,
       backgroundColor: color,
-      left: '50%',
     },
   })
 }

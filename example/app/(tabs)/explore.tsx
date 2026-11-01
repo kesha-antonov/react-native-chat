@@ -8,13 +8,14 @@ import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 import { useThemeColor } from '@/hooks/use-theme-color'
 
-type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions' | 'context-menu' | 'media' | 'theming' | 'localization' | 'day-animated' | 'keyboard-provider' | 'aligned-top'
+type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions' | 'context-menu' | 'media' | 'loading' | 'theming' | 'localization' | 'day-animated' | 'keyboard-provider' | 'aligned-top'
 
 const examples: Array<{ id: ChatExample, title: string, description: string }> = [
   { id: 'ai-bot', title: 'AI Bot (Streaming + Markdown)', description: 'Streamed assistant replies with a typing cursor, Stop button, and markdown rendering' },
   { id: 'reactions', title: 'Reactions', description: 'Your own quick reactions bar; the chevron opens the built-in full emoji grid' },
   { id: 'context-menu', title: 'Context Menu', description: 'Telegram-style long-press menu: built-in actions, Edit / Pin / Delete callbacks and a custom action' },
   { id: 'media', title: 'Media & Voice', description: 'Audio, video and location messages, hold-to-record voice notes, and video recording' },
+  { id: 'loading', title: 'Loading States', description: 'Download and upload rings, the sending clock, failed messages, image placeholders and history loading' },
   { id: 'theming', title: 'Theming & Icons', description: 'Switch themes at runtime and override icons via the icon registry' },
   { id: 'localization', title: 'Localization (i18n)', description: 'Switch UI language at runtime; built-in en/es/fr/de/ru + custom labels' },
   { id: 'basic', title: 'Basic Example', description: 'Defaults only: emoji keyboard, attachment menu, voice and round video notes, load earlier' },

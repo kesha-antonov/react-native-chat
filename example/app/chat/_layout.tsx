@@ -65,6 +65,10 @@ export default function ChatLayout () {
         options={{ title: 'Media & Voice' }}
       />
       <Stack.Screen
+        name='loading'
+        options={{ title: 'Loading States' }}
+      />
+      <Stack.Screen
         name='theming'
         options={{ title: 'Theming & Icons' }}
       />

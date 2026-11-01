@@ -19,6 +19,7 @@ import { getAudioApi } from '../optional'
 import { ChatTheme } from '../Theme'
 import { useRaiseToListen } from './earpiece'
 import { MediaCard } from './MediaCard'
+import { downloadWithProgress, isRemoteUri } from './mediaDownload'
 import { getMediaPalette } from './mediaPalette'
 import {
   StopReason,
@@ -29,9 +30,10 @@ import {
   usePlaylistEntry,
   useReportNowPlaying,
 } from './mediaPlayback'
+import { clampProgress, useMediaTransfer } from './mediaTransfer'
 import { suppressPressAfterHold } from './messagePress'
 import { UnreadDot } from './NoteIndicators'
-import { PlayPauseIcon } from './PlayPauseIcon'
+import { MediaActionIcon, RadialProgress } from './RadialProgress'
 import {
   SEND_FLIGHT_REVEAL_MS,
   SEND_FLIGHT_SAFETY_MS,
@@ -225,7 +227,23 @@ export function WaveformPlayer ({
 
   const [levels, setLevels] = useState<number[]>([])
   const [failed, setFailed] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  // Telegram's voice button while the file is not here yet (`ChatMessageCell.updateButtonState`):
+  // the download arrow until it is fetched (`buttonState 2`), the cancel ✕ with a progress ring
+  // while it is (`buttonState 4`), then play. A remote note fetches itself, as Telegram
+  // auto-downloads voice; the app can drive it instead with `transfer` / `isDownloadRequired`.
+  const transfer = message?.transfer
+  const isAppDownloading = transfer?.type === 'download'
+  const isDownloadRequired = !!message?.isDownloadRequired
+  const [isCancelled, setIsCancelled] = useState(false)
+  const [isRequested, setIsRequested] = useState(false)
+  const shouldLoad = !isAppDownloading && !isCancelled && (!isDownloadRequired || isRequested)
+  const isRemote = isRemoteUri(uri)
+  // A remote note opens straight on the ring, as Telegram binds a loading cell without animating.
+  const [isFetching, setIsFetching] = useState(() => isRemote && shouldLoad)
+  const downloadProgress = useSharedValue(0)
+  // A tap on play before a local file has decoded starts it once it has.
+  const pendingPlayRef = useRef(false)
+  const mediaTransfer = useMediaTransfer()
   const [isPlaying, setIsPlaying] = useState(false)
   // Progress as last rendered. The bars follow `progress` (a shared value) on
   // every frame; React only re-renders when the shown second changes.
@@ -252,9 +270,9 @@ export function WaveformPlayer ({
   const isDragging = useSharedValue(false)
   const dragStart = useSharedValue(0)
   const fillAll = useSharedValue(false)
-  const loading = useSharedValue(1)
+  const loading = useSharedValue(0)
   const sweep = useSharedValue(0)
-  const [isSweepMounted, setIsSweepMounted] = useState(true)
+  const [isSweepMounted, setIsSweepMounted] = useState(false)
 
   const appearOnMount = useRef(!!animateAppear).current
   const appear = useSharedValue(appearOnMount ? 0 : 1)
@@ -298,11 +316,43 @@ export function WaveformPlayer ({
   }, [])
 
   useEffect(() => {
+    if (!shouldLoad)
+      return
+
     let cancelled = false
+    let abortDownload: (() => void) | null = null
     const ctx = new audioApi.AudioContext()
     ctxRef.current = ctx
 
     ;(async () => {
+      let source: string | ArrayBuffer = uri
+      if (isRemote) {
+        downloadProgress.value = 0
+        setIsFetching(true)
+        const download = downloadWithProgress(uri, fraction => {
+          downloadProgress.value = fraction
+        })
+        abortDownload = download.abort
+        try {
+          source = await download.promise
+        } catch {
+          // A failed fetch goes back to the download arrow, for a retry by tap.
+          if (!cancelled) {
+            setIsFetching(false)
+            setIsCancelled(true)
+          }
+          return
+        } finally {
+          abortDownload = null
+        }
+        if (cancelled)
+          return
+
+        // On disk, Telegram's button turns to play at once; decoding the waveform
+        // follows, and a tap meanwhile plays once it is ready.
+        setIsFetching(false)
+      }
+
       try {
         // `decodeAudioData(uri)` is the current API; `decodeAudioDataSource` was
         // its name in older react-native-audio-api releases and no longer exists
@@ -312,7 +362,7 @@ export function WaveformPlayer ({
           ? (source: string) => ctx.decodeAudioData(source)
           : (source: string) => ctx.decodeAudioDataSource(source)
 
-        const buffer = await decode(uri)
+        const buffer = await decode(source as string)
         if (cancelled)
           return
 
@@ -320,17 +370,22 @@ export function WaveformPlayer ({
         durationRef.current = buffer.duration ?? durationProp ?? 0
         setDecodedDuration(durationRef.current)
         setLevels(levelsFromSamples(buffer.getChannelData(0), barCountRef.current))
-        setIsLoading(false)
+        setIsFetching(false)
+        if (pendingPlayRef.current) {
+          pendingPlayRef.current = false
+          playFromRef.current(0)
+        }
       } catch {
         if (!cancelled) {
           setFailed(true)
-          setIsLoading(false)
+          setIsFetching(false)
         }
       }
     })()
 
     return () => {
       cancelled = true
+      abortDownload?.()
       stopRaf()
       releasePlayback(playerId)
       try {
@@ -344,7 +399,7 @@ export function WaveformPlayer ({
         // noop
       }
     }
-  }, [uri, stopRaf, playerId, durationProp])
+  }, [uri, isRemote, shouldLoad, downloadProgress, stopRaf, playerId, durationProp])
 
   // Re-bucket an already-decoded waveform when the bar count changes.
   useEffect(() => {
@@ -503,6 +558,8 @@ export function WaveformPlayer ({
   const togglePlayback = useCallback(() => {
     if (isPlaying)
       pause()
+    else if (!bufferRef.current)
+      pendingPlayRef.current = true
     else
       playFrom(progressRef.current)
   }, [isPlaying, pause, playFrom])
@@ -622,7 +679,8 @@ export function WaveformPlayer ({
   // Loading shimmer while decoding and not playing; fades out once ready.
   // Telegram runs the same sweep while a transcription is on its way
   // (`TranscribeButton.setLoading` -> `seekBar.setLoading`).
-  const isShimmering = (isLoading || transcribe.isLoading) && !isPlaying
+  // Only for a transcription: a note being fetched shows the ring on its button instead.
+  const isShimmering = transcribe.isLoading && !isPlaying
   useEffect(() => {
     if (isShimmering) {
       setIsSweepMounted(true)
@@ -731,10 +789,12 @@ export function WaveformPlayer ({
 
   // SeekBarWaveform draws a view-once note's levels back to front
   // (`reverseWaveform`).
+  // Before there are levels every bar is at zero, which SeekBarWaveform draws as a
+  // row of 2x2 dots (`addBar` with h = 0 is just the round caps).
   const heights = useMemo(() => {
-    const next = levels.map(barHeight)
+    const next = levels.length ? levels.map(barHeight) : new Array<number>(barCount).fill(barHeight(0))
     return isViewOnce ? next.reverse() : next
-  }, [levels, isViewOnce])
+  }, [levels, isViewOnce, barCount])
 
   // The bubble lays its time over the note's bottom-right corner, so the
   // fallback card leaves it a line of its own.
@@ -749,24 +809,65 @@ export function WaveformPlayer ({
   // playing, or paused part-way - and the full length otherwise.
   const timeLabel = formatVoiceDuration(isCurrent ? shownProgress * fullDuration : fullDuration)
 
-  const isPlayDisabled = isLoading || viewOnce.isSpent
+  const isPlayDisabled = viewOnce.isSpent
+
+  let buttonIcon: MediaActionIcon
+  if (transfer)
+    buttonIcon = 'cancel'
+  else if (!shouldLoad)
+    buttonIcon = 'download'
+  else if (isFetching)
+    buttonIcon = 'cancel'
+  else
+    buttonIcon = isPlaying ? 'pause' : 'play'
+
+  const onPressButton = () => {
+    if (transfer) {
+      if (message)
+        mediaTransfer.onCancel(message)
+      return
+    }
+    if (!shouldLoad) {
+      setIsCancelled(false)
+      if (isDownloadRequired && message && mediaTransfer.hasDownloadHandler())
+        mediaTransfer.onDownload(message)
+      else
+        setIsRequested(true)
+      return
+    }
+    if (isFetching) {
+      setIsCancelled(true)
+      return
+    }
+    togglePlayback()
+  }
+  const buttonLabel = buttonIcon === 'cancel'
+    ? transfer?.type === 'upload' ? 'cancel upload' : 'cancel download'
+    : buttonIcon === 'download'
+      ? 'download'
+      : isPlaying ? 'pause' : 'play'
 
   return (
     <View style={[styles.container, { width: contentWidth }]}>
       <View style={styles.row}>
         <Animated.View ref={playRef} collapsable={false} onLayout={onPlayLayout} style={playRevealStyle}>
           <Pressable
-            onPress={togglePlayback}
+            onPress={onPressButton}
             {...suppressPressAfterHold}
             disabled={isPlayDisabled}
             accessibilityRole='button'
-            accessibilityState={{ disabled: isPlayDisabled, busy: isLoading }}
-            accessibilityLabel={isPlaying ? 'pause' : 'play'}
+            accessibilityState={{ disabled: isPlayDisabled, busy: buttonIcon === 'cancel' }}
+            accessibilityLabel={buttonLabel}
             accessibilityHint={isViewOnce ? 'plays once' : undefined}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={[styles.playCircle, isPlayDisabled && styles.playCircleLoading]}
           >
-            <PlayPauseIcon isPlaying={isPlaying} color={styles.glyphColor.color} size={18} />
+            <RadialProgress
+              icon={buttonIcon}
+              progress={transfer ? clampProgress(transfer.progress) : downloadProgress}
+              size={VOICE_BUTTON_SIZE}
+              color={styles.glyphColor.color}
+            />
           </Pressable>
           {isViewOnce && (
             <ViewOnceBadge

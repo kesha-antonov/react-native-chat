@@ -104,6 +104,26 @@ describe('the paperclip', () => {
     expect(sent[0]).toMatchObject({ file: PDF, user: ME })
   })
 
+  // The picker opens over the sheet. Closing the sheet first raced its Modal's dismissal on
+  // iOS, so the picker never appeared and File just closed the sheet.
+  it('opens the file picker while the sheet is still up, and keeps the sheet on cancel', async () => {
+    let isSheetUpWhenPicking = false
+    const onSend = jest.fn()
+    const utils = await mountChat(<Chat messages={messages} onSend={onSend} user={ME} />)
+    mockGetDocumentAsync.mockImplementation(async () => {
+      isSheetUpWhenPicking = utils.queryByLabelText('Location') != null
+      return { canceled: true, assets: null }
+    })
+
+    await fireEvent.press(utils.getByLabelText('Attach'))
+    await fireEvent.press(utils.getByLabelText('File'))
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(isSheetUpWhenPicking).toBe(true)
+    expect(onSend).not.toHaveBeenCalled()
+    expect(utils.getByLabelText('Location')).toBeTruthy()
+  })
+
   it('sends the current location from the Location tab', async () => {
     mockCurrentPosition.mockResolvedValue({ coords: { latitude: 51.5, longitude: -0.12, accuracy: 12 } })
     const onSend = jest.fn()

@@ -41,6 +41,9 @@ export default function ChatScreen ({ id }: { id: string }) {
   }), [id])
   const onEditMessage = useCallback((message: IMessage, text: string) => chatStore.editMessage(id, message, text), [id])
   const onDeleteMessage = useCallback((message: IMessage) => chatStore.deleteMessage(id, message), [id])
+  const mediaTransfer = useMemo(() => ({
+    onCancel: (message: IMessage) => chatStore.cancelUpload(id, message),
+  }), [id])
 
   if (!dialog)
     return null
@@ -51,6 +54,7 @@ export default function ChatScreen ({ id }: { id: string }) {
       <Chat
         messages={messages}
         onSend={onSend}
+        mediaTransfer={mediaTransfer}
         user={ME}
         isGroupChat={dialog.kind === 'group'}
         isTyping={!!typingUser}
