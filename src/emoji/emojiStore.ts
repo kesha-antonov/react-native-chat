@@ -76,21 +76,26 @@ export const searchEmojis = (query: string, limit = 200): string[] => {
     return []
 
   const { words } = getIndex()
+  // An emoji named exactly the query ("fire" is 🔥) comes first, then those with a word that
+  // starts with it, then the rest, as Telegram's keyword search ranks them.
+  const exact: string[] = []
   const matches: string[] = []
-  // Emojis whose words start with the query come first, as Telegram's keyword search ranks them.
   const later: string[] = []
+  const first = needles[0]
   for (const [emoji, text] of words) {
     if (!needles.every(needle => text.includes(needle)))
       continue
 
-    if (text.startsWith(needles[0]) || text.includes(` ${needles[0]}`))
+    if (text === first || text.endsWith(` ${first}`) && !text.slice(0, -first.length - 1).includes(' '))
+      exact.push(emoji)
+    else if (text.startsWith(first) || text.includes(` ${first}`))
       matches.push(emoji)
     else
       later.push(emoji)
-    if (matches.length >= limit)
+    if (exact.length + matches.length >= limit)
       break
   }
-  return [...matches, ...later].slice(0, limit)
+  return [...exact, ...matches, ...later].slice(0, limit)
 }
 
 // The five Fitzpatrick modifiers, lightest first.

@@ -159,11 +159,23 @@ That is the whole setup - everything below is optional.
 Actively maintained, New Architecture ready, built for the latest Reanimated / Gesture Handler.
 
 <p align="center">
-  <img width="200" src="https://github.com/user-attachments/assets/c9da88f5-0b20-471c-8cd7-373bdb767517" />
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img width="200" src="https://github.com/user-attachments/assets/f72b17f1-6c2e-43b5-87e7-477011aa3b07" />
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img width="200" src="https://github.com/user-attachments/assets/86711e73-ee3c-4527-b38d-e4dab47a44fe" />
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/chat-list-light.png" alt="Chat list with unread badges, pins, mutes and swipe-to-archive" />
+  &nbsp;&nbsp;
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/group-chat-light.png" alt="Group chat with names, avatars, a photo, a file, a reply and reactions" />
+  &nbsp;&nbsp;
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/group-chat-dark.png" alt="The same group chat in the dark theme" />
+</p>
+
+<p align="center">
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/emoji-keyboard.png" alt="Built-in emoji keyboard in place of the system keyboard" />
+  &nbsp;&nbsp;
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/attachment-sheet.png" alt="Attachment menu with the photo grid, two photos picked and a caption field" />
+  &nbsp;&nbsp;
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/link-preview-big-emoji.png" alt="Link preview cards and an emoji-only message shown large" />
+</p>
+
+<p align="center">
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/chat-list-dark.png" alt="Chat list in the dark theme" />
 </p>
 
 ---
@@ -1106,10 +1118,16 @@ There are two renderers and you get the best available one automatically:
   npx expo install react-native-streamdown react-native-enriched-markdown remend katex
   ```
 
-  It also requires `react-native-worklets >= 0.8.3` (i.e. `react-native-reanimated >= 4.3`), and `react-native-enriched-markdown` is a native module, so a dev build / prebuild is required (it does not work in Expo Go). Pass through Streamdown's own theming/rules via `markdownProps`:
+  It also requires `react-native-worklets >= 0.8.3` (i.e. `react-native-reanimated >= 4.3`), and `react-native-enriched-markdown` is a native module, so a dev build / prebuild is required (it does not work in Expo Go). 0.3 processes the markdown on a worklet runtime, which needs react-native-worklets' **Bundle Mode**: pass `bundleMode: true` and `importForwarding: { moduleNames: ['remend'] }` to `react-native-worklets/plugin` in `babel.config.js`, and wrap `metro.config.js` in `getBundleModeMetroConfig` from `react-native-worklets/bundleMode` (the example app does both). Until Bundle Mode is on, the chat keeps the built-in renderer and logs a one-time dev hint, since 0.3 throws on its first render without it. Version 0.3+ (`StreamdownText`) and the older `Streamdown` export are both recognised. The bubble's text color, size and link color are mapped onto its `markdownStyle`, so replies match the chat theme in light and dark. Anything in `markdownProps` is forwarded to `StreamdownText`; a `markdownStyle` there is merged per element over the derived one:
 
   ```tsx
-  <Chat messageTextProps={{ markdown: true, markdownProps: { /* ... */ } }} {...props} />
+  <Chat
+    messageTextProps={{
+      markdown: true,
+      markdownProps: { markdownStyle: { codeBlock: { backgroundColor: '#0d1117' } } },
+    }}
+    {...props}
+  />
   ```
 
 </details>
@@ -1119,11 +1137,11 @@ There are two renderers and you get the best available one automatically:
 Long-press a message to open a quick emoji picker; selected reactions render as pills in the bubble and toggle on tap. The bar's chevron opens the built-in full emoji grid (search, tabs, recents) in place; both ship in the core with no extra dependencies, and `renderExpandedPicker` / `renderReactionPicker` replace them.
 
 <p align="center">
-  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-picker.png" />
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-picker.png" alt="Long-press menu with the quick reactions bar" />
   &nbsp;&nbsp;
-  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-pills.png" />
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-pills.png" alt="A reaction pill under the message" />
   &nbsp;&nbsp;
-  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-emoji-browser.png" />
+  <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-emoji-browser.png" alt="The expanded reactions grid with search and tabs" />
 </p>
 
 <details>

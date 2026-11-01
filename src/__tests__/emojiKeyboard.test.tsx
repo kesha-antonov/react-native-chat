@@ -77,6 +77,11 @@ describe('emoji data', () => {
     expect(searchEmojis('   ')).toEqual([])
   })
 
+  it('ranks the emoji named exactly the query first', () => {
+    expect(searchEmojis('fire')[0]).toBe('🔥')
+    expect(searchEmojis('rocket')[0]).toBe('🚀')
+  })
+
   it('applies and strips skin tones', () => {
     expect(takesSkinTone('👍')).toBe(true)
     expect(takesSkinTone('😀')).toBe(false)

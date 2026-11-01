@@ -186,7 +186,21 @@ cd example && yarn install && npx expo prebuild --clean
 ```
 
 On Android the Metro port is baked into the debug build, so pass it at build time
-(`npx expo run:android --port <n>`) rather than relying on `adb reverse`.
+(`npx expo run:android --port <n>`) rather than relying on `adb reverse`. When a Metro is
+already running on that port, `--port` and `--no-bundler` refuse to combine; build with
+`cd example/android && ./gradlew app:assembleDebug -PreactNativeDevServerPort=<n>` and
+`adb install -r app/build/outputs/apk/debug/app-debug.apk` instead. The first launch after a
+Metro restart can sit on a blank screen while the bundle builds; warm it with
+`curl 'localhost:<n>/node_modules/expo-router/entry.bundle?platform=android&dev=true' -o /dev/null`.
+
+The example runs react-native-worklets in **Bundle Mode** (for `react-native-streamdown`):
+the Babel plugin has `bundleMode: true` and `metro.config.js` is wrapped in
+`getBundleModeMetroConfig`. Changing either needs a Metro restart with `--clear` and a full app
+relaunch, not a reload.
+
+Android-only pitfalls seen in this library: a nested `<Text>` colored `'transparent'` inherits
+its parent's color (use `HIDDEN_TEXT_COLOR` from `src/Bubble/styles.ts`), and a `TextInput`
+focused in the frame it mounts gets the cursor but not the soft keyboard (use `autoFocus`).
 
 ## Dependency policy
 

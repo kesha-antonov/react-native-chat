@@ -217,6 +217,31 @@ describe('ContextMenu (Telegram Android)', () => {
     expect(style.left).toBe(480 - 20 - 200)
   })
 
+  it('keeps the reactions pill off a short bubble pressed in its middle', async () => {
+    const items = ['Reply', 'Copy', 'Select', 'Delete'].map(label => ({ label, onPress: jest.fn() }))
+    // A one-line incoming bubble high enough that the card fits under the finger: only the
+    // pill above the card overlapped it.
+    const bubbleTop = 280
+    const { getByLabelText } = await renderMenu({
+      pageX: 10,
+      pageY: bubbleTop,
+      bubbleWidth: 180,
+      bubbleHeight: 34,
+      touchX: 90,
+      touchY: bubbleTop + 17,
+      items,
+      reactions: { emojis: ['👍', '❤️', '😂'], onSelect: jest.fn() },
+    })
+    let node = getByLabelText('Reply').parent
+    let style = flatten(node?.props.style)
+    while (node && style?.position !== 'absolute') {
+      node = node.parent
+      style = flatten(node?.props.style)
+    }
+    // The card hangs 50 under the pill's top, so the pill now starts below the bubble.
+    expect(style.top - 50).toBeGreaterThanOrEqual(bubbleTop + 34)
+  })
+
   it('marks reactions you already picked', async () => {
     const { getByLabelText } = await renderMenu({
       reactions: { emojis: ['👍', '❤️'], selected: ['❤️'], onSelect: jest.fn() },

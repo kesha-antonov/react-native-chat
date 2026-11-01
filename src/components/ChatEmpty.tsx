@@ -34,7 +34,7 @@ export function ChatEmpty ({ greeting = '👋', onPressGreeting }: ChatEmptyProp
           onPress={() => onPressGreeting?.(greeting)}
           disabled={!onPressGreeting}
           accessibilityRole='button'
-          accessibilityLabel={labels.emptyChatText}
+          accessibilityLabel={`${labels.send} ${greeting}`}
           style={({ pressed }) => [styles.sticker, pressed && styles.stickerPressed]}
         >
           <Text style={styles.greeting} allowFontScaling={false}>{greeting}</Text>

@@ -8,7 +8,7 @@ import {
   Text } from 'react-native'
 
 import { BasicMarkdown } from './components/BasicMarkdown'
-import { MarkdownMessageText, isMarkdownAvailable } from './components/MarkdownMessageText'
+import { MarkdownMessageText, canUseStreamdown } from './components/MarkdownMessageText'
 import { StreamingCursor } from './components/StreamingCursor'
 import { useThemedStyles } from './hooks/useTheme'
 import { LinkParser, LinkMatcher, LinkType } from './linkParser'
@@ -108,13 +108,15 @@ export function MessageText<TMessage extends IMessage>({
   // Blocks of markdown have no last line to share, so the time gets one of its own.
   const trailingLine = trailing ? <Text style={style}>{trailing}</Text> : null
 
-  if (wantMarkdown && isMarkdownAvailable)
+  if (wantMarkdown && canUseStreamdown())
     return (
       <View style={[styles.container, containerStyle?.[position]]}>
         <MarkdownMessageText
           text={currentMessage!.text}
           isStreaming={isStreaming}
           textStyle={style}
+          linkStyle={linkStyle}
+          onLinkPress={onPressProp ? (link: string) => handlePress(link, 'url') : undefined}
           componentProps={markdownProps}
         />
         {trailingLine}

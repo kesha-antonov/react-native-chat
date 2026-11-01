@@ -2,6 +2,7 @@ const escape = require('escape-string-regexp')
 const { getDefaultConfig } = require('expo/metro-config')
 const fs = require('fs')
 const path = require('path')
+const { getBundleModeMetroConfig } = require('react-native-worklets/bundleMode')
 
 const config = getDefaultConfig(__dirname)
 const { transformer, resolver } = config
@@ -20,11 +21,15 @@ const modules = [
   }),
 ]
 
-module.exports = {
+// Bundle Mode (react-native-streamdown) writes generated worklet modules here on the fly.
+const workletsOutput = path.join(__dirname, 'node_modules/react-native-worklets/.worklets')
+fs.mkdirSync(workletsOutput, { recursive: true })
+
+module.exports = getBundleModeMetroConfig({
   ...config,
 
   projectRoot: __dirname,
-  watchFolders: [...defaultWatchFolders, root],
+  watchFolders: [...defaultWatchFolders, root, workletsOutput],
 
   // We need to make sure that only one version is loaded for peerDependencies
   // So we blocklist them at the root, and alias them to the versions in example's node_modules
@@ -48,4 +53,4 @@ module.exports = {
       },
     }),
   },
-}
+})

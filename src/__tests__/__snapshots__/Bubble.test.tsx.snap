@@ -164,7 +164,7 @@ exports[`should render <Bubble /> and compare with snapshot 1`] = `
                 },
                 undefined,
                 {
-                  "color": "transparent",
+                  "color": "rgba(0, 0, 0, 0.004)",
                 },
               ]
             }

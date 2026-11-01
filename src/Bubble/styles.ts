@@ -1,6 +1,13 @@
 import { StyleSheet } from 'react-native'
 import { ChatTheme } from '../Theme'
 
+/**
+ * Text that holds space without showing. Not 'transparent': on Android a fully clear color is
+ * the "unset" value, so a nested Text with it inherits the bubble's text color and the copy
+ * shows (the time printed twice in every bubble). One step of alpha is invisible everywhere.
+ */
+export const HIDDEN_TEXT_COLOR = 'rgba(0, 0, 0, 0.004)'
+
 export const createBubbleStyles = (theme: ChatTheme) => {
   const { colors, radii, spacing, typography } = theme
 
@@ -81,7 +88,7 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       fontWeight: typography.time.fontWeight,
     },
     metaSpacerHidden: {
-      color: 'transparent',
+      color: HIDDEN_TEXT_COLOR,
     },
 
     // Telegram's time pill over a photo: 17 tall, radius 8, 6 in from the photo's corner,

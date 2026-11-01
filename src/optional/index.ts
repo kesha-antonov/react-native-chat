@@ -329,7 +329,9 @@ export function getChatCapabilities (): ChatCapabilities {
     videoPlayback: hasVideoPlayback(),
     roundVideoCapture,
     videoRecording: roundVideoCapture || !!getExpoImagePicker()?.launchCameraAsync,
-    markdown: !!(getStreamdown()?.Streamdown ?? getStreamdown()?.default),
+    // 0.3's `StreamdownText` also needs react-native-worklets' Bundle Mode; see MarkdownMessageText.
+    markdown: !!(getStreamdown()?.Streamdown ?? getStreamdown()?.default) ||
+      (!!getStreamdown()?.StreamdownText && (globalThis as { _WORKLETS_BUNDLE_MODE_ENABLED?: boolean })._WORKLETS_BUNDLE_MODE_ENABLED === true),
     nativeSheet: !!getTrueSheet()?.TrueSheet,
     flashList: !!getFlashList()?.FlashList,
     persistentEmojiRecents: hasAsyncStorage(),

@@ -826,7 +826,11 @@ const createStyles = (theme: ChatTheme) => {
       borderRadius: SEND_SIZE / 2,
       paddingHorizontal: 16,
       justifyContent: 'center',
-      backgroundColor: colors.cellBackground,
+      // The tab pill's fill and stroke: it floats over the grid, so a faint cell tint let the
+      // photo under it show through the text.
+      backgroundColor: colors.tabBackground,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(0, 0, 0, 0.08)',
     },
     captionInput: {
       fontSize: 16,

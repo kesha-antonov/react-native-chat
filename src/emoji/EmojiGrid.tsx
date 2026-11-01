@@ -4,6 +4,7 @@ import {
   GestureResponderEvent,
   LayoutChangeEvent,
   ListRenderItemInfo,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -486,7 +487,11 @@ export const EmojiGrid = ({
   const enterSearch = useCallback(() => {
     setIsSearching(true)
     onSearchModeChange?.(true)
-    requestAnimationFrame(() => searchInputRef.current?.focus())
+    // Android does not raise the soft keyboard for a field focused in the frame it mounts in
+    // (the cursor shows, the keyboard never comes), so there the field asks for focus itself
+    // once it is attached, through `autoFocus`.
+    if (Platform.OS !== 'android')
+      requestAnimationFrame(() => searchInputRef.current?.focus())
   }, [onSearchModeChange])
 
   const leaveSearch = useCallback(() => {
@@ -527,6 +532,7 @@ export const EmojiGrid = ({
               autoCorrect={false}
               autoCapitalize='none'
               returnKeyType='search'
+              autoFocus={isKeyboard && Platform.OS === 'android'}
               keyboardAppearance={isDark ? 'dark' : 'default'}
               onFocus={isKeyboard ? undefined : () => setIsSearching(true)}
               onBlur={isKeyboard ? undefined : () => !query && setIsSearching(false)}

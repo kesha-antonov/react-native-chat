@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native'
 import { render } from '@testing-library/react-native'
 
 import { Bubble, defaultDarkTheme, defaultLightTheme, mergeTheme, utils } from '..'
+import { HIDDEN_TEXT_COLOR } from '../Bubble/styles'
 import { useOutgoingStep } from '../components/ChatWallpaper'
 import { encodePng, gatherPositions, generateWallpaperPixels, getWallpaperUri } from '../components/wallpaperGradient'
 import { IMessage } from '../Models'
@@ -21,7 +22,7 @@ const message = (overrides: Partial<IMessage>): IMessage => ({
   ...overrides,
 })
 
-// The reserved copy of the time is the transparent text inside the message text.
+// The reserved copy of the time is the hidden text inside the message text.
 const findTimeSpacer = (json: ReturnType<Awaited<ReturnType<typeof render>>['toJSON']>): string | null => {
   let found: string | null = null
   const visit = (node: any) => {
@@ -31,7 +32,7 @@ const findTimeSpacer = (json: ReturnType<Awaited<ReturnType<typeof render>>['toJ
       node.forEach(visit)
       return
     }
-    if (node.type === 'Text' && StyleSheet.flatten(node.props.style)?.color === 'transparent') {
+    if (node.type === 'Text' && StyleSheet.flatten(node.props.style)?.color === HIDDEN_TEXT_COLOR) {
       found = (node.children ?? []).join('')
       return
     }
@@ -154,7 +155,7 @@ describe('inline time', () => {
       }
       const style = StyleSheet.flatten(node.props?.style) ?? {}
       const depth = wrapAncestors + (style.flexWrap === 'wrap' ? 1 : 0)
-      if (node.type === 'Text' && style.color === 'transparent' && depth > 0)
+      if (node.type === 'Text' && style.color === HIDDEN_TEXT_COLOR && depth > 0)
         wrapsHoldingSpacer.push(node)
       visit(node.children, depth)
     }

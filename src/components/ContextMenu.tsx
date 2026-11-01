@@ -534,11 +534,11 @@ export const ContextMenu = ({
 
   // Telegram anchors the popup at the finger, which near the bottom of the list (or beside a
   // short bubble at the right edge) clamps it straight over the message it is for. When the
-  // card would cover the lit message's text and it fits fully below or above that message,
-  // it moves there instead, keeping Telegram's horizontal placement.
+  // card (or its reactions pill) would cover the lit message's text and it fits fully below or
+  // above that message, it moves there instead, keeping Telegram's horizontal placement.
   const bubbleTop = openAnchor.pageY
   const bubbleBottom = openAnchor.pageY + openAnchor.bubbleHeight
-  const cardTop = hasReactions && hasMenu ? containerTop + BAR_OFFSET + BAR_TO_MENU : containerTop
+  const cardTop = hasReactions ? containerTop + BAR_OFFSET : containerTop
   const cardBottom = containerTop + containerHeight
   const coversBubble = openAnchor.bubbleHeight > 0 &&
     cardTop < bubbleBottom && cardBottom > bubbleTop &&

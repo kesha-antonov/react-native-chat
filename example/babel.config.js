@@ -20,7 +20,17 @@ module.exports = function (api) {
           },
         },
       ],
-      'react-native-worklets/plugin',
+      [
+        'react-native-worklets/plugin',
+        {
+          // react-native-streamdown runs remend on a worklet runtime, which needs Bundle Mode
+          // and remend forwarded into the generated worklets.
+          bundleMode: true,
+          importForwarding: {
+            moduleNames: ['remend'],
+          },
+        },
+      ],
     ],
   }
 }
