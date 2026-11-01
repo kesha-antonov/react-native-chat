@@ -11,7 +11,7 @@ import { MessageReactionsDisplayProps } from './types'
 // `ButtonBounce`: down to 0.9 over 60ms on `DEFAULT`, back over 350ms on `Overshoot(5)`.
 const PRESS_IN = { duration: 60, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
 const PRESS_OUT = { duration: 350, easing: Easing.out(Easing.back(5)) }
-// An unchosen pill is its accent at 15.6% (`ReactionsLayoutInBubble:1056`).
+// An unchosen pill is its accent at 15.6%.
 const UNCHOSEN_ALPHA = 0.156
 
 interface ReactionPillProps {
@@ -61,7 +61,7 @@ const ReactionPill = ({ emoji, count, isChosen, background, textColor, onPress, 
 }
 
 /**
- * Telegram's reaction pills inside the bubble (`ReactionsLayoutInBubble`): 26pt capsules
+ * Reaction pills inside the bubble: 26pt capsules
  * that wrap 4pt apart, the bubble's accent at 15.6% when not chosen and solid with white text
  * when chosen, bouncing on a tap.
  */
@@ -149,7 +149,7 @@ const createStyles = (theme: ChatTheme) =>
     containerAlone: {
       paddingTop: 6,
     },
-    // 8 + 20 emoji + 3 (`RLIB:367-381`).
+    // 8 + 20 emoji + 3.
     pill: {
       height: 26,
       borderRadius: theme.radii.reaction,

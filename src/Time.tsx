@@ -24,13 +24,13 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   },
 })
 
-/** Whether a message carries Telegram's "edited" mark. */
+/** Whether a message carries the "edited" mark. */
 export const isMessageEdited = (message: IMessage | null | undefined) =>
   !!message && (!!message.isEdited || message.editedAt != null)
 
 /**
- * The text of a message's time: Telegram prefixes it with the edited mark ("edited 14:05",
- * `ChatMessageCell:18501`) in the same paint.
+ * The text of a message's time, prefixed with the edited mark ("edited 14:05") in the same
+ * style.
  */
 export function formatMessageTime (
   message: IMessage,

@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react'
 
 /**
  * Lets the message list close a panel the composer has open in the keyboard's place (the emoji
- * keyboard): Telegram hides it when you tap the chat. The composer registers its closer; the
+ * keyboard), so a tap on the chat hides it. The composer registers its closer; the
  * list calls `close` on a tap. A plain mutable store, so neither side re-renders for it.
  */
 export interface ComposerPanelsStore {

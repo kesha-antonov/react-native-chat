@@ -1,10 +1,9 @@
 import { Easing, EntryAnimationsValues, LinearTransition, withTiming } from 'react-native-reanimated'
 
 /**
- * Telegram's `ChatListItemAnimator`: every row that moves (a message arriving, the typing
+ * Every row that moves (a message arriving, the typing
  * bubble coming or going, a row growing a reaction) slides to its new place over
- * `DEFAULT_DURATION = 250` on `CubicBezierInterpolator(0.199, 0.011, 0.279, 0.910)`
- * (`ChatListItemAnimator.java:46-47`), instead of jumping there in one frame.
+ * 250ms on `bezier(0.199, 0.011, 0.279, 0.910)`, instead of jumping there in one frame.
  */
 export const LIST_ITEM_DURATION = 250
 export const LIST_ITEM_EASING = Easing.bezier(0.199, 0.011, 0.279, 0.91)
@@ -32,7 +31,7 @@ export const newestCellEntering = (values: EntryAnimationsValues) => {
 /**
  * Whether the row for `id` at `index` is a message that has just arrived at the newest end:
  * not one that was already in the list on the last commit, and not part of the first batch
- * of messages a chat is opened with (that one appears at once, as in Telegram).
+ * of messages a chat is opened with (that one appears at once).
  */
 export function isArrivingMessage (
   id: string | number,

@@ -45,7 +45,7 @@ const build = (overrides: Partial<Parameters<typeof buildDefaultMessageActions>[
   })
 
 describe('default message actions', () => {
-  it('offers Telegram\'s set in Telegram\'s order, with icons and a plain Delete', () => {
+  it('offers the default set in order, with icons and a plain Delete', () => {
     const items = build()
     expect(items.map(item => item.key)).toEqual(['reply', 'copy', 'forward', 'pin', 'edit', 'delete'])
     expect(items.map(item => item.label)).toEqual(['Reply', 'Copy', 'Forward', 'Pin', 'Edit', 'Delete'])
@@ -99,7 +99,7 @@ describe('Chat.toggleReaction', () => {
     expect(toggleReaction(both, 1, '❤️', ME._id)[0].reactions).toEqual([{ emoji: '❤️', userIds: [2] }])
   })
 
-  it('replaces the user\'s reaction by default, as Telegram does, unless more are allowed', () => {
+  it('replaces the user\'s reaction by default, unless more are allowed', () => {
     const first = toggleReaction(base, 1, '👍', ME._id)
     expect(toggleReaction(first, 1, '🔥', ME._id)[0].reactions).toEqual([{ emoji: '🔥', userIds: [1] }])
     expect(toggleReaction(first, 1, '🔥', ME._id, { maxPerUser: Infinity })[0].reactions).toEqual([
@@ -272,7 +272,7 @@ describe('Chat defaults', () => {
     expect(queryByText('A')).toBeNull()
   })
 
-  it('replies on a swipe past 50pt, Telegram Android\'s threshold, and not before', async () => {
+  it('replies on a swipe past the 50pt threshold, and not before', async () => {
     const { getByText, queryByText } = await mountChat(
       <Chat messages={[message(1)]} onSend={() => {}} user={ME} />
     )

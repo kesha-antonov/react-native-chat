@@ -64,7 +64,7 @@ export function isSameUser (
   )
 }
 
-/** Telegram Android groups bubbles sent within five minutes of each other (`ChatActivity:37905`). */
+/** Bubbles sent within five minutes of each other are grouped into one run. */
 export const GROUP_MAX_GAP_MS = 5 * 60 * 1000
 
 const toTime = (value: Date | number | undefined) => {

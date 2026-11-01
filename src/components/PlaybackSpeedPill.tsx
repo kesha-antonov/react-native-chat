@@ -32,7 +32,7 @@ const formatRate = (rate: number) => `${Number(rate.toFixed(2))}x`
 
 /**
  * The speed pill on a voice note: a tap cycles 1x / 1.5x / 2x, a long press
- * opens Telegram's presets (`FragmentContextView`). The speed is shared by
+ * opens the speed presets. The speed is shared by
  * every note.
  */
 export function PlaybackSpeedPill ({ rate }: PlaybackSpeedPillProps) {
@@ -138,9 +138,9 @@ export function PlaybackSpeedPill ({ rate }: PlaybackSpeedPillProps) {
 }
 
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
-  // Telegram's `SpeedIconDrawable`: the rate in 10dp bold inside a 1.6dp
+  // The rate in 10dp bold inside a 1.6dp
   // outline with 3dp corners and 3dp either side, drawn in the close
-  // button's gray (`inappPlayerClose`) at 1x and in the accent otherwise.
+  // button's gray at 1x and in the accent otherwise.
   pill: {
     paddingHorizontal: 3,
     borderWidth: 1.6,

@@ -205,7 +205,7 @@ const PressableBubbleRow = <TMessage extends IMessage>({
     },
   })
 
-  // Telegram Android neither shrinks nor lifts the message: it opens the menu where the finger is.
+  // The message neither shrinks nor lifts: the menu opens where the finger is.
   const longPressGesture = useLongPressGesture({
     testID: 'message-long-press',
     minDuration: PRESS_HOLD_MS,
@@ -224,7 +224,7 @@ const PressableBubbleRow = <TMessage extends IMessage>({
   const gesture = useExclusiveGestures(longPressGesture, tapGesture)
 
   // `rowSurface` spans the whole message row, so a long-press in the empty
-  // space beside the bubble opens the picker too - the way Telegram behaves.
+  // space beside the bubble opens the picker too.
   const bubbleRow = (
     <View style={rowSurfaceStyle}>
       <View style={isLifted ? hiddenStyle : undefined}>
@@ -257,8 +257,8 @@ const PressableBubbleRow = <TMessage extends IMessage>({
 }
 
 
-// Telegram's time is `timeWidth + 6dp` wide on the last line, and `+ 20.5dp` with the checks
-// (`ChatMessageCell:7411`). The reserved copy of the time is padded with no-break spaces to
+// The time takes `timeWidth + 6dp` on the last line, and `+ 20.5dp` with the checks.
+// The reserved copy of the time is padded with no-break spaces to
 // that width: two for the gap, nine with the checks.
 const NBSP = ' '
 const GAP_SPACES = NBSP.repeat(2)
@@ -325,7 +325,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const hasMenu = menuItems.length > 0
 
   // A pure video note (round video, no text) drops the bubble background so the
-  // circle floats like in Telegram. Its meta row then has no bubble to sit on,
+  // circle floats on its own. Its meta row then has no bubble to sit on,
   // so it moves into a translucent pill over the circle instead.
   const isVideoNote = !!currentMessage?.videoNote && !!currentMessage?.video && !currentMessage?.text
 
@@ -341,18 +341,18 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   }))
 
   // A bare voice note keeps its time on the duration's line, at the bubble's
-  // bottom-right, as Telegram draws it, rather than on a row of its own under
+  // bottom-right, rather than on a row of its own under
   // the player. Only the built-in player leaves room for it there.
   const isVoiceNote = !!currentMessage?.audio && !currentMessage?.text && !isVideoNote &&
     !currentMessage?.image && !currentMessage?.video && !currentMessage?.location &&
     !props.renderMessageAudio
 
-  // A bare file keeps its time on the size line too, as Telegram's document cell does.
+  // A bare file keeps its time on the size line too.
   const isFileNote = !!currentMessage?.file && !currentMessage?.text && !currentMessage?.image &&
     !currentMessage?.video && !currentMessage?.audio && !currentMessage?.location &&
     !props.renderMessageFile
 
-  // Telegram's big emoji (`MessageObject.checkEmojiOnly` -> `TYPE_EMOJIS`): a text of nothing
+  // Big emoji: a text of nothing
   // but emoji, with no media, quote or custom renderer, drops its bubble and draws them large.
   const bigEmojiMaxCount = theme.bubble.bigEmojiMaxCount
   const bigEmojiCount = useMemo(() => {
@@ -365,19 +365,19 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   }, [bigEmojiMaxCount, currentMessage, props.renderMessageText, props.renderCustomView])
   const isBigEmoji = bigEmojiCount > 0
 
-  // Telegram's web page block under the text, for the first link in it.
+  // The web page preview under the text, for the first link in it.
   const linkPreview = useLinkPreview(
     props.renderLinkPreview === null || isBigEmoji ? undefined : currentMessage,
     props.fetchLinkPreview
   )
   const hasLinkPreview = !!linkPreview && !!currentMessage?.text
 
-  // Telegram's runs: the same sender within five minutes. A run shares one tail, one name.
+  // Runs: the same sender within five minutes. A run shares one tail, one name.
   const isGroupedWithPrevious = isSameGroup(currentMessage, previousMessage)
   const isGroupedWithNext = isSameGroup(currentMessage, nextMessage)
 
-  // Photos, videos and maps without a caption are media bubbles: Telegram draws them with all
-  // four corners rounded and no tail (`TYPE_MEDIA`).
+  // Photos, videos and maps without a caption are media bubbles: all four corners rounded
+  // and no tail.
   const isMediaBubble = !currentMessage?.text &&
     (!!currentMessage?.image || !!currentMessage?.video || !!currentMessage?.location)
   const hasTail = theme.bubble.hasTail && !isGroupedWithNext && !isVideoNote && !isMediaBubble && !isBigEmoji
@@ -417,11 +417,10 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   // too, which outlasts `isPickerVisible`.
   const [isLifted, setIsLifted] = useState(false)
 
-  // Where the finger was: Telegram opens the menu beside it.
+  // Where the finger was: the menu opens beside it.
   const [touchPoint, setTouchPoint] = useState<{ touchX?: number, touchY?: number }>({})
   const openPicker = useCallback((touchX?: number, touchY?: number) => {
-    // Telegram Android's long-press tick, `HapticFeedbackConstants.LONG_PRESS`
-    // (`RecyclerListView`'s item long-click), mapped to a medium impact.
+    // The system long-press tick, mapped to a medium impact.
     impactHaptic('Medium')
     setTouchPoint({ touchX, touchY })
     setIsPickerVisible(true)
@@ -447,7 +446,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   // The flash after a quote jump tints the bubble too, not just the row behind it.
   const highlightToken = useMessageHighlightToken(currentMessage?._id)
 
-  // Telegram's corners (`MessageDrawable.generatePath`): 17 everywhere, 6 on the tail side
+  // Corners: 17 everywhere, 6 on the tail side
   // facing a grouped neighbour, and none at the bottom where the tail grows out.
   const cornerStyle = useMemo((): ViewStyle => {
     const outer = theme.radii.bubble
@@ -487,7 +486,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const shadowColor = position === 'right' ? theme.colors.outgoingBubbleShadow : theme.colors.incomingBubbleShadow
   const hasShadow = !isVideoNote && !isBigEmoji && !hasGradient && !!shadowColor && shadowColor !== 'transparent'
 
-  // Telegram's text column: `min(width, height) - 80dp`, minus the avatar column beside it.
+  // The text column: `min(width, height) - 80dp`, minus the avatar column beside it.
   const isAvatarShown = position === 'left' && (props as { isAvatarVisible?: boolean }).isAvatarVisible === true
   const maxWidth = Math.min(windowSize.width, windowSize.height) -
     theme.bubble.maxWidthInset -
@@ -536,7 +535,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
 
   // The invisible copy of the time that holds its place at the end of the text. When the
   // text's direction differs from the layout's, the last line ends on the wrong side for the
-  // time, so it always takes a line of its own (Telegram does the same for RTL lines).
+  // time, so it always takes a line of its own.
   const timeSpacer = useMemo(() => {
     if (metaMode !== 'inline' && metaMode !== 'reactions')
       return null
@@ -668,7 +667,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return <LinkPreviewCard {...previewProps} />
   }, [hasLinkPreview, linkPreview, currentMessage, position, maxWidth, theme, props.onPressLinkPreview, props.renderLinkPreview])
 
-  // Photo corners (`ChatMessageCell:10997`): 2 less than the bubble's, 4 next to other
+  // Photo corners: 2 less than the bubble's, 4 next to other
   // content, 3 on the tail side next to a grouped neighbour.
   const mediaCornerStyle = useMemo((): ImageStyle => {
     const outer = theme.radii.media
@@ -866,7 +865,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       if (user && currentMessage.user._id === user._id)
         return null
 
-      // Telegram names the sender once, on the first message of their run.
+      // The sender is named once, on the first message of their run.
       if (isGroupedWithPrevious)
         return null
 
@@ -958,7 +957,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     : currentMessage?.reactions?.filter(reaction => reaction.userIds.includes(currentUserId)).map(reaction => reaction.emoji)
   , [currentMessage?.reactions, currentUserId])
 
-  // Telegram draws the pills inside the bubble, under the text, with the time on their last
+  // The pills sit inside the bubble, under the text, with the time on their last
   // row when it fits.
   const renderReactionsInside = useCallback(() => {
     if (!hasDefaultReactions || !reactionsDisplayProps)
@@ -1229,12 +1228,12 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     )
   }, [reactions, menuItems, isPickerVisible, visualPosition, pickerAnchor, touchPoint, chosenReactions, messagePreview, closePicker, selectReaction])
 
-  // Overlay path: a long-press opens either the Telegram-style context menu
+  // Overlay path: a long-press opens either the context menu
   // (when messageActions are provided, optionally with a reactions row) or the
   // reactions quick-picker. The Animated.View carries only the scale transform.
   if (reactions?.isEnabled || hasMenu)
     // `rowSurface` spans the whole message row, so a long-press in the empty
-    // space beside the bubble opens the picker too - the way Telegram behaves.
+    // space beside the bubble opens the picker too.
     return (
       <Animated.View style={containerStyleList}>
         <PressableBubbleRow

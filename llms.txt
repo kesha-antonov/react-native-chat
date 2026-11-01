@@ -87,7 +87,7 @@ prepends correctly for that ordering.
 
 - `messages`, `user`, `onSend` - required
 - `text` + `textInputProps.onChangeText` - only if you control the composer text externally (the built-in emoji keyboard inserts either way)
-- `theme` / `darkTheme` - deep-merged token overrides (`colors`, `radii`, `spacing`, `typography`, `bubble`, `wallpaper`, `nameColors`, …). The default look is Telegram Android: swirl wallpaper, tails, the time on the last line; `wallpaper: { isEnabled: false }`, `bubble: { hasTail: false, isTimeInline: false }` turn those off
+- `theme` / `darkTheme` - deep-merged token overrides (`colors`, `radii`, `spacing`, `typography`, `bubble`, `wallpaper`, `nameColors`, …). The default look is a modern messenger style: swirl wallpaper, tails, the time on the last line; `wallpaper: { isEnabled: false }`, `bubble: { hasTail: false, isTimeInline: false }` turn those off
 - `renderWallpaper` - replace the background (`null` = plain `colors.background`)
 - `colorScheme` - `'light' | 'dark'` to force a scheme; omit to follow the system
 - `locale` + `labels` - 15 built-in translations (es, fr, de, ru, zh, ar, pt, ja, ko, it, tr, hi, nl, pl, id; English is the default, `pt-BR` falls back to `pt`) and per-string overrides

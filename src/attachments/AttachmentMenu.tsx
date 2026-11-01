@@ -43,18 +43,12 @@ import { CurrentLocation, getCurrentLocation, pickDocuments, pickFromSystemGalle
 import { GalleryAsset, toPickedAttachment, useAssetThumbnailUri, useGallery } from './gallery'
 import { AttachmentTab, PickedAttachment } from './types'
 
-/*
- * Telegram Android 13.x's attachment menu (`ChatAttachAlert`, DrKLO/Telegram 13.1.1). CAA =
- * ui/Components/ChatAttachAlert.java, CAAPL = ChatAttachAlertPhotoLayout.java, GTV =
- * ui/Components/glass/GlassTabView.java, PAPC = ui/Cells/PhotoAttachPhotoCell.java.
- */
-
 const REDUCE_MOTION = ReduceMotion.System
 const EASE_OUT = Easing.bezier(0, 0, 0.58, 1)
 const EASE_IN = Easing.bezier(0.42, 0, 1, 1)
 const EASE_BOTH = Easing.bezier(0.42, 0, 0.58, 1)
 const DECELERATE = Easing.out(Easing.quad)
-// `OvershootInterpolator(0.7)`, the dim's way in.
+// An overshoot with tension 0.7, the dim's way in.
 const overshoot07 = (t: number) => {
   'worklet'
   const s = t - 1
@@ -62,42 +56,42 @@ const overshoot07 = (t: number) => {
 }
 
 // The sheet rises on a spring of damping ratio 0.75 and stiffness 350; the dim fades in over
-// 400ms after 20 (`CAA:5375-5395`); both leave over 180ms on EASE_OUT (`BottomSheet:1895`).
+// 400ms after 20; both leave over 180ms on EASE_OUT.
 const SHEET_SPRING = { stiffness: 350, damping: 2 * 0.75 * Math.sqrt(350), mass: 1, reduceMotion: REDUCE_MOTION }
 const DIM_IN = { duration: 400, easing: overshoot07, reduceMotion: REDUCE_MOTION }
 const CLOSE = { duration: 180, easing: EASE_OUT, reduceMotion: REDUCE_MOTION }
-// Opens to about 2/5 down the screen and scrolls up to full height (`CAAPL:4025-4033`), with
+// Opens to about 2/5 down the screen and scrolls up to full height, with
 // a 36 x 4 handle and 12 top corners.
 const OPEN_FRACTION = 0.4
 const SHEET_RADIUS = 12
 const HEADER = 22
-// The grid: 3 columns, 2 padding and gap, the first row's outer corners at 16 (`CAAPL:131, 3976-4000`).
+// The grid: 3 columns, 2 padding and gap, the first row's outer corners at 16.
 const COLUMNS = 3
 const GRID_GAP = 2
 const GRID_RADIUS = 16
 // Selection: a 24 disc 4 from the top-right corner, numbered in bold 14; the picked photo
-// shrinks to 0.787; both over 200ms (`PAPC:274-282, 612`, `CheckBoxBase:278-620`).
+// shrinks to 0.787; both over 200ms.
 const CHECK_SIZE = 24
 const CHECK_INSET = 4
 const SELECTED_SCALE = 0.787
 const SELECT_MS = 200
 // The floating tab pill: 56 tall (radius 28) in a 70 row; tabs `width / min(4.5, count)`, at
 // most 84; 24 icons, 11 bold labels; the selected one gets a 9% capsule growing from 0.6 over
-// 320ms (`CAA:2760-2770, 1538`, `GTV:67-163, 445-488`).
+// 320ms.
 const TABS_ROW = 70
 const TAB_PILL = 56
 const TAB_MAX_WIDTH = 84
 const TAB_ICON = 24
 const TAB_SELECT_MS = 320
 // On open the tabs pop in one after another, 32ms apart from the fourth leftwards: 0 -> 1.1 over
-// 200ms, then 1.1 -> 1 over 100ms (`CAA:5286-5358`).
+// 200ms, then 1.1 -> 1 over 100ms.
 const TAB_STAGGER_MS = 32
 // The first pick swaps the tabs for the caption and the send button: the tabs drop 36 and fade,
-// the send button grows from 0.2, over 180ms (`CAA:5172-5200`).
+// the send button grows from 0.2, over 180ms.
 const CAPTION_SWAP_MS = 180
 const TAB_DROP = 36
 const SEND_SIZE = 48
-// A new tab's content slides up from 78 and springs into place (`CAA:4693-4711`).
+// A new tab's content slides up from 78 and springs into place.
 const TAB_CONTENT_SHIFT = 78
 const TAB_CONTENT_SPRING = { stiffness: 500, damping: 2 * 0.75 * Math.sqrt(500), mass: 1, reduceMotion: REDUCE_MOTION }
 
@@ -249,7 +243,7 @@ const TabButton = ({ tab, index, label, width, isSelected, onPress, styles, them
 }
 
 /**
- * Telegram Android's attachment menu: a sheet with the newest photos (with `expo-media-library`)
+ * The attachment menu: a sheet with the newest photos (with `expo-media-library`)
  * over a floating pill of tabs. Picking photos numbers them and swaps the tabs for a caption and
  * a "Send N" button; File, Camera and (without the grid) Gallery hand over to the system pickers.
  */
@@ -335,7 +329,7 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
   // The system picker opens over the sheet, and the sheet closes only once something was
   // picked. Closing first unmounted the sheet's Modal in the same tick as the picker was
   // presented, and iOS refuses to present while a controller is being dismissed - so the File
-  // tab just closed the sheet. Cancelling the picker also leaves the sheet open, as in Telegram.
+  // tab just closed the sheet. Cancelling the picker also leaves the sheet open.
   const isPickingRef = useRef(false)
   const runPicker = useCallback((picker: () => Promise<PickedAttachment[]>) => {
     if (isPickingRef.current)
@@ -482,7 +476,7 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
   }, [styles, cellSize, cornerFor, labels, runPicker, selectionIndex, toggleAsset, isRTL])
 
   const onScrollEndDrag = useCallback((event: { nativeEvent: { contentOffset: { y: number } } }) => {
-    // Pulled down past the top: the sheet goes, as Telegram's does when dragged down.
+    // Pulled down past the top: the sheet goes.
     if (event.nativeEvent.contentOffset.y < -70)
       dismiss()
   }, [dismiss])
@@ -513,8 +507,7 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
             <Text style={[styles.locationTitle, isRTL && styles.textRTL]} numberOfLines={1}>{labels.attachSendLocation}</Text>
             {!!subtitle && <Text style={[styles.locationSubtitle, isRTL && styles.textRTL]} numberOfLines={2}>{subtitle}</Text>}
           </View>
-          {/* Telegram's send-location cell has no spinner: "Locating…" under the title is the
-              whole fetching state (`SendLocationCell`). */}
+          {/* No spinner: "Locating…" under the title is the whole fetching state. */}
         </Pressable>
       )
     }
@@ -533,7 +526,7 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
             <Text style={styles.panelButtonText}>{labels.attachChooseFromGallery}</Text>
           </Pressable>
         )}
-        {/* `EmptyTextProgressView.showProgress`: a 40 `RadialProgressView` in `progressCircle`. */}
+        {/* A 40 spinner in the accent color while the gallery loads. */}
         {gallery.status === 'loading' && <Spinner size={40} color={theme.colors.accent} />}
       </View>
     )

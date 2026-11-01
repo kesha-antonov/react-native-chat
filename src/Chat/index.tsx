@@ -98,7 +98,7 @@ function ChatBackground ({
   return <ChatWallpaper step={step} />
 }
 
-/** Oldest first, the order Telegram copies and forwards a selection in. */
+/** Oldest first, the order a selection is copied and forwarded in. */
 const byDate = <TMessage extends IMessage>(a: TMessage, b: TMessage) =>
   new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
 
@@ -283,7 +283,7 @@ function Chat<TMessage extends IMessage = IMessage> (
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
   const [text, setText] = useState<string | undefined>(() => props.text || '')
   const [internalReplyMessage, setInternalReplyMessage] = useState<ReplyMessage | null>(null)
-  // The message being edited in the composer (Telegram's edit mode), or null.
+  // The message being edited in the composer (edit mode), or null.
   const [editingMessage, setEditingMessage] = useState<TMessage | null>(null)
   const [highlightStore] = useState(createMessageHighlightStore)
   const [composerPanels] = useState(createComposerPanelsStore)
@@ -307,7 +307,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     )
   }), [selectionStore])
 
-  // Android's back leaves selection mode first, as in Telegram.
+  // Android's back leaves selection mode first.
   useEffect(() => {
     if (!isSelecting)
       return
@@ -363,7 +363,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     requestAnimationFrame(() => textInputRef.current?.focus())
   }, [textInputRef])
 
-  // A reply replaces an edit in progress, as in Telegram.
+  // A reply replaces an edit in progress.
   const cancelEdit = useRef<() => void>(() => {})
 
   const startReply = useCallback(
@@ -406,7 +406,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     messages.find(message => message._id === messageId)?.user?.name
   , [messages])
 
-  // Telegram scrolls to the playing message from its bar.
+  // The now-playing bar scrolls to the playing message.
   const scrollToMessage = useCallback((messageId: string | number) => {
     const index = messages.findIndex(message => message._id === messageId)
     if (index < 0)
@@ -453,7 +453,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     swipe: { ...reply?.swipe, isEnabled: isSwipeEnabled, onSwipe: handleSwipeToReply },
   }), [reply, handleSwipeToReply, isSwipeEnabled, jumpToQuotedMessage])
 
-  // Telegram's edit mode: the message's text goes into the composer under an "Editing"
+  // Edit mode: the message's text goes into the composer under an "Editing"
   // banner, and sending saves it instead of posting a new message. Text changes go through
   // `_onChangeText` (defined further down), reached through a ref.
   const changeTextRef = useRef<(text: string) => void>(() => {})
@@ -476,8 +476,8 @@ function Chat<TMessage extends IMessage = IMessage> (
       stopEdit()
   }
 
-  // A group is any chat with more than one other sender; Telegram shows avatars and sender
-  // names only there.
+  // A group is any chat with more than one other sender; avatars and sender names show
+  // only there.
   const userId = (user as Partial<User> | undefined)?._id
   const isGroupChat = useMemo(() => {
     if (isGroupChatProp !== undefined)
@@ -610,8 +610,8 @@ function Chat<TMessage extends IMessage = IMessage> (
   const sendGreeting = useCallback((greeting: string) => {
     sendRef.current([{ text: greeting } as TMessage])
   }, [])
-  // Telegram shows its spinner instead of the empty-chat card while history loads, and only
-  // over an empty list (`showProgressView(loading && messages.isEmpty())`, `ChatActivity.java:9268`).
+  // A spinner replaces the empty-chat card while history loads, and only over an empty list:
+  // messages already passed stay visible.
   const isHistoryLoading = !!props.isLoading && messages.length === 0
   const isChatEmptyShown = messages.length === 0 && props.renderChatEmpty === undefined && !props.isLoading
 

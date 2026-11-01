@@ -13,7 +13,7 @@ interface State {
   typing: Record<string, User | undefined>
   /** The chat on screen, so incoming messages there do not count as unread. */
   openChatId?: string
-  /** Pin order: Telegram keeps pinned chats in the order they were pinned. */
+  /** Pin order: pinned chats keep the order they were pinned in, until dragged. */
   pinOrder: string[]
 }
 
@@ -148,7 +148,7 @@ export const chatStore = {
 
   send (id: string, newMessages: IMessage[]) {
     const dialog = state.dialogs[id]
-    // A new message shows Telegram's clock until the server has it; media uploads first, with
+    // A new message shows the sending clock until the server has it; media uploads first, with
     // the progress ring on it, and only then gets its check.
     const isMedia = (m: IMessage) => !!(m.image || m.video || m.file || m.audio)
     setMessages(id, messages => Chat.append(messages, newMessages.map(m => ({
@@ -175,7 +175,7 @@ export const chatStore = {
     simulateReply(id, responder, CANNED_REPLIES[replyIndex++ % CANNED_REPLIES.length], doneAt + 600)
   },
 
-  /** The cancel ✕ on an upload: the message is left failed, with Telegram's red badge. */
+  /** The cancel ✕ on an upload: the message is left failed, with the red badge. */
   cancelUpload (id: string, message: IMessage) {
     uploads.get(message._id)?.forEach(clearTimeout)
     uploads.delete(message._id)
@@ -213,13 +213,23 @@ export const chatStore = {
     patchDialog(id, { isPinned })
   },
 
+  /** Moves a pinned chat to `toIndex` among the pinned ones (dragged in the list). */
+  movePinned (id: string, toIndex: number) {
+    setState(s => {
+      const order = s.pinOrder.filter(other => other !== id && !s.dialogs[other]?.isArchived)
+      order.splice(Math.max(0, Math.min(toIndex, order.length)), 0, id)
+      const archived = s.pinOrder.filter(other => other !== id && s.dialogs[other]?.isArchived)
+      return { ...s, pinOrder: [...order, ...archived] }
+    })
+  },
+
   toggleMute (id: string) {
     patchDialog(id, { isMuted: !state.dialogs[id].isMuted })
   },
 
   toggleArchive (id: string) {
     const isArchived = !state.dialogs[id].isArchived
-    // Archiving unpins, as in Telegram.
+    // Archiving unpins.
     if (isArchived && state.dialogs[id].isPinned)
       chatStore.togglePin(id)
     patchDialog(id, { isArchived })

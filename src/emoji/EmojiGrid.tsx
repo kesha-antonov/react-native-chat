@@ -33,34 +33,32 @@ import {
 } from './emojiStore'
 
 /*
- * Telegram Android's `EmojiView` grid, values from DrKLO/Telegram 13.1.1 (EV = EmojiView.java,
- * ETS = EmojiTabsStrip.java). Only the rows on screen are rendered, each cell is a plain Text,
+ * The emoji grid. Only the rows on screen are rendered, each cell is a plain Text,
  * and nothing animates per cell, so a screenful mounts as cheaply as a screenful of text.
  */
 
 // The tab strip: 36 tall, 30x30 tabs 3 apart, 24 icons, an r8 indicator sliding 350ms on
-// EASE_OUT_QUINT (`ETS:176, 477, 710-751`).
+// EASE_OUT_QUINT.
 const TABS_HEIGHT = 36
 const TAB_SIZE = 30
 const TAB_GAP = 3
 const TAB_ICON = 22
 const INDICATOR_MOVE = { duration: 350, easing: Easing.bezier(0.23, 1, 0.32, 1) }
-// Grid padding: 5 at the sides, 44 under the last row for the backspace bubble (`EV:1743`).
+// Grid padding: 5 at the sides, 44 under the last row for the backspace bubble.
 const GRID_PADDING_H = 5
 const GRID_PADDING_BOTTOM = 44
-// The search row is 50 with a 36-tall pill, radius 18, 10 / 8 margins (`EV:1578, 810-900`).
+// The search row is 50 with a 36-tall pill, radius 18, 10 / 8 margins.
 const SEARCH_ROW = 50
 const SEARCH_PILL = 36
-// Section header: 27 tall, 15 bold (`StickerSetNameCell:79-80`).
+// Section header: 27 tall, 15 bold.
 const HEADER_HEIGHT = 27
-// The floating backspace bubble when only emoji are offered: 56x48 (`EV:2797-2805`).
+// The floating backspace bubble when only emoji are offered: 56x48.
 const BACKSPACE_WIDTH = 56
 const BACKSPACE_HEIGHT = 48
 // Holding backspace repeats it.
 const BACKSPACE_REPEAT_DELAY = 350
 const BACKSPACE_REPEAT_MS = 60
-// Skin-tone popup: six 32 cells 4 apart, 15 + 32 tall, an arrow under the pressed cell
-// (`EmojiColorPickerWindow:68-75, 157-164`).
+// Skin-tone popup: six 32 cells 4 apart, 15 + 32 tall, an arrow under the pressed cell.
 const TONE_CELL = 32
 const TONE_SPACING = 4
 const TONE_POPUP_WIDTH = 6 * TONE_CELL + 30
@@ -241,7 +239,7 @@ interface TonePopupState {
   y: number
 }
 
-/** Telegram's skin-tone picker: the emoji plus five tones in a bubble above the pressed cell. */
+/** The skin-tone picker: the emoji plus five tones in a bubble above the pressed cell. */
 const TonePopup = ({ popup, width, onPick, onClose, styles }: {
   popup: TonePopupState
   width: number
@@ -283,7 +281,7 @@ const TonePopup = ({ popup, width, onPick, onClose, styles }: {
   )
 }
 
-/** Repeats while held, as Telegram's backspace does. */
+/** Repeats while held, like a keyboard's backspace. */
 const BackspaceButton = ({ onBackspace, styles, color, label, isRTL }: {
   onBackspace: () => void
   isRTL: boolean
@@ -324,7 +322,7 @@ const BackspaceButton = ({ onBackspace, styles, color, label, isRTL }: {
 }
 
 /**
- * The built-in emoji grid: Telegram Android's `EmojiView` with its tab strip, section headers,
+ * The built-in emoji grid with its tab strip, section headers,
  * search, recents and skin tones. The composer's emoji keyboard and the expanded reactions
  * panel are both this component.
  */
@@ -451,7 +449,7 @@ export const EmojiGrid = ({
     if (index === undefined)
       return
     isJumpingRef.current = true
-    // Telegram smooth-scrolls to the tab; the rows are fixed height, so the offset is exact.
+    // Smooth-scroll to the tab; the rows are fixed height, so the offset is exact.
     listRef.current?.scrollToOffset({ offset: offsets[index] ?? 0, animated: true })
     setTimeout(() => {
       isJumpingRef.current = false

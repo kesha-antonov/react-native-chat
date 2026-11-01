@@ -1,7 +1,7 @@
 import { createContext } from 'react'
 
 /**
- * Telegram's `returnToMessageId`: after a quote is tapped, the scroll-to-bottom button first
+ * After a quote is tapped, the scroll-to-bottom button first
  * takes you back to the message you tapped it in, and only then down to the newest one.
  */
 export interface PageDownReturn {

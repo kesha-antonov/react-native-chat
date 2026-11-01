@@ -28,7 +28,7 @@ const mountChat = async (ui: React.ReactElement) => {
 }
 
 describe('unread messages bar', () => {
-  it('draws Telegram\'s bar above the first unread message only', async () => {
+  it('draws the unread bar above the first unread message only', async () => {
     const { getAllByTestId, getByText } = await mountChat(
       <Chat messages={MESSAGES} onSend={() => {}} user={ME} firstUnreadMessageId={26} />
     )

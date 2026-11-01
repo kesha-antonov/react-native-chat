@@ -13,7 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
-/** Telegram cross-scales the unread dot and the playing bars over 150ms. */
+/** Cross-scales the unread dot and the playing bars over 150ms. */
 export const INDICATOR_MS = 150
 
 /**
@@ -31,7 +31,7 @@ export const useEnteringAfterMount = () => {
 export const indicatorExiting = ZoomOut.duration(INDICATOR_MS)
 
 /**
- * Telegram's unread dot beside a note's length. It shrinks away when the note
+ * The unread dot beside a note's length. It shrinks away when the note
  * is played rather than vanishing.
  */
 export function UnreadDot ({ isVisible, color, size = 6 }: { isVisible: boolean, color: string, size?: number }) {
@@ -48,7 +48,7 @@ export function UnreadDot ({ isVisible, color, size = 6 }: { isVisible: boolean,
   )
 }
 
-// Telegram's `RoundVideoPlayingDrawable`: three bars, each bouncing on its own
+// The playing indicator: three bars, each bouncing on its own
 // period from its own phase, frozen while the note is paused.
 const BARS = [
   { phase: 0.47, period: 300 },
@@ -61,7 +61,7 @@ const BAR_MAX = 8
 const BAR_TRAVEL = 7
 
 const PlayingBar = ({ phase, period, isAnimating, color }: { phase: number, period: number, isAnimating: boolean, color: string }) => {
-  // 0 is a full bar, 1 a stub, as in Telegram's drawable.
+  // 0 is a full bar, 1 a stub.
   const value = useSharedValue(phase)
 
   useEffect(() => {

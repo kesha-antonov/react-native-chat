@@ -1,12 +1,12 @@
 /**
- * The emoji keyboard's data: the tabs from the generated table, search, Telegram's recents and
+ * The emoji keyboard's data: the tabs from the generated table, search, the recents and
  * the remembered skin tones. Everything is built on first use, not when the library loads, and
  * shared by every keyboard and reactions panel in the app.
  */
 import { getAsyncStorage } from '../optional'
 import { EMOJI_DATA } from './emojiData'
 
-/** The built-in emoji tabs, in Telegram's order (`EmojiTabsStrip`). */
+/** The built-in emoji tabs, in their default order. */
 export type EmojiCategoryKey =
   | 'smileys'
   | 'animals'
@@ -28,7 +28,7 @@ export interface EmojiCategory {
 
 interface EmojiIndex {
   categories: EmojiCategory[]
-  /** Emojis that take a skin tone (`EmojiColorPickerWindow`). */
+  /** Emojis that take a skin tone. */
   toned: Set<string>
   /** [emoji, search words] for every emoji, for search. */
   words: Array<readonly [string, string]>
@@ -77,7 +77,7 @@ export const searchEmojis = (query: string, limit = 200): string[] => {
 
   const { words } = getIndex()
   // An emoji named exactly the query ("fire" is 🔥) comes first, then those with a word that
-  // starts with it, then the rest, as Telegram's keyword search ranks them.
+  // starts with it, then the rest.
   const exact: string[] = []
   const matches: string[] = []
   const later: string[] = []
@@ -138,29 +138,28 @@ export const withoutSkinTone = (emoji: string): string => {
 /* Recents and skin tones                                                                      */
 /* ------------------------------------------------------------------------------------------ */
 
-// Telegram's `Emoji.DEFAULT_RECENT`, the recents a fresh install starts with.
+// The recents a fresh install starts with.
 export const DEFAULT_RECENT_EMOJIS = [
   '😂', '😘', '❤️', '😍', '😊', '😁', '👍', '☺️', '😔', '😄', '😭', '💋',
   '😒', '😳', '😜', '🙈', '😉', '😃', '😢', '😝', '😱', '😡', '😏', '😞',
   '😅', '😚', '🙊', '😌', '😀', '😋', '😆', '👌', '😐', '😕',
 ]
 
-// `Emoji.MAX_RECENT_EMOJI_COUNT`.
 export const MAX_RECENT_EMOJIS = 48
 
 export const DEFAULT_RECENTS_STORAGE_KEY = '@kesha-antonov/react-native-chat/emoji'
 
 interface StoredEmojiState {
-  /** Use count per emoji (`Emoji.emojiUseHistory`). */
+  /** Use count per emoji. */
   history: Record<string, number>
-  /** The tone picked per base emoji (`Emoji.emojiColor`). */
+  /** The tone picked per base emoji. */
   tones: Record<string, number>
 }
 
 type Listener = () => void
 
 /**
- * Telegram's recents: a use count per emoji, at most 48, the least used dropped when a new one
+ * Recents: a use count per emoji, at most 48, the least used dropped when a new one
  * comes in. The list is sorted by count only when a keyboard opens (`sortEmoji`), so it does not
  * reshuffle under the finger while you type. Kept in memory, and in async storage when
  * `@react-native-async-storage/async-storage` is installed.
@@ -261,7 +260,7 @@ class EmojiRecentsStore {
     return this.order
   }
 
-  /** Re-sort by use count; Telegram does this each time the panel opens. */
+  /** Re-sort by use count; done each time the panel opens. */
   sort () {
     this.order = [...this.history.entries()]
       .sort((a, b) => b[1] - a[1])
@@ -270,7 +269,7 @@ class EmojiRecentsStore {
   }
 
   /**
-   * `Emoji.addRecentEmoji`: count one more use, evicting the least used when full. The shown
+   * Count one more use, evicting the least used when full. The shown
    * order changes only on the next `sort`.
    */
   add (emoji: string) {

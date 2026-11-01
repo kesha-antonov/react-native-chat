@@ -72,9 +72,8 @@ const isExpoVideoAvailable = !!(expoVideo?.VideoView && expoVideo?.useVideoPlaye
 // row (see roundNotePlayers.ts).
 const isRoundNotePlayerAvailable = isExpoVideoAvailable && !!expoVideo?.createVideoPlayer
 
-// Telegram sizes a round note from the screen: 60% of its short side at rest
-// (`AndroidUtilities.roundMessageSize`), and all of it but 28pt while it plays
-// with sound (`roundPlayingMessageSize`).
+// A round note is sized from the screen: 60% of its short side at rest, and
+// all of it but 28pt while it plays with sound.
 const NOTE_SIZE_RATIO = 0.6
 const PLAYING_NOTE_INSET = 28
 /** Centre the note once it has grown, so the list scrolls to its final size. */
@@ -107,7 +106,7 @@ interface RoundNotePlayerProps {
   animateAppear?: boolean
   /** The message, handed to `mediaPlayback.onTranscribe` and `onViewOnceEnd`. */
   message?: IMessage
-  /** Plays a single time (Telegram's `isRoundOnce`). */
+  /** Plays a single time (view once). */
   isViewOnce?: boolean
   transcription?: string
 }
@@ -134,7 +133,7 @@ const ExpoVideoPlayer = ({ uri, style, videoProps }: InlinePlayerProps) => {
 }
 
 /**
- * A Telegram round video note. In the list it holds its first frame with a
+ * A round video note. In the list it holds its first frame with a
  * play button, or loops silently when autoplay is on; a tap plays it from the
  * start with sound and grows it; another tap pauses it, and a paused
  * note can be scrubbed by dragging along its ring. When it ends, or another
@@ -156,7 +155,7 @@ const RoundNotePlayer = ({
   transcription,
 }: RoundNotePlayerProps) => {
   const { isRoundVideoAutoplayEnabled, markReadRef, onTranscribe, onViewOnceEnd } = useNotePlaybackOptions(messageId)
-  // Telegram never autoplays a view-once note in the list: it rests on a play
+  // A view-once note never autoplays in the list: it rests on a play
   // button with its "1" marker, so nothing of it is seen before it is opened.
   const isAutoplay = isRoundVideoAutoplayEnabled && !isViewOnce
   const transcribe = useTranscription(message, messageId, transcription, onTranscribe)
@@ -171,7 +170,7 @@ const RoundNotePlayer = ({
   const playerKey = controller && messageId != null ? `${String(messageId)}\u0000${uri}` : playerId
   const [player] = useState(() => playerCache.get(playerKey, () => {
     const created = expoVideo.createVideoPlayer(uri)
-    // Silent loop in the list (`ImageLoader.AUTOPLAY_FILTER`), or a still first
+    // Silent loop in the list, or a still first
     // frame when autoplay is off.
     created.muted = true
     created.loop = isAutoplay
@@ -183,8 +182,8 @@ const RoundNotePlayer = ({
     playerCache.retain(playerKey)
     return () => playerCache.release(playerKey)
   }, [playerCache, playerKey])
-  // Telegram's round note button while the file is not here (`updateButtonState`, round):
-  // the cancel ✕ with a ring as it downloads, the arrow when it waits for a tap. expo-video
+  // The round note's button while the file is not here: the cancel ✕ with a ring as it
+  // downloads, the arrow when it waits for a tap. expo-video
   // streams, so the ring follows how much of the clip is buffered until it can play.
   const [isPlayerLoading, setIsPlayerLoading] = useState(() => player.status === 'loading' || player.status === 'idle')
   const bufferProgress = useSharedValue(0)
@@ -226,7 +225,7 @@ const RoundNotePlayer = ({
   /** Taken back from the floating note: grow, but do not centre the list. */
   const skipCentreRef = useRef(false)
 
-  // `ChatActivity` keeps a just-sent round note's cell at alpha 0 while the
+  // A just-sent round note's row stays at alpha 0 while the
   // camera circle flies onto it, then shows it at once: it is the same picture.
   const appearOnMount = useRef(!!animateAppear).current
   const flightReveal = useSharedValue(appearOnMount && isSendFlightExpected('round') ? 0 : 1)
@@ -327,7 +326,7 @@ const RoundNotePlayer = ({
   }, [player, stopRaf])
 
   // Recording pauses this note and leaves it current; another note starting
-  // resets it, as Telegram's `cleanupPlayer` does.
+  // resets it, so only one note is ever current.
   const onStop = useCallback((reason: StopReason) => {
     if (reason === 'replaced') {
       reset()
@@ -355,20 +354,20 @@ const RoundNotePlayer = ({
   const becomeCurrent = useCallback(() => {
     playerCache.keep(playerKey, true)
     setIsCurrent(true)
-    // Telegram does not grow the note with the keyboard up or in landscape.
+    // The note does not grow with the keyboard up or in landscape: there is no room.
     const willGrow = windowWidth < windowHeight && !Keyboard.isVisible()
     setIsGrown(willGrow)
 
     // A note grows from its own side, so an incoming one beside an avatar
-    // would run off the screen. Shift it to keep half of Telegram's inset on
-    // either edge; like Telegram hiding the avatar, it then covers it.
+    // would run off the screen. Shift it to keep half of the side inset on
+    // either edge; the avatar is hidden while it plays, so covering it is fine.
     if (willGrow)
       noteRef.current?.measureInWindow((x, _y, width) => {
         const grownLeft = isIncoming ? x : x + width - playingNoteSize
         const inset = PLAYING_NOTE_INSET / 2
         const fittedLeft = Math.min(Math.max(grownLeft, inset), windowWidth - inset - playingNoteSize)
         setGrowShift(fittedLeft - grownLeft)
-        // Telegram keeps the time at the circle's bottom-right, so it moves
+        // The time stays at the circle's bottom-right, so it moves
         // with the grown circle's right edge.
         setTimeShift(fittedLeft + playingNoteSize - (x + width))
       })
@@ -403,7 +402,7 @@ const RoundNotePlayer = ({
 
   // The note was current when its row unmounted and kept playing (or stayed
   // paused) floating over the list. Back on screen, the row takes it over
-  // where the player is, as Telegram's cell picks the playing message up again.
+  // where the player is, without restarting it.
   const adoptDetached = useCallback(() => {
     const detached = playerCache.takeDetached(playerKey)
     if (!detached)
@@ -490,7 +489,7 @@ const RoundNotePlayer = ({
   }, [playerId, reset])
   useReportNowPlaying(messageId, 'round', isCurrent, isPlaying, onPress, stop, player)
 
-  // Raise to listen (`MediaController.setUseFrontSpeaker` / `startAudioAgain`),
+  // Raise to listen,
   // as voice notes do: at the ear the current note plays through the earpiece,
   // from the start if it was under a second in; lowered, it pauses. A
   // view-once note is never rewound, which would replay part of it.
@@ -514,7 +513,7 @@ const RoundNotePlayer = ({
     pause,
   })
 
-  // Telegram scrolls a round note that starts playing to the middle of the
+  // A round note that starts playing scrolls to the middle of the
   // list, once it has grown, so the whole circle is in view.
   const scrollToMessage = useScrollToMessage()
   const scrollToMessageRef = useRef(scrollToMessage)
@@ -581,7 +580,7 @@ const RoundNotePlayer = ({
     'worklet'
     const fraction = angleToFraction(sizeSV.value, x, y)
     // Wrapping past 12 o'clock leaves the old arc to fade out rather than
-    // jumping, with one tick per wrap, as Telegram does.
+    // jumping, with one tick per wrap.
     if (isWrap(chrome.progress.value, fraction)) {
       if (chrome.wrapAlpha.value === 0)
         runOnJS(recordingHaptic)()
@@ -631,7 +630,7 @@ const RoundNotePlayer = ({
 
   // Declared last so it runs after the cleanups above have released the claim
   // and cleared the bar: a note still current as its row unmounts keeps going,
-  // floating, instead of being cut off with the row (`PipRoundVideoView`).
+  // floating, instead of being cut off with the row.
   // A view-once note never floats: closing it - here, by scrolling it away -
   // ends it, and `useViewOnce` spends it on unmount.
   const liveRef = useRef({ isCurrent, isPlaying, isViewOnce })
@@ -717,7 +716,7 @@ const RoundNotePlayer = ({
             </Pressable>
           </Animated.View>
         </GestureDetector>
-        {/* Telegram's length pill, counting down while it plays. */}
+        {/* The length pill, counting down while it plays. */}
         <VideoNoteMeta
           duration={remaining}
           isWatched={!isMediaUnread || isHeard || isCurrent}
@@ -745,7 +744,7 @@ const RoundNotePlayer = ({
 }
 
 /**
- * The transcribe button beside a round note (`ChatMessageCell`, closed: a
+ * The transcribe button beside a round note (closed: a
  * 32dp circle on the service background, out of the bubble since a round note
  * has none). It follows the note's grow on the UI thread.
  */
@@ -782,8 +781,7 @@ const RoundTranscribeButton = ({
 
 /**
  * The transcription of a round note, in a bubble of the sender's color under
- * the circle, as Telegram opens it (`isVoiceTranscriptionOpen` on a round
- * message). The bubble grows and fades with the text.
+ * the circle. The bubble grows and fades with the text.
  */
 const RoundTranscription = ({
   text,
@@ -829,7 +827,7 @@ const RoundTranscription = ({
 
 /**
  * A video's media button while it uploads or waits to download (`transfer`,
- * `isDownloadRequired`): Telegram's 48 ring over the frame and the size pill. A tap on the
+ * `isDownloadRequired`): a 48 ring over the frame and the size pill. A tap on the
  * video is then the button's.
  */
 const VideoTransferOverlay = ({ message }: { message: IMessage }) => {

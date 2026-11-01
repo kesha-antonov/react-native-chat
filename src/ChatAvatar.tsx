@@ -24,7 +24,7 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   avatarTransparent: {
     backgroundColor: Color.backgroundTransparent,
   },
-  // `AvatarDrawable`: 18 Medium for a 42 avatar, scaled with the size.
+  // Initials: 18 Medium for a 42 avatar, scaled with the size.
   textStyle: {
     color: theme.avatar.textColor,
     fontSize: Math.round(theme.avatar.size * 0.43),
@@ -66,8 +66,8 @@ export function ChatAvatar (
       return ''
   }, [user?.name])
 
-  // Telegram picks the color by user id (`abs(id % 7)`) and draws it as a vertical gradient
-  // (`AvatarDrawable`); `theme.avatar.paletteEnd` empty draws it flat.
+  // The color is picked by user id (`abs(id % 7)`) and drawn as a vertical gradient;
+  // `theme.avatar.paletteEnd` empty draws it flat.
   const fillStyle = useMemo(() => {
     const { palette, paletteEnd } = theme.avatar
     if (!palette.length)

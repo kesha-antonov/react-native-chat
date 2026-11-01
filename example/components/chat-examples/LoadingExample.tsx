@@ -54,7 +54,7 @@ const LATEST: IMessage[] = [
   { _id: 'voice-remote', text: '', createdAt: minutesAgo(9), user: BOT, audio: VOICE_LONG, duration: 372 },
   {
     _id: 'intro',
-    text: 'Loading states, the way Telegram draws them. Voice notes, photos and the round note fetch themselves with a progress ring; the arrows wait for a tap and then download slowly; your uploads show the ring and the sending clock. Scroll up for earlier messages.',
+    text: 'Loading states. Voice notes, photos and the round note fetch themselves with a progress ring; the arrows wait for a tap and then download slowly; your uploads show the ring and the sending clock. Scroll up for earlier messages.',
     createdAt: minutesAgo(10),
     user: BOT,
   },
@@ -123,7 +123,7 @@ export default function LoadingExample () {
 
   const transfers = useSimulatedTransfers(patch)
 
-  // The history "loads" first: Telegram's spinner over the empty chat.
+  // The history "loads" first: a spinner over the empty chat.
   useEffect(() => {
     const timer = setTimeout(() => {
       setMessages(LATEST)

@@ -156,8 +156,8 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   /*  Render a loading view when initializing */
   renderLoading?: () => React.ReactNode
   /**
-   * The big greeting on the empty-chat card, sent as a message when tapped (Telegram's greeting
-   * sticker). `null` leaves it out, keeping just the "No messages here yet..." card.
+   * The big greeting on the empty-chat card, sent as a message when tapped. `null` leaves it
+   * out, keeping just the "No messages here yet..." card.
    * @default '👋'
    */
   emptyChatGreeting?: string | null
@@ -184,7 +184,7 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   renderMessageAudio?: (props: MessageAudioProps<TMessage>) => React.ReactNode
   /* Custom message location */
   renderMessageLocation?: (props: MessageLocationProps<TMessage>) => React.ReactNode
-  /** Custom file bubble for `IMessage.file` (Telegram's document cell by default). */
+  /** Custom file bubble for `IMessage.file` (a document cell by default). */
   renderMessageFile?: (props: MessageFileProps<TMessage>) => React.ReactNode
   /* Custom view inside the bubble */
   renderCustomView?: (props: BubbleProps<TMessage>) => React.ReactNode
@@ -251,7 +251,7 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    */
   messageActions?: MessageMenuItem[] | ((message: TMessage, defaults: MessageMenuItem[]) => MessageMenuItem[])
   /**
-   * The built-in long-press actions, in Telegram's order: Reply, Copy, Forward, Pin / Unpin,
+   * The built-in long-press actions, in this order: Reply, Copy, Forward, Pin / Unpin,
    * Edit, Select, Delete. Each shows only when it can work (Copy needs text and a clipboard peer;
    * Edit needs your own text message and `onEditMessage`; Forward, Pin and Delete need their
    * callbacks; Select needs something to do with a selection - a clipboard, Forward or Delete).
@@ -281,7 +281,7 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    */
   onDeleteMessages?: (messages: TMessage[]) => void
   /**
-   * Called whenever the selection changes in Telegram's multi-select mode (entered from the
+   * Called whenever the selection changes in multi-select mode (entered from the
    * menu's "Select"), with the checked messages in the order they were checked - an empty array
    * once it ends.
    */
@@ -314,14 +314,14 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    */
   onPressEmoji?: () => void
   /**
-   * The built-in emoji keyboard (Telegram's `EmojiView`): the emoji button opens it in the
+   * The built-in emoji keyboard: the emoji button opens it in the
    * system keyboard's place, and a tap inserts at the caret - whether or not you control `text`.
    * On by default; `false` hides the emoji button. An object configures it:
    * `{ columns, categories, recents, isSearchEnabled, renderEmojiKeyboard }`.
    */
   emojiKeyboard?: boolean | EmojiKeyboardProps
   /**
-   * The built-in attachment menu (Telegram's `ChatAttachAlert`) behind the composer's paperclip:
+   * The built-in attachment menu behind the composer's paperclip:
    * a photo grid with numbered selection, a caption and "Send N", plus File and Location tabs.
    * Each tab shows only when its optional peer is installed; picks become `IMessage`s sent
    * through `onSend`. On by default; `false` hides the paperclip. `actions`,
@@ -335,13 +335,13 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    */
   isMultiline?: boolean
   /**
-   * Telegram-style hold-to-record voice notes. On by default when the optional `expo-audio` is
+   * Hold-to-record voice notes. On by default when the optional `expo-audio` is
    * installed; `false` turns them off, an object configures them (`minDurationMs`, ...).
    */
   audioRecording?: boolean | AudioRecordingProps
   /**
    * Round video notes, recorded in the chat. On by default when `react-native-vision-camera`
-   * is installed (the mic button then toggles to the camera with a tap, as in Telegram);
+   * is installed (the mic button then toggles to the camera with a tap);
    * `false` turns them off. `{ isEnabled: true }` additionally falls back to the system camera
    * (`expo-image-picker`) when vision-camera is missing.
    */
@@ -349,17 +349,17 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   /** Playback speed and auto-play-next for voice and round video notes */
   mediaPlayback?: MediaPlaybackProps
   /**
-   * Handlers for Telegram's media buttons: the download arrow of a message with
+   * Handlers for the media buttons: the download arrow of a message with
    * `isDownloadRequired` and the cancel ✕ of one with `transfer`.
    */
   mediaTransfer?: MediaTransferProps
   /**
-   * The history is loading: Telegram's spinner in a service-colored circle, centred over the
-   * empty list (`ChatActivity.progressView`). Messages already passed stay visible under it.
+   * The history is loading: a spinner in a service-colored circle, centred over the
+   * empty list. Messages already passed stay visible under it.
    */
   isLoading?: boolean
   /**
-   * The chat background. By default Chat draws Telegram's swirl gradient wallpaper from
+   * The chat background. By default Chat draws a swirl gradient wallpaper from
    * `theme.wallpaper` (turning one step per message you send). Return your own element to
    * replace it - an image, a gradient, `ChatWallpaper` with other props - or pass `null` for
    * the plain `theme.colors.background`.

@@ -2,13 +2,15 @@ import React from 'react'
 import { I18nManager, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { GestureDetector, Touchable, usePanGesture } from 'react-native-gesture-handler'
+import { GestureDetector, Touchable, useCompetingGestures, usePanGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   FadeIn,
   FadeOut,
   runOnJS,
+  SharedValue,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withSequence,
   withTiming,
@@ -20,26 +22,58 @@ import { formatListDate, getPreview } from './format'
 import { useLastMessage, useTyping } from './store'
 import { useChatListColors } from './theme'
 
-// Row geometry: Telegram Android's two-line `DialogCell` (`SharedConfig.useThreeLinesLayout` is
-// off by default). `heightDefault = 70`, `avatarStart = 11`, a 52dp avatar, text from 72 + 4.
+// Row geometry: a two-line row 70 tall, the avatar 11 in and 52 across, text from 72 + 4.
 export const ROW_HEIGHT = 70
 const AVATAR_SIZE = 52
 const AVATAR_START = 11
 const TEXT_START = 76
-/** The divider starts at `messagePaddingStart` (72) and runs to the edge. */
+/** The divider starts 72 in and runs to the edge. */
 const DIVIDER_INSET = 72
 
-// Swipe: `DialogsActivity.SwipeController` and `DialogCell.onDraw`.
-/** `getSwipeThreshold` returns 0.45 of the row's width; crossing it ticks and reveals. */
+// Swipe to archive.
+/** Past 0.45 of the row's width the swipe ticks and reveals. */
 const SWIPE_THRESHOLD = 0.45
-/** `getSwipeEscapeVelocity` is 3500 px/s, about 1200 pt/s. */
+/** A fling faster than about 1200 pt/s completes it too. */
 const SWIPE_ESCAPE_VELOCITY = 1200
-/** `ANIMATION_TYPE_SWIPE_CANCEL` slides back over 200ms. */
+/** A cancelled swipe slides back over 200ms. */
 const SWIPE_CANCEL = { duration: 200, easing: Easing.out(Easing.quad) }
-/** The reveal circle grows over 300ms (`currentRevealProgress += 16 / 300`), accelerating. */
+/** The reveal circle grows over 300ms, accelerating. */
 const REVEAL = { duration: 300, easing: Easing.in(Easing.quad) }
-/** The icon is centred 43dp from the row's end (`getMeasuredWidth() - dp(43)`). */
+/** The icon is centred 43dp from the row's end. */
 const ICON_END = 43
+
+// Reordering pinned chats: a long press (the platform's 400ms) lifts the row, the others make
+// way as it passes their middle, and it settles into its slot when let go.
+const LONG_PRESS_MS = 400
+/** The rows making way move like the list does: 250ms, bezier(0.199, 0.011, 0.279, 0.91). */
+const MAKE_WAY = { duration: 250, easing: Easing.bezier(0.199, 0.011, 0.279, 0.91) }
+/** The lifted row drops into place over 200ms. */
+const SETTLE = { duration: 200, easing: Easing.inOut(Easing.sin) }
+/** The reorder handle and the badge or pin it replaces cross-fade over 170ms. */
+const HANDLE_FADE = { duration: 170, easing: Easing.linear }
+
+/** The drag in progress, shared by every pinned row. */
+export interface PinDrag {
+  id: SharedValue<string>
+  from: SharedValue<number>
+  y: SharedValue<number>
+  isActive: SharedValue<boolean>
+}
+
+export interface DialogReorder {
+  /** This row's place among the pinned chats, and how many there are. */
+  index: number
+  count: number
+  drag: PinDrag
+  onStart: (dialog: Dialog) => void
+  onDrop: (dialog: Dialog, toIndex: number) => void
+}
+
+/** Where the dragged row would land. */
+const hoverIndex = (drag: PinDrag, count: number) => {
+  'worklet'
+  return Math.max(0, Math.min(count - 1, drag.from.value + Math.round(drag.y.value / ROW_HEIGHT)))
+}
 
 export interface DialogCellProps {
   dialog: Dialog
@@ -50,9 +84,13 @@ export interface DialogCellProps {
   /** Called once a swipe has carried the row off screen (archive or unarchive). */
   onSwipe: (dialog: Dialog) => void
   isLast?: boolean
+  /** Set on a pinned chat in the main list: it can be dragged among the other pinned ones. */
+  reorder?: DialogReorder
+  /** Selecting with more than one chat pinned: the pinned rows show a reorder handle. */
+  isReordering?: boolean
 }
 
-export function DialogCell ({ dialog, isSelected, isSelectionMode, onPress, onLongPress, onSwipe, isLast }: DialogCellProps) {
+export function DialogCell ({ dialog, isSelected, isSelectionMode, onPress, onLongPress, onSwipe, isLast, reorder, isReordering = false }: DialogCellProps) {
   // The gesture callbacks read shared values; React Compiler would memoize them into render.
   'use no memo'
   const colors = useChatListColors()
@@ -60,7 +98,7 @@ export function DialogCell ({ dialog, isSelected, isSelectionMode, onPress, onLo
   const lastMessage = useLastMessage(dialog.id)
   const typingUser = useTyping(dialog.id)
 
-  // Telegram swipes the row towards the start edge, revealing the action at the end.
+  // The row swipes towards the start edge, revealing the action at the end.
   const direction = I18nManager.isRTL ? 1 : -1
   const translateX = useSharedValue(0)
   const isPast = useSharedValue(false)
@@ -98,6 +136,77 @@ export function DialogCell ({ dialog, isSelected, isSelectionMode, onPress, onLo
     },
   })
 
+  const drag = reorder?.drag
+  const index = reorder?.index ?? 0
+  const count = reorder?.count ?? 0
+  const onDragStart = reorder?.onStart
+  const onDrop = reorder?.onDrop
+  // How far this row has moved to make way for the dragged one.
+  const shift = useSharedValue(0)
+  const dragPan = usePanGesture({
+    enabled: !!reorder,
+    activateAfterLongPress: LONG_PRESS_MS,
+    onActivate: () => {
+      if (!drag)
+        return
+      drag.id.value = dialog.id
+      drag.from.value = index
+      drag.y.value = 0
+      drag.isActive.value = true
+      if (onDragStart)
+        runOnJS(onDragStart)(dialog)
+    },
+    onUpdate: event => {
+      if (!drag)
+        return
+      // Kept to the pinned rows, give or take half a row.
+      const min = -(index + 0.5) * ROW_HEIGHT
+      const max = (count - 1 - index + 0.5) * ROW_HEIGHT
+      drag.y.value = Math.max(min, Math.min(max, event.translationY))
+    },
+    onDeactivate: () => {
+      if (!drag || drag.id.value !== dialog.id)
+        return
+      const to = hoverIndex(drag, count)
+      drag.y.value = withTiming((to - index) * ROW_HEIGHT, SETTLE, () => {
+        if (onDrop)
+          runOnJS(onDrop)(dialog, to)
+      })
+    },
+  })
+  const gesture = useCompetingGestures(pan, dragPan)
+
+  // Where this row should sit, eased there while a drag is on and dropped at once after it.
+  const lastTarget = useSharedValue(0)
+  useDerivedValue(() => {
+    let target = 0
+    if (drag && drag.isActive.value && drag.id.value !== dialog.id) {
+      const from = drag.from.value
+      const to = hoverIndex(drag, count)
+      if (from < index && index <= to)
+        target = -ROW_HEIGHT
+      else if (to <= index && index < from)
+        target = ROW_HEIGHT
+    }
+    if (target === lastTarget.value)
+      return
+    lastTarget.value = target
+    shift.value = drag?.isActive.value ? withTiming(target, MAKE_WAY) : target
+  })
+  const isLifted = useDerivedValue(() => !!drag && drag.isActive.value && drag.id.value === dialog.id)
+  const dragStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: isLifted.value && drag ? drag.y.value : shift.value }],
+    elevation: isLifted.value ? 6 : 0,
+    shadowOpacity: isLifted.value ? 0.18 : 0,
+  }))
+
+  const handleProgress = useSharedValue(isReordering ? 1 : 0)
+  React.useEffect(() => {
+    handleProgress.value = withTiming(isReordering ? 1 : 0, HANDLE_FADE)
+  }, [isReordering, handleProgress])
+  const handleStyle = useAnimatedStyle(() => ({ opacity: handleProgress.value }))
+  const trailingStyle = useAnimatedStyle(() => ({ opacity: 1 - handleProgress.value }))
+
   const rowStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }] }))
   const revealStyle = useAnimatedStyle(() => ({ transform: [{ scale: reveal.value }] }))
   const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: iconScale.value }] }))
@@ -113,8 +222,8 @@ export function DialogCell ({ dialog, isSelected, isSelectionMode, onPress, onLo
   const rowBackground = isSelected ? colors.selectedRow : 'transparent'
 
   return (
-    <GestureDetector gesture={pan}>
-      <View style={styles.row}>
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={[styles.row, styles.liftShadow, dragStyle]}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: background }]}>
           <Animated.View
             style={[
@@ -206,26 +315,33 @@ export function DialogCell ({ dialog, isSelected, isSelectionMode, onPress, onLo
                       </Animated.View>
                     )}
                 </View>
-                {dialog.unreadCount > 0
-                  ? (
-                    <Animated.View
-                      entering={FadeIn.duration(150)}
-                      exiting={FadeOut.duration(150)}
-                      style={[styles.badge, { backgroundColor: dialog.isMuted ? colors.badgeMuted : colors.badge }]}
-                    >
-                      <Text style={[styles.badgeText, { color: colors.badgeText }]}>{dialog.unreadCount}</Text>
-                    </Animated.View>
-                  )
-                  : dialog.isPinned && (
-                    <MaterialCommunityIcons name='pin' size={18} color={colors.pinIcon} style={styles.pin} />
-                  )}
+                <Animated.View style={trailingStyle}>
+                  {dialog.unreadCount > 0
+                    ? (
+                      <Animated.View
+                        entering={FadeIn.duration(150)}
+                        exiting={FadeOut.duration(150)}
+                        style={[styles.badge, { backgroundColor: dialog.isMuted ? colors.badgeMuted : colors.badge }]}
+                      >
+                        <Text style={[styles.badgeText, { color: colors.badgeText }]}>{dialog.unreadCount}</Text>
+                      </Animated.View>
+                    )
+                    : dialog.isPinned && (
+                      <MaterialCommunityIcons name='pin' size={18} color={colors.pinIcon} style={styles.pin} />
+                    )}
+                </Animated.View>
+                {dialog.isPinned && (
+                  <Animated.View style={[styles.handle, handleStyle]} pointerEvents='none' accessibilityElementsHidden={!isReordering}>
+                    <MaterialCommunityIcons name='reorder-horizontal' size={22} color={colors.pinIcon} />
+                  </Animated.View>
+                )}
               </View>
             </View>
 
             {!isLast && <View style={[styles.divider, { backgroundColor: colors.divider }]} />}
           </Touchable>
         </Animated.View>
-      </View>
+      </Animated.View>
     </GestureDetector>
   )
 }
@@ -234,6 +350,11 @@ const styles = StyleSheet.create({
   row: {
     height: ROW_HEIGHT,
     overflow: 'hidden',
+  },
+  liftShadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
   },
   fill: {
     flex: 1,
@@ -351,9 +472,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
-  // `list_pin` is a tilted pushpin.
+  // The pin is a tilted pushpin.
   pin: {
     transform: [{ rotate: '45deg' }],
+  },
+  // In the pin's place, at the end of the second line.
+  handle: {
+    position: 'absolute',
+    end: 0,
+    top: -1,
   },
   divider: {
     position: 'absolute',

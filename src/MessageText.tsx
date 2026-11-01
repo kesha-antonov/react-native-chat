@@ -51,7 +51,7 @@ export type MessageTextProps<TMessage extends IMessage> = {
   /**
    * Inline content after the last word. `Bubble` puts an invisible copy of the time here, so
    * the visible time can sit on the last line when it fits and the text wraps around it
-   * when it does not - Telegram's trailing time. In markdown it follows the closing paragraph,
+   * when it does not. In markdown it follows the closing paragraph,
    * heading or list item; after a code block or a quote it takes a line of its own.
    */
   trailing?: React.ReactNode
@@ -202,7 +202,7 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   text_right: {
     color: theme.colors.outgoingText,
   },
-  // Telegram colors links without underlining them.
+  // Links are colored, not underlined.
   link: {},
   link_left: {
     color: theme.colors.incomingLink,

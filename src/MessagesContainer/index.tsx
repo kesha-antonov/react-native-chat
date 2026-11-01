@@ -45,19 +45,18 @@ type CellRendererProps = React.ComponentProps<NonNullable<FlatListProps<unknown>
 
 export * from './types'
 
-// Any pixel of a row on screen counts: Telegram floats the playing round note
-// only once its cell has left the list entirely (`ChatActivity`, the
-// `foundTextureViewMessage` scan before `setCurrentVideoVisible(false)`).
+// Any pixel of a row on screen counts: the playing round note floats only once
+// its row has left the list entirely.
 const ROW_ON_SCREEN_CONFIG = { itemVisiblePercentThreshold: 0 }
 
-/** Telegram Android treats the list as at the newest message within `dp(5)`. */
+/** The list counts as at the newest message within 5pt. */
 const NEWEST_SLOP = 5
 
 // The pagedown button comes up from 80 below at 0.7 scale and fades in, over 280ms on a
-// decelerate curve (`ChatActivitySideControlsButtonsLayout:177-224`).
+// decelerate curve.
 const SCROLL_BUTTON_SHOW = { duration: 280, easing: Easing.out(Easing.quad) }
 const SCROLL_BUTTON_RISE = 80
-// `ScaleStateListAnimator.apply(button, .13f, 2f)`: 13% smaller in 80ms while pressed, back
+// 13% smaller in 80ms while pressed, back
 // over 350ms on an overshoot with tension 2.
 const SCROLL_BUTTON_PRESSED = 0.87
 const overshoot = (tension: number) => (t: number) => {
@@ -89,7 +88,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     listProps,
     isScrollToBottomEnabled = true,
     isScrollToBottomBadgeEnabled = true,
-    // Telegram Android's `scrollValue`, `dp(100)` (`ChatActivity`'s list scroll listener).
+    // How far to scroll before the scroll-to-bottom button comes up.
     scrollToBottomOffset = 100,
     isAlignedTop = false,
     scrollToBottomStyle,
@@ -187,7 +186,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   const scrollToBottomOpacity = useSharedValue(0)
   const isScrollingDown = useSharedValue(false)
-  // Telegram Android's pagedown logic (`ChatActivity` list `onScrolled`): scroll travelled
+  // Scroll-to-bottom button logic: scroll travelled
   // since the last change, whether the button came up from scrolling, and how far the viewport
   // is from the newest message.
   const scrollTravel = useSharedValue(0)
@@ -197,7 +196,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false)
   const [isListLaidOut, setIsListLaidOut] = useState(false)
   const scrollToBottomPressScale = useSharedValue(1)
-  // The pressed state is the icon color at 15% over the circle (`createInsetRoundRectDrawable`).
+  // The pressed state is the icon color at 15% over the circle.
   const scrollToBottomPressed = useSharedValue(0)
   const scrollToBottomPressedStyle = useAnimatedStyle(() => ({ opacity: scrollToBottomPressed.value }))
   const scrollToBottomStyleAnim = useAnimatedStyle(() => ({
@@ -437,7 +436,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     )
   }, [renderLoadEarlier])
 
-  // Telegram Android's counter on the pagedown button (`newUnreadMessageCount`): messages that
+  // The counter on the scroll-to-bottom button: messages that
   // arrive while away from the newest one count up and bring the button up; each counts down
   // as it scrolls into view (read), and the count clears when the button goes.
   const unreadIdsRef = useRef(new Set<string | number>())
@@ -460,7 +459,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
     const arrived = isInverted ? messages.slice(0, previousIndex) : messages.slice(previousIndex + 1)
     // At the newest message (within 5dp), or after sending one yourself, there is nothing to
-    // count: the list follows the new message (`diff <= dp(5) || hasFromMe`).
+    // count: the list follows the new message.
     const isFromMe = arrived.some(message => message.user?._id === userId)
     if (isFromMe || distanceFromNewestSV.value <= NEWEST_SLOP) {
       unreadIdsRef.current.clear()
@@ -509,7 +508,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     if (scrollToBottomComponentProp)
       return scrollToBottomComponentProp()
 
-    // Telegram's `pagedown` chevron in the glass icon color.
+    // A down chevron in the glass icon color.
     return (
       <Icon
         name='chevronDown'
@@ -650,8 +649,8 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     }, 250)
   }, [forwardRef])
 
-  // Telegram opens a chat with unread messages on its "Unread Messages" bar, scrolled to the top
-  // of the screen (`ChatActivity`, `scrollToMessage = unreadMessageObject`). The row has to be
+  // A chat with unread messages opens on its "Unread Messages" bar, scrolled to the top
+  // of the screen. The row has to be
   // rendered to be scrolled to, so the first render reaches it.
   const unreadIndex = firstUnreadMessageId != null
     ? messages.findIndex(message => message._id === firstUnreadMessageId)
@@ -757,7 +756,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [messages])
 
   // Rows slide to their new place when one arrives or changes height, and the newest
-  // message rises in from below (Telegram's `ChatListItemAnimator`). Only the inverted
+  // message rises in from below. Only the inverted
   // FlatList: a non-inverted chat scrolls to a new message instead, and FlashList
   // recycles its cells.
   const areCellsAnimated = isInverted && !isFlashList
@@ -845,8 +844,8 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       const delta = distanceFromNewest - distanceFromNewestSV.value
       distanceFromNewestSV.value = distanceFromNewest
 
-      // Telegram Android: the button hides once the newest message is reached; it comes up
-      // after scrolling back towards the newest by `scrollValue`, and goes again after scrolling
+      // The button hides once the newest message is reached; it comes up after scrolling
+      // back towards the newest by `scrollToBottomOffset`, and goes again after scrolling
       // away by as much if scrolling is what brought it up.
       if (distanceFromNewest <= NEWEST_SLOP) {
         if (delta <= 0) {
@@ -917,7 +916,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     })
   }, [messages, daysPositions, isInverted, isDayAnimationEnabled])
 
-  // A tap on the chat (not a scroll) closes the emoji keyboard, as in Telegram.
+  // A tap on the chat (not a scroll) closes the emoji keyboard.
   const composerPanels = useComposerPanels()
   const touchStartRef = useRef<{ x: number, y: number } | null>(null)
   const onListTouchStart = useCallback((event: GestureResponderEvent) => {

@@ -4,11 +4,11 @@ import { StyleSheet, Text, View } from 'react-native'
 import { useTheme } from '../hooks/useTheme'
 import { Icon } from './Icon'
 
-/** `new CheckBoxBase(this, 21)` in `ChatMessageCell.setCheckBoxVisible`. */
+/** The selection check circle's diameter. */
 export const SELECTION_CHECKBOX_SIZE = 21
 
 /**
- * The round check beside a message in selection mode (`CheckBoxBase`, default style): empty, a
+ * The round check beside a message in selection mode: empty, a
  * white ring over a faint service-colored disc; checked, a filled `checkbox` disc with a white
  * check.
  */

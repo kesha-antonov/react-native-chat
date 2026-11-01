@@ -41,18 +41,18 @@ const svg = getSvg()
 const Svg: any = svg ? svg.Svg ?? svg.default : null
 const AnimatedCircle: any = svg?.Circle ? Animated.createAnimatedComponent(svg.Circle) : null
 
-/** `DecelerateInterpolator`, Telegram's curve for every PiP animation. */
+/** A decelerate curve, used for every floating-note animation. */
 const decelerate = Easing.out(Easing.quad)
-/** Telegram starts a drag after 0.3cm of travel; about 11pt. */
+/** A drag starts after 0.3cm of travel; about 11pt. */
 const DRAG_START_DISTANCE = 11
 
 /*
- * Where the user last left it, for the next time a note floats. Telegram keeps
- * this in its `pipconfig` preferences; here it lasts for the app session.
+ * Where the user last left it, for the next time a note floats. It lasts for the app
+ * session.
  */
 let lastDock: FloatingDock = DEFAULT_FLOATING_DOCK
 
-/** The progress ring, Telegram's `radialProgressPaint` arc from 12 o'clock. */
+/** The progress ring, an arc from 12 o'clock. */
 const ProgressRing = ({ progress }: { progress: SharedValue<number> }) => {
   const radius = FLOATING_NOTE_SIZE / 2 - RING_EDGE_INSET
   const circumference = 2 * Math.PI * radius
@@ -121,8 +121,8 @@ const FloatingNoteView = ({ entry, isVisible, area, onHidden }: FloatingNoteView
   const visibility = useSharedValue(0)
   const areaSV = useSharedValue(area)
 
-  // Re-dock when the area changes size (rotation, keyboard), as Telegram
-  // recomputes `getSideCoord` from the remembered side.
+  // Re-dock when the area changes size (rotation, keyboard), recomputing the
+  // position from the remembered side.
   useEffect(() => {
     areaSV.value = area
     const point = dockPoint(lastDock, area)
@@ -245,7 +245,7 @@ const FloatingNoteView = ({ entry, isVisible, area, onHidden }: FloatingNoteView
 }
 
 /**
- * Telegram's floating round video (`PipRoundVideoView`): while a round note is
+ * The floating round video: while a round note is
  * current, playing or paused, and its message has scrolled out of the list, it
  * floats in a 120pt circle docked to the top right. A tap pauses or resumes it,
  * it can be dragged and snaps to the side it is let go near, and throwing it
@@ -279,7 +279,7 @@ export function FloatingRoundNote () {
     return null
 
   // While visible, follow the live entry (play state, controls); a different
-  // note becoming current swaps the view, as Telegram reopens its PiP.
+  // note becoming current swaps the view, reopening the floating circle.
   const entry = isFloating && round ? round : shown
 
   return (
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     width: FLOATING_NOTE_SIZE,
     height: FLOATING_NOTE_SIZE,
     borderRadius: FLOATING_NOTE_SIZE / 2,
-    // Telegram's `chat_roundVideoShadow`, drawn just below and right of it.
+    // A soft shadow, drawn just below and right of it.
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,

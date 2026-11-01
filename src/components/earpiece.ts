@@ -4,8 +4,7 @@ import { getAudioApi, getExpoAudio } from '../optional'
 import { useIsNearEar } from './mediaPlayback'
 
 /**
- * Telegram's raise to listen (`MediaController.setUseFrontSpeaker` and
- * `startAudioAgain`): with a voice or round note current, holding the phone to
+ * Raise to listen: with a voice or round note current, holding the phone to
  * the ear moves playback to the earpiece and plays it, restarting a note that
  * had played for under a second; lowering it goes back to the speaker and
  * pauses.
@@ -25,8 +24,8 @@ export const RAISE_RESTART_SECONDS = 1
  * Points both engines at the earpiece or back at the speaker.
  *
  * iOS has one shared AVAudioSession: the `playAndRecord` category without
- * `defaultToSpeaker` plays through the receiver, which is what Telegram's
- * `STREAM_VOICE_CALL` does on Android. `playback` is the plain speaker route
+ * `defaultToSpeaker` plays through the receiver, like the voice-call
+ * stream on Android. `playback` is the plain speaker route
  * the players start in. On Android, expo-audio's `shouldRouteThroughEarpiece`
  * switches the system to communication mode with the speakerphone off;
  * react-native-audio-api has no Android routing of its own.

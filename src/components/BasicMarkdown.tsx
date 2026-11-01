@@ -101,7 +101,7 @@ export interface BasicMarkdownProps {
   onLinkPress?: (url: string) => void
   /**
    * Inline content after the last word (Bubble's reserved time). It flows onto the last line of a
-   * closing paragraph, heading or list item, as Telegram puts the time; after a code block or a
+   * closing paragraph, heading or list item, where the time sits; after a code block or a
    * quote it gets a line of its own.
    */
   trailing?: React.ReactNode

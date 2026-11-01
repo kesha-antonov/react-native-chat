@@ -67,8 +67,7 @@ export type RecordButtonPhase = 'idle' | 'recording' | 'locked' | 'preview'
 export type RecordExitReason = 'send' | 'cancel' | 'preview'
 
 /**
- * Releasing past this share of the slide distance cancels
- * (`alpha < 0.45` in `ChatActivityEnterView`'s ACTION_UP).
+ * Releasing past this share of the slide distance cancels.
  */
 const RELEASE_CANCEL_PROGRESS = 0.45
 /**
@@ -84,8 +83,8 @@ const SLIDE_WIDTH_SHARE = 0.35
 /** Hold before recording starts when a tap switches modes (`recordAudioVideoRunnable`, 150ms). */
 const HOLD_DELAY_MS = 150
 /**
- * A take released sooner than this was a tap, not a hold: Telegram then shows
- * the "Hold to record" hint (`ChatActivity`, `time < 100`).
+ * A take released sooner than this was a tap, not a hold, and shows
+ * the "Hold to record" hint.
  */
 const QUICK_RELEASE_MS = 100
 /** How long "Pause to trim or replay" stays up. */
@@ -118,7 +117,7 @@ const LOCK_BOB_HALF_MS = 850
 
 /** The 300ms entry scale of the circle (`DecelerateInterpolator`). */
 const DECELERATE = Easing.out(Easing.quad)
-/** Telegram's `CubicBezierInterpolator.EASE_OUT_QUINT`. */
+/** Ease-out quint. */
 const EASE_OUT_QUINT = Easing.bezier(0.23, 1, 0.32, 1)
 
 /**
@@ -141,12 +140,12 @@ export interface RecordButtonProps {
   level?: number
   /**
    * Video only: the camera has actually started recording. The blobs wait for
-   * it, as Telegram's `showWaves` does.
+   * it.
    */
   isCapturing?: boolean
   /**
    * A quick tap. Set when the button switches between voice and video: the
-   * press then has to be held for 150ms before it records, as in Telegram.
+   * press then has to be held for 150ms before it records.
    */
   onTap?: () => void
   /** The hold became a take. */
@@ -177,8 +176,7 @@ export interface RecordButtonProps {
    */
   onQuickRelease?: () => void
   /**
-   * Locked or previewing: Telegram's view-once toggle above the pause button
-   * (`ControlsView.onceRect`). Hidden when omitted.
+   * Locked or previewing: the view-once toggle above the pause button. Hidden when omitted.
    */
   onToggleViewOnce?: () => void
   /** The take goes out as view-once; the toggle is drawn on. */
@@ -186,7 +184,7 @@ export interface RecordButtonProps {
 }
 
 /**
- * Telegram's record button (`ChatActivityEnterView.RecordCircle`): hold to
+ * The record button: hold to
  * record, release to send, slide left to cancel, slide up to lock. Shared by
  * voice and round video notes so both behave exactly alike.
  *
@@ -563,8 +561,7 @@ export function RecordButton ({
     onToggleViewOnce?.()
   }
 
-  // Telegram ticks when the voice recorder starts and stops
-  // (`MediaController.startRecording` / `stopRecording`); a round take ticks
+  // A tick when the voice recorder starts and stops; a round take ticks
   // when its camera actually starts recording, which the session handles.
   const jsStart = () => {
     startedAtRef.current = Date.now()
@@ -648,7 +645,7 @@ export function RecordButton ({
 
       isTakeSV.value = 0
 
-      // Interrupted by the system rather than released: Telegram locks the
+      // Interrupted by the system rather than released: lock the
       // take unless the cancel slide was already well under way.
       if (event.canceled) {
         if (slideProgress.value < LOCK_BLOCK_PROGRESS) {
@@ -803,7 +800,7 @@ export function RecordButton ({
         </Animated.View>
       )}
 
-      {/* Telegram's hint view hides the pause hint for the once hint. */}
+      {/* The once hint takes the pause hint's place. */}
       {phase === 'locked' && isPauseHintVisible && !onceHint && (
         <View style={[styles.tooltip, styles.pauseTooltip]} pointerEvents='none'>
           <Text style={styles.tooltipText} numberOfLines={2}>{pauseHint}</Text>
@@ -811,8 +808,8 @@ export function RecordButton ({
       )}
 
       {/* Previewing: the pause button turns into one that records on, its
-          icon fading in as the bars fade out (`transformToResume`). Telegram
-          draws it in the lock's own grey, not red. */}
+          icon fading in as the bars fade out. It is
+          drawn in the lock's own grey, not red. */}
       {phase === 'preview' && onResume && (
         <AnimatedPressable
           entering={FadeIn.duration(RESUME_FADE_MS)}
@@ -910,7 +907,7 @@ export function RecordButton ({
   )
 }
 
-/** Telegram's hints mark their bold part with `**`. */
+/** Hints mark their bold part with `**`. */
 function renderBold (text: string, boldStyle: object) {
   return text.split('**').map((part, index) =>
     index % 2 === 1
@@ -1041,7 +1038,7 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     zIndex: 5,
   },
-  // Beside the lock, like Telegram's tooltip pointing at it.
+  // Beside the lock, pointing at it.
   lockTooltip: {
     top: '50%',
     marginTop: -LOCK_OFFSET + 6,

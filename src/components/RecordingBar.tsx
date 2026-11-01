@@ -29,7 +29,7 @@ export const CANCEL_LINGER_MS = 900
 const TRASH_MS = 850
 /** `RecordDot`: fades to nothing over 600ms and back, linearly. */
 const BLINK_MS = 600
-/** A changed timer digit rolls down 15 while crossfading (`TimerView`, 116ms). */
+/** A changed timer digit rolls down 15 while crossfading (116ms). */
 const DIGIT_ROLL = 15
 const DIGIT_MS = 116
 /** At rest the hint drifts 6 each way, a sweep a second (`SlideTextView`). */
@@ -188,7 +188,7 @@ export function RecordingBar ({
             <Text style={styles.hintText} numberOfLines={1}>{labels.slideToCancel}</Text>
           </Animated.View>
         </Animated.View>
-        {/* Locked: the hint becomes a CANCEL text button, as in Telegram. */}
+        {/* Locked: the hint becomes a CANCEL text button. */}
         {isShownLocked && (
           <Animated.View style={[styles.hintFill, cancelStyle]} pointerEvents={isLocked ? 'auto' : 'none'}>
             <Pressable
@@ -209,7 +209,7 @@ export function RecordingBar ({
 /**
  * The timer, one slot per character, so a changed digit rolls down out of
  * its slot while the new one rolls in from above. The tenths are the
- * exception: `TimerView` only rolls when a digit before them changes, and
+ * exception: they only roll when a digit before them changes, and
  * swaps the last one in place - rolled ten times a second, it never sat still
  * long enough to read and the timer looked like it was shaking.
  */
@@ -230,9 +230,8 @@ function RollingTimer ({ text, style }: { text: string, style: StyleProp<TextSty
 }
 
 /**
- * Telegram's `RecordDot`: a 10pt red dot blinking 600ms out and 600ms in.
- * On cancel it hops into a trash can of our own drawing (Telegram plays a
- * Lottie here): the can grows with its lid open, the dot falls in, the lid
+ * The record dot: a 10pt red dot blinking 600ms out and 600ms in.
+ * On cancel it hops into a trash can: the can grows with its lid open, the dot falls in, the lid
  * shuts and the can shrinks away.
  */
 function RecordDot ({ isBlinking, isCancelled }: { isBlinking: boolean, isCancelled: boolean }) {

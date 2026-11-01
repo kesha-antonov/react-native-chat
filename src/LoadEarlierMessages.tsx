@@ -26,11 +26,11 @@ export interface LoadEarlierMessagesProps {
   activityIndicatorStyle?: StyleProp<ViewStyle>
   /** Color of the spinner's arc; defaults to the date pill's text color. */
   activityIndicatorColor?: string
-  /** @deprecated The spinner is Telegram's 28-wide arc in a 36 circle; this is ignored. */
+  /** @deprecated The spinner is a fixed 28-wide arc in a 36 circle; this is ignored. */
   activityIndicatorSize?: number | 'small' | 'large'
 }
 
-/** Telegram's loading row is 44 tall around the 36 circle (`ChatLoadingCell.onMeasure`). */
+/** The loading row is 44 tall around the 36 circle. */
 const LOADING_ROW_HEIGHT = 44
 
 export const LoadEarlierMessages: React.FC<LoadEarlierMessagesProps> = ({
@@ -48,9 +48,9 @@ export const LoadEarlierMessages: React.FC<LoadEarlierMessagesProps> = ({
   const labels = useLabels()
   const resolvedLabel = label ?? labels.loadEarlier
 
-  // Telegram has no button: while more history exists the list ends in its loading cell, a
-  // spinner in a service circle, and reaching it loads the next page (`ChatActivity`'s
-  // `loadingUpRow`). The labelled button stays for chats that load on tap.
+  // No button by default: while more history exists the list ends in a loading cell, a
+  // spinner in a service circle, and reaching it loads the next page. The labelled button
+  // stays for chats that load on tap.
   if (isLoading || isInfiniteScrollEnabled)
     return (
       <View style={[styles.loadingRow, containerStyle]}>

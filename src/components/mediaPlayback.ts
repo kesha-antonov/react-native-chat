@@ -6,8 +6,8 @@ import { NotePlayer, NotePlayerCache, createNotePlayerCache, detachRoundNote } f
  *
  * Every voice note and round video note owns its own player, and nothing
  * coordinated them: starting a second note left the first one playing, and a
- * chat with several round notes played all of them at once. Telegram always
- * stops the current one when a new one starts.
+ * chat with several round notes played all of them at once. Now the current
+ * one always stops when a new one starts.
  *
  * Deliberately not React context - bubbles are recycled by the list, and the
  * registry has to outlive individual mounts to stop a player whose row has
@@ -16,8 +16,7 @@ import { NotePlayer, NotePlayerCache, createNotePlayerCache, detachRoundNote } f
 
 /**
  * Why a player is told to stop. `replaced`: another note started, so this one
- * is no longer current and resets, as Telegram's `cleanupPlayer` resets the
- * previous message's progress. `paused`: something else took the audio (a
+ * is no longer current and resets its progress. `paused`: something else took the audio (a
  * recording), so it pauses and stays current.
  */
 export type StopReason = 'replaced' | 'paused'
@@ -50,9 +49,8 @@ export const releasePlayback = (id: string) => {
 }
 
 /**
- * Pause whatever is playing. Recording calls this first: Telegram takes audio
- * focus when the mic opens (`MediaController.startRecording`), which pauses the
- * playing note - otherwise it would bleed straight into the new take. The
+ * Pause whatever is playing. Recording calls this first: opening the mic takes
+ * audio focus, which pauses the playing note - otherwise it would bleed straight into the new take. The
  * paused note keeps its claim and stays current.
  */
 export const stopAllPlayback = () => {
@@ -64,18 +62,17 @@ export const stopAllPlayback = () => {
     }
 }
 
-/** Telegram cycles through these on a tap of the speed pill. */
+/** A tap of the speed pill cycles through these. */
 export const PLAYBACK_RATES = [1, 1.5, 2] as const
 
 /**
- * The presets a long press on the speed pill offers, Telegram's Slow, Normal,
- * Medium, Fast, Very fast and Super fast (`FragmentContextView.speeds`).
+ * The presets a long press on the speed pill offers: Slow, Normal, Medium,
+ * Fast, Very fast and Super fast.
  */
 export const PLAYBACK_RATE_PRESETS = [0.5, 1, 1.2, 1.5, 1.7, 2] as const
 
 /*
- * One playback speed for every voice and round note, like Telegram's
- * `MediaController.currentPlaybackSpeed`: picking 2x on one note keeps 2x for
+ * One playback speed for every voice and round note: picking 2x on one note keeps 2x for
  * the next instead of resetting each bubble to 1x. Module-level so it survives
  * rows being recycled; apps that want it across launches persist it through
  * `mediaPlayback.onPlaybackRateChange` and hand it back as `playbackRate`.
@@ -141,9 +138,8 @@ interface PlaylistEntry {
 
 /**
  * Per-chat coordinator for auto-playing the next note. When a voice or round
- * note finishes on its own, Telegram moves on to the next newer voice/round
- * message in the chat (`ChatActivity.createVoiceMessagesPlaylist` +
- * `MediaController.cleanupPlayer`), so a run of notes plays as one.
+ * note finishes on its own, playback moves on to the next newer voice/round
+ * message in the chat, so a run of notes plays as one.
  *
  * The chat feeds it the current messages on every render (a ref write, no
  * re-render), and players register by message id while they are mounted. The
@@ -160,13 +156,13 @@ export interface MediaPlaybackController {
   /** Called by a player whose note reached its end without being paused. */
   onEnded: (messageId: string | number) => void
   /**
-   * An incoming unread note started playing: report it, as Telegram marks
-   * the content read on play (`MediaController.playMessage`).
+   * An incoming unread note started playing: report it, since playing
+   * marks the content read.
    */
   markRead: (messageId: string | number) => void
   /**
    * The round note grown to play, if any. Its row hides the sender's avatar
-   * meanwhile, as Telegram does (`isAvatarVisible && !isPlayingRound`).
+   * meanwhile.
    */
   setGrownNote: (messageId: string | number | null, timeShift?: number) => void
   getGrownNote: () => string | number | null
@@ -178,7 +174,7 @@ export interface MediaPlaybackController {
   subscribeGrownNote: (listener: () => void) => () => void
   /**
    * The note that owns playback, playing or paused, for the "now playing" bar
-   * at the top of the chat (Telegram's `FragmentContextView`).
+   * at the top of the chat.
    */
   setNowPlaying: (entry: NowPlayingEntry | null) => void
   /** Clears the bar only if `messageId` still owns it. */
@@ -189,15 +185,13 @@ export interface MediaPlaybackController {
   /** Set by the chat: scrolls the list so a message sits mid-screen. */
   setScroller: (scroll: ((messageId: string | number) => void) | null) => void
   /**
-   * Centres a message in the list, as Telegram does when a round note starts
-   * playing (`ChatActivity.scrollToMessageId`, centred).
+   * Centres a message in the list, used when a round note starts playing.
    */
   scrollToMessage: (messageId: string | number) => void
   /**
    * The messages whose rows are at least partly on screen, from the list's
-   * viewability. Telegram floats the playing round note once its cell is no
-   * longer among the visible children (`ChatActivity` ->
-   * `MediaController.setCurrentVideoVisible(false)`).
+   * viewability. The playing round note floats once its row is no longer
+   * among them.
    */
   setViewableMessages: (messageIds: readonly (string | number)[]) => void
   /** `undefined` until the list first reports, so nothing floats before layout. */

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useSyncExternalStore } from 'react'
 
 /**
- * Telegram's multi-select mode: which messages are checked. Rows read it through
+ * Multi-select mode: which messages are checked. Rows read it through
  * `useSyncExternalStore` with a per-row snapshot, so checking one message re-renders that row
  * only, and entering or leaving the mode re-renders each row once.
  */
@@ -13,7 +13,7 @@ export interface MessageSelectionStore {
   getSelectedIds: () => (string | number)[]
   /** Enters the mode with this message checked. */
   start: (messageId: string | number) => void
-  /** Checks or unchecks a message; unchecking the last one leaves the mode, as in Telegram. */
+  /** Checks or unchecks a message; unchecking the last one leaves the mode. */
   toggle: (messageId: string | number) => void
   /** Drops ids that are no longer in the chat (deleted messages). */
   retain: (messageIds: Set<string | number>) => void

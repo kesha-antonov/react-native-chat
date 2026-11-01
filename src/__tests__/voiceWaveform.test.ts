@@ -49,7 +49,7 @@ describe('voiceWaveform', () => {
     expect(voiceContentWidth(3, true)).toBe(voiceContentWidth(3) + VOICE_META_TICKS_WIDTH)
   })
 
-  it('draws the bars in Telegram\'s voice colors, lighter than a dark bubble', () => {
+  it('draws the bars in the voice colors, lighter than a dark bubble', () => {
     expect(getMediaPalette(defaultDarkTheme, 'left').track).toBe('#5D6F80')
     expect(getMediaPalette(defaultLightTheme, 'left').track).toBe('#DEE5EB')
     expect(getMediaPalette(defaultLightTheme, 'right')).toMatchObject({ control: '#78C272', track: '#BBE3AC' })
@@ -71,7 +71,7 @@ describe('voiceWaveform', () => {
 describe('levelsFromWaveform', () => {
   const { levelsFromWaveform } = jest.requireActual('../components/voiceWaveform')
 
-  it('reads Telegram\'s 0..31 values and resamples them to the bar count', () => {
+  it('reads 0..31 server waveform values and resamples them to the bar count', () => {
     expect(levelsFromWaveform([0, 31, 0, 31], 2)).toEqual([1, 1])
     expect(levelsFromWaveform([0, 0.5, 1], 6)).toEqual([0, 0, 0.5, 0.5, 1, 1])
     expect(levelsFromWaveform(undefined, 10)).toEqual([])

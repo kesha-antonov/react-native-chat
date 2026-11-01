@@ -7,8 +7,8 @@ import { StyleSheet, View } from 'react-native'
  * The round video recorder used to open in a `Modal`, and a modal is a new
  * native window: the press that opened it is cancelled the moment it appears,
  * so a note took two presses - hold the camera to open it, then hold its
- * shutter. Telegram records on the first hold, with the finger still on the
- * button (`InstantCameraView` is a view inside the chat). Drawing the camera
+ * shutter. A round note records on the first hold, with the finger still on the
+ * button, so the camera has to be a view inside the chat. Drawing the camera
  * into this slot keeps it in the same window, so the toolbar's gesture lives on.
  *
  * Two contexts so that only the slot re-renders when the content changes: the

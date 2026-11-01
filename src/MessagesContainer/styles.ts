@@ -22,7 +22,7 @@ export const createThemedStyles = (theme: ChatTheme) => StyleSheet.create({
   scrollToBottomPressed: {
     backgroundColor: multiplyAlpha(theme.colors.scrollToBottomIcon, 0.15),
   },
-  // `CounterView`: 13 bold white.
+  // The unread counter: 13 bold white.
   scrollToBottomBadgeText: {
     color: theme.colors.scrollToBottomBadgeText,
     fontSize: 13,
@@ -47,15 +47,15 @@ export default StyleSheet.create({
   emptyChatContainer: {
     transform: [{ scaleY: -1 }],
   },
-  // Telegram's pagedown: a 44pt glass circle about 7 from the screen edge and 10 above the
-  // composer island (`ChatActivityBlurredRoundButton`, `updatePagedownButtonsPosition`).
+  // The scroll-to-bottom button: a 44pt glass circle about 7 from the screen edge and 10
+  // above the composer island.
   scrollToBottom: {
     position: 'absolute',
     right: 7,
     bottom: 6,
     zIndex: 999,
   },
-  // The counter is a 23pt pill centred on the circle's top edge (`CounterView`).
+  // The counter is a 23pt pill centred on the circle's top edge.
   scrollToBottomBadge: {
     position: 'absolute',
     top: -11.5,

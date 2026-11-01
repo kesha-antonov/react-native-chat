@@ -7,7 +7,7 @@ describe('transcribeTapAction', () => {
     expect(transcribeTapAction({ hasTranscription: false, isOpen: false, isLoading: false })).toBe('request')
   })
 
-  it('ignores taps while loading, as Telegram does', () => {
+  it('ignores taps while loading', () => {
     expect(transcribeTapAction({ hasTranscription: false, isOpen: false, isLoading: true })).toBe('none')
   })
 

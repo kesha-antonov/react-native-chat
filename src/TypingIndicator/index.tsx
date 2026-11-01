@@ -30,7 +30,7 @@ export * from './types'
  */
 export const TypingIndicatorListAnimationContext = createContext(false)
 
-// Telegram's `TypingDotsDrawable`: each dot grows for 320ms on a decelerate curve, shrinks
+// Each dot grows for 320ms on a decelerate curve, shrinks
 // for 320ms, and rests for the rest of an 800ms cycle; the three start 0 / 150 / 300ms
 // apart. The radius swings 1.33dp <-> 2.33dp, so the dot is drawn at full size and scaled.
 const DOT_GROW = { duration: 320, easing: Easing.out(Easing.quad) }

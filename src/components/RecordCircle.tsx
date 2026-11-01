@@ -47,7 +47,7 @@ export const EXIT_GESTURE = 2
 /** Paused into the preview (`transformToSeekbar`). */
 export const EXIT_PREVIEW = 3
 
-/** Telegram's `CubicBezierInterpolator.EASE_BOTH` and `EASE_OUT`. */
+/** Ease-in-out and ease-out cubic beziers. */
 const easeBoth = Easing.bezierFn(0.42, 0, 0.58, 1)
 const easeOut = Easing.bezierFn(0, 0, 0.58, 1)
 
@@ -94,8 +94,8 @@ const circleFrame = (scale: number, amplitude: number, slide: number, exit: numb
     const step3 = easeBoth(clamp01((exit - 0.63) / 0.37))
     radius += EXIT_GROW * step1
     radius = SEEKBAR_RADIUS + (radius - SEEKBAR_RADIUS) * (1 - step2)
-    // Telegram stretches the dot into the preview's seekbar; we have no
-    // seekbar under the circle, so the dot fades into the preview instead.
+    // There is no seekbar under the circle to stretch the dot into, so it
+    // fades into the preview instead.
     alpha = 1 - step3
   } else if (exitKind === EXIT_RELEASE) {
     step1 = easeBoth(clamp01(exit / 0.6))
@@ -118,7 +118,7 @@ const circleFrame = (scale: number, amplitude: number, slide: number, exit: numb
   return { radius, alpha, blobScale: hasBlobs ? scale * (1 - step1) * slide1 : 0 }
 }
 
-/** One of `BlobDrawable`'s shapes: N points easing towards random targets. */
+/** One blob shape: N points easing towards random targets. */
 interface Blob {
   n: number
   minRadius: number
@@ -129,7 +129,7 @@ interface Blob {
   angleNext: number[]
   progress: number[]
   speed: number[]
-  /** Smoothed loudness (`BlobDrawable.amplitude`) and its per-ms step. */
+  /** Smoothed loudness and its per-ms step. */
   amplitude: number
   target: number
   step: number
@@ -181,8 +181,8 @@ const createBlob = (n: number, minRadius: number, maxRadius: number): Blob => {
 }
 
 /**
- * `BlobDrawable.update`: every point eases towards its next target, faster
- * when louder. Telegram steps once per frame at 60fps; `frames` scales that to
+ * Every point eases towards its next target, faster
+ * when louder. The blob steps once per 60fps frame; `frames` scales that to
  * the real frame time so 120Hz screens do not morph twice as fast.
  */
 const updateBlob = (blob: Blob, speedScale: number, frames: number) => {
@@ -199,7 +199,7 @@ const updateBlob = (blob: Blob, speedScale: number, frames: number) => {
 }
 
 /**
- * `BlobDrawable.setValue` / `updateAmplitude`: a new target sets a fixed
+ * A new target sets a fixed
  * per-ms step that is walked until reached. `up` and `down` are the times
  * a full swing takes in each direction.
  */
@@ -312,14 +312,14 @@ export function useRecordCircleValues (): RecordCircleValues {
   )
 }
 
-/** Telegram's raw RMS is divided by 1800 (`WaveDrawable.MAX_AMPLITUDE`). */
+/** The raw RMS is divided by 1800. */
 const MAX_AMPLITUDE = 1800
 const METERING_FLOOR_DB = -60
 
 /**
- * Our level is metering mapped linearly from -60..0 dB; Telegram's amplitude
+ * Our level is metering mapped linearly from -60..0 dB; the circle's amplitude
  * is the sample RMS over 1800, which is full scale from about -25 dBFS. Back
- * to dB, then to that scale, so the circle swells as much as Telegram's.
+ * to dB, then to that scale, so the circle swells by the intended amount.
  */
 export const levelToAmplitude = (level: number) => {
   if (!Number.isFinite(level) || level <= 0)
@@ -352,7 +352,7 @@ const iconFrame = (scale: number, amplitude: number, slide: number, exit: number
 }
 
 /**
- * Telegram's `RecordCircle`: the big accent circle over the composer while a
+ * The record circle: the big accent circle over the composer while a
  * take records, swelling with the voice, with two morphing blobs behind it.
  * Purely visual - the touch stays on the record button underneath.
  */
@@ -440,7 +440,7 @@ export const RecordCircle = memo(function RecordCircle ({
     }
   })
 
-  // Telegram blends the circle's colour into the play button's; a disc in the
+  // The circle's colour blends into the play button's; a disc in the
   // target colour fading in over the accent one is the same blend.
   const flightDiscStyle = useAnimatedStyle(() => {
     const { radius, p } = flightFrame()

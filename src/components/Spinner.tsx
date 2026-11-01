@@ -17,10 +17,9 @@ const Svg: any = svg ? svg.Svg ?? svg.default : null
 const AnimatedPath: any = svg?.Path ? Animated.createAnimatedComponent(svg.Path) : null
 
 /*
- * Telegram's indeterminate spinner, `ui/Components/RadialProgressView.java`: an arc that
- * turns once every 2s (`rotationTime`, `:41`) while its length breathes in 500ms phases
- * (`risingTime`, `:42`). Rising, it grows 4 -> 270 degrees, accelerating (`:157`); then it
- * jumps 270 degrees ahead and shrinks back to 4 from behind, decelerating (`:159-166`).
+ * The indeterminate spinner: an arc that turns once every 2s while its length breathes in
+ * 500ms phases. Rising, it grows 4 -> 270 degrees, accelerating; then it jumps 270 degrees
+ * ahead and shrinks back to 4 from behind, decelerating.
  */
 const ROTATION_MS = 2000
 const PHASE_MS = 500
@@ -44,12 +43,12 @@ export interface SpinnerProps {
   /** Diameter of the arc (`setSize`). */
   size: number
   color: string
-  /** Stroke width; Telegram's default is 3 (`:71`). */
+  /** Stroke width; 3 by default. */
   strokeWidth?: number
   style?: StyleProp<ViewStyle>
 }
 
-/** Telegram's `RadialProgressView`. Falls back to the system spinner without react-native-svg. */
+/** The indeterminate arc spinner. Falls back to the system spinner without react-native-svg. */
 export function Spinner ({ size, color, strokeWidth = 3, style }: SpinnerProps) {
   const time = useSharedValue(0)
 

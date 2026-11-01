@@ -10,7 +10,7 @@ import { IMessage, IMessageFile as MessageFileData, MessageFileProps } from './M
 import { getExpoSharing } from './optional'
 import { ChatTheme } from './Theme'
 
-/** "1.2 MB", in Telegram's style (`AndroidUtilities.formatFileSize`). */
+/** "1.2 MB": one decimal, binary units. */
 export const formatFileSize = (bytes?: number): string => {
   if (bytes == null || !Number.isFinite(bytes) || bytes < 0)
     return ''
@@ -26,7 +26,7 @@ export const formatFileSize = (bytes?: number): string => {
   return `${value < 10 && unit > 0 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`
 }
 
-/** The extension Telegram prints in the file's icon: up to four characters, upper case. */
+/** The extension printed in the file's icon: up to four characters, upper case. */
 export const fileExtension = (name?: string): string => {
   const match = name?.match(/\.([a-z0-9]{1,8})$/i)
   return match ? match[1].slice(0, 4).toUpperCase() : ''
@@ -43,14 +43,14 @@ export const openFile = (file: MessageFileData) => {
   Linking.openURL(file.uri).catch(() => {})
 }
 
-// Telegram's document cell (`ChatMessageCell`, `documentAttach`): a 44 circle in the bubble's
+// The document cell: a 44 circle in the bubble's
 // accent with the type inside, the name in medium 15 and the size under it in the meta color.
 const ICON_SIZE = 44
 // Room for the time, which sits on the size line at the bottom-right (the icon keeps its side
 // in RTL too, so the time never lands on it).
 const META_RESERVE = 62
 
-/** Telegram's file bubble for `IMessage.file`. A tap opens or shares the file. */
+/** The file bubble for `IMessage.file`. A tap opens or shares the file. */
 export function MessageFile<TMessage extends IMessage = IMessage> ({
   currentMessage,
   position = 'left',
@@ -61,8 +61,8 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
   const isRTL = useIsRTL()
   const file = currentMessage?.file
   const mediaTransfer = useMediaTransfer()
-  // Telegram's document button (`getIconForCurrentState`, documents): the download arrow, the
-  // cancel ✕ with a ring while it moves, and the file icon once it is here (`ICON_FILE`).
+  // The document button: the download arrow, the cancel ✕ with a ring while it moves, and
+  // the file icon once it is here.
   const transfer = transferState(currentMessage)
   // Kept mounted after a transfer so its circle fades back to the file icon (cancel -> none).
   const [hasShownButton, setHasShownButton] = useState(!!transfer)
@@ -90,7 +90,7 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
     return null
 
   const extension = fileExtension(file.name)
-  // "1.2 MB / 4.5 MB" in place of the size while it moves (`ChatMessageCell.java:18363-18367`).
+  // "1.2 MB / 4.5 MB" in place of the size while it moves.
   const size = currentMessage?.transfer && file.size
     ? `${formatFileSize(Math.round(clampProgress(currentMessage.transfer.progress) * file.size))} / ${formatFileSize(file.size)}`
     : formatFileSize(file.size)

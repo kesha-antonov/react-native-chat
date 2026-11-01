@@ -3,7 +3,7 @@ import React from 'react'
 import { IMessage } from '../Models'
 
 /**
- * The attachment menu's tabs, in Telegram's order. Each shows only when its optional peer is
+ * The attachment menu's tabs, in their default order. Each shows only when its optional peer is
  * installed: `gallery` (`expo-media-library` for the in-sheet grid, or `expo-image-picker` for
  * the system picker), `camera` (`expo-image-picker`), `file` (`expo-document-picker`) and
  * `location` (`expo-location`).
@@ -35,8 +35,8 @@ export interface AttachmentMenuRenderProps {
 }
 
 /**
- * The built-in attachment menu (`Chat`'s `attachments` prop): Telegram Android's
- * `ChatAttachAlert` behind the composer's paperclip. On by default.
+ * The built-in attachment menu (`Chat`'s `attachments` prop) behind the composer's
+ * paperclip. On by default.
  */
 export interface AttachmentsProps<TMessage extends IMessage = IMessage> {
   /** Show the paperclip and its menu. Default true (hidden when no tab's peer is installed). */

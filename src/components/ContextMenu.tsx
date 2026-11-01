@@ -35,12 +35,8 @@ import { Icon } from './Icon'
 import { useWindowInsets } from './windowInsets'
 
 /*
- * Telegram Android's long-press menu (DrKLO/Telegram 13.1.1): `ActionBarPopupWindow` with
- * `ActionBarMenuSubItem` rows, the `ReactionsContainerLayout` bar above them, both in a
- * `ChatScrimPopupContainerLayout`, over a black 0.2 scrim. Paths: CA = ui/ChatActivity.java,
- * APW = ui/ActionBar/ActionBarPopupWindow.java, AMSI = ui/ActionBar/ActionBarMenuSubItem.java,
- * RCL = ui/Components/ReactionsContainerLayout.java, CERW = ui/Components/Reactions/
- * CustomEmojiReactionsWindow.java, REO = ui/Components/Reactions/ReactionsEffectOverlay.java.
+ * The long-press menu: a popup card of action rows with the reactions bar above it, over a
+ * black 0.2 scrim.
  */
 
 const REDUCE_MOTION = ReduceMotion.System
@@ -58,11 +54,11 @@ const overshoot = (tension: number) => (t: number) => {
 }
 
 // The scrim: black at 0.2 (`theme.contextMenu.scrim`), in and out over 320ms on
-// EASE_OUT_QUINT, with the pressed message redrawn above it in place (`CA:10749-10898`).
+// EASE_OUT_QUINT, with the pressed message redrawn above it in place.
 const SCRIM_MS = 320
 
-// The menu card (APW, AMSI): rows 48 tall, 18 side padding, a 24 icon with the title 43 after
-// it, 16sp text, 12 corners, at least 200 wide (`CA:31357`).
+// The menu card: rows 48 tall, 18 side padding, a 24 icon with the title 43 after
+// it, 16sp text, 12 corners, at least 200 wide.
 const ROW_HEIGHT = 48
 const ROW_PADDING = 18
 const ICON_SIZE = 24
@@ -70,8 +66,8 @@ const TITLE_GAP = 43
 const MENU_RADIUS = 12
 const MENU_MIN_WIDTH = 200
 // It unrolls from the top over 150 + 16 x rows ms, each row fading in and dropping 6 into place
-// over 180ms as the card passes it (`APW:325-397, 916-966`); it leaves by shrinking to 0.8 and
-// fading over 220ms (`CA` sets `setDismissAnimationDuration(220)`).
+// over 180ms as the card passes it; it leaves by shrinking to 0.8 and
+// fading over 220ms.
 const ROW_IN_MS = 180
 const ROW_SHIFT = 6
 const CLOSE_MS = 220
@@ -79,7 +75,7 @@ const CLOSE_MS = 220
 const FOLLOW_MS = 250
 const CLOSE_SCALE = 0.8
 
-// Placement (`CA:32667-32701`): the popup's right edge 28 left of the finger (20 with the card's
+// Placement: the popup's right edge 28 left of the finger (20 with the card's
 // shadow inset), 6 from the screen sides; its top at the finger, at least 24 below the top and
 // clear of the bottom by its height + 48 + 8, and moved up past 240 tall.
 const FINGER_GAP = 20
@@ -90,7 +86,7 @@ const TALL_POPUP = 240
 /** Space kept between the lit message and a card moved off it. */
 const MESSAGE_GAP = 8
 
-// The reactions bar (RCL; `CA:32424-32460`): 50 above it in the popup, 4 + 48 + 22 for its
+// The reactions bar: 50 above it in the popup, 4 + 48 + 22 for its
 // padding, the pill and the tail; the menu starts 20 into that bottom padding. The pill is 48
 // tall with 24 corners, holding 36-wide cells with an 8 inset at each end, at most 7 emojis
 // before the expand button. Its "thought bubble" tail: an 8 circle on the pill's bottom edge 32
@@ -109,15 +105,15 @@ const TAIL_BIG = 8
 const TAIL_SMALL = 4
 const TAIL_OFFSET = 32
 // Appears over 250ms on Overshoot(0.5), growing from 87.5% across and clipped from the far side
-// down to a quarter (`RCL:1490-1501, 690-706`); each emoji pops in over 150ms, later the farther
-// it is from 80% across (`RCL:773-821`). A reaction you already chose sits at 0.76 in a circle.
+// down to a quarter; each emoji pops in over 150ms, later the farther
+// it is from 80% across. A reaction you already chose sits at 0.76 in a circle.
 const BAR_IN = { duration: 250, easing: overshoot(0.5), reduceMotion: REDUCE_MOTION }
 const BAR_CLIP = 0.25
 const BAR_PIVOT = 0.875
 const ITEM_IN_MS = 150
 const ITEM_DELAY_SPREAD = 200
 const SELECTED_SCALE = 0.76
-// The expand button grows the bar into the full picker over 350ms (`CERW:493-501`), its corners
+// The expand button grows the bar into the full picker over 350ms, its corners
 // going from the bar's 24 to 12.
 const EXPAND = { duration: 350, easing: DEFAULT_CURVE, reduceMotion: REDUCE_MOTION }
 const PANEL_RADIUS = 12
@@ -125,7 +121,7 @@ const PANEL_MAX_HEIGHT = 340
 const PANEL_COLUMNS = 8
 
 // A picked reaction grows where it is, then flies to the message's reaction pill over 220ms,
-// EASE_OUT_QUINT across and DEFAULT down, shrinking to the pill's size (`REO:254-471`).
+// EASE_OUT_QUINT across and DEFAULT down, shrinking to the pill's size.
 const FLIGHT_GROW_MS = 150
 const FLIGHT_GROW_SCALE = 1.6
 const FLIGHT_MS = 220
@@ -138,7 +134,7 @@ const PILL_Y = 7 + 13
 export interface ContextMenuReactions {
   emojis: string[]
   onSelect: (emoji: string) => void
-  /** Reactions the current user has already picked; Telegram draws them smaller, in a circle. */
+  /** Reactions the current user has already picked; drawn smaller, in a circle. */
   selected?: string[]
   /** Style for the reactions bar. */
   containerStyle?: StyleProp<ViewStyle>
@@ -147,7 +143,7 @@ export interface ContextMenuReactions {
   /** Extra content at the end of the bar. */
   renderAccessory?: () => React.ReactNode
   /**
-   * Telegram's expand button: when set, the bar ends in a chevron that grows the bar into a
+   * The expand button: when set, the bar ends in a chevron that grows the bar into a
    * panel holding what this returns (a full emoji grid, say). Call `onSelect` with the pick.
    */
   renderExpandedPicker?: (props: { onSelect: (emoji: string) => void }) => React.ReactNode
@@ -167,7 +163,7 @@ export interface ContextMenuProps {
   bubbleWidth?: number
   bubbleHeight?: number
   /**
-   * Where the finger was, in window coordinates. Telegram opens the menu beside it; without it
+   * Where the finger was, in window coordinates. The menu opens beside it; without it
    * the menu opens beside the bubble's middle.
    */
   touchX?: number
@@ -176,7 +172,7 @@ export interface ContextMenuProps {
   reactions?: ContextMenuReactions
   /**
    * A copy of the pressed message, drawn above the scrim exactly where the message is (`pageX` /
-   * `pageY`, `bubbleWidth` wide), so it stays lit while the chat dims - Telegram's scrim view.
+   * `pageY`, `bubbleWidth` wide), so it stays lit above the scrim while the chat dims.
    * It follows the anchor if the message moves underneath.
    */
   messagePreview?: React.ReactNode
@@ -376,7 +372,7 @@ const useCloseStyle = (closing: SharedValue<number>) => useAnimatedStyle(() => (
 }))
 
 /**
- * Telegram Android's long-press menu. The chat dims under a black scrim while the pressed
+ * The long-press menu. The chat dims under a black scrim while the pressed
  * message stays lit in place; the reactions bar pops out above the actions, which unroll from
  * the top beside the finger. A picked reaction grows and flies into the message's reaction
  * pill; the expand button grows the bar into a full emoji panel. Every way out plays the exit
@@ -532,10 +528,10 @@ export const ContextMenu = ({
   const minY = insets.top + TOP_INSET
   const maxY = screenHeight - insets.bottom - containerHeight - BOTTOM_CLEARANCE
 
-  // Telegram anchors the popup at the finger, which near the bottom of the list (or beside a
+  // The popup is anchored at the finger, which near the bottom of the list (or beside a
   // short bubble at the right edge) clamps it straight over the message it is for. When the
   // card (or its reactions pill) would cover the lit message's text and it fits fully below or
-  // above that message, it moves there instead, keeping Telegram's horizontal placement.
+  // above that message, it moves there instead, keeping its horizontal placement.
   const placeTop = (touchAt: number, messageTop: number, messageHeight: number) => {
     let top = touchAt
     if (containerHeight > TALL_POPUP)
@@ -583,7 +579,7 @@ export const ContextMenu = ({
   const panelLeft = clamp(isRTL ? barLeft : barLeft + barWidth - panelWidth, SIDE_INSET, screenWidth - SIDE_INSET - panelWidth)
   const panelTop = clamp(pillTop, minY, screenHeight - insets.bottom - panelHeight - TOP_INSET)
 
-  // As in Telegram, the reaction is applied first and the emoji flies to its pill under the
+  // The reaction is applied first and the emoji flies to its pill under the
   // message at its live position: a first reaction grows the bubble, so the target follows it.
   const flightTarget: FlightTarget = {
     toX: isRTL ? pageX + bubbleWidth - PILL_X : pageX + PILL_X,
@@ -760,7 +756,7 @@ export const ContextMenu = ({
                     {hasExpand && (
                       <Animated.View style={[styles.panelContent, panelContentStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
                         {/* Laid out once at the panel's final size and revealed by the growing,
-                          clipped panel - Telegram's mask. Filling the panel instead resized the
+                          clipped panel, which masks it. Filling the panel instead resized the
                           content on every frame of the expand, so a grid re-laid out its cells
                           each frame. */}
                         <View style={[styles.panelContentInner, isRTL ? styles.panelInnerStart : styles.panelInnerEnd, { width: panelWidth, height: panelHeight }]}>
@@ -793,7 +789,7 @@ export const ContextMenu = ({
 
 const createStyles = (theme: ChatTheme) => {
   const colors = theme.contextMenu
-  // The 9-patch's soft shadow, and the glass variant's (`BlurredBackgroundProviderImpl:97-110`).
+  // The 9-patch's soft shadow, and the glass variant's .
   const shadow: ViewStyle = {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

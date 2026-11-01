@@ -8,7 +8,7 @@ const NO_ITEMS: never[] = []
 
 /**
  * Lightweight quick-picker shown on long-press: the chat dims while the pressed
- * message stays lit in place, and Telegram Android's reactions bar pops out
+ * message stays lit in place, and the reactions bar pops out
  * beside the finger. It is the context menu without actions, so both feel the same. Its expand
  * button opens the built-in emoji grid unless `reactions.renderExpandedPicker` says
  * otherwise.

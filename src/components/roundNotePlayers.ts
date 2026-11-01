@@ -3,8 +3,8 @@
  *
  * The list virtualizes: scroll far enough from a playing round note and its
  * row unmounts, which used to release its expo-video player and cut the note
- * off mid-sentence. Telegram keeps playing and floats the note in a corner
- * (`PipRoundVideoView`) until its message is back on screen. So players live
+ * off mid-sentence. It should keep playing and float in a corner
+ * until its message is back on screen. So players live
  * here, keyed by message id: a row borrows its note's player while mounted,
  * and a note that is current when its row goes away is handed to a detached
  * session that keeps driving the same player - the floating note shows it and

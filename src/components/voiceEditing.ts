@@ -1,6 +1,5 @@
 /*
- * Pause, resume and trim for voice takes, Telegram's `toggleRecordingPause` /
- * `trimCurrentRecording`. expo-audio cannot append to a finished file, so a
+ * Pause, resume and trim for voice takes. expo-audio cannot append to a finished file, so a
  * resumed take is a list of clips, each its own recording, joined when the
  * take is previewed or sent. Both need native help that is optional here:
  * joining uses react-native-audio-api's `concatAudioFiles` (an FFmpeg remux,

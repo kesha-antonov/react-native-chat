@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Alert, BackHandler, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
@@ -21,13 +21,13 @@ import { useColorScheme } from '@/hooks/use-color-scheme'
 import { ChatListShimmer, SHIMMER_COLORS } from './ChatListShimmer'
 import { Dialog } from './data'
 import { DialogAvatar } from './DialogAvatar'
-import { DialogCell, ROW_HEIGHT } from './DialogCell'
+import { DialogCell, DialogReorder, PinDrag, ROW_HEIGHT } from './DialogCell'
 import { chatStore, startChatListDemo, useDialogs } from './store'
 import { useChatListColors } from './theme'
 
-/** Rows move with Telegram's list item animator: 250ms, bezier(0.199, 0.011, 0.279, 0.91). */
+/** Rows move over 250ms on bezier(0.199, 0.011, 0.279, 0.91). */
 const LIST_TRANSITION = LinearTransition.duration(250).easing(Easing.bezier(0.199, 0.011, 0.279, 0.91))
-/** `FragmentFloatingButton` hides and shows over 380ms on EASE_OUT_QUINT, moving 40dp... */
+/** The pencil button hides and shows over 380ms on an ease-out-quint curve, moving 40dp... */
 const FAB_TIMING = { duration: 380, easing: Easing.bezier(0.23, 1, 0.32, 1) }
 /** ...but it has to clear its 14dp margin too, so it travels its size plus that. */
 const FAB_SIZE = 48
@@ -37,7 +37,7 @@ const ARCHIVE_ROW_ID = '__archive__'
 
 type Row = Dialog | { id: typeof ARCHIVE_ROW_ID }
 
-// Telegram shows its flicker placeholder while the dialogs load; the demo plays it once, on
+// A shimmering placeholder shows while the dialogs load; the demo plays it once, on
 // the first open of the tab in a session, for a short simulated load.
 const SIMULATED_LOAD_MS = 1500
 let hasLoadedDialogs = false
@@ -77,7 +77,7 @@ export default function ChatListScreen () {
       const needle = query.trim().toLowerCase()
       return source.filter(dialog => dialog.title.toLowerCase().includes(needle))
     }
-    // The archive sits on top of the list as a folder row, as in Telegram.
+    // The archive sits on top of the list as a folder row.
     if (!isArchiveOpen && archivedDialogs.length)
       return [{ id: ARCHIVE_ROW_ID }, ...source]
     return source
@@ -121,6 +121,52 @@ export default function ChatListScreen () {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     toggleSelected(dialog)
   }, [toggleSelected])
+
+  // Pinned chats in the main list can be dragged into a new order: a long press selects the
+  // chat and lifts it, and the order is saved when it is let go.
+  const pinnedIds = useMemo(() => mainDialogs.filter(dialog => dialog.isPinned).map(dialog => dialog.id), [mainDialogs])
+  const canReorder = !isArchiveOpen && !query
+  const dragId = useSharedValue('')
+  const dragFrom = useSharedValue(0)
+  const dragY = useSharedValue(0)
+  const isDragActive = useSharedValue(false)
+  const drag = useMemo<PinDrag>(() => ({ id: dragId, from: dragFrom, y: dragY, isActive: isDragActive }), [dragId, dragFrom, dragY, isDragActive])
+  // While a row is lifted, and for the frame it lands in, the list does not animate its own
+  // layout: the rows are already where the new order puts them.
+  const [liftedId, setLiftedId] = useState<string | null>(null)
+  const [isSettling, setIsSettling] = useState(false)
+  const [dropCount, setDropCount] = useState(0)
+
+  const onDragStart = useCallback((dialog: Dialog) => {
+    setLiftedId(dialog.id)
+    setIsSettling(true)
+    if (!selectedIds.includes(dialog.id))
+      onLongPressDialog(dialog)
+  }, [selectedIds, onLongPressDialog])
+
+  const onDrop = useCallback((dialog: Dialog, toIndex: number) => {
+    chatStore.movePinned(dialog.id, toIndex)
+    setLiftedId(null)
+    setDropCount(count => count + 1)
+  }, [])
+
+  // Committed with the new order: the rows drop their offsets in the same frame.
+  useLayoutEffect(() => {
+    if (!dropCount)
+      return
+    isDragActive.value = false
+    dragY.value = 0
+    dragId.value = ''
+    const timer = setTimeout(() => setIsSettling(false), 50)
+    return () => clearTimeout(timer)
+  }, [dropCount, isDragActive, dragY, dragId])
+
+  const reorderFor = useCallback((dialog: Dialog): DialogReorder | undefined => {
+    const index = pinnedIds.indexOf(dialog.id)
+    if (!canReorder || index < 0)
+      return undefined
+    return { index, count: pinnedIds.length, drag, onStart: onDragStart, onDrop }
+  }, [pinnedIds, canReorder, drag, onDragStart, onDrop])
 
   const onSwipeDialog = useCallback((dialog: Dialog) => {
     chatStore.toggleArchive(dialog.id)
@@ -171,9 +217,11 @@ export default function ChatListScreen () {
         onLongPress={onLongPressDialog}
         onSwipe={onSwipeDialog}
         isLast={index === rows.length - 1}
+        reorder={reorderFor(dialog)}
+        isReordering={isSelectionMode && canReorder && pinnedIds.length > 1 && !!dialog.isPinned}
       />
     )
-  }, [archivedDialogs, selectedIds, isSelectionMode, onPressDialog, onLongPressDialog, onSwipeDialog, rows.length])
+  }, [archivedDialogs, selectedIds, isSelectionMode, onPressDialog, onLongPressDialog, onSwipeDialog, rows.length, reorderFor, canReorder, pinnedIds.length])
 
   const isAllPinned = selectedDialogs.every(dialog => dialog?.isPinned)
   const isAllMuted = selectedDialogs.every(dialog => dialog?.isMuted)
@@ -248,7 +296,10 @@ export default function ChatListScreen () {
         data={isLoading ? EMPTY_ROWS : rows}
         keyExtractor={item => item.id}
         renderItem={renderItem}
-        itemLayoutAnimation={LIST_TRANSITION}
+        itemLayoutAnimation={isSettling ? undefined : LIST_TRANSITION}
+        extraData={liftedId}
+        // The lifted row passes over the rows below it too.
+        CellRendererComponentStyle={({ item }: { item: Row }) => (item.id === liftedId ? styles.liftedCell : undefined)}
         onScroll={onScroll}
         scrollEventThrottle={16}
         keyboardShouldPersistTaps='handled'
@@ -262,7 +313,7 @@ export default function ChatListScreen () {
           )}
       />
       {isLoading && (
-        // The list fades its rows in over the placeholder (`setAnimateEmptyView(true, ALPHA)`).
+        // The list fades its rows in over the placeholder.
         <Animated.View exiting={FadeOut.duration(150)} style={[styles.shimmer, { top: insets.top + 56 }]} pointerEvents='none'>
           <ChatListShimmer colors={SHIMMER_COLORS[colorScheme]} />
         </Animated.View>
@@ -324,6 +375,9 @@ function ArchiveRow ({ dialogs, onPress }: { dialogs: Dialog[], onPress: () => v
 const EMPTY_ROWS: Row[] = []
 
 const styles = StyleSheet.create({
+  liftedCell: {
+    zIndex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -382,7 +436,7 @@ const styles = StyleSheet.create({
     marginTop: 48,
     fontSize: 15,
   },
-  // Right 20dp and bottom 14dp (`FragmentFloatingButton.createDefaultLayoutParams`).
+  // Right 20dp and bottom 14dp.
   fabWrap: {
     position: 'absolute',
     end: 20,

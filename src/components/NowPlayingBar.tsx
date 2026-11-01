@@ -10,9 +10,9 @@ import { NowPlayingEntry, useNowPlaying, usePlaybackRate } from './mediaPlayback
 import { PlaybackSpeedPill } from './PlaybackSpeedPill'
 import { PlayPauseIcon } from './PlayPauseIcon'
 
-/** Telegram's bar is 36dp tall and slides in by its own height over 200ms. */
+/** The bar is 36dp tall and slides in by its own height over 200ms. */
 const BAR_HEIGHT = 36
-/** `PlayPauseDrawable(16)` in the 36dp play button. */
+/** A 16 glyph in the 36dp play button. */
 const PLAY_ICON_SIZE = 16
 const SLIDE_MS = 200
 
@@ -24,10 +24,10 @@ export interface NowPlayingBarProps {
 }
 
 /**
- * Telegram's "now playing" bar (`FragmentContextView`, audio style), shown at
+ * The "now playing" bar, shown at
  * the top of the chat while a voice or round note owns playback: play/pause,
  * the sender and the kind of note, the playback speed, and close, which stops
- * it. It pushes the list down rather than covering it, as Telegram does.
+ * it. It pushes the list down rather than covering it.
  */
 export function NowPlayingBar ({ getSenderName, onPressTitle }: NowPlayingBarProps) {
   const styles = useThemedStyles(createStyles)
@@ -87,8 +87,7 @@ export function NowPlayingBar ({ getSenderName, onPressTitle }: NowPlayingBarPro
           style={styles.titleArea}
         >
           <Text style={styles.title} numberOfLines={1} ellipsizeMode='middle'>
-            {/* The sender in bold, then the kind of note (a `TypefaceSpan` over
-                `getMusicAuthor()` in `FragmentContextView`). */}
+            {/* The sender in bold, then the kind of note. */}
             {sender ? <Text style={styles.sender}>{sender} </Text> : null}
             {kind}
           </Text>
@@ -118,7 +117,7 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     borderBottomColor: theme.colors.separator,
   },
   // Laid out at full height and revealed by the bar's growing height, so the
-  // contents slide in rather than squash. Telegram's play button is a 36dp
+  // contents slide in rather than squash. The play button is a 36dp
   // square flush with the left edge, the title starts right after it, and the
   // speed and close buttons are 36dp squares with the close 4dp from the right.
   row: {

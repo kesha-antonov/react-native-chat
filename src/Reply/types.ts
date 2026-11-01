@@ -14,7 +14,7 @@ export interface SwipeToReplyProps<TMessage extends IMessage> {
    * on (`reply.isEnabled`); a `Message` rendered on its own keeps it off unless set.
    */
   isEnabled?: boolean
-  /** Direction to swipe for reply; default is 'left' (swipe left, icon appears on right, as in Telegram iOS) */
+  /** Direction to swipe for reply; default is 'left' (swipe left, icon appears on right) */
   direction?: 'left' | 'right'
   /** Callback when swipe to reply is triggered */
   onSwipe?: (message: TMessage) => void
@@ -80,7 +80,7 @@ export interface ReplyProps<TMessage extends IMessage> {
   onClear?: () => void
   /**
    * Callback when the reply quote inside a bubble is pressed. Default: scroll to the quoted
-   * message and flash it, as Telegram does.
+   * message and flash it.
    */
   onPress?: (replyMessage: ReplyMessage, message: IMessage) => void
   /** Custom render for reply preview in input toolbar */

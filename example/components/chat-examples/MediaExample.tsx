@@ -65,7 +65,7 @@ const INITIAL_MESSAGES: IMessage[] = [
   },
 ]
 
-// Voice notes (expo-audio) and Telegram-style round video notes (react-native-vision-camera)
+// Voice notes (expo-audio) and round video notes (react-native-vision-camera)
 // are on by default; this only shortens the round note limit from 60s to 30s. On a simulator
 // there is no camera, so the recorder runs in POC mode.
 const VIDEO_RECORDING = { maxDuration: 30 }

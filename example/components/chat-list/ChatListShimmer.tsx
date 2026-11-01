@@ -13,15 +13,12 @@ import Svg, { ClipPath, Circle, Defs, G, LinearGradient, Rect, Stop } from 'reac
 const AnimatedRect = Animated.createAnimatedComponent(Rect)
 
 /*
- * Telegram's chat-list placeholder, `FlickerLoadingView` with `DIALOG_CELL_TYPE`
- * (`ui/Components/FlickerLoadingView.java`, DrKLO/Telegram 13.x):
- * - rows of 72 + 1 (`getCellHeight`, `:993-994`), each a 28-radius avatar 10 in, a name bar
- *   76..148 x 16..24 and a message bar 76..268 x 38..46, both with radius 4, and a date bar
- *   50..12 in from the right (`:185-210`);
- * - one vertical gradient over all of them, 600 tall (`gradientWidth`, `:966`), stops
- *   `[shape, highlight, highlight, shape]` at `[0, 0.4, 0.6, 1]` (`:971`);
- * - moving down `height / 400` per ms from -1200 to twice the height, then starting over
- *   (`updateGradient`, `:939-943`).
+ * The chat-list placeholder:
+ * - rows of 72 + 1, each a 28-radius avatar 10 in, a name bar 76..148 x 16..24 and a message
+ *   bar 76..268 x 38..46, both with radius 4, and a date bar 50..12 in from the right;
+ * - one vertical gradient over all of them, 600 tall, stops `[shape, highlight, highlight, shape]`
+ *   at `[0, 0.4, 0.6, 1]`;
+ * - moving down `height / 400` per ms from -1200 to twice the height, then starting over.
  */
 const ROW = 72 + 1
 const AVATAR_R = 28

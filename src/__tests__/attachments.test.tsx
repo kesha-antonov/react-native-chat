@@ -153,7 +153,7 @@ describe('the paperclip', () => {
 })
 
 describe('file bubble', () => {
-  it('formats sizes and extensions as Telegram does', () => {
+  it('formats sizes and extensions', () => {
     expect(formatFileSize(512)).toBe('512 B')
     expect(formatFileSize(13264)).toBe('13 KB')
     expect(formatFileSize(1_300_000)).toBe('1.2 MB')

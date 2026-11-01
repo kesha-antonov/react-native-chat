@@ -29,7 +29,7 @@ describe('findFirstUrl', () => {
   it('finds the first link and gives it a scheme', () => {
     expect(findFirstUrl('see https://github.com/x/y, nice')).toBe('https://github.com/x/y')
     expect(findFirstUrl('www.example.com.')).toBe('https://www.example.com')
-    expect(findFirstUrl('go to telegram.org now')).toBe('https://telegram.org')
+    expect(findFirstUrl('go to example.org now')).toBe('https://example.org')
     expect(findFirstUrl('no links here')).toBeUndefined()
     expect(findFirstUrl('mail me at me@example.com')).toBeUndefined()
   })
@@ -57,9 +57,9 @@ describe('link preview', () => {
 
   it('falls back to the host for the site name', async () => {
     const { getByText } = await render(
-      <Bubble user={{ _id: 1 }} position='left' currentMessage={message('https://www.telegram.org/blog', { linkPreview: { title: 'Blog' } })} />
+      <Bubble user={{ _id: 1 }} position='left' currentMessage={message('https://www.example.org/blog', { linkPreview: { title: 'Blog' } })} />
     )
-    expect(getByText('telegram.org')).toBeTruthy()
+    expect(getByText('example.org')).toBeTruthy()
   })
 
   it('fetches one for a link without a preview, once per URL', async () => {

@@ -3,16 +3,16 @@ import { StyleSheet, Text, View } from 'react-native'
 
 import { formatFileSize } from '../MessageFile'
 
-/** `chat_mediaLoaderPhoto` / `chat_mediaLoaderPhotoIcon` (`ThemeColors.java:530-532`). */
+/** The loader circle over media and its glyph. */
 export const MEDIA_LOADER_BACKGROUND = 'rgba(0, 0, 0, 0.4)'
 export const MEDIA_LOADER_ICON = '#FFFFFF'
-/** The button over a photo or video is 48 across (`ChatMessageCell.java:14120-14122`). */
+/** The button over a photo or video is 48 across. */
 export const MEDIA_BUTTON_SIZE = 48
-/** Over a round note, 44 (`ChatMessageCell.java:13948`). */
+/** Over a round note, 44. */
 export const ROUND_BUTTON_SIZE = 44
 
 /**
- * "1.2 MB / 4.5 MB", Telegram's loading text (`ChatMessageCell.java:18357-18367`). Without a
+ * "1.2 MB / 4.5 MB", the loading text. Without a
  * total it is nothing; a size that would not fit is the percentage.
  */
 export const transferLabel = (progress: number, total?: number) => {
@@ -23,8 +23,8 @@ export const transferLabel = (progress: number, total?: number) => {
 }
 
 /**
- * The loading text on a photo or video: white 12 on `chat_mediaTimeBackground` in a pill 4 in
- * from the top-left corner, 16.5 tall, the text 6 in (`ChatMessageCell.java:25048-25123`).
+ * The loading text on a photo or video: white 12 on the media time background in a pill 4 in
+ * from the top-left corner, 16.5 tall, the text 6 in.
  */
 export function MediaInfoPill ({ label }: { label: string }) {
   return (

@@ -40,7 +40,7 @@ export interface ReactionPickerProps<TMessage extends IMessage> {
   bubbleWidth?: number
   /** Measured height of the bubble container */
   bubbleHeight?: number
-  /** Where the finger was, in window coordinates; Telegram opens the bar beside it. */
+  /** Where the finger was, in window coordinates; the bar opens beside it. */
   touchX?: number
   touchY?: number
   pickerContainerStyle?: StyleProp<ViewStyle>
@@ -86,13 +86,13 @@ export interface ReactionsProps<TMessage extends IMessage> {
   /** Override the reactions-display component rendered below the bubble */
   renderReactions?: (props: MessageReactionsDisplayProps<TMessage>) => React.ReactNode
   /**
-   * Override the emoji-picker component shown on long-press. The built-in one is Telegram's
+   * Override the emoji-picker component shown on long-press. The built-in one is a
    * reactions bar over the long-press menu, with the full emoji grid behind its chevron
    * (`renderExpandedPicker`); `ContextMenu` is exported to build your own on.
    */
   renderReactionPicker?: (props: ReactionPickerProps<TMessage>) => React.ReactNode
   /**
-   * Telegram's expand button: the reactions bar ends in a chevron that grows the bar into a
+   * The expand button: the reactions bar ends in a chevron that grows the bar into a
    * panel showing this. Defaults to the built-in emoji grid (search, tabs, recents); pass your
    * own to replace it, or `null` to drop the expand button. Call `onSelect` with the pick.
    */

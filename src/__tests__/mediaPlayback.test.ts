@@ -34,7 +34,7 @@ describe('mediaPlayback', () => {
     stopAllPlayback()
     expect(stopFirst).toHaveBeenLastCalledWith('paused')
 
-    // Still current: a note started later resets it, as Telegram's cleanupPlayer does.
+    // Still current: a note started later resets it.
     claimPlayback('b', jest.fn())
     expect(stopFirst).toHaveBeenLastCalledWith('replaced')
   })
@@ -71,7 +71,7 @@ describe('mediaPlayback', () => {
     expect(getPlaybackRate()).toBe(1)
   })
 
-  it('formats the recording timer with tenths, like Telegram', () => {
+  it('formats the recording timer with tenths', () => {
     expect(formatRecordingTime(0)).toBe('0:00,0')
     expect(formatRecordingTime(3450)).toBe('0:03,4')
     expect(formatRecordingTime(61_999)).toBe('1:01,9')

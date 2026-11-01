@@ -34,7 +34,7 @@ export interface DialogAvatarProps {
 export function DialogAvatar ({ id, title, uri, size, kind, isOnline, isSelected, ringColor }: DialogAvatarProps) {
   const colors = useChatListColors()
   const radius = size / 2
-  // Telegram's `abs(id % 7)` over its seven colors, as the library picks avatar colors inside
+  // `abs(id % 7)` over seven colors, as the library picks avatar colors inside
   // the chat, so a person's color matches between the list and their messages.
   const index = getUserColorIndex(id, colors.avatarPalette.length)
   const ring = ringColor ?? colors.background

@@ -72,7 +72,7 @@ const LinksExample: React.FC = () => {
       },
     },
     {
-      text: 'Links get Telegram\'s preview block when the message carries one: https://github.com/kesha-antonov/react-native-chat',
+      text: 'Links get a preview block when the message carries one: https://github.com/kesha-antonov/react-native-chat',
       user: {
         _id: 2,
         name: 'John Doe',
@@ -80,7 +80,7 @@ const LinksExample: React.FC = () => {
       linkPreview: {
         siteName: 'GitHub',
         title: 'kesha-antonov/react-native-chat',
-        description: 'A complete, Telegram-grade chat UI for React Native and Web.',
+        description: 'A complete, modern messenger-style chat UI for React Native and Web.',
         image: 'https://picsum.photos/seed/rn-chat-og/1200/600',
         imageWidth: 1200,
         imageHeight: 600,

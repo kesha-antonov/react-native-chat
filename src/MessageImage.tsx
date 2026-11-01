@@ -166,9 +166,8 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
   const transfer = currentMessage?.transfer
   const isDownloadRequired = !!currentMessage?.isDownloadRequired
   const isRemote = isRemoteUri(uri)
-  // Telegram's photo button (`ChatMessageCell.updateButtonState`, photos): the cancel ✕ with
-  // a ring while it downloads (`buttonState 1`), the download arrow when it is not here or
-  // failed (`buttonState 0`), nothing once shown. The app can drive it with `transfer`.
+  // The photo button: the cancel ✕ with a ring while it downloads, the download arrow when
+  // it is not here or failed, nothing once shown. The app can drive it with `transfer`.
   const [attempt, setAttempt] = useState(0)
   const [isCancelled, setIsCancelled] = useState(false)
   const [isRequested, setIsRequested] = useState(false)
@@ -381,8 +380,8 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
 
 const styles = StyleSheet.create({
   // `Bubble` insets the photo by 2 and rounds its corners to follow the bubble's. The width is
-  // a minimum, not fixed: a caption wider than the photo widens the bubble, and Telegram
-  // then widens the photo to fill it (`fixPhotoWidth`, `ChatMessageCell:10268`) rather than
+  // a minimum, not fixed: a caption wider than the photo widens the bubble, and the photo
+  // then widens to fill it rather than
   // leaving a strip of bubble beside it. The source is always a uri, so the image has no
   // intrinsic size of its own to grow to.
   image: {

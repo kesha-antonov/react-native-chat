@@ -22,8 +22,8 @@ export default function ChatScreen ({ id }: { id: string }) {
   const messages = useMessages(id)
   const typingUser = useTyping(id)
 
-  // Opening the chat reads it, so the unread count is taken once, before that: Telegram keeps
-  // the "Unread Messages" bar where it was until you leave the chat.
+  // Opening the chat reads it, so the unread count is taken once, before that: the
+  // "Unread Messages" bar stays where it was until you leave the chat.
   const [firstUnreadMessageId] = useState(() => {
     const unread = Math.min(dialog?.unreadCount ?? 0, messages.length)
     return unread > 0 ? messages[unread - 1]._id : undefined
@@ -62,7 +62,7 @@ export default function ChatScreen ({ id }: { id: string }) {
         onEditMessage={onEditMessage}
         onDeleteMessage={onDeleteMessage}
         firstUnreadMessageId={firstUnreadMessageId}
-        // Only admins post in a channel; everyone else gets Telegram's mute button.
+        // Only admins post in a channel; everyone else gets a mute button.
         renderInputToolbar={dialog.kind === 'channel' ? () => <ChannelBar dialog={dialog} /> : undefined}
       />
     </View>
@@ -70,7 +70,7 @@ export default function ChatScreen ({ id }: { id: string }) {
 }
 
 /**
- * Telegram Android's chat header (`ChatAvatarContainer`): back arrow, a 42dp avatar 8dp after it,
+ * The chat header: back arrow, a 42dp avatar 8dp after it,
  * the name in 18dp Medium and a 14dp status line - "typing…" and "online" in the accent color.
  */
 function ChatHeader ({ dialog, typingName }: { dialog: Dialog, typingName?: string }) {

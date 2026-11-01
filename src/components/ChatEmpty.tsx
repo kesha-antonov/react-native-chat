@@ -16,10 +16,10 @@ export interface ChatEmptyProps {
 }
 
 /**
- * Telegram Android's empty chat (`ChatGreetingsView`): a service-colored card in the middle of
+ * The empty chat: a service-colored card in the middle of
  * the wallpaper with "No messages here yet..." in bold, a line of help below it, and a greeting
- * sticker that sends itself when tapped. Telegram picks a random greeting sticker from the
- * server; without one, the waving hand stands in for it.
+ * sticker that sends itself when tapped. Without a sticker of the app's own, the waving hand
+ * stands in for it.
  */
 export function ChatEmpty ({ greeting = '👋', onPressGreeting }: ChatEmptyProps) {
   const styles = useThemedStyles(createStyles)
@@ -44,8 +44,8 @@ export function ChatEmpty ({ greeting = '👋', onPressGreeting }: ChatEmptyProp
   )
 }
 
-// `ChatGreetingsView`: 8 padding on top; title and description 14dp (the title bold) in
-// `chat_serviceText`, 20 from the sides and 6 above and below each; a 112dp sticker 10 below
+// The greeting card: 8 padding on top; title and description 14dp (the title bold) in
+// the service text color, 20 from the sides and 6 above and below each; a 112dp sticker 10 below
 // them and 16 from the bottom; the card is the service color with radius 16.
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
   card: {
@@ -76,7 +76,7 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // `ScaleStateListAnimator.apply(stickerToSendView)`: it shrinks a little while pressed.
+  // The greeting sticker shrinks a little while pressed.
   stickerPressed: {
     transform: [{ scale: 0.9 }],
   },

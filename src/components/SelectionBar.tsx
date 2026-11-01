@@ -29,7 +29,7 @@ const ICONS: Record<SelectionBarAction['key'], IconName> = {
 }
 
 /**
- * Telegram Android's selection mode bar (`actionBar.createActionMode`): a close button, the
+ * The selection mode bar: a close button, the
  * number of checked messages, and Copy / Forward / Delete. It takes the composer's place, in the
  * same floating island.
  */

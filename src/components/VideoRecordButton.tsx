@@ -53,7 +53,7 @@ export interface VideoRecordButtonProps<TMessage extends IMessage = IMessage> {
 
 /**
  * Camera button for video messages. Prefers react-native-vision-camera for a
- * Telegram-style round video note recorder; falls back to expo-image-picker's
+ * Round video note recorder; falls back to expo-image-picker's
  * system camera. Only rendered when one of those is installed.
  *
  * Note the two backends produce different messages: the round recorder sends
@@ -71,7 +71,7 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const closeRecorder = useCallback(() => setIsRecorderOpen(false), [])
 
-  // Fades rather than replaces the conversation, as Telegram does; the
+  // Fades rather than replaces the conversation; the
   // recorder stays mounted until it has faded out.
   const recorderOpacity = useSharedValue(0)
   const animateIn = useCallback(() => {
@@ -156,7 +156,7 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
         <Modal
           visible={isRecorderMounted}
           // Transparent so the recorder's scrim dims the conversation rather
-          // than replacing it, which is what Telegram shows.
+          // than replacing it.
           transparent
           animationType='none'
           onRequestClose={closeRecorder}

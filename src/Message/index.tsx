@@ -21,7 +21,7 @@ import { MessageProps } from './types'
 
 export * from './types'
 
-// Selection mode (`ChatMessageCell.setCheckBoxVisible`): incoming rows slide 35dp aside for the
+// Selection mode: incoming rows slide 35dp aside for the
 // check, which sits 8dp from the edge, 8dp above the bubble's bottom; ease-out in, ease-in out.
 const SELECTION_SHIFT = 35
 const SELECTION_CHECK_INSET = 8
@@ -29,12 +29,12 @@ const SELECTION_MS = 200
 const SELECTION_EASE_OUT = RNEasing.bezier(0, 0, 0.58, 1)
 const SELECTION_EASE_IN = RNEasing.bezier(0.42, 0, 1, 1)
 
-/** Telegram fades the avatar out as fast as the note grows over it. */
+/** The avatar fades out as fast as the note grows over it. */
 const AVATAR_FADE_MS = 250
 
 /**
  * The avatar beside a round note, faded out while that note is grown to play,
- * as Telegram hides it (`isAvatarVisible && !isPlayingRound`). The space stays,
+ * since the grown note covers it. The space stays,
  * so the row does not move.
  */
 const NoteAvatar = ({ messageId, children }: { messageId: string | number, children: React.ReactNode }) => {
@@ -77,7 +77,7 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
   // below, since that is "my message vs. theirs", not a physical screen side.
   const visualPosition = mirrorPosition(position, isRTL)
 
-  // Telegram's flash after jumping here from a reply quote.
+  // The flash after jumping here from a reply quote.
   const highlightToken = useMessageHighlightToken(currentMessage?._id)
 
   // Multi-select: a tap anywhere on the row checks it, and its chrome (check, tint, the slide
@@ -192,7 +192,7 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
       onSwipeToReply(currentMessage)
   }, [onSwipeToReply, currentMessage])
 
-  // 2pt inside a run of bubbles, 6pt between runs (Telegram's grouping: same sender, five minutes).
+  // 2pt inside a run of bubbles, 6pt between runs (same sender, within five minutes).
   const isGroupedWithNext = useMemo(() =>
     isSameGroup(currentMessage, nextMessage)
   , [currentMessage, nextMessage])

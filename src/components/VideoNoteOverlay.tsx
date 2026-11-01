@@ -20,7 +20,7 @@ import {
 } from './roundNoteChrome'
 import { ViewOnceBadge } from './ViewOnceBadge'
 
-/** Telegram's play <-> none transition on a media button (`MediaActionDrawable`). */
+/** The play <-> none transition on a media button. */
 const BADGE_MS = 220
 
 /** A badge that scales and fades in or out instead of popping. */
@@ -80,7 +80,7 @@ export interface VideoNoteOverlayProps {
   isCurrent: boolean
   /** Looping silently in the list (autoplay). */
   isMuted: boolean
-  /** A view-once note (Telegram's `isRoundOnce`): the "1" marker on its play button. */
+  /** A view-once note: the "1" marker on its play button. */
   isViewOnce?: boolean
   /** The view-once note has started; its marker is gone for good. */
   hasViewOnceStarted?: boolean
@@ -92,10 +92,10 @@ export interface VideoNoteOverlayProps {
 
 /** `drawRadialProgress` puts the period badge 18dp right and down of the play button's centre. */
 const ROUND_VIEW_ONCE_OFFSET = 18
-/** The play button's own dim, which the badge disc shares, as Telegram blurs both from the frame. */
+/** The play button's own dim, which the badge disc shares. */
 const BADGE_BACKGROUND = 'rgba(0, 0, 0, 0.45)'
 
-/** Telegram's `RoundVideoProgressShadow`: clear to 70% of the radius, then black at 40/255. */
+/** The vignette: clear to 70% of the radius, then black at 40/255. */
 const VIGNETTE_OPACITY = 40 / 255
 
 /**
@@ -136,7 +136,7 @@ const Vignette = ({ size, maxSize, chrome }: { size: SharedValue<number>, maxSiz
 }
 
 /**
- * Telegram's `drawRoundProgress`: the elapsed arc, and once paused a full
+ * The round progress: the elapsed arc, and once paused a full
  * track, a knob at the playhead, and the arc a wrap past 12 o'clock leaves
  * behind. All of it is driven on the UI thread from `chrome`.
  *
@@ -232,10 +232,10 @@ const Ring = ({ size, maxSize, chrome }: { size: SharedValue<number>, maxSize: n
  * Chrome drawn *on* a round video note: the progress ring sweeping its edge,
  * the paused scrubber, a mute badge while it loops silently, and a play
  * button while it rests. Nothing sits in the middle of a current note,
- * playing or paused (Telegram's `ICON_NONE`) - a paused one shows its knob
+ * playing or paused - a paused one shows its knob
  * instead.
  *
- * The duration is deliberately not here - Telegram renders it under the circle
+ * The duration is deliberately not here - it belongs under the circle
  * on the chat background, so it lives in `MessageVideo` beside the note.
  *
  * Non-interactive: the note's own press target handles taps.
@@ -266,8 +266,8 @@ export function VideoNoteOverlay ({
       </FadingBadge>
       {isViewOnce && (
         <View style={styles.viewOnceAnchor}>
-          {/* Telegram clears a ring round the badge so the frame shows
-              through; here the cut is left transparent over the video. */}
+          {/* A ring round the badge is cut out so the frame shows
+              through; the cut is left transparent over the video. */}
           <ViewOnceBadge
             isVisible={!isCurrent && !hasViewOnceStarted}
             color={BADGE_BACKGROUND}
@@ -281,7 +281,7 @@ export function VideoNoteOverlay ({
   )
 }
 
-/** Telegram's duration pill: 17dp tall, 6dp corners, 8dp in from the note. */
+/** The duration pill: 17dp tall, 6dp corners, 8dp in from the note. */
 const META_HEIGHT = 17
 const META_LEFT = 8
 /** An outgoing note's pill rides right by a fifth of the grow (`offsetSize`). */
@@ -290,7 +290,7 @@ const META_OUTGOING_SHIFT = 0.2
 const META_BACKGROUND_OPACITY = 0.5
 
 /**
- * The length in a small pill at the note's bottom-left, as Telegram draws it.
+ * The length in a small pill at the note's bottom-left.
  * Beside it the unread dot, which shrinks into playing bars once the note is
  * heard; the bars move while it plays and hold still while it is paused.
  */
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // In the empty corner of the circle's square, clear of the video. Width is
-  // Telegram's text + 22dp: 4 before the text, then a 12dp indicator slot
+  // The text + 22dp: 4 before the text, then a 12dp indicator slot
   // starting 2 after it, then 4.
   metaPill: {
     position: 'absolute',

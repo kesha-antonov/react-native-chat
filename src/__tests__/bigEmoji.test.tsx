@@ -48,7 +48,7 @@ const fontSizeOf = (element: { props: { style?: unknown } }) =>
   StyleSheet.flatten(element.props.style as never)?.fontSize
 
 describe('big emoji in a bubble', () => {
-  it('draws a lone emoji large, Telegram\'s size, with no bubble fill', async () => {
+  it('draws a lone emoji large, with no bubble fill', async () => {
     const { getByText, toJSON } = await render(
       <Bubble user={{ _id: 1 }} position='left' currentMessage={message('😀')} />
     )

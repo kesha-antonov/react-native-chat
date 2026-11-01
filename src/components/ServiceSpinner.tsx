@@ -5,23 +5,22 @@ import { useThemedStyles } from '../hooks/useTheme'
 import { ChatTheme } from '../Theme'
 import { Spinner } from './Spinner'
 
-/** The service circle: 36 across, radius 18 (`ChatLoadingCell.java:43,52`; `ChatActivity.java:7050,7067`). */
+/** The service circle: 36 across, radius 18. */
 export const SERVICE_SPINNER_SIZE = 36
-/** The spinner inside it: a 28 arc (`progressBar.setSize(dp(28))`, `ChatLoadingCell.java:55`). */
+/** The spinner inside it: a 28 arc. */
 const ARC_SIZE = 28
 
 export interface ServiceSpinnerProps {
   style?: StyleProp<ViewStyle>
-  /** Arc color; defaults to the date pill's text color (`chat_serviceText`). */
+  /** Arc color; defaults to the date pill's text color. */
   color?: string
-  /** Circle color; defaults to the date pill's background (`chat_serviceBackground`). */
+  /** Circle color; defaults to the date pill's background. */
   backgroundColor?: string
 }
 
 /**
- * Telegram's loading spinner on the wallpaper: a `RadialProgressView` in the chat's service
- * color circle. Drawn while history loads (`ChatActivity.progressView`) and at the top of the
- * list while earlier messages load (`ChatLoadingCell`).
+ * The loading spinner on the wallpaper: a `Spinner` in the chat's service color circle. Drawn
+ * while history loads and at the top of the list while earlier messages load.
  */
 export function ServiceSpinner ({ style, color, backgroundColor }: ServiceSpinnerProps) {
   const styles = useThemedStyles(createStyles)

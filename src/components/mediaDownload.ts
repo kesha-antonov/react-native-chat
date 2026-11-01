@@ -9,7 +9,7 @@ export interface Download {
 /**
  * Fetches `uri` into memory, reporting 0..1 as it arrives. `XMLHttpRequest` is
  * the one React Native transport that reports download progress, which is what
- * drives Telegram's ring on a voice note being fetched. `onProgress` is not
+ * drives the ring on a voice note being fetched. `onProgress` is not
  * called when the server sends no length.
  */
 export const downloadWithProgress = (uri: string, onProgress: (fraction: number) => void): Download => {

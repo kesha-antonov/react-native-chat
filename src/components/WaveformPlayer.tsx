@@ -73,14 +73,14 @@ export const isWaveformAvailable = !!audioApi?.AudioContext
 
 const ROW_PADDING_H = 8
 
-// SeekBarWaveform's `appearFloat`: bars of a just-sent note grow left to right
+// Bars of a just-sent note grow left to right
 // over 600ms after a 125ms delay, eased out-quint.
 const APPEAR_DELAY_MS = 125
 const APPEAR_MS = 600
 const EASE_OUT_QUINT = Easing.bezier(0.23, 1, 0.32, 1)
-// SeekBarWaveform's loading shimmer: 1.6 widths of travel every 270ms of
-// `t^0.75`, which comes to one sweep about every 430ms, and `loadingFloat`
-// fades it out over 150ms once the file is ready.
+// The loading shimmer: 1.6 widths of travel every 270ms of
+// `t^0.75`, which comes to one sweep about every 430ms, and it
+// fades out over 150ms once the file is ready.
 const SWEEP_MS = 432
 const LOADING_FADE_MS = 150
 
@@ -94,13 +94,13 @@ export interface WaveformPlayerProps {
   duration?: number
   /**
    * Id of the message this note belongs to. Lets the chat start this note
-   * when the one above it finishes, the way Telegram plays a run of notes.
+   * when the one above it finishes, so a run of notes plays as one.
    */
   messageId?: string | number
-  /** Not played by its recipient yet: draws Telegram's unread dot. */
+  /** Not played by its recipient yet: draws the unread dot. */
   isMediaUnread?: boolean
   /**
-   * Grow the bars in once the waveform is ready, as Telegram does for a note
+   * Grow the bars in once the waveform is ready, for a note
    * that has just been sent. Read on mount only.
    */
   animateAppear?: boolean
@@ -109,15 +109,15 @@ export interface WaveformPlayerProps {
    * `onViewOnceEnd`.
    */
   message?: IMessage
-  /** Telegram's view-once voice: plays a single time, cannot be seeked. */
+  /** A view-once voice note: plays a single time, cannot be seeked. */
   isViewOnce?: boolean
   /** Text shown under the waveform once transcribed. */
   transcription?: string
 }
 
 /*
- * How far a view-once waveform has burnt away: Telegram clips it to
- * `width * (1 - explodeProgress)` while it plays, and the note is gone once
+ * How far a view-once waveform has burnt away: it is clipped to
+ * `width * (1 - progress)` while it plays, and the note is gone once
  * it has played.
  */
 const BURN_NONE = 0
@@ -161,8 +161,8 @@ const AppearingBar = ({
 
 /**
  * A band of the played color clipped to a window over the bars, moved by the
- * loading sweep. Stands in for Telegram's linear-gradient shader: two nested
- * bands of different widths approximate its soft falloff.
+ * loading sweep. Stands in for a linear-gradient shader: two nested
+ * bands of different widths approximate a soft falloff.
  */
 const SweepBand = ({
   heights,
@@ -182,8 +182,8 @@ const SweepBand = ({
   opacity: number
 }) => {
   const bandStyle = useAnimatedStyle(() => {
-    // The band's centre runs from -0.4 to 1.2 widths, as Telegram's gradient
-    // peak does.
+    // The band's centre runs from -0.4 to 1.2 widths, so the
+    // sweep enters and leaves fully off the bars.
     const centre = (-0.4 + 1.6 * sweep.value) * width
     return {
       left: centre - (bandFraction * width) / 2,
@@ -206,7 +206,7 @@ const SweepBand = ({
 }
 
 /**
- * Telegram-style voice note: a 44 play/pause circle, a 30-tall waveform beside
+ * Voice note: a 44 play/pause circle, a 30-tall waveform beside
  * it and the time under the waveform. A tap on the waveform toggles playback;
  * a drag scrubs and seeks once on release. Powered by react-native-audio-api
  * (decode + playback). Falls back to a tappable MediaCard if decoding fails.
@@ -228,10 +228,9 @@ export function WaveformPlayer ({
 
   const [decodedLevels, setLevels] = useState<number[]>([])
   const [failed, setFailed] = useState(false)
-  // Telegram's voice button while the file is not here yet (`ChatMessageCell.updateButtonState`):
-  // the download arrow until it is fetched (`buttonState 2`), the cancel ✕ with a progress ring
-  // while it is (`buttonState 4`), then play. A remote note fetches itself, as Telegram
-  // auto-downloads voice; the app can drive it instead with `transfer` / `isDownloadRequired`.
+  // The voice button while the file is not here yet: the download arrow until it is fetched,
+  // the cancel ✕ with a progress ring while it is, then play. A remote note fetches itself, as
+  // voice is auto-downloaded; the app can drive it instead with `transfer` / `isDownloadRequired`.
   const transfer = message?.transfer
   const isAppDownloading = transfer?.type === 'download'
   const isDownloadRequired = !!message?.isDownloadRequired
@@ -239,7 +238,7 @@ export function WaveformPlayer ({
   const [isRequested, setIsRequested] = useState(false)
   const shouldLoad = !isAppDownloading && !isCancelled && (!isDownloadRequired || isRequested)
   const isRemote = isRemoteUri(uri)
-  // A remote note opens straight on the ring, as Telegram binds a loading cell without animating.
+  // A remote note opens straight on the ring, without animating in.
   const [isFetching, setIsFetching] = useState(() => isRemote && shouldLoad)
   const downloadProgress = useSharedValue(0)
   // A tap on play before a local file has decoded starts it once it has.
@@ -303,7 +302,7 @@ export function WaveformPlayer ({
   const barCount = barCountForWidth(trackWidth > 0 ? trackWidth : expectedTrackWidth)
   const barCountRef = useRef(barCount)
   barCountRef.current = barCount
-  // Telegram draws the waveform the server sent with the note (`TL_documentAttributeAudio`), so
+  // The waveform the server sent with the note is drawn first, so
   // the bars are there before the file is; only without one is it decoded from the audio.
   const serverWaveform = message?.waveform
   const serverLevels = useMemo(() => levelsFromWaveform(serverWaveform, barCount), [serverWaveform, barCount])
@@ -354,7 +353,7 @@ export function WaveformPlayer ({
         if (cancelled)
           return
 
-        // On disk, Telegram's button turns to play at once; decoding the waveform
+        // On disk, the button turns to play at once; decoding the waveform
         // follows, and a tap meanwhile plays once it is ready.
         setIsFetching(false)
       }
@@ -453,7 +452,7 @@ export function WaveformPlayer ({
   const isIncoming = position === 'left'
   const isUnread = isIncoming && !!isMediaUnread && !isHeard
 
-  // SeekBarWaveform paints an unheard incoming note entirely in the played
+  // An unheard incoming note is painted entirely in the played
   // color, until it has any progress. A view-once note stays that way: it
   // burns away instead of filling in.
   const isFilledAlways = useSharedValue(isViewOnce)
@@ -480,7 +479,7 @@ export function WaveformPlayer ({
   }, [stopRaf])
 
   // Recording pauses this note where it is; another note starting resets it,
-  // as Telegram's `cleanupPlayer` does.
+  // like any player that loses the audio.
   const onStop = useCallback((reason: StopReason) => {
     stopSource()
     if (reason === 'replaced') {
@@ -538,12 +537,12 @@ export function WaveformPlayer ({
       source.start(0, offset)
       sourceRef.current = source
       setIsPlaying(true)
-      // Starting stops whatever else was playing, the way Telegram does.
+      // Starting stops whatever else was playing.
       claimPlayback(playerId, onStop)
       stopRaf()
       rafRef.current = requestAnimationFrame(tick)
 
-      // Telegram marks an incoming note read the moment it starts playing.
+      // An incoming note is marked read the moment it starts playing.
       if (isIncoming && isMediaUnread) {
         setIsHeard(true)
         markReadRef.current()
@@ -576,7 +575,7 @@ export function WaveformPlayer ({
     releasePlayback(playerId)
   }, [onStop, playerId])
 
-  // Current: playing, or paused part-way (Telegram's `isPlayingMessage`).
+  // Current: playing, or paused part-way.
   const isCurrent = isPlaying || shownProgress > 0
   useReportNowPlaying(messageId, 'voice', isCurrent, isPlaying, togglePlayback, stopFromBar)
 
@@ -604,7 +603,7 @@ export function WaveformPlayer ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rate])
 
-  // SeekBarWaveform seeks once, on release (`onSeekBarDrag` in ACTION_UP);
+  // The waveform seeks once, on release;
   // during the drag only the drawn progress moves. On a note that is not
   // playing this just sets where play will start.
   const commitSeek = useCallback((fraction: number) => {
@@ -626,8 +625,8 @@ export function WaveformPlayer ({
   const onWaveformTap = useCallback(() => toggleRef.current(), [])
   const onWaveformDragEnd = useCallback((fraction: number) => commitSeekRef.current(fraction), [])
 
-  // While dragging, the time follows the finger, as Telegram's does
-  // (`onSeekBarContinuousDrag`); only a new whole second re-renders.
+  // While dragging, the time follows the finger;
+  // only a new whole second re-renders.
   const onWaveformDrag = useCallback((fraction: number) => {
     const duration = durationRef.current
     setShownProgress(prev =>
@@ -635,14 +634,12 @@ export function WaveformPlayer ({
     )
   }, [])
 
-  // A tap toggles playback, like a tap on the button (ChatMessageCell's
-  // `didPressButton` on an ACTION_UP that never started dragging). A drag only
-  // starts past Telegram's 0.2cm slop, and must stay horizontal, or it fights
+  // A tap toggles playback, like a tap on the button (a release that never started dragging). A drag only
+  // starts past a 0.2cm slop, and must stay horizontal, or it fights
   // the message list. The drag is relative: the progress moves by the finger's
-  // travel rather than jumping to where it went down (`thumbDX`).
+  // travel rather than jumping to where it went down.
   const waveformPan = usePanGesture({
-    // Telegram never lets a view-once note be scrubbed
-    // (`isSeekBarDragAllowed`).
+    // A view-once note can never be scrubbed.
     enabled: !isViewOnce,
     activeOffsetX: [-DRAG_SLOP, DRAG_SLOP],
     failOffsetY: [-12, 12],
@@ -683,8 +680,7 @@ export function WaveformPlayer ({
   }, [trackWidthSV])
 
   // Loading shimmer while decoding and not playing; fades out once ready.
-  // Telegram runs the same sweep while a transcription is on its way
-  // (`TranscribeButton.setLoading` -> `seekBar.setLoading`).
+  // The same sweep runs while a transcription is on its way.
   // Only for a transcription: a note being fetched shows the ring on its button instead.
   const isShimmering = transcribe.isLoading && !isPlaying
   useEffect(() => {
@@ -776,8 +772,7 @@ export function WaveformPlayer ({
   }, [appear, sweep, loading])
 
   // All bars in the track color, with the played color clipped at the exact
-  // progress pixel on top, so a bar can be half filled (SeekBarWaveform draws
-  // the inner paint, then the outer paint clipped to `progress * width`).
+  // progress pixel on top, so a bar can be half filled.
   const playedStyle = useAnimatedStyle(() => ({
     width: ((fillAll.value && progress.value <= 0) || isFilledAlways.value ? 1 : progress.value)
       * trackWidthSV.value,
@@ -793,10 +788,9 @@ export function WaveformPlayer ({
         : '100%',
   }))
 
-  // SeekBarWaveform draws a view-once note's levels back to front
-  // (`reverseWaveform`).
-  // Before there are levels every bar is at zero, which SeekBarWaveform draws as a
-  // row of 2x2 dots (`addBar` with h = 0 is just the round caps).
+  // A view-once note's levels are drawn back to front.
+  // Before there are levels every bar is at zero, drawn as a
+  // row of 2x2 dots (a zero-height bar is just its round caps).
   const heights = useMemo(() => {
     const next = levels.length ? levels.map(barHeight) : new Array<number>(barCount).fill(barHeight(0))
     return isViewOnce ? next.reverse() : next
@@ -811,7 +805,7 @@ export function WaveformPlayer ({
       </View>
     )
 
-  // Telegram shows the elapsed time while this note is the current one -
+  // The elapsed time shows while this note is the current one -
   // playing, or paused part-way - and the full length otherwise.
   const timeLabel = formatVoiceDuration(isCurrent ? shownProgress * fullDuration : fullDuration)
 
@@ -943,7 +937,7 @@ export function WaveformPlayer ({
               </View>
             </GestureDetector>
 
-            {/* Telegram's transcribe button at the end of the waveform row. */}
+            {/* The transcribe button at the end of the waveform row. */}
             {transcribe.isVisible && (
               <View style={styles.transcribeSlot}>
                 <TranscribeButton
@@ -958,7 +952,7 @@ export function WaveformPlayer ({
 
           <View style={styles.timeRow}>
             <Text style={styles.time}>{timeLabel}</Text>
-            {/* Telegram's unread dot: 6 across, centred 6 past the time, in the
+            {/* The unread dot: 6 across, centred 6 past the time, in the
                 played color. */}
             <View style={styles.dotSlot}>
               <UnreadDot isVisible={isUnread} color={styles.colors.backgroundColor} />

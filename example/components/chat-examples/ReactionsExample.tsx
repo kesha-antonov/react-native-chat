@@ -16,7 +16,7 @@ export default function ReactionsExample () {
   }, [])
 
   // Reactions live in your messages, so toggling one is yours too: `Chat.toggleReaction`
-  // adds or removes the current user's pick (one per user, as in Telegram).
+  // adds or removes the current user's pick (one per user).
   const onReactionPress = useCallback((message: IMessage, emoji: string) => {
     setMessages(previousMessages => Chat.toggleReaction(previousMessages, message._id, emoji, USER._id))
   }, [])

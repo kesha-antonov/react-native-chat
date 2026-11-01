@@ -193,7 +193,7 @@ describe('status', () => {
 })
 
 describe('theme', () => {
-  it('ships Telegram Android day and night colors', () => {
+  it('ships the default day and night colors', () => {
     expect(defaultLightTheme.colors.outgoingBubble).toBe('#EFFFDE')
     expect(defaultLightTheme.bubble.outgoingGradient).toBeNull()
     expect(defaultDarkTheme.bubble.outgoingGradient).toEqual(['#9F3EAA', '#8146D7', '#4272DF', '#258DE5'])
@@ -206,7 +206,7 @@ describe('theme', () => {
     expect(getNameColor(theme, 5)).toBe('#ABCDEF')
   })
 
-  it('picks Telegram per-user colors by id', () => {
+  it('picks per-user name colors by id', () => {
     expect(getUserColorIndex(7, 7)).toBe(0)
     expect(getUserColorIndex(-3, 7)).toBe(3)
     expect(getUserColorIndex('abc', 7)).toBe(getUserColorIndex('abc', 7))

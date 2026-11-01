@@ -3,8 +3,7 @@ import { defaultDarkTheme, defaultLightTheme } from '@kesha-antonov/react-native
 import { useColorScheme } from '@/hooks/use-color-scheme'
 
 /**
- * Telegram Android's chat list colors (DrKLO/Telegram 13.x, `ActionBar/ThemeColors.java` for
- * the day "Blue" theme and `assets/darkblue.attheme` for "Dark Blue"). Key names in comments.
+ * The chat list colors for the day and night themes. Each line notes the color's role.
  */
 export interface ChatListColors {
   background: string // windowBackgroundWhite
@@ -118,5 +117,5 @@ export function useChatListColors (): ChatListColors {
   return chatListColors[useColorScheme()]
 }
 
-/** Telegram's `dialogSwipeRemove`, the same in both themes. */
+/** The swipe-to-delete red, the same in both themes. */
 export const SWIPE_DELETE_COLOR = '#E56555'

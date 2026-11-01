@@ -40,7 +40,7 @@ export function getPreview (dialog: Dialog, message?: IMessage): Preview {
     ? message.user._id === ME._id ? 'You: ' : `${firstName(message.user.name)}: `
     : undefined
 
-  // Telegram writes the media type, then the caption after a comma-less space.
+  // The media type, then the caption after a comma-less space.
   const attachment = message.image
     ? 'Photo'
     : message.videoNote

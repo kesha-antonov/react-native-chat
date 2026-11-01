@@ -17,16 +17,15 @@ import { getSvg } from '../optional'
 import { PlayPauseIcon } from './PlayPauseIcon'
 
 /*
- * Telegram's media button: `RadialProgress2` (the filled circle) drawing a
- * `MediaActionDrawable` (the glyph and the progress arc). Every geometry and timing
- * below is ported from `ui/Components/MediaActionDrawable.java`; line numbers cite it.
+ * The media button: a filled circle drawing a glyph and a progress arc. The geometry and
+ * timings below are specified in a 48-unit box.
  */
 
 const svg = getSvg()
 const Svg: any = svg ? svg.Svg ?? svg.default : null
 const AnimatedPath: any = svg?.Path ? Animated.createAnimatedComponent(svg.Path) : null
 
-/** What the button shows, Telegram's `ICON_*` constants (`:24-28`). */
+/** What the button shows. */
 export type MediaActionIcon = 'play' | 'pause' | 'download' | 'cancel' | 'none'
 
 const PLAY = 0
@@ -43,23 +42,23 @@ const ICON_CODES: Record<MediaActionIcon, number> = {
   none: NONE,
 }
 
-/** The drawable's own size; everything scales by `size / 48` (`getIntrinsicWidth`, `:903-905`). */
+/** The drawable's own size; everything scales by `size / 48`. */
 const INTRINSIC = 48
 
-/** Download -> cancel runs in three stages (`DOWNLOAD_TO_CANCEL_STAGE1..3`, `:76-78`). */
+/** Download -> cancel runs in three stages. */
 const STAGE1 = 0.5
 const STAGE2 = 0.2
 const STAGE3 = 0.3
 
-/** The arc turns once every 2.5s (`downloadRadOffset += 360 * dt / 2500`, `:867`). */
+/** The arc turns once every 2.5s. */
 export const RADIAL_SPIN_MS = 2500
-/** And starts at 112 degrees whenever the cancel icon is set (`:193`). */
+/** And starts at 112 degrees whenever the cancel icon is set. */
 const RAD_OFFSET_START = 112
-/** Progress eases toward its target over 200ms, `DecelerateInterpolator` (`:871-881`). */
+/** Progress eases toward its target over 200ms, decelerating. */
 export const RADIAL_PROGRESS_MS = 200
 const DECELERATE = Easing.out(Easing.quad)
 
-/** `setIcon`'s transition length for a pair of icons (`:165-175`). */
+/** The transition length for a pair of icons. */
 export const transitionDuration = (from: MediaActionIcon, to: MediaActionIcon) => {
   if ((from === 'play' && to === 'pause') || (from === 'pause' && to === 'play'))
     return 300
@@ -166,7 +165,7 @@ export interface RadialFrame {
 }
 
 /**
- * One frame of `MediaActionDrawable.draw` for a drawable `size` across. `t` is
+ * One frame of the media action icon for a drawable `size` across. `t` is
  * `transitionProgress` (1 at rest), `saved` the `savedTransitionProgress` the transition
  * started from, `progress` the eased `animatedDownloadProgress` and `rad` the arc's
  * `downloadRadOffset`.
@@ -201,7 +200,7 @@ export const radialFrame = (
     arcRadius: 0,
   }
 
-  // The download arrow (`:332-452`).
+  // The download arrow.
   if (current === DOWNLOAD || next === DOWNLOAD) {
     const yStart = c - 9 * scale
     const yEnd = c + 9 * scale
@@ -246,7 +245,7 @@ export const radialFrame = (
         x2 = c + 8 * back * scale
         y3 = y2 - 8 * back * scale
       } else {
-        // The stem curls into the start of the ring, then the ✕ turns in (`:374-436`).
+        // The stem curls into the start of the ring, then the ✕ turns in.
         let d = 13 * scale * scale + (isMini ? 2 : 0)
         p -= STAGE1
         const p3 = p / (STAGE2 + STAGE3)
@@ -290,7 +289,7 @@ export const radialFrame = (
     }
   }
 
-  // The cancel ✕ and the progress ring (`:454-572`).
+  // The cancel ✕ and the progress ring.
   if (current === CANCEL || (current === NONE && next === CANCEL)) {
     let d: number
     let rotation = 0
@@ -350,7 +349,7 @@ export const radialFrame = (
     }
   }
 
-  // Play / pause (`:703-762`), drawn by `PlayPauseIcon`; here only how much of it shows.
+  // Play / pause, drawn by `PlayPauseIcon`; here only how much of it shows.
   if (isPlayPause(current) || isPlayPause(next)) 
     if (isPlayPause(current) && isPlayPause(next)) {
       out.glyphScale = 1
@@ -453,7 +452,7 @@ function FallbackRing ({ frame, color, width, size, isMini }: {
 }
 
 export interface RadialProgressProps {
-  /** The glyph. A change animates from the previous one the way Telegram does. */
+  /** The glyph. A change animates from the previous one. */
   icon: MediaActionIcon
   /**
    * Download or upload progress, 0..1, drawn as the ring while `icon` is `cancel`.
@@ -466,7 +465,7 @@ export interface RadialProgressProps {
   color: string
   /** The filled circle behind them; omit for none. */
   backgroundColor?: string
-  /** Telegram's mini drawable: 2-wide strokes and a ring 2 in from the edge. */
+  /** The mini variant: 2-wide strokes and a ring 2 in from the edge. */
   isMini?: boolean
   /** Glyph size of the play/pause icon. Default 18 for a 44 circle, scaled with `size`. */
   glyphSize?: number
@@ -474,7 +473,7 @@ export interface RadialProgressProps {
 }
 
 /**
- * Telegram's media button (`RadialProgress2` + `MediaActionDrawable`): a filled circle with a
+ * The media button: a filled circle with a
  * play, pause, download or cancel glyph, and while cancelable a ring that grows with
  * `progress` and turns once every 2.5s. Every animation runs on the UI thread.
  */
@@ -518,7 +517,7 @@ export function RadialProgress ({
 
     previousIcon.current = icon
     const duration = transitionDuration(from, icon)
-    // `setIcon` mid-transition starts from the icon being animated to (`:176-178`).
+    // A new icon mid-transition starts from the icon being animated to.
     if (t.value < 1)
       current.value = next.value
     saved.value = t.value
@@ -555,7 +554,7 @@ export function RadialProgress ({
   useAnimatedReaction(
     () => target.value,
     value => {
-      // A drop jumps; a rise eases over 200ms from where the ring is (`setProgress`, `:210-226`).
+      // A drop jumps; a rise eases over 200ms from where the ring is.
       if (value <= arc.value) {
         cancelAnimation(arc)
         arc.value = value
@@ -588,7 +587,7 @@ export function RadialProgress ({
     return { opacity: result.glyphAlpha, transform: [{ scale: result.glyphScale }] }
   })
 
-  // `RadialProgress2.getWholeAlpha` (`:329-346`): the circle fades in from no icon and out to it.
+  // The circle fades in from no icon and out to it.
   const circleStyle = useAnimatedStyle(() => {
     const isAnimating = current.value !== next.value && t.value < 1
     if (!isAnimating)
@@ -598,7 +597,7 @@ export function RadialProgress ({
     return { opacity: next.value === NONE ? 1 - t.value : 1 }
   })
 
-  // `setBounds` drops the stroke to 2 when the drawable is under 0.7 of its size (`:263-266`).
+  // The stroke drops to 2 when the button is under 0.7 of its intrinsic size.
   const strokeWidth = isMini || size / INTRINSIC < 0.7 ? 2 : 3
   const circle = { width: size, height: size, borderRadius: size / 2 }
   const glyph = glyphSize ?? Math.round((18 * size) / 44)

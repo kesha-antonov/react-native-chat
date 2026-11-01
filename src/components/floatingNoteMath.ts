@@ -1,11 +1,11 @@
 /*
- * Geometry of the floating round note, after Telegram's `PipRoundVideoView`:
+ * Geometry of the floating round note:
  * where it docks, how far a drag may take it, and where it settles - or
  * whether it slides out and closes - when the finger lifts. Kept free of React
  * so it runs on the UI thread inside the drag gesture and under Jest alike.
  */
 
-/** Telegram's PiP circle is 120dp. */
+/** The floating circle is 120dp. */
 export const FLOATING_NOTE_SIZE = 120
 /** Distance kept from the edges it docks to (`getSideCoord`). */
 export const FLOATING_NOTE_MARGIN = 10
@@ -16,8 +16,8 @@ export const FLOATING_NOTE_MS = 150
 /** It appears from, and shrinks back to, 80% of its size. */
 export const FLOATING_NOTE_HIDDEN_SCALE = 0.8
 /**
- * How far ahead a release's velocity carries it, in seconds. Telegram decides
- * on the lift position alone; projecting a little lets a flick reach an edge
+ * How far ahead a release's velocity carries it, in seconds. Deciding on
+ * the lift position alone feels stuck; projecting a little lets a flick reach an edge
  * (or fly off it) the way a flick does everywhere else on the platform.
  */
 export const FLOATING_NOTE_FLING_S = 0.1
@@ -26,8 +26,8 @@ export const FLOATING_NOTE_FLING_S = 0.1
 export type DockSide = 'start' | 'end' | 'free'
 
 /**
- * A remembered position that survives the area resizing: Telegram stores the
- * side per axis, or the fraction across it (`pipconfig` `sidex`/`px`).
+ * A remembered position that survives the area resizing: the side per axis,
+ * or the fraction across it.
  */
 export interface FloatingDock {
   sideX: DockSide
@@ -36,7 +36,7 @@ export interface FloatingDock {
   py: number
 }
 
-/** Telegram's first position: the top right corner (`sidex` 1, `sidey` 0). */
+/** The first position: the top right corner. */
 export const DEFAULT_FLOATING_DOCK: FloatingDock = { sideX: 'end', px: 0, sideY: 'start', py: 0 }
 
 export interface FloatingArea {
@@ -91,7 +91,7 @@ export interface FloatingSettle {
   y: number
   /** It slides out past a side; playback stops once it is gone. */
   isClosing: boolean
-  /** The position to remember, unchanged when closing (Telegram skips the commit). */
+  /** The position to remember, unchanged when closing. */
   dock: FloatingDock
 }
 

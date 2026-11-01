@@ -5,8 +5,8 @@ import { ChatTheme } from '../Theme'
  *
  * The accent cannot be used for both positions: in the default light theme
  * `colors.accent` and `colors.outgoingBubble` are the same azure, so an accent
- * circle on an outgoing bubble is invisible (1:1 contrast). Telegram solves this
- * the same way - the control inverts on the sender's side.
+ * circle on an outgoing bubble is invisible (1:1 contrast), so the control inverts on
+ * the sender's side.
  */
 export interface MediaPalette {
   /** Filled circle behind the play/pause glyph. */
@@ -22,7 +22,7 @@ export interface MediaPalette {
 }
 
 /**
- * Telegram's voice colors (`chat_{in,out}VoiceSeekbar*`, `chat_{in,out}Loader`): the play
+ * The voice colors: the play
  * button and played bars in the bubble's fill color, unplayed bars in its track color. On the
  * day theme's green bubble they are greens; on the night gradient, white.
  */

@@ -34,7 +34,7 @@ export interface TicksProps {
 }
 
 /**
- * Telegram-style delivery ticks: one check = sent, double check = delivered/read.
+ * Delivery ticks: one check = sent, double check = delivered/read.
  * Color the read state with the accent (or a brighter shade on colored bubbles).
  */
 export const Ticks = ({ double = false, color, size = 9 }: TicksProps) => {
@@ -50,15 +50,15 @@ export const Ticks = ({ double = false, color, size = 9 }: TicksProps) => {
 
 export interface PendingClockProps {
   color: string
-  /** Face diameter; Telegram's is 12 (`MsgClockDrawable.getIntrinsicWidth`). */
+  /** Face diameter; 12 by default. */
   size?: number
 }
 
 /*
- * Telegram's sending clock, `ui/Components/MsgClockDrawable.java`: a 1-wide ring of radius
+ * The sending clock: a 1-wide ring of radius
  * `size / 2 - 0.5` with two round-capped hands from the centre. The minute hand (3 long,
  * pointing up) turns once every 1.5s, the hour hand (2.3 long, pointing right) once every
- * 4.5s (`rotateTime`, `rotateHourTime`, `:40-50`).
+ * 4.5s.
  */
 export const CLOCK_MINUTE_MS = 1500
 export const CLOCK_HOUR_MS = CLOCK_MINUTE_MS * 3
@@ -80,7 +80,7 @@ const useTurn = (duration: number) => {
 }
 
 /**
- * Telegram's animated sending clock. Respects the system reduce-motion setting (the hands
+ * The animated sending clock. Respects the system reduce-motion setting (the hands
  * then hold still).
  */
 export const PendingClock = ({ color, size = 12 }: PendingClockProps) => {

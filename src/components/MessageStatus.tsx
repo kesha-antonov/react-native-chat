@@ -19,13 +19,13 @@ const Svg: any = svg ? svg.default ?? svg.Svg : null
 const Path: any = svg?.Path
 
 /**
- * The box the status takes beside the time: Telegram's 12pt check with the half-check 4pt to
- * its right (`msg_check_s` + `msg_halfcheck`, `ChatMessageCell:24860`).
+ * The box the status takes beside the time: a 12pt check with the half-check 4pt to
+ * its right.
  */
 export const STATUS_WIDTH = 16
 const STATUS_HEIGHT = 12
 
-// Telegram's checks are thin, round-capped strokes; the read state adds a second check whose
+// The checks are thin, round-capped strokes; the read state adds a second check whose
 // short arm hides behind the first one's long arm.
 const CHECK = 'M1.6 6.7 L4.5 9.5 L10.4 2.9'
 const HALF_CHECK = 'M7.9 8.2 L9.2 9.5 L15.1 2.9'
@@ -40,15 +40,14 @@ export interface MessageStatusProps {
 }
 
 /*
- * `ChatMessageCell.createStatusDrawableAnimator` (`:24394-24434`): a status change cross-fades
- * over 150ms, the old glyph shrinking to half size as it fades and the new one growing from
- * half (`drawStatusDrawable`, `:24771-24774`). Sent -> read is the "move check" instead, 220ms:
- * the check slides 4 left into place and the half-check grows in beside it (`:24824-24826`).
- * Both run on `CubicBezierInterpolator.DEFAULT`.
+ * A status change cross-fades over 150ms, the old glyph shrinking to half size as it fades and
+ * the new one growing from half. Sent -> read is the "move check" instead, 220ms: the check
+ * slides 4 left into place and the half-check grows in beside it. Both run on the default
+ * cubic-bezier (0.25, 0.1, 0.25, 1).
  */
 export const STATUS_FADE_MS = 150
 export const STATUS_MOVE_MS = 220
-/** A lone "sent" check sits where the read state's half-check ends (`:24860-24872`). */
+/** A lone "sent" check sits where the read state's half-check ends. */
 const CHECK_SHIFT = 4
 const EASE_DEFAULT = Easing.bezier(0.25, 0.1, 0.25, 1)
 
@@ -59,7 +58,7 @@ const CheckLayer = ({ d, color }: { d: string, color: string }) => (
 )
 
 /** The two checks, `moving` 0 -> 1 from sent to read (1 at rest when read, 0 when sent). */
-const TelegramChecks = ({ isRead, color, move }: { isRead: boolean, color: string, move?: SharedValue<number> }) => {
+const AnimatedChecks = ({ isRead, color, move }: { isRead: boolean, color: string, move?: SharedValue<number> }) => {
   const checkStyle = useAnimatedStyle(() => {
     const p = move ? move.value : isRead ? 1 : 0
     return { transform: [{ translateX: CHECK_SHIFT * (1 - p) }] }
@@ -107,9 +106,9 @@ const CrossFade = ({ from, to, onDone }: { from: React.ReactNode, to: React.Reac
 }
 
 /**
- * A message's delivery state as Telegram draws it beside the time: a spinning clock while
+ * A message's delivery state, drawn beside the time: a spinning clock while
  * sending, one check once sent, two once read, a red badge if sending failed. A change
- * animates as Telegram's does. The `icons` registry still wins for `clock`, `check` and
+ * animates. The `icons` registry still wins for `clock`, `check` and
  * `checkAll`.
  */
 export const MessageStatus = ({ status, color, errorColor }: MessageStatusProps) => {
@@ -148,7 +147,7 @@ export const MessageStatus = ({ status, color, errorColor }: MessageStatusProps)
 
   const glyphFor = (kind: MessageStatusKind, move?: SharedValue<number>): React.ReactNode => {
     if (kind === 'failed')
-      // A 14pt red badge with a white exclamation mark (`ChatMessageCell:24479`).
+      // A 14pt red badge with a white exclamation mark.
       return (
         <View testID='message-status-error-badge' style={[styles.error, { backgroundColor: errorColor }]}>
           <Text style={styles.errorText} allowFontScaling={false}>!</Text>
@@ -161,7 +160,7 @@ export const MessageStatus = ({ status, color, errorColor }: MessageStatusProps)
     if (icons.check || icons.checkAll)
       return <Icon name={kind === 'read' ? 'checkAll' : 'check'} color={color} size={14} fallback={null} />
     if (Svg && Path)
-      return <TelegramChecks isRead={kind === 'read'} color={color} move={move} />
+      return <AnimatedChecks isRead={kind === 'read'} color={color} move={move} />
     return <Ticks double={kind === 'read'} color={color} />
   }
 

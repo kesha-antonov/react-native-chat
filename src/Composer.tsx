@@ -33,7 +33,7 @@ export interface ComposerProps {
   ): void
 }
 
-// Telegram's input text is 18 (`CAEV:5811`), from `theme.typography.composer`. The vertical
+// The input text is 18, from `theme.typography.composer`. The vertical
 // padding is derived from the island height (see createStyles) so a single line of text is
 // vertically centered in it.
 const DEFAULT_LINE_HEIGHT = 21

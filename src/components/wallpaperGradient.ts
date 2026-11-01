@@ -1,9 +1,8 @@
 /**
- * Telegram's chat wallpaper gradient, ported from `Utilities.generateGradient`
- * (`TMessagesProj/jni/image.cpp:1091-1200`): four colors placed at four of eight fixed spots,
- * each pixel swirled around the centre and then colored by inverse-distance weights. Telegram
- * renders it into a 60x80 bitmap and lets the GPU scale it up; this does the same into an
- * uncompressed PNG, so React Native's `Image` can draw it with no dependency.
+ * The chat wallpaper gradient: four colors placed at four of eight fixed spots,
+ * each pixel swirled around the centre and then colored by inverse-distance weights. It is
+ * rendered into a 60x80 bitmap that the GPU scales up, as an uncompressed PNG, so React
+ * Native's `Image` can draw it with no dependency.
  */
 import { parseColor } from '../colorUtils'
 
@@ -11,7 +10,7 @@ export const WALLPAPER_WIDTH = 60
 export const WALLPAPER_HEIGHT = 80
 export const WALLPAPER_PHASES = 8
 
-// The eight spots, `image.cpp:1131`; y is flipped when they are gathered.
+// The eight spots; y is flipped when they are gathered.
 const POSITIONS: Array<[number, number]> = [
   [0.80, 0.10],
   [0.60, 0.20],
@@ -35,7 +34,7 @@ export function gatherPositions (phase: number): Array<[number, number]> {
 
 /**
  * The gradient's pixels as RGB bytes, row by row. `progress` moves the colors from the
- * previous phase's spots (`phase + 1`) to this one's, as Telegram animates a step.
+ * previous phase's spots (`phase + 1`) to this one's, animating a step.
  */
 export function generateWallpaperPixels (
   colors: string[],

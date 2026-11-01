@@ -9,7 +9,7 @@ const emojis = require('emoji-datasource')
 const fs = require('fs')
 const path = require('path')
 
-// Telegram's tabs (`EmojiTabsStrip`): smileys and people share one, and activities come before
+// Emoji keyboard tabs: smileys and people share one, and activities come before
 // travel, unlike Unicode's order.
 const TABS = [
   ['smileys', ['Smileys & Emotion', 'People & Body']],

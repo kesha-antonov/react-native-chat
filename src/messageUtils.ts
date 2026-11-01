@@ -2,8 +2,8 @@ import { IMessage, MessageReaction } from './Models'
 
 export interface ToggleReactionOptions {
   /**
-   * How many different reactions one user may leave on a message. Telegram allows one (premium
-   * users three): picking another emoji replaces the oldest of the user's own. Pass `Infinity`
+   * How many different reactions one user may leave on a message. Picking another emoji past
+   * the limit replaces the oldest of the user's own. Pass `Infinity`
    * to let a user add every emoji. Default 1.
    */
   maxPerUser?: number

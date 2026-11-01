@@ -21,11 +21,11 @@ const svg = getSvg()
 const Svg: any = svg ? svg.default ?? svg.Svg : null
 const Path: any = svg?.Path
 
-// Telegram's `send_plane_24`: a solid paper plane pointing right.
+// A solid paper plane pointing right.
 const PLANE = 'M3.4 20.3 L21.2 12.6 a0.65 0.65 0 0 0 0 -1.2 L3.4 3.7 a0.7 0.7 0 0 0 -1 0.75 L3.9 10.6 L14.5 12 L3.9 13.4 L2.4 19.55 a0.7 0.7 0 0 0 1 0.75 Z'
 
 // The send button grows in from 0.1 as text appears and shrinks away with it, over 220ms
-// on EASE_OUT_QUINT (`ChatActivityEnterView.animateSendButton`).
+// on EASE_OUT_QUINT.
 const MORPH = { duration: 220, easing: Easing.bezier(0.23, 1, 0.32, 1) }
 
 const PlaneIcon = ({ color, size }: { color: string, size: number }) => {
@@ -75,7 +75,7 @@ export const Send = <TMessage extends IMessage = IMessage>({
     [text, isTextOptional]
   )
 
-  // Telegram has no greyed-out send button: it is only there while there is something to send.
+  // No greyed-out send button: it is only there while there is something to send.
   const isShown = canSend || isSendButtonAlwaysVisible
   const shown = useSharedValue(isShown ? 1 : 0)
   useEffect(() => {
@@ -131,7 +131,7 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   touchable: {
     justifyContent: 'center',
   },
-  // A solid 36 circle in `chat_messagePanelSend` (`CAEV:14999`).
+  // A solid 36 circle in the accent color.
   circle: {
     width: theme.sendButton.size,
     height: theme.sendButton.size,

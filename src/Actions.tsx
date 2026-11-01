@@ -86,7 +86,7 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Telegram's paperclip takes a 44 cell inside the composer island (`CAEV:2829`).
+  // The paperclip takes a 44 cell inside the composer island.
   button: {
     width: 44,
     height: theme.composer.minHeight,

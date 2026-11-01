@@ -1,6 +1,6 @@
 /**
- * Counting the emoji in an emoji-only message, for Telegram's big-emoji messages
- * (`MessageObject.checkEmojiOnly`): a message made of nothing but emoji (and spaces) drops its
+ * Counting the emoji in an emoji-only message, for big-emoji messages: a message made of
+ * nothing but emoji (and spaces) drops its
  * bubble and draws them large.
  */
 

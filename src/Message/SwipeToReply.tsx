@@ -25,22 +25,20 @@ const Svg: any = svg ? svg.default ?? svg.Svg : null
 const SvgCircle: any = svg?.Circle
 const AnimatedSvgCircle: any = SvgCircle ? Animated.createAnimatedComponent(SvgCircle) : null
 
-// Every value below is Telegram Android's, from `ChatActivity`'s `ChatListView`
-// (`processTouchEvent`, `onDraw`, `drawReplyButton`).
-/** The drag starts once the finger has moved 0.4cm sideways (`getPixelsInCM(0.4f)`), about 25pt. */
+/** The drag starts once the finger has moved 0.4cm sideways, about 25pt. */
 const SWIPE_START = 25
-/** A mostly-sideways drag: Telegram requires `|dx| / 3 > dy` to take over from the list. */
+/** A mostly-sideways drag: `|dx| / 3 > dy` is required to take over from the list. */
 const SWIPE_FAIL_Y = 9
-/** The row follows the finger 1:1, up to 80pt (`dp(-80)` clamp). */
+/** The row follows the finger 1:1, up to 80pt. */
 const SWIPE_MAX = 80
-/** Past 50pt a release replies, and crossing it ticks (`KEYBOARD_TAP`). */
+/** Past 50pt a release replies, and crossing it ticks. */
 export const SWIPE_REPLY_THRESHOLD = 50
 /** The arrow appears once the row has moved 20pt, and fills over the next 30pt. */
 const ICON_APPEAR = 20
 const ICON_FILL = 30
-/** The circle behind the arrow: `dp(16)` radius. */
+/** The circle behind the arrow: 16pt radius. */
 const ICON_SIZE = 32
-/** The row slides back over 180ms on a decelerate curve (`trackAnimationProgress += dt / 180`). */
+/** The row slides back over 180ms on a decelerate curve. */
 const RETURN = { duration: 180, easing: Easing.out(Easing.quad) }
 // AndroidX springs are stiffness + damping ratio on unit mass; Reanimated takes the damping
 // coefficient, `2 * ratio * sqrt(stiffness)`.
@@ -49,15 +47,15 @@ const androidSpring = (stiffness: number, dampingRatio: number) => ({
   stiffness,
   damping: 2 * dampingRatio * Math.sqrt(stiffness),
 })
-/** `slidingDrawableVisibilitySpring`: `STIFFNESS_MEDIUM` (1500), `DAMPING_RATIO_NO_BOUNCY`. */
+/** The arrow's appearance: stiffness 1500, no bounce. */
 const APPEAR_SPRING = androidSpring(1500, 1)
-/** `slidingFillProgressSpring`: stiffness 400, `DAMPING_RATIO_MEDIUM_BOUNCY` (0.5). */
+/** The arrow's fill: stiffness 400, damping ratio 0.5 (medium bounce). */
 const FILL_SPRING = androidSpring(400, 0.5)
-/** `slidingOuterRingProgressSpring`: stiffness 200, `DAMPING_RATIO_NO_BOUNCY`. */
+/** The outer ring: stiffness 200, no bounce. */
 const OUTER_RING_SPRING = androidSpring(200, 1)
 /** Before the threshold the circle shows the service color at 60% of the fill. */
 const PRE_FILL_ALPHA = 0.6
-/** The 2pt ring that draws itself round the circle as the row moves (`CA:4914-4949`). */
+/** The 2pt ring that draws itself round the circle as the row moves. */
 const RING_WIDTH = 2
 const RING_RADIUS = (ICON_SIZE - RING_WIDTH) / 2
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS
@@ -66,7 +64,7 @@ const OUTER_RING_GROWTH = 0.6
 
 export interface SwipeToReplyRowProps {
   direction: 'left' | 'right'
-  /** Whose message it is: Telegram moves the arrow half as far beside an outgoing one. */
+  /** Whose message it is: the arrow moves half as far beside an outgoing one. */
   position: 'left' | 'right'
   onReply: () => void
   renderAction?: (
@@ -81,7 +79,7 @@ export interface SwipeToReplyRowProps {
 }
 
 /**
- * Telegram Android's swipe-to-reply: drag a message sideways, the arrow fills as you go, a tick
+ * Swipe-to-reply: drag a message sideways, the arrow fills as you go, a tick
  * marks the point of no return, and letting go past it starts a reply while the row slides back.
  * The row never "opens".
  */
@@ -115,7 +113,7 @@ export const SwipeToReplyRow = ({
       : [-Number.MAX_SAFE_INTEGER, SWIPE_START],
     failOffsetY: [-SWIPE_FAIL_Y, SWIPE_FAIL_Y],
     onUpdate: event => {
-      // Counted from where the drag took over, as Telegram resets `startedTrackingX` there.
+      // Counted from where the drag took over, so the row does not jump when it starts.
       const distance = Math.min(SWIPE_MAX, Math.max(0, event.translationX * sign - SWIPE_START))
       offset.value = distance * sign
 
@@ -235,7 +233,7 @@ export const SwipeToReplyRow = ({
 }
 
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
-  // Telegram draws the arrow on the service background, the date pill's colour.
+  // The arrow sits on the service background, the date pill's colour.
   icon: {
     position: 'absolute',
     top: '50%',

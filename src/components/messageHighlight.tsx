@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated'
 
 /**
- * Which message is flashing, Telegram's highlight after jumping to a quoted message. Rows read
+ * Which message is flashing, the highlight after jumping to a quoted message. Rows read
  * it through `useSyncExternalStore`, so a flash re-renders only the row it lands on.
  */
 export interface MessageHighlightStore {
@@ -69,11 +69,10 @@ export function useMessageHighlightToken (messageId: string | number | undefined
   )
 }
 
-// Telegram Android keeps a jumped-to message highlighted for 1000ms (`ChatActivity.startMessageUnselect`),
-// then fades it out over 300ms (`ChatMessageCell.setHighlighted` / `getHighlightAlpha`).
+// A jumped-to message stays highlighted for 1000ms, then fades out over 300ms.
 const HIGHLIGHT_HOLD_MS = 1000
 const HIGHLIGHT_FADE_MS = 300
-// `key_chat_selectedBackground` is 0x280a90f0: the accent at 0x28 / 0xff.
+// The selected background is 0x280a90f0: the accent at 0x28 / 0xff.
 const HIGHLIGHT_OPACITY = 0x28 / 0xff
 
 /** Shows at once, holds, then fades out - restarted by every new token. */
@@ -92,11 +91,10 @@ const useHighlightFade = (token: number, peak: number) => {
 }
 
 /**
- * Telegram's band across the whole row behind a highlighted message (`ChatActivity`'s
- * `ChatListView` draws `key_chat_selectedBackground` under the cell). It shows at once and
+ * The band across the whole row behind a highlighted message. It shows at once and
  * fades out. Mounted only while its message is flashing, so the rest of the list carries no
  * shared value for it. `Message` passes `colors.selectionBackground`, which carries its own
- * alpha, at `opacity` 1; the default draws a plain accent at Telegram's 0x28.
+ * alpha, at `opacity` 1; the default draws a plain accent at 0x28 alpha.
  */
 export const HighlightOverlay = ({ token, color, opacity = HIGHLIGHT_OPACITY }: { token: number, color: string, opacity?: number }) => {
   const style = useHighlightFade(token, opacity)
@@ -111,8 +109,7 @@ export const HighlightOverlay = ({ token, color, opacity = HIGHLIGHT_OPACITY }: 
 }
 
 /**
- * The bubble's own part of the flash: Telegram swaps it to its selected color
- * (`chat_inBubbleSelected` / `chat_outBubbleSelected`, `ChatMessageCell:20790`) for as long as
+ * The bubble's own part of the flash: it swaps to its selected color for as long as
  * the row band shows.
  */
 export const BubbleHighlightTint = ({ token, color, cornerStyle }: { token: number, color: string, cornerStyle: StyleProp<ViewStyle> }) => {

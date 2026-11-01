@@ -28,7 +28,7 @@ describe('isArrivingMessage', () => {
     expect(isArrivingMessage('a', 0, new Set())).toBe(false)
   })
 
-  it('uses the Telegram list duration', () => {
+  it('uses the list animation duration', () => {
     expect(LIST_ITEM_DURATION).toBe(250)
   })
 })

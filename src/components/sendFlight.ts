@@ -1,8 +1,7 @@
 import { Easing } from 'react-native-reanimated'
 
 /**
- * Telegram's send flights (`VoiceMessageEnterTransition` for a voice note,
- * the `instantCameraView` block in `ChatActivity` for a round one): the take's
+ * The send flights, for a voice note and a round one: the take's
  * circle in the composer flies into the message that has just been sent, and
  * that message's own button / note stays hidden until it lands.
  *
@@ -54,7 +53,7 @@ export const SEND_FLIGHT_SAFETY_MS = 1500
 export const VOICE_FLIGHT_MS = 220
 /** The record circle's blobs are gone by 60% of it (`step1Time`). */
 export const VOICE_FLIGHT_BLOB_SHARE = 0.6
-/** `ChatActivity`'s round note flight: 300ms, then a 100ms crossfade. */
+/** The round note flight: 300ms, then a 100ms crossfade. */
 export const ROUND_FLIGHT_MS = 300
 export const ROUND_FLIGHT_FADE_MS = 100
 /** The landed button fades in under the flight's disc, which then goes. */
@@ -177,7 +176,7 @@ const bezierOr = (fn: unknown) =>
       return t
     }
 
-/** Telegram's `CubicBezierInterpolator.DEFAULT` (0.25, 0.1, 0.25, 1). */
+/** The default cubic bezier (0.25, 0.1, 0.25, 1). */
 export const easeDefault = bezierOr(Easing.bezierFn?.(0.25, 0.1, 0.25, 1))
-/** Telegram's `CubicBezierInterpolator.EASE_OUT_QUINT` (0.23, 1, 0.32, 1). */
+/** Ease-out quint (0.23, 1, 0.32, 1). */
 export const easeOutQuint = bezierOr(Easing.bezierFn?.(0.23, 1, 0.32, 1))

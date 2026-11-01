@@ -4,12 +4,12 @@ import { IconRenderer } from './Icons'
 export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>
 
 /**
- * The actions the chat can put in the long-press menu by itself, in Telegram's order:
+ * The actions the chat can put in the long-press menu by itself, in this order:
  * `reply`, `copy`, `forward`, `pin`, `edit`, `delete`.
  */
 export type MessageActionKey = 'reply' | 'copy' | 'forward' | 'pin' | 'edit' | 'select' | 'delete'
 
-/** An action shown in the message long-press context menu (Telegram style). */
+/** An action shown in the message long-press context menu. */
 export interface MessageMenuItem {
   /**
    * Identifies the action. The built-in ones carry their `MessageActionKey`, so a
@@ -58,7 +58,7 @@ export interface MessageReaction {
   userIds: (string | number)[]
 }
 
-/** A document attached to a message (`IMessage.file`), drawn as Telegram's file bubble. */
+/** A document attached to a message (`IMessage.file`), drawn as a file bubble. */
 export interface IMessageFile {
   /** Where the file is: a local `file://` path or a remote URL. */
   uri: string
@@ -71,7 +71,7 @@ export interface IMessageFile {
 }
 
 /**
- * A web page preview for the first link in a message: Telegram's webpage block under the text
+ * A web page preview for the first link in a message: a block under the text
  * (accent bar, site name, title, description, picture). Fetching it takes a request to the page,
  * so the app supplies it, on the message or through `Chat`'s `fetchLinkPreview`.
  */
@@ -91,7 +91,7 @@ export interface LinkPreview {
   imageHeight?: number
   /**
    * `'large'` draws the picture full width under the text, `'small'` as a 48dp thumbnail at the
-   * top right, as Telegram does for articles. Default: large when the picture is wider than tall.
+   * top right, as for articles. Default: large when the picture is wider than tall.
    */
   imageSize?: 'large' | 'small'
 }
@@ -103,23 +103,23 @@ export interface IMessage {
   user: User
   image?: string
   /**
-   * A tiny stand-in shown under `image` until it has loaded, as Telegram draws a photo's
-   * blurred thumbnail: a small image uri (drawn blurred), or a blurhash string when
+   * A tiny stand-in shown under `image` until it has loaded, like a blurred thumbnail:
+   * a small image uri (drawn blurred), or a blurhash string when
    * `expo-image` is installed.
    */
   imagePlaceholder?: string
   video?: string
-  /** Render `video` as a Telegram-style round video note (circular, autoplay/muted) instead of a rectangular player. */
+  /** Render `video` as a round video note (circular, autoplay/muted) instead of a rectangular player. */
   videoNote?: boolean
   audio?: string
   /**
    * The voice or round note has not been played by its recipient yet. Draws
-   * Telegram's unread dot: on an incoming note until you play it, on an
+   * an unread dot: on an incoming note until you play it, on an
    * outgoing one until the recipient does.
    */
   isMediaUnread?: boolean
   /**
-   * A view-once voice or round note (Telegram's TTL "view once"): it plays a
+   * A view-once voice or round note: it plays a
    * single time, then `mediaPlayback.onViewOnceEnd` lets the app remove it.
    */
   isViewOnce?: boolean
@@ -137,7 +137,7 @@ export interface IMessage {
   sent?: boolean
   received?: boolean
   pending?: boolean
-  /** Sending failed: the ticks give way to Telegram's red error badge. */
+  /** Sending failed: the ticks give way to a red error badge. */
   isFailed?: boolean
   /** The message was edited; its time reads "edited 14:05". Set by `useChatMessages`'s edit. */
   isEdited?: boolean
@@ -152,24 +152,24 @@ export interface IMessage {
     latitude: number
     longitude: number
   }
-  /** A document: Telegram's file bubble (icon, name, size); a tap opens it. */
+  /** A document: a file bubble (icon, name, size); a tap opens it. */
   file?: IMessageFile
   /** A preview of the first link in `text`, drawn under it. `null` hides the preview for this message. */
   linkPreview?: LinkPreview | null
   /**
    * The message's media (photo, video, file, voice or round note) is uploading or downloading.
-   * Draws Telegram's progress ring with a cancel ✕ over it; a tap calls `mediaTransfer.onCancel`.
+   * Draws a progress ring with a cancel ✕ over it; a tap calls `mediaTransfer.onCancel`.
    */
   transfer?: MediaTransfer
   /**
-   * The media is not on the device and is not fetched by itself: Telegram's download arrow,
+   * The media is not on the device and is not fetched by itself: a download arrow,
    * which calls `mediaTransfer.onDownload` when tapped. Without that handler a voice note
    * downloads itself on the tap.
    */
   isDownloadRequired?: boolean
   /**
-   * A voice note's waveform, as the server sends it with the note: levels in 0..1, or Telegram's
-   * 5-bit 0..31 values. Drawn at once, before the audio has downloaded, and resampled to the
+   * A voice note's waveform, as the server sends it with the note: levels in 0..1, or 5-bit
+   * 0..31 values. Drawn at once, before the audio has downloaded, and resampled to the
    * bubble's bar count; without it the waveform is decoded from the audio.
    */
   waveform?: number[]
@@ -179,7 +179,7 @@ export interface IMessage {
 export interface MediaTransfer {
   /** `upload` while sending, `download` while fetching. Both draw the same ring. */
   type: 'upload' | 'download'
-  /** 0..1. Leave it out while unknown: the ring then shows Telegram's 4-degree dot, still turning. */
+  /** 0..1. Leave it out while unknown: the ring then shows a 4-degree dot, still turning. */
   progress?: number
   /** The file's size in bytes: a photo or video then shows "1.2 MB / 4.5 MB" while it moves. */
   totalBytes?: number
@@ -229,12 +229,12 @@ export interface MessageLocationProps<TMessage extends IMessage> {
 }
 
 /**
- * Telegram-style hold-to-record voice messages. Requires the optional
+ * Hold-to-record voice messages. Requires the optional
  * `expo-audio` peer dependency; when it is absent the mic button is hidden.
  */
 export interface AudioRecordingProps {
   /**
-   * Show Telegram's "view once" toggle above the lock while a take is locked.
+   * Show the "view once" toggle above the lock while a take is locked.
    * A take sent with it on arrives in `onSend` with `isViewOnce: true`.
    */
   isViewOnceEnabled?: boolean
@@ -286,9 +286,8 @@ export interface VideoRecordingProps {
 }
 
 /**
- * How voice notes and round video notes play back in the chat, following
- * Telegram: one speed shared by every note, and a run of notes playing one
- * after another.
+ * How voice notes and round video notes play back in the chat: one speed
+ * shared by every note, and a run of notes playing one after another.
  */
 export interface MediaPlaybackProps {
   /**
@@ -304,18 +303,18 @@ export interface MediaPlaybackProps {
   /** Called when the user changes the playback speed on any note. */
   onPlaybackRateChange?: (rate: number) => void
   /**
-   * Round video notes loop silently in the list until tapped, Telegram's
-   * "Autoplay videos". Default false: a note holds its first frame with a play
+   * Round video notes loop silently in the list until tapped ("autoplay
+   * videos"). Default false: a note holds its first frame with a play
    * button, and grows when tapped.
    */
   isRoundVideoAutoplayEnabled?: boolean
   /**
-   * Telegram's "now playing" bar at the top of the chat while a voice or round
+   * A "now playing" bar at the top of the chat while a voice or round
    * note plays or is paused: play/pause, sender, speed and close. Default true.
    */
   isNowPlayingBarEnabled?: boolean
   /**
-   * Telegram's floating round note (`PipRoundVideoView`): a round note still
+   * The floating round note: a round note still
    * playing or paused when its row scrolls out of view keeps going in a small
    * draggable circle over the list. Default true; when false, the note stops
    * with its row instead, as a voice note does.
@@ -323,12 +322,12 @@ export interface MediaPlaybackProps {
   isFloatingRoundNoteEnabled?: boolean
   /**
    * Called when an incoming voice or round note marked `isMediaUnread` starts
-   * playing, so the app can mark it listened (Telegram's `media_unread`).
+   * playing, so the app can mark it listened.
    */
   onMediaRead?: (message: IMessage) => void
   /**
-   * The phone is held to the ear, from the app's proximity sensor. Telegram's
-   * raise to listen: playback moves to the earpiece, a note under a second in
+   * The phone is held to the ear, from the app's proximity sensor. Raise to
+   * listen: playback moves to the earpiece, a note under a second in
    * restarts, and lowering the phone pauses it.
    */
   isNearEar?: boolean

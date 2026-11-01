@@ -7,14 +7,14 @@ import { useTheme } from '../hooks/useTheme'
 import { IMessage } from '../Models'
 import { getWallpaperUri, WALLPAPER_PHASES } from './wallpaperGradient'
 
-// `MotionBackgroundDrawable.switchToNextPosition()`: 500ms on bezier(0.33, 0, 0, 1).
+// Each step to the next position takes 500ms on bezier(0.33, 0, 0, 1).
 const STEP = { duration: 500, easing: Easing.bezier(0.33, 0, 0, 1) }
 
 export interface ChatWallpaperProps {
   /** Three or four gradient colors; defaults to the theme's `wallpaper.colors`. */
   colors?: string[]
   /**
-   * How many steps the gradient has turned. Telegram turns it one step back per outgoing
+   * How many steps the gradient has turned. It turns one step back per outgoing
    * message; any change animates to the new position.
    */
   step?: number
@@ -31,11 +31,10 @@ const toPhase = (step: number) =>
   ((-step % WALLPAPER_PHASES) + WALLPAPER_PHASES) % WALLPAPER_PHASES
 
 /**
- * Telegram Android's default chat background (`MotionBackgroundDrawable`): a four-color
+ * The default chat background: a four-color
  * swirl gradient that turns one step, with a 500ms crossfade, every time you send a message.
- * Fills its parent. The doodle pattern Telegram lays over it is GPL artwork and is not
- * bundled; pass your own tile as `pattern` (drawn soft-light, black over a light gradient and
- * white over a dark one, as Telegram blends its own).
+ * Fills its parent. No doodle pattern is bundled; pass your own tile as `pattern` (drawn soft-light, black over a light gradient and
+ * white over a dark one).
  */
 export function ChatWallpaper ({
   colors: colorsProp,
@@ -91,8 +90,8 @@ export function ChatWallpaper ({
   const baseSource = useMemo(() => ({ uri: getWallpaperUri(colorsKey.split(','), layers.base) }), [colorsKey, layers.base])
   const topSource = useMemo(() => ({ uri: getWallpaperUri(colorsKey.split(','), layers.top) }), [colorsKey, layers.top])
 
-  // Telegram tints its pattern black over a light gradient and white over a dark one (average
-  // HSB brightness under 0.3, `MotionBackgroundDrawable:440`).
+  // The pattern is tinted black over a light gradient and white over a dark one (average
+  // HSB brightness under 0.3).
   const patternColor = patternColorProp ?? theme.wallpaper.patternColor ??
     (averageBrightness(colors) < 0.3 ? '#FFFFFF' : '#000000')
 

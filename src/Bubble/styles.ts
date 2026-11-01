@@ -54,14 +54,14 @@ export const createBubbleStyles = (theme: ChatTheme) => {
     gradientWrapper: {
       backgroundColor: 'transparent',
     },
-    // A round video note floats with no bubble background/chrome (Telegram-style).
+    // A round video note floats with no bubble background/chrome.
     noteWrapper: {
       backgroundColor: 'transparent',
     },
 
-    // The time on the last line of text (or of reaction pills): Telegram's time text ends
+    // The time on the last line of text (or of reaction pills): the time text ends
     // 6.5dp above the cell's bottom, 3.5 above the body's, 7dp in from its edge - the checks
-    // 7.5dp in, with the time 4 to their left (`ChatMessageCell:13826`, `:24535`, `:24860`).
+    // 7.5dp in, with the time 4 to their left.
     meta: {
       position: 'absolute',
       bottom: 3.5,
@@ -91,8 +91,8 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       color: HIDDEN_TEXT_COLOR,
     },
 
-    // Telegram's time pill over a photo: 17 tall, radius 8, 6 in from the photo's corner,
-    // `chat_mediaTimeBackground` with white text (`ChatMessageCell:24068`).
+    // The time pill over a photo: 17 tall, radius 8, 6 in from the photo's corner,
+    // `mediaTimeBackground` with white text.
     mediaMeta: {
       position: 'absolute',
       bottom: 8,
@@ -131,8 +131,7 @@ export const createBubbleStyles = (theme: ChatTheme) => {
     },
 
     // With the bubble background gone, the meta row would render white-on-light.
-    // Telegram floats it in a translucent pill (`drawTime` with
-    // `paint_chatActionBackground` for a round note): 17dp tall, 4dp corners,
+    // So it floats in a translucent pill on the service color: 17dp tall, 4dp corners,
     // 4dp either side of the text and the ticks, in the service text color.
     // Anchored to the note's bounding-box corner, which on a circle sits just
     // outside the shape, clear of the duration pill on the other side.
@@ -167,8 +166,8 @@ export const createBubbleStyles = (theme: ChatTheme) => {
     },
 
     // A voice note's time shares the duration's line at the bubble's
-    // bottom-right instead of taking a row of its own (`ChatMessageCell`
-    // draws it at `layoutHeight - 6.5dp`), so it is laid over the player.
+    // bottom-right instead of taking a row of its own (6.5dp above the bottom),
+    // so it is laid over the player.
     voiceMeta: {
       position: 'absolute',
       right: 0,
@@ -183,7 +182,7 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       paddingHorizontal: 2,
       textAlign: 'left',
     },
-    // The sticker time pill (`ChatMessageCell`, service paint for stickers): 17 tall, radius
+    // The sticker time pill, on the service color: 17 tall, radius
     // 8, 6 in, under the emoji at the end.
     emojiMeta: {
       alignSelf: 'flex-end',
@@ -220,8 +219,8 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       alignItems: 'center',
     },
 
-    // Telegram's name block: 14 Medium in the sender's color, 5 + 14 tall, the text starting
-    // right under it (`ChatMessageCell:21285`, `getNameHeight`).
+    // The name block: 14 Medium in the sender's color, 5 + 14 tall, the text starting
+    // right under it.
     usernameContainer: {
       paddingHorizontal: spacing.bubblePaddingH,
       paddingTop: 6,

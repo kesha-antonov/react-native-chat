@@ -7,7 +7,7 @@ import { ChatTheme } from '../Theme'
 import { Icon } from './Icon'
 
 /**
- * Telegram Android's "Unread Messages" bar (`ChatUnreadCell`): a full-width strip above the
+ * The "Unread Messages" bar: a full-width strip above the
  * first message you have not read, with the label in the middle and a small down arrow at the
  * right.
  */
@@ -27,7 +27,7 @@ export function UnreadSeparator () {
   )
 }
 
-// `ChatUnreadCell`: a 40dp cell; the bar is 27 tall, 7 from the top, full width; the label is 14dp
+// A 40dp cell; the bar is 27 tall, 7 from the top, full width; the label is 14dp
 // bold, centered in the cell with 32 either side; the arrow sits 10 from the right edge.
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
   cell: {

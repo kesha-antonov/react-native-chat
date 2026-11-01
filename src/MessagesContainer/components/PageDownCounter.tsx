@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
-// Telegram's `CounterView` timings: in 220ms with an overshoot, out 150ms, a change 430ms.
+// Counter timings: in 220ms with an overshoot, out 150ms, a change 430ms.
 const overshoot = (tension: number) => (t: number) => {
   'worklet'
   const x = t - 1
@@ -38,7 +38,7 @@ export interface PageDownCounterProps {
 }
 
 /**
- * The unread counter on the scroll-to-bottom button (Telegram's `CounterView`, reversed): it
+ * The unread counter on the scroll-to-bottom button: it
  * pops in and shrinks away, and a new number rolls in over the old one, downwards as it counts
  * up, with a small bump.
  */

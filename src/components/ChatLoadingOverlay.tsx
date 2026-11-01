@@ -12,9 +12,8 @@ import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { ServiceSpinner } from './ServiceSpinner'
 
 /**
- * `ChatActivity.showProgressView`: the spinner grows from 0.3 and fades in over 150ms, and
- * shrinks back out the same way (`ChatActivity.java:11957-11972`), with `ViewPropertyAnimator`'s
- * default accelerate-decelerate curve.
+ * The spinner grows from 0.3 and fades in over 150ms, and shrinks back out the same way, on an
+ * accelerate-decelerate curve.
  */
 export const LOADING_OVERLAY_MS = 150
 const FROM_SCALE = 0.3

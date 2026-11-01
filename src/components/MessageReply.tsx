@@ -42,13 +42,12 @@ export interface MessageReplyProps<TMessage extends IMessage = IMessage> {
   onPress?: (replyMessage: ReplyMessage, message: TMessage) => void
 }
 
-// `ReplyMessageLine`: the box is its accent at 10% (12% on a dark outgoing bubble).
+// The quote box is its accent at 10% (12% on a dark outgoing bubble).
 const BOX_ALPHA = 0.1
 const BOX_ALPHA_ON_WHITE_LINE = 0.12
 
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
-  // A rounded box with a 3pt accent bar down its left edge, 8 in from the bubble's edges
-  // (`ChatMessageCell:22774-22826`, `ReplyMessageLine:540`).
+  // A rounded box with a 3pt accent bar down its left edge, 8 in from the bubble's edges.
   container: {
     flexDirection: 'row',
     alignItems: 'center',

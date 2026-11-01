@@ -48,7 +48,7 @@ const expoVideo = getExpoVideo()
 const canPreview = !!(expoVideo?.VideoView && expoVideo?.useVideoPlayer)
 
 // Optional blur for the layer behind the circle; without it a plain dim stands
-// in for Telegram's blurred chat.
+// in for the blurred chat.
 const BlurView = getExpoBlur()?.BlurView ?? null
 
 // Optional SVG for the progress ring; without it the note still records.
@@ -66,28 +66,26 @@ const FINISH_TIMEOUT_MS = 5000
  * device list arrives asynchronously, so it can be empty on the first render.
  */
 const NO_CAMERA_TIMEOUT_MS = 2000
-/** Telegram drops a round take shorter than 800ms (`InstantCameraView.send`). */
+/** A round take shorter than 800ms is dropped. */
 const DEFAULT_MIN_DURATION_MS = 800
 /**
- * Telegram stops a round take 0.5s before its 60s limit (`TimerView`,
- * `t >= 59500`), into the preview rather than sending it.
+ * A round take stops 0.5s before its 60s limit, into the preview rather than sending it.
  */
 const LIMIT_LEAD_MS = 500
 /** The pause button is hidden in the last second (`millisecondsRecorded >= 59_000`). */
 const PAUSE_HIDE_LEAD_MS = 1000
 /** How long the pinch zoom takes to spring back (`finishZoom`). */
 const ZOOM_RESET_MS = 200
-/** The circle opens and closes in 180ms (`InstantCameraView.startAnimation`). */
+/** The circle opens and closes in 180ms. */
 const ROUND_ANIMATION_MS = 180
 /**
- * The blurred layer behind it fades over 520ms, EASE_OUT_QUINT
- * (`ChatActivity.animatorRoundMessageCameraVisibility`).
+ * The blurred layer behind it fades over 520ms, EASE_OUT_QUINT.
  */
 const DIM_ANIMATION_MS = 520
-/** Telegram draws that layer at alpha 232 of 255 (`roundVideoRecordBackground`). */
+/** That layer is drawn at alpha 232 of 255. */
 const BLUR_LAYER_ALPHA = 232 / 255
 /**
- * The layer is Telegram's navbar background: the chat blurred under the
+ * The layer is the navbar background: the chat blurred under the
  * navbar's own colour. A strong blur with the bar colour washed over it gets
  * closest to that.
  */
@@ -105,7 +103,7 @@ const SLIDE_OUT_INSET = 24
 /** The camera flip: rotate out to 90deg, switch, rotate back in from -90deg. */
 const FLIP_MS = 580
 
-/** `DecelerateInterpolator` and `CubicBezierInterpolator.EASE_OUT_QUINT`. */
+/** Decelerate and ease-out-quint curves. */
 const DECELERATE = Easing.out(Easing.quad)
 const EASE_OUT_QUINT = Easing.bezier(0.23, 1, 0.32, 1)
 
@@ -145,9 +143,9 @@ export interface VideoNoteSession {
 }
 
 /**
- * Telegram's round video note take, driven by the composer's own record
+ * The round video note take, driven by the composer's own record
  * button: hold to record, release to send, slide left to cancel, slide up to
- * lock (`ChatActivityEnterView` + `InstantCameraView`). The camera opens
+ * lock. The camera opens
  * under the finger and starts recording as soon as it is initialized. A
  * locked take can be paused into a looping preview, and the time limit stops
  * into that preview instead of sending.
@@ -166,10 +164,10 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   const [isLocked, setIsLocked] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [isFlashOn, setIsFlashOn] = useState(false)
-  // A note starts on the front camera, as in Telegram.
+  // A note starts on the front camera.
   const [facing, setFacing] = useState<'front' | 'back'>('front')
   const [previewUri, setPreviewUri] = useState<string | null>(null)
-  // Telegram's `voiceOnce`: off at the start of every take, read on send.
+  // View-once: off at the start of every take, read on send.
   const [isViewOnce, setIsViewOnce] = useState(false)
   const isViewOnceRef = useRef(false)
   isViewOnceRef.current = isViewOnce
@@ -274,7 +272,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     const current = phaseRef.current
 
     // Released before the camera was up: nothing was recorded, so this is a
-    // take that was too short, as Telegram treats a quick tap on the button.
+    // take that was too short, the same as a quick tap on the button.
     if (current === 'preparing') {
       close()
       if (outcome !== 'cancel')
@@ -289,7 +287,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     const isTooShort = duration < minDurationMs
 
     if (outcome === 'cancel' || isTooShort) {
-      // Cancel closes the camera, like Telegram.
+      // Cancel closes the camera.
       abortedRef.current = true
       stopCapture()
       close()
@@ -312,7 +310,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     if (phaseRef.current !== 'idle' || !isVisionCameraAvailable)
       return
 
-    // Recording takes the audio over, as in Telegram: pause whatever note is
+    // Recording takes the audio over: pause whatever note is
     // playing so it does not end up in the take.
     stopAllPlayback()
 
@@ -390,7 +388,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
       return
     }
 
-    // Telegram ticks when the round take actually starts recording.
+    // Tick when the round take actually starts recording.
     recordingHaptic()
     startedAtRef.current = Date.now()
     setElapsed(0)
@@ -453,7 +451,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     setIsFlashOn(current => !current)
   }, [])
 
-  // Telegram's `InstantCameraView.switchCamera` works mid-take, and so does
+  // Flipping the camera works mid-take, thanks to
   // vision-camera's persistent recorder (`enablePersistentRecorder` below):
   // Android records with CameraX's persistent recording, which survives the
   // camera being rebound, and iOS keeps appending the new camera's frames to
@@ -566,7 +564,7 @@ function useRoundLayout () {
     setArea({ width, height })
   }, [])
 
-  // Telegram's preview fills most of the chat.
+  // The preview fills most of the chat.
   const roundSize = Math.max(0, Math.min(area.width * 0.82, area.height - 96, MAX_ROUND_SIZE))
   const ringRadius = roundSize / 2 + RING_GAP
   return {
@@ -581,8 +579,8 @@ function useRoundLayout () {
 
 /**
  * The layer behind the circle, kept across capture and preview: fades in over
- * 520ms and out the same way when the take ends. Telegram blurs the chat
- * under it (`roundVideoRecordBackground`); with `expo-blur` so do we, and
+ * 520ms and out the same way when the take ends. The chat is blurred
+ * under it with `expo-blur`, and
  * without it a dim stands in.
  */
 function VideoNoteStage ({ isClosing, children }: { isClosing: boolean, children: React.ReactNode }) {
@@ -612,7 +610,7 @@ function VideoNoteStage ({ isClosing, children }: { isClosing: boolean, children
 }
 
 /**
- * `InstantCameraView.startAnimation`: the circle opens from 0.1 and half a
+ * The circle opens from 0.1 and half a
  * screen down over 180ms, and closes the same way - towards the left edge
  * when the take was long enough to send. A paused take's preview is already
  * open.
@@ -645,7 +643,7 @@ function useRoundAnimation ({ isClosing, isSlideOut, isOpen, area, isFlight, rou
     chrome.value = withTiming(isClosing ? 0 : 1, { duration: ROUND_ANIMATION_MS, easing: DECELERATE })
   }, [isClosing, chrome])
 
-  // `ChatActivity`'s round note flight: the camera circle moves onto the note
+  // The round note flight: the camera circle moves onto the note
   // and scales to its size over 300ms - x on the default curve, y and scale
   // eased out-quint - then crossfades out over 100ms as the note shows.
   const fly = useSharedValue(0)
@@ -828,7 +826,7 @@ function VideoNoteCaptureView ({
       transform: [{ perspective: 1000 }, { rotateY: `${v < 0.5 ? v * 180 : (v - 1) * 180}deg` }],
     }
   })
-  // Our own stand-in for Telegram's flip Lottie: the icon turns half a turn.
+  // The flip icon turns half a turn.
   const flipIconStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${flip.value * 180}deg` }],
   }))
@@ -848,8 +846,7 @@ function VideoNoteCaptureView ({
     return () => clearTimeout(timer)
   }, [hasDevice, labelNoCamera])
 
-  // Pinch to zoom while recording, springing back when the fingers lift
-  // (`InstantCameraView` touch handling + `finishZoom`).
+  // Pinch to zoom while recording, springing back when the fingers lift.
   // vision-camera 5 measures zoom against the wide-angle lens, so 1 is neutral
   // even on a multi-lens device that can zoom out below it.
   const minZoom: number = device?.minZoom ?? 1
@@ -907,7 +904,7 @@ function VideoNoteCaptureView ({
     },
   })
 
-  // Telegram's flash: a white screen in front of the front camera, the torch on
+  // The flash: a white screen in front of the front camera, the torch on
   // the back one, and only while actually recording.
   const isScreenFlash = isFlashOn && isRecording && isFront
   const isTorchOn = isFlashOn && isRecording && !isFront && !!device?.hasTorch
@@ -919,7 +916,7 @@ function VideoNoteCaptureView ({
           {SvgCircle && progress > 0 && (
             <Animated.View style={[StyleSheet.absoluteFill, ringStyle]} pointerEvents='none'>
               <Svg width={ringBox} height={ringBox} style={StyleSheet.absoluteFill} pointerEvents='none'>
-                {/* Only the elapsed arc, no track - matching Telegram. */}
+                {/* Only the elapsed arc, no track. */}
                 <SvgCircle
                   cx={ringBox / 2}
                   cy={ringBox / 2}
@@ -992,8 +989,7 @@ function VideoNoteCaptureView ({
 }
 
 /**
- * A paused take playing back in the circle: muted and looping, tap to hear it
- * (`InstantCameraView.setupVideoPlayer`). Only mounted when expo-video is
+ * A paused take playing back in the circle: muted and looping, tap to hear it. Only mounted when expo-video is
  * installed.
  */
 function VideoNotePreviewView ({ uri, isClosing, isSlideOut, isFlight }: {
@@ -1055,7 +1051,7 @@ function VideoNotePreviewView ({ uri, isClosing, isSlideOut, isFlight }: {
 }
 
 const styles = StyleSheet.create({
-  // Dim, not black: Telegram keeps the conversation visible behind the camera.
+  // Dim, not black: the conversation stays visible behind the camera.
   dim: {
     position: 'absolute',
     top: 0,

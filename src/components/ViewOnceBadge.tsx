@@ -16,8 +16,7 @@ import {
   VOICE_BUTTON_SIZE,
 } from './voiceWaveform'
 
-// Telegram scales the badge with the button's icon (`iconScale`) as playback
-// starts; here it shrinks away over 320ms.
+// The badge shrinks away over 320ms as playback starts.
 const SCALE_MS = 320
 const EASE_OUT_QUINT = Easing.bezier(0.23, 1, 0.32, 1)
 const RING_STROKE = 1.5
@@ -25,10 +24,10 @@ const RING_STROKE = 1.5
 const OUTER = VIEW_ONCE_BADGE_SIZE + 2 * VIEW_ONCE_BADGE_CUT
 
 /**
- * Telegram's view-once marker (`drawVoiceOnce`): a small disc in the button's
+ * The view-once marker: a small disc in the button's
  * color at the play button's lower right, cut out of it by a thin ring of the
  * bubble's color, holding a "1" in a ring that is solid on its left half and
- * dashed on its right (`PeriodDrawable(3)`). Drawn here, not copied.
+ * dashed on its right. Drawn here, not copied.
  * Lay it over the play button; it does not take touches.
  */
 export function ViewOnceBadge ({
@@ -132,7 +131,7 @@ const styles = StyleSheet.create({
   dashed: {
     borderStyle: 'dashed',
   },
-  // PeriodDrawable's 10-size digit, nudged a third of a point left and down.
+  // A 10-size digit, nudged a third of a point left and down.
   one: {
     fontSize: 9,
     lineHeight: 11,

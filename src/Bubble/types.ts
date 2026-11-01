@@ -126,7 +126,7 @@ export interface BubbleProps<TMessage extends IMessage> {
   messageReply?: BubbleReplyProps<TMessage>
   /** Emoji reactions configuration */
   reactions?: ReactionsProps<TMessage>
-  /** Telegram-style long-press context menu actions (array or per-message function) */
+  /** Long-press context menu actions (array or per-message function) */
   messageActions?: MessageMenuItem[] | ((message: TMessage) => MessageMenuItem[])
   /**
    * Controls whether the bubble attaches its tap / long-press gestures, which
@@ -140,7 +140,7 @@ export interface BubbleProps<TMessage extends IMessage> {
    */
   isMessageGestureEnabled?: boolean | ((message: TMessage) => boolean)
   /**
-   * Fetches Telegram's web page preview for the first link in a message that has no
+   * Fetches the web page preview for the first link in a message that has no
    * `linkPreview` of its own (e.g. from your server's Open Graph endpoint). Each URL is fetched
    * once per app run.
    */

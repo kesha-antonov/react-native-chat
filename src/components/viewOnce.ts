@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 /**
- * A view-once note plays a single time (Telegram's `isVoiceOnce`). Once it has
+ * A view-once note plays a single time. Once it has
  * started, finishing it - at its end, or by being stopped - spends it, and the
  * app is told exactly once so it can remove the message. A pause does not
  * spend it: the note is still being listened to.
@@ -42,7 +42,7 @@ export const createViewOnceTracker = (isViewOnce: boolean, onEnd: () => void): V
 /**
  * View-once state for one player. `onStart` gates playback; `onEnd` spends the
  * note. A note that started and then unmounts (scrolled away, chat closed)
- * counts as ended too, as closing Telegram's view-once player does.
+ * counts as ended too, as closing a view-once player does.
  */
 export const useViewOnce = <TMessage >(
   message: TMessage | undefined,

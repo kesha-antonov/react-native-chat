@@ -56,7 +56,7 @@ export function SystemMessage<TMessage extends IMessage> ({
   )
 }
 
-// Telegram's service messages share the date pill (`ChatActionCell`): 14 Medium white text
+// Service messages share the date pill's look: 14 Medium white text
 // on the service color, radius 11, 8 either side and 3 above and below, at most 30 narrower
 // than the list.
 const createStyles = (theme: ChatTheme) => StyleSheet.create({

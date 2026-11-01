@@ -13,14 +13,14 @@ export interface GlassSurfaceProps {
   style?: StyleProp<ViewStyle>
 }
 
-// `BlurredBackgroundColorProviderThemed`: a light surface carries a faint drop
+// A light glass surface carries a faint drop
 // (#20000000, radius 1, dy 0.333); a dark one none.
 const LIGHT_SHADOW = [{ offsetX: 0, offsetY: 0.333, blurRadius: 1, color: 'rgba(0, 0, 0, 0.125)' }]
 
 /**
- * Telegram 13's "glass" surface (`BlurredBackgroundDrawable`): a blur of what is behind it
+ * A "glass" surface: a blur of what is behind it
  * under its fill at 85%, with a thin light stroke. Without `expo-blur` the fill is drawn
- * opaque, as Telegram does with blur off. Fills its parent; give the parent the shape.
+ * opaque, as with blur turned off. Fills its parent; give the parent the shape.
  */
 export const GlassSurface = ({ color, borderColor, style }: GlassSurfaceProps) => {
   const colorScheme = useColorScheme()

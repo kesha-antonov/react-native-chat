@@ -16,7 +16,7 @@ const Path: any = svg?.Path
 const AnimatedPath: any = Path ? Animated.createAnimatedComponent(Path) : null
 
 /**
- * Telegram's tail, from `MessageDrawable.generatePath` (`MessageDrawable.java:686-740`), in a
+ * The bubble tail, drawn in a
  * box whose origin is one point inside the body's bottom corner: the body's edge runs down to
  * 11pt above its bottom, a concave arc (an ellipse 13 wide and 20 tall, 6dp `smallRad`) curls
  * out to the tip 5.4pt beyond the body, and the bottom edge runs straight back. The first
@@ -90,7 +90,7 @@ const ViewTail = ({ side, color, animatedColor }: TailProps) => {
   )
 }
 
-/** Telegram's curled tail at the bottom corner of the last bubble in a run. */
+/** The curled tail at the bottom corner of the last bubble in a run. */
 export const BubbleTail = (props: TailProps) => {
   if (Svg && Path) {
     if (props.animatedColor)
@@ -155,7 +155,7 @@ const evenStops = (count: number) => {
 }
 
 /**
- * Telegram's outgoing gradient (`MessageDrawable.java:265-276`): one vertical gradient spans
+ * The outgoing gradient: one vertical gradient spans
  * the message list, and each bubble paints the slice behind it, so a bubble shifts from
  * purple to blue as it scrolls and two bubbles read as one ramp. Each bubble holds a
  * list-tall gradient and slides it by its own position, from the cell layout and the scroll

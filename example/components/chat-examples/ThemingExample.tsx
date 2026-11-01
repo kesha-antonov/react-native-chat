@@ -55,8 +55,8 @@ const onColoredBubble = {
 const PRESETS: Array<{ id: string, label: string, theme: PartialChatTheme, darkTheme: PartialChatTheme }> = [
   {
     id: 'default',
-    label: 'Telegram',
-    // The built-in look: Telegram Android's day and night themes.
+    label: 'Default',
+    // The built-in look: the library's day and night themes.
     theme: {},
     darkTheme: {},
   },

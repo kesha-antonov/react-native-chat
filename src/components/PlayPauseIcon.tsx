@@ -11,7 +11,7 @@ const svg = getSvg()
 const Svg: any = svg ? svg.Svg ?? svg.default : null
 const AnimatedPath: any = svg?.Path ? Animated.createAnimatedComponent(svg.Path) : null
 
-/** Telegram's play <-> pause transition (`MediaActionDrawable.setIcon`). */
+/** The play <-> pause transition. */
 const MORPH_MS = 300
 
 // The transition runs on a 500-step timeline (`ms = 500 * p`): the icon turns a
@@ -29,7 +29,7 @@ type Quad = [number, number, number, number, number, number, number, number]
 const PLAY_HALF: Quad = [-6.5, -8, 0.5, -4, 7.5, 0, -6.5, 0]
 const PAUSE_HALF: Quad = [-6.5, -7.5, 6.5, -7.5, 6.5, -2.5, -6.5, -2.5]
 
-// Telegram's `CubicBezierInterpolator.EASE_BOTH`. Reanimated's Jest mock
+// An ease-in-out cubic bezier (0.42, 0, 0.58, 1). Reanimated's Jest mock
 // returns a non-function here, hence the linear stand-in.
 const bezier = Easing.bezierFn(0.42, 0, 0.58, 1)
 const easeBoth = typeof bezier === 'function'
@@ -76,7 +76,7 @@ const buildPath = (t: number, isToPause: boolean) => {
   const radians = (rotation * Math.PI) / 180
   const cos = Math.cos(radians)
   const sin = Math.sin(radians)
-  // Play sits a touch right of centre so it looks centred (Telegram's 1dp).
+  // Play sits a touch right of centre so it looks centred (1dp).
   const nudge = 1 - p
 
   let d = ''
@@ -122,7 +122,7 @@ const MorphingIcon = ({ isPlaying, color, size }: MorphProps) => {
 
   return (
     <Svg width={size} height={size} viewBox='-12 -12 24 24'>
-      {/* A round join softens the corners, as Telegram's glyph has. */}
+      {/* A round join softens the corners. */}
       <AnimatedPath
         animatedProps={animatedProps}
         fill={color}
@@ -141,8 +141,8 @@ export interface PlayPauseIconProps {
 }
 
 /**
- * The play/pause glyph of a voice note. It morphs between the two like
- * Telegram's, unless the app overrides the `play` or `pause` icon, which is
+ * The play/pause glyph of a voice note. It morphs between the two,
+ * unless the app overrides the `play` or `pause` icon, which is
  * then drawn as given.
  */
 export function PlayPauseIcon ({ isPlaying, color, size }: PlayPauseIconProps) {

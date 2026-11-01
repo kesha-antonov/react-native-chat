@@ -3,7 +3,7 @@ import { DaysPositions } from '../types'
 // Shared layout constants and math so the inline day separators (rendered inside
 // the list) and the floating sticky day header (the DayAnimated overlay) hand off
 // at exactly the same screen line. Keeping these in sync is what makes the
-// Telegram-style sticky push read as a single header with no duplicate badge and
+// sticky push read as a single header with no duplicate badge and
 // no gap at the day boundary.
 
 // Screen-Y (px from the top of the list) where a day header sticks and where the

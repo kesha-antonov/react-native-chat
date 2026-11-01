@@ -87,7 +87,7 @@ describe('ContextMenu', () => {
   })
 })
 
-describe('ContextMenu (Telegram details)', () => {
+describe('ContextMenu (details)', () => {
   it('grows the bar into the expanded panel and selects from it', async () => {
     const calls: string[] = []
     const { getByLabelText, getByText, queryByText } = await renderMenu({
@@ -153,7 +153,7 @@ describe('ReactionPicker', () => {
   })
 })
 
-describe('ContextMenu (Telegram Android)', () => {
+describe('ContextMenu (layout)', () => {
   const flatten = (style: unknown) => require('react-native').StyleSheet.flatten(style)
 
   it('opens beside the finger: its right edge 20 left of it, its top at it', async () => {
@@ -212,7 +212,7 @@ describe('ContextMenu (Telegram Android)', () => {
       node = node.parent
       style = flatten(node?.props.style)
     }
-    // Ends 8 above the bubble; Telegram's horizontal placement is kept.
+    // Ends 8 above the bubble; the horizontal placement is kept.
     expect(style.top).toBe(bubbleTop - 8 - items.length * 48)
     expect(style.left).toBe(480 - 20 - 200)
   })

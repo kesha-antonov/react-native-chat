@@ -3,17 +3,16 @@ import { ImageSourcePropType } from 'react-native'
 /**
  * Centralized design tokens for the chat UI.
  *
- * The defaults reproduce Telegram for Android (DrKLO/Telegram 13.1.1): the classic day theme
- * (pale green outgoing bubbles over the green swirl wallpaper) and the "Dark Blue" night theme
- * (a purple-to-blue outgoing gradient fixed to the screen). Values cite `ThemeColors.java`
- * (`TC:line`) and `darkblue.attheme`. Consumers can override any subset through the `theme` /
+ * The defaults are a classic day theme (pale green outgoing bubbles over the green swirl
+ * wallpaper) and a "Dark Blue" night theme (a purple-to-blue outgoing gradient fixed to the
+ * screen). Consumers can override any subset through the `theme` /
  * `darkTheme` props on `Chat`; overrides are deep-merged over these defaults, and explicit
  * per-component style props still win over the theme. Components read the resolved theme via
  * the `useTheme` hook.
  */
 
 export interface ChatThemeColors {
-  /** Accent used for the send button, record button and active states (`chat_messagePanelSend`). */
+  /** Accent used for the send button, record button and active states. */
   accent: string
   /** Chat background, shown when the wallpaper is off (`theme.wallpaper.isEnabled`). */
   background: string
@@ -40,7 +39,7 @@ export interface ChatThemeColors {
   ticksRead: string
   /** Hairlines and dividers. */
   separator: string
-  /** The floating composer pill (`chat_messagePanelBackground` at 85%). */
+  /** The floating composer pill (at 85%). */
   inputBackground: string
   /** The band behind the composer pill; transparent so the wallpaper shows through. */
   inputBarBackground: string
@@ -48,7 +47,7 @@ export interface ChatThemeColors {
   inputText: string
   /** Composer placeholder color. */
   placeholder: string
-  /** Date and service pill background (stands in for Telegram's wallpaper-shaded pill). */
+  /** Date and service pill background (stands in for a wallpaper-shaded pill). */
   dayPillBackground: string
   /** Date and service pill text. */
   dayPillText: string
@@ -65,21 +64,21 @@ export interface ChatThemeColors {
   /** Stroke around the composer pill and the glass buttons. */
   inputFieldBorder: string
 
-  /** Links in incoming messages (`chat_messageLinkIn`). */
+  /** Links in incoming messages. */
   incomingLink: string
-  /** Links in outgoing messages (`chat_messageLinkOut`). */
+  /** Links in outgoing messages. */
   outgoingLink: string
   /** The 1px drop under incoming bubbles; transparent to turn it off. */
   incomingBubbleShadow: string
   /** The 1px drop under outgoing bubbles; transparent to turn it off. */
   outgoingBubbleShadow: string
-  /** Incoming bubble tint while selected or flashed after a quote jump (`chat_inBubbleSelected`). */
+  /** Incoming bubble tint while selected or flashed after a quote jump. */
   incomingBubbleSelected: string
   /** Outgoing bubble tint while selected or flashed after a quote jump. */
   outgoingBubbleSelected: string
-  /** The band across a highlighted row (`chat_selectedBackground`). */
+  /** The band across a highlighted row. */
   selectionBackground: string
-  /** Time pill over photos (`chat_mediaTimeBackground`). */
+  /** Time pill over photos. */
   mediaTimeBackground: string
   /** Time and ticks on that pill. */
   mediaTimeText: string
@@ -113,7 +112,7 @@ export interface ChatThemeColors {
   outgoingVoiceFill: string
   /** Emoji and attach icons in the composer (`glass_defaultIcon`). */
   composerIcon: string
-  /** Composer caret (`chat_messagePanelCursor`). */
+  /** Composer caret. */
   inputCursor: string
   /** Scroll-to-bottom glass circle. */
   scrollToBottomBackground: string
@@ -123,11 +122,11 @@ export interface ChatThemeColors {
   scrollToBottomBadge: string
   /** Unread counter text. */
   scrollToBottomBadgeText: string
-  /** The "Unread Messages" bar (`chat_unreadMessagesStartBackground`). */
+  /** The "Unread Messages" bar. */
   unreadSeparatorBackground: string
-  /** Its label (`chat_unreadMessagesStartText`). */
+  /** Its label. */
   unreadSeparatorText: string
-  /** Its arrow (`chat_unreadMessagesStartArrowIcon`). */
+  /** Its arrow. */
   unreadSeparatorArrow: string
   /** A selected message's check circle in selection mode (`checkbox`). */
   selectionCheckbox: string
@@ -231,8 +230,8 @@ export interface ChatThemeComposer {
 
 export interface ChatThemeVoice {
   /**
-   * Full slide-to-cancel distance (px), capped at 35% of the window width as
-   * in Telegram. Reaching it cancels the take mid-drag; releasing past 55% of
+   * Full slide-to-cancel distance (px), capped at 35% of the window width.
+   * Reaching it cancels the take mid-drag; releasing past 55% of
    * it cancels too.
    */
   cancelThreshold: number
@@ -241,9 +240,9 @@ export interface ChatThemeVoice {
 }
 
 export interface ChatThemeBubble {
-  /** Draw Telegram's curled tail on the last bubble of each run. */
+  /** Draw a curled tail on the last bubble of each run. */
   hasTail: boolean
-  /** Put the time on the last line of text when it fits, as Telegram does; `false` gives it a row. */
+  /** Put the time on the last line of text when it fits; `false` gives it a row. */
   isTimeInline: boolean
   /**
    * Gradient stops for outgoing bubbles, top to bottom, or `null` for the solid
@@ -252,17 +251,17 @@ export interface ChatThemeBubble {
   outgoingGradient: string[] | null
   /**
    * `'screen'`: one gradient spans the message list and each bubble shows its slice, so a
-   * bubble changes color as it scrolls (Telegram). `'bubble'`: every bubble carries the whole
+   * bubble changes color as it scrolls. `'bubble'`: every bubble carries the whole
    * gradient, which costs nothing while scrolling.
    */
   outgoingGradientMode: 'screen' | 'bubble'
   /**
    * Text column inset: a bubble's text is at most `min(width, height) - maxWidthInset` wide
-   * (Telegram's `- 80dp`), and narrower by the avatar column when avatars show.
+   * (80 by default), and narrower by the avatar column when avatars show.
    */
   maxWidthInset: number
   /**
-   * Telegram's big emoji: a message of at most this many emoji (and nothing else) drops its
+   * Big emoji: a message of at most this many emoji (and nothing else) drops its
    * bubble and draws them large. `0` turns it off.
    */
   bigEmojiMaxCount: number
@@ -273,44 +272,44 @@ export interface ChatThemeBubble {
 export interface ChatThemeWallpaper {
   /** Draw the wallpaper; off, the chat shows `colors.background`. */
   isEnabled: boolean
-  /** Three or four colors for Telegram's swirl gradient (`MotionBackgroundDrawable`). */
+  /** Three or four colors for the swirl gradient. */
   colors: string[]
   /** Shift the gradient one step per outgoing message (500ms, bezier(0.33, 0, 0, 1)). */
   isAnimated: boolean
-  /** An image tiled over the gradient - Telegram's doodle pattern is not bundled (GPL). */
+  /** An image tiled over the gradient, e.g. a doodle pattern; none is bundled. */
   pattern?: ImageSourcePropType | null
-  /** Pattern opacity (Telegram's intensity: 0.34 day, 0.38 night). */
+  /** Pattern opacity (0.34 day, 0.38 night). */
   patternOpacity: number
   /** Pattern tint; defaults to black over a light wallpaper and white over a dark one. */
   patternColor?: string
 }
 
 export interface ChatThemeEmojiKeyboard {
-  /** Panel background (`chat_emojiPanelBackground`). */
+  /** Panel background. */
   background: string
-  /** Tab icons (`chat_emojiPanelIcon`). */
+  /** Tab icons. */
   icon: string
-  /** The selected tab's icon (`chat_emojiPanelIconSelected`). */
+  /** The selected tab's icon. */
   iconSelected: string
-  /** The round-rect behind the selected tab (`chat_emojiPanelIcon` at 18%). */
+  /** The round-rect behind the selected tab (the tab icon color at 18%). */
   tabIndicator: string
-  /** Section headers ("Smileys & People"; `chat_emojiPanelStickerSetName`). */
+  /** Section headers ("Smileys & People"). */
   sectionTitle: string
-  /** The search pill (`chat_emojiSearchBackground`). */
+  /** The search pill. */
   searchBackground: string
-  /** Search icon and hint (`chat_emojiSearchIcon`). */
+  /** Search icon and hint. */
   searchIcon: string
   /** Text typed into search. */
   searchText: string
-  /** The backspace key (`chat_emojiPanelBackspace`). */
+  /** The backspace key. */
   backspace: string
-  /** The hairline above the tab strip (`chat_emojiPanelShadowLine`). */
+  /** The hairline above the tab strip. */
   shadowLine: string
   /** The skin-tone popup (`dialogBackground`). */
   popupBackground: string
-  /** The press highlight in the popup and on cells (`listSelector`). */
+  /** The press highlight in the popup and on cells. */
   selector: string
-  /** Panel height before any system keyboard has been seen (Telegram's 200). */
+  /** Panel height before any system keyboard has been seen (200). */
   defaultHeight: number
   /** Target width of a grid cell; the column count is `max(1, width / cellSize)` (45). */
   cellSize: number
@@ -333,7 +332,7 @@ export interface ChatThemeContextMenu {
   destructive: string
   /** The dim over the chat while the menu is open (black at 0.2). */
   scrim: string
-  /** The circle behind a reaction you already chose (`listSelector`). */
+  /** The circle behind a reaction you already chose. */
   reactionSelected: string
 }
 
@@ -356,11 +355,11 @@ export interface ChatThemeAttachments {
   tabSelected: string
   /** Selected tab label. */
   tabSelectedText: string
-  /** Selection disc (`chat_attachCheckBoxBackground`). */
+  /** Selection disc. */
   checkbox: string
-  /** Number / check on the disc (`chat_attachCheckBoxCheck`). */
+  /** Number / check on the disc. */
   checkboxCheck: string
-  /** Empty photo cell (`chat_attachPhotoBackground`). */
+  /** Empty photo cell. */
   cellBackground: string
   /** Send button (`dialogFloatingButton`). */
   sendButton: string
@@ -379,11 +378,11 @@ export interface ChatTheme {
   voice: ChatThemeVoice
   bubble: ChatThemeBubble
   wallpaper: ChatThemeWallpaper
-  /** The built-in emoji keyboard (`EmojiView`). */
+  /** The built-in emoji keyboard. */
   emojiKeyboard: ChatThemeEmojiKeyboard
-  /** The long-press menu and reactions bar (`ActionBarPopupWindow`, `ReactionsContainerLayout`). */
+  /** The long-press menu and reactions bar. */
   contextMenu: ChatThemeContextMenu
-  /** The built-in attachment menu (`ChatAttachAlert`). */
+  /** The built-in attachment menu. */
   attachments: ChatThemeAttachments
   /** Sender name colors, picked per user id (`avatar_nameInMessage*`); empty uses `colors.senderName`. */
   nameColors: string[]
@@ -406,8 +405,8 @@ export type PartialChatTheme = {
   nameColors?: string[]
 }
 
-// `AvatarDrawable`: a vertical gradient per color, `abs(id % 7)` -> red, orange, violet, green,
-// cyan, blue, pink (`TC:161-174`).
+// Avatars: a vertical gradient per color, `abs(id % 7)` -> red, orange, violet, green,
+// cyan, blue, pink.
 const avatarPaletteDay = ['#FF845E', '#FEBB5B', '#B694F9', '#9AD164', '#5BCBE3', '#5CAFFA', '#FF8AAC']
 const avatarPaletteEndDay = ['#D45246', '#F68136', '#6C61DF', '#46BA43', '#359AD4', '#408ACF', '#D95574']
 // Dark Blue overrides only red and orange.
@@ -415,15 +414,15 @@ const avatarPaletteNight = ['#E86C6A', '#F2BC64', '#B694F9', '#9AD164', '#5BCBE3
 const avatarPaletteEndNight = ['#E14747', '#E58943', '#6C61DF', '#46BA43', '#359AD4', '#408ACF', '#D95574']
 
 const sharedRadii: ChatThemeRadii = {
-  // `SharedConfig.bubbleRadius` 17, `min(6, bubbleRadius)` near a grouped neighbour.
+  // 17, and `min(6, bubble)` near a grouped neighbour.
   bubble: 17,
   bubbleGrouped: 6,
-  // The composer island, `INPUT_BUBBLE_RADIUS = 22`.
+  // The composer island.
   inputField: 22,
   sendButton: 18,
   // Reaction pills are full capsules: 26 tall, radius 13.
   reaction: 13,
-  // `ChatActionCell` pill radius.
+  // Date / service pill radius.
   dayPill: 11,
   // Photos: `bubbleRadius - 2`, 4 next to other content.
   media: 15,
@@ -433,26 +432,26 @@ const sharedRadii: ChatThemeRadii = {
 }
 
 const sharedComposer: ChatThemeComposer = {
-  // `ChatActivityEnterView.DEFAULT_HEIGHT`; the field grows to 6 lines of 21.
+  // One line at rest; the field grows to 6 lines of 21.
   minHeight: 44,
   maxHeight: 149,
   fieldPaddingH: 12,
   insetIconSize: 24,
 }
 
-// Telegram's `distCanMove` (140dp, capped at 35% of the width) and lock
-// distance (57dp), from `ChatActivityEnterView`.
+// The slide-to-cancel distance (140dp, capped at 35% of the width) and the
+// lock distance (57dp).
 const sharedVoice: ChatThemeVoice = {
   cancelThreshold: 140,
   lockThreshold: 57,
 }
 
 const sharedSpacing: ChatThemeSpacing = {
-  // `ChatMessageCell.layoutTextXY`: 5 above the first line, 8.5 below the last, 9 either side.
+  // 5 above the first line, 8.5 below the last, 9 either side.
   bubblePaddingV: 5,
   bubblePaddingBottom: 8.5,
   bubblePaddingH: 9,
-  // 2 inside a run, 6 between runs (`ChatMessageCell` offsets and path insets).
+  // 2 inside a run, 6 between runs.
   withinGroup: 2,
   betweenGroups: 6,
   // The composer island's 7 side margins and 9 above the bottom inset.
@@ -461,17 +460,17 @@ const sharedSpacing: ChatThemeSpacing = {
 }
 
 const sharedTypography: ChatThemeTypography = {
-  // 16 body (`SharedConfig.fontSize`), line spacing 1.0: Roboto's natural ~19.
+  // 16 body, line spacing 1.0: Roboto's natural ~19.
   message: { fontSize: 16, lineHeight: 19, fontWeight: '400' },
   time: { fontSize: 12, lineHeight: 14, fontWeight: '400' },
-  // `(2 * 16 + 10) / 3` = 14, Roboto Medium - Telegram's only emphasis weight.
+  // `(2 * 16 + 10) / 3` = 14, Roboto Medium - the only emphasis weight.
   senderName: { fontSize: 14, lineHeight: 17, fontWeight: '500' },
   day: { fontSize: 14, lineHeight: 17, fontWeight: '500' },
   system: { fontSize: 14, lineHeight: 17, fontWeight: '500' },
   replyName: { fontSize: 14, lineHeight: 17, fontWeight: '500' },
   replyText: { fontSize: 14, lineHeight: 17, fontWeight: '400' },
   reactionCount: { fontSize: 12, fontWeight: '500' },
-  // The input field is 18 (`CAEV:5811`).
+  // The input field is 18.
   composer: { fontSize: 18, lineHeight: 21, fontWeight: '400' },
 }
 
@@ -480,21 +479,21 @@ const sharedBubble: Omit<ChatThemeBubble, 'outgoingGradient'> = {
   isTimeInline: true,
   outgoingGradientMode: 'screen',
   maxWidthInset: 80,
-  // `MessageObject.checkEmojiOnly` has no cap of its own; past a screenful it stops being a
+  // Past a screenful a lone-emoji message stops being a
   // sticker-like moment and is just a lot of emoji, so the default stops at 20.
   bigEmojiMaxCount: 20,
-  // `chat_msgTextPaintEmoji`, `.34/.28/.22/.19 × 120dp` (`Theme.java:8027`): plain emoji use the
-  // non-animated column (`MessageObject.getTextPaint`), 1-2 emoji at [2], 3 at [3], 4 at [4], 5+ at [5].
+  // `.34/.28/.22/.19 × 120dp`: plain emoji use the non-animated sizes, 1-2 emoji at [2],
+  // 3 at [3], 4 at [4], 5+ at [5].
   bigEmojiSizes: [40.8, 40.8, 33.6, 26.4, 22.8],
 }
 
-// `EmojiView`: 200 before any keyboard was measured, 45 per column, 32 glyphs (`EV:3013, 2819`).
+// The emoji panel: 200 before any keyboard was measured, 45 per column, 32 glyphs.
 const sharedEmojiKeyboardMetrics = { defaultHeight: 200, cellSize: 45, emojiSize: 30 }
 
 export const defaultLightTheme: ChatTheme = {
   colors: {
     accent: '#229AF0',
-    // `Theme.java` falls back to #D6E4EF when no wallpaper can be drawn.
+    // The fallback when no wallpaper can be drawn.
     background: '#D6E4EF',
     incomingBubble: '#FFFFFF',
     outgoingBubble: '#EFFFDE',
@@ -506,7 +505,7 @@ export const defaultLightTheme: ChatTheme = {
     ticksSent: '#5DB050',
     ticksRead: '#5DB050',
     separator: 'rgba(0, 0, 0, 0.08)',
-    // #FFFFFF at 216/255 (`ChatActivity:3621`).
+    // #FFFFFF at 216/255.
     inputBackground: 'rgba(255, 255, 255, 0.847)',
     inputBarBackground: 'transparent',
     inputText: '#000000',
@@ -549,7 +548,6 @@ export const defaultLightTheme: ChatTheme = {
     scrollToBottomIcon: 'rgba(27, 34, 39, 0.6)',
     scrollToBottomBadge: '#229AF0',
     scrollToBottomBadgeText: '#FFFFFF',
-    // `ThemeColors.java:470-472`, `:623-624`.
     unreadSeparatorBackground: '#FFFFFF',
     unreadSeparatorText: '#5695CC',
     unreadSeparatorArrow: '#A2B5C7',
@@ -566,7 +564,6 @@ export const defaultLightTheme: ChatTheme = {
   bubble: { ...sharedBubble, outgoingGradient: null },
   wallpaper: {
     isEnabled: true,
-    // `createDefaultWallpaper()`, `Theme.java:9622`.
     colors: ['#DBDDBB', '#6BA587', '#D5D88D', '#88B884'],
     isAnimated: true,
     pattern: null,
@@ -649,7 +646,7 @@ export const defaultDarkTheme: ChatTheme = {
     incomingBubbleShadow: 'rgba(0, 0, 0, 0.196)',
     outgoingBubbleShadow: 'transparent',
     incomingBubbleSelected: '#314A61',
-    // `chat_outBubbleGradientSelectedOverlay`, drawn over the gradient.
+    // Drawn over the gradient.
     outgoingBubbleSelected: 'rgba(255, 255, 255, 0.078)',
     selectionBackground: 'rgba(95, 157, 227, 0.165)',
     mediaTimeBackground: 'rgba(0, 0, 0, 0.4)',
@@ -674,7 +671,6 @@ export const defaultDarkTheme: ChatTheme = {
     scrollToBottomIcon: 'rgba(255, 255, 255, 0.627)',
     scrollToBottomBadge: '#51AAEE',
     scrollToBottomBadgeText: '#FFFFFF',
-    // darkblue.attheme `chat_unreadMessagesStart*`.
     unreadSeparatorBackground: '#253442',
     unreadSeparatorText: 'rgba(255, 255, 255, 0.855)',
     unreadSeparatorArrow: '#5A6B7A',
@@ -690,12 +686,11 @@ export const defaultDarkTheme: ChatTheme = {
   voice: sharedVoice,
   bubble: {
     ...sharedBubble,
-    // The home accent of Dark Blue, `Theme.java:1776`: purple at the top of the list, blue at the bottom.
+    // Purple at the top of the list, blue at the bottom.
     outgoingGradient: ['#9F3EAA', '#8146D7', '#4272DF', '#258DE5'],
   },
   wallpaper: {
     isEnabled: true,
-    // Dark Blue accent 0, `Theme.java:3930`.
     colors: ['#0E141A', '#172431', '#0F171E', '#141C2B'],
     isAnimated: true,
     pattern: null,
@@ -812,7 +807,7 @@ export function mergeTheme (base: ChatTheme, override?: PartialChatTheme): ChatT
   }
 }
 
-/** Telegram's per-user color index: `abs(id % 7)` for numeric ids, a stable hash for strings. */
+/** The per-user color index: `abs(id % 7)` for numeric ids, a stable hash for strings. */
 export function getUserColorIndex (id: string | number | undefined, count: number): number {
   if (count <= 0 || id == null)
     return 0

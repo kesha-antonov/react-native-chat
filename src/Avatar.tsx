@@ -35,8 +35,8 @@ const createStyles = (theme: ChatTheme): Styles => {
     borderRadius: size / 2,
   }
 
-  // Telegram's avatar sits 6 from the screen edge and the bubble body 11 past it, leaving
-  // the tail room to curl in between (`ChatMessageCell:13861`, `:20621`). The row is inset
+  // The avatar sits 6 from the screen edge and the bubble body 11 past it, leaving
+  // the tail room to curl in between. The row is inset
   // 8, hence the -2.
   return {
     left: StyleSheet.create({

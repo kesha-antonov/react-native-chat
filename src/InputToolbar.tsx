@@ -95,8 +95,8 @@ const stretchOut = () => {
   }
 }
 
-// The composer's controls leave as a take starts and come back after it
-// (`ChatActivityEnterView.updateRecordInterface`): over 150ms decelerate the
+// The composer's controls leave as a take starts and come back after it:
+// over 150ms decelerate the
 // emoji button scales to nothing, the attach button shrinks to half while it
 // slides 30 towards the record button, and the text slides 20 the same way,
 // all fading. Coming back, the icons grow back in over 150ms and the text
@@ -141,8 +141,8 @@ const makeReturn = (delays: { icons: number, text: number }, attachShift: number
   text: FadeIn.duration(TEXT_IN_MS).delay(delays.text),
 })
 
-// Telegram swaps the mic and the send button by scaling one to 0.1 while the other grows from
-// it, over 220ms on EASE_OUT_QUINT (`ChatActivityEnterView.animateSendButton`).
+// The mic and the send button swap by scaling one to 0.1 while the other grows from it,
+// over 220ms on EASE_OUT_QUINT.
 const EASE_OUT_QUINT = Easing.bezier(0.23, 1, 0.32, 1)
 const SWAP_MS = 220
 const swapIn = new Keyframe({
@@ -153,7 +153,7 @@ const swapOut = new Keyframe({
   0: { opacity: 1, transform: [{ scale: 1 }] },
   100: { opacity: 0, transform: [{ scale: 0.1 }], easing: EASE_OUT_QUINT },
 }).duration(SWAP_MS)
-// The emoji button's smile <-> keyboard morph (a ~300ms Lottie in Telegram, `CAEV` icon view).
+// The emoji button's smile <-> keyboard morph, a short crossfade standing in for a ~300ms Lottie.
 const EMOJI_ICON_SWAP = { duration: 200, easing: Easing.out(Easing.quad) }
 // The paperclip steps aside while there is text: half size and transparent over 100ms.
 const ATTACH_HIDE = { duration: 100 }
@@ -185,7 +185,7 @@ export interface InputToolbarProps<TMessage extends IMessage> {
   /** Style for reply preview text */
   replyPreviewTextStyle?: StyleProp<TextStyle>
   /**
-   * Telegram-style hold-to-record voice notes. On by default when the optional `expo-audio` is
+   * Hold-to-record voice notes. On by default when the optional `expo-audio` is
    * installed; `false` turns them off, an object configures them.
    */
   audioRecording?: boolean | AudioRecordingProps
@@ -270,7 +270,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     defaultHeight: theme.emojiKeyboard.defaultHeight,
   })
 
-  // The message list closes the panel on a tap, as Telegram's does.
+  // The message list closes the panel on a tap.
   const composerPanels = useComposerPanels()
   const closeEmoji = emoji.close
   useEffect(() => {
@@ -477,7 +477,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   // Recording state is owned by VoiceMessageInput (it holds the recorder) and
   // by the video session; both report up here so the bar - timer, "slide to
   // cancel", CANCEL once locked, the paused take's preview - can span the full
-  // input row, as in Telegram.
+  // input row.
   const [voiceState, setVoiceState] = useState<VoiceRecordingState>({
     active: false, locked: false, elapsed: 0, cancelArmed: false, levels: [], preview: null,
   })
@@ -490,7 +490,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const slideProgress = useSharedValue(1)
   const slideDistance = useRecordSlideDistance()
 
-  // Telegram-style swap: the record button when the composer is empty,
+  // The record button when the composer is empty,
   // otherwise the send button.
   const hasText = !!props.text?.trim()
 
@@ -518,10 +518,10 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   // camera behind a tap-to-open button.
   const isVideoHoldEnabled = showVideo && isVisionCameraNativeReady
 
-  // Telegram shares one right-slot control between voice and video: a single tap
+  // Voice and video share one right-slot control: a single tap
   // switches which one it is, a hold records. Only offered when both are
   // available - with just one, that control has nothing to toggle to. The
-  // choice is remembered, as Telegram keeps `currentModeVideo`.
+  // choice is remembered across chats.
   const [recordMode, setRecordMode] = useState<'voice' | 'video'>(getLastRecordMode)
   const canToggleMode = showVoice && showVideo
   const mode = canToggleMode ? recordMode : (isVoiceEnabled ? 'voice' : 'video')
@@ -537,7 +537,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   }, [setOverlay, videoOverlay])
   useEffect(() => () => setOverlay?.(null), [setOverlay])
 
-  // Voice and video share the recording bar, as they do in Telegram.
+  // Voice and video share the recording bar.
   const isVideoTake = videoSession.isActive
   const recording = isVideoTake
     ? {
@@ -612,7 +612,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     hasHadTakeRef.current = true
 
   // A tooltip over the record button: after a mode switch, or after a tap on a
-  // single-mode button (`ChatActivity.showVoiceHint`).
+  // single-mode button.
   const [recordHint, setRecordHint] = useState<string | null>(null)
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const showRecordHint = useCallback((hint: string) => {
@@ -735,7 +735,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     sendFragment,
   ])
 
-  // Which control the right slot holds; a change swaps them with Telegram's scale morph.
+  // Which control the right slot holds; a change swaps them with the scale morph above.
   const rightControlKind = isVideoTake || (isVideoHoldEnabled && mode === 'video' && canRecord)
     ? 'video'
     : showVoice && mode === 'voice'
@@ -746,7 +746,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
 
   // Inset camera button inside the field, for the system-camera fallback when
   // video is the only mode. With vision-camera the camera takes the record
-  // button's slot instead, as Telegram's does.
+  // button's slot instead.
   const videoFragment = useMemo(() => {
     if (!showVideo || canToggleMode || isVideoHoldEnabled)
       return null
@@ -825,105 +825,107 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
             {videoOverlay}
           </View>
         )}
-        <View style={styles.island}>
-          <GlassSurface color={theme.colors.inputBackground} borderColor={theme.colors.inputFieldBorder} style={styles.islandSurface} />
-          {replyPreviewFragment}
-          <View style={primaryStyles}>
-            {isPreviewing
-              ? (
-            // A paused take: delete on the left, the take in the middle, send
-            // in the record button's slot (`recordedAudioPanel`).
-                <View style={[styles.recordingBar, styles.previewBar, isRTL && styles.rowReverse]}>
-                  {/* The delete button pops in once the circle has shrunk away. */}
-                  <Animated.View entering={ZoomIn.delay(150).duration(150)}>
-                    <Pressable
-                      style={styles.recTrash}
-                      hitSlop={8}
-                      onPress={cancelRecording}
-                      accessibilityRole='button'
-                      accessibilityLabel='delete recording'
-                    >
-                      <Icon
-                        name='trash'
-                        color={styles.recTrashColor.color}
-                        size={20}
-                        fallback={<TrashIcon color={styles.recTrashColor.color} size={20} />}
-                      />
-                    </Pressable>
-                  </Animated.View>
-                  <Animated.View
-                    entering={voicePreview ? voiceStretchIn : videoStretchIn}
-                    exiting={stretchOut}
-                    // The pill grows out of the record button's side.
-                    style={[styles.previewContent, { transformOrigin: isRTL ? 'left center' : 'right center' }]}
-                  >
-                    {voicePreview
-                      ? (
-                        <RecordedVoicePreview
-                          key={voicePreview.uri}
-                          preview={voicePreview}
-                          onTrim={trimVoicePreview}
-                        />
-                      )
-                      : (
-                        <View style={styles.videoPreviewPill}>
-                          <Text style={styles.videoPreviewTime}>{formatElapsed(videoPreview?.durationMs ?? 0)}</Text>
-                        </View>
-                      )}
-                  </Animated.View>
-                </View>
-              )
-              : isRecordingActive || isCancelLingering
+        <View style={[styles.islandRow, isRTL && styles.rowReverse]}>
+          <View style={styles.island}>
+            <GlassSurface color={theme.colors.inputBackground} borderColor={theme.colors.inputFieldBorder} style={styles.islandSurface} />
+            {replyPreviewFragment}
+            <View style={primaryStyles}>
+              {isPreviewing
                 ? (
-                  <RecordingBar
-                    elapsed={isRecordingActive ? recording.elapsed : lastElapsedRef.current}
-                    isLocked={isRecordingActive && recording.locked}
-                    isBlinking={!isVideoTake || videoSession.isCapturing}
-                    isCancelled={!isRecordingActive}
-                    slideProgress={slideProgress}
-                    slideDistance={slideDistance}
-                    onCancel={cancelRecording}
-                  />
-                )
-                : (
-                  <Animated.View
-                    style={fieldGroupStyles}
-                    // The pill itself only fades; its parts move on their own.
-                    entering={hasHadTakeRef.current ? FadeIn.duration(CONTROLS_MS) : undefined}
-                    exiting={canTakeAway ? FadeOut.duration(CONTROLS_MS) : undefined}
-                  >
-                    {emojiFragment && (
-                      <Animated.View entering={returning?.emoji} exiting={canTakeAway ? emojiOut : undefined}>
-                        {emojiFragment}
-                      </Animated.View>
-                    )}
-                    <Animated.View
-                      style={[
-                        styles.composerSlot,
-                        !emojiFragment && (isRTL ? styles.composerSlotEndInset : styles.composerSlotStartInset),
-                        !actionsFragment && !videoFragment && (isRTL ? styles.composerSlotStartInset : styles.composerSlotEndInset),
-                      ]}
-                      entering={returning?.text}
-                      exiting={canTakeAway ? (isRTL ? textOutRTL : textOut) : undefined}
-                    >
-                      {composerFragment}
+              // A paused take: delete on the left, the take in the middle, send
+              // in the record button's slot (`recordedAudioPanel`).
+                  <View style={[styles.recordingBar, styles.previewBar, isRTL && styles.rowReverse]}>
+                    {/* The delete button pops in once the circle has shrunk away. */}
+                    <Animated.View entering={ZoomIn.delay(150).duration(150)}>
+                      <Pressable
+                        style={styles.recTrash}
+                        hitSlop={8}
+                        onPress={cancelRecording}
+                        accessibilityRole='button'
+                        accessibilityLabel='delete recording'
+                      >
+                        <Icon
+                          name='trash'
+                          color={styles.recTrashColor.color}
+                          size={20}
+                          fallback={<TrashIcon color={styles.recTrashColor.color} size={20} />}
+                        />
+                      </Pressable>
                     </Animated.View>
-                    {actionsFragment && (
-                      <Animated.View entering={returning?.attach} exiting={canTakeAway ? (isRTL ? attachOutRTL : attachOut) : undefined}>
-                        <Animated.View style={attachStyle} pointerEvents={hasText ? 'none' : 'auto'}>
-                          {actionsFragment}
+                    <Animated.View
+                      entering={voicePreview ? voiceStretchIn : videoStretchIn}
+                      exiting={stretchOut}
+                      // The pill grows out of the record button's side.
+                      style={[styles.previewContent, { transformOrigin: isRTL ? 'left center' : 'right center' }]}
+                    >
+                      {voicePreview
+                        ? (
+                          <RecordedVoicePreview
+                            key={voicePreview.uri}
+                            preview={voicePreview}
+                            onTrim={trimVoicePreview}
+                          />
+                        )
+                        : (
+                          <View style={styles.videoPreviewPill}>
+                            <Text style={styles.videoPreviewTime}>{formatElapsed(videoPreview?.durationMs ?? 0)}</Text>
+                          </View>
+                        )}
+                    </Animated.View>
+                  </View>
+                )
+                : isRecordingActive || isCancelLingering
+                  ? (
+                    <RecordingBar
+                      elapsed={isRecordingActive ? recording.elapsed : lastElapsedRef.current}
+                      isLocked={isRecordingActive && recording.locked}
+                      isBlinking={!isVideoTake || videoSession.isCapturing}
+                      isCancelled={!isRecordingActive}
+                      slideProgress={slideProgress}
+                      slideDistance={slideDistance}
+                      onCancel={cancelRecording}
+                    />
+                  )
+                  : (
+                    <Animated.View
+                      style={fieldGroupStyles}
+                      // The pill itself only fades; its parts move on their own.
+                      entering={hasHadTakeRef.current ? FadeIn.duration(CONTROLS_MS) : undefined}
+                      exiting={canTakeAway ? FadeOut.duration(CONTROLS_MS) : undefined}
+                    >
+                      {emojiFragment && (
+                        <Animated.View entering={returning?.emoji} exiting={canTakeAway ? emojiOut : undefined}>
+                          {emojiFragment}
                         </Animated.View>
+                      )}
+                      <Animated.View
+                        style={[
+                          styles.composerSlot,
+                          !emojiFragment && (isRTL ? styles.composerSlotEndInset : styles.composerSlotStartInset),
+                          !actionsFragment && !videoFragment && (isRTL ? styles.composerSlotStartInset : styles.composerSlotEndInset),
+                        ]}
+                        entering={returning?.text}
+                        exiting={canTakeAway ? (isRTL ? textOutRTL : textOut) : undefined}
+                      >
+                        {composerFragment}
                       </Animated.View>
-                    )}
-                    {videoFragment}
-                  </Animated.View>
-                )}
-            <LayoutAnimationConfig skipEntering>
-              <Animated.View key={rightControlKind} style={styles.rightSlot} entering={swapIn} exiting={swapOut}>
-                {rightControl}
-              </Animated.View>
-            </LayoutAnimationConfig>
+                      {actionsFragment && (
+                        <Animated.View entering={returning?.attach} exiting={canTakeAway ? (isRTL ? attachOutRTL : attachOut) : undefined}>
+                          <Animated.View style={attachStyle} pointerEvents={hasText ? 'none' : 'auto'}>
+                            {actionsFragment}
+                          </Animated.View>
+                        </Animated.View>
+                      )}
+                      {videoFragment}
+                    </Animated.View>
+                  )}
+            </View>
           </View>
+          <LayoutAnimationConfig skipEntering>
+            <Animated.View key={rightControlKind} style={styles.rightSlot} entering={swapIn} exiting={swapOut}>
+              {rightControl}
+            </Animated.View>
+          </LayoutAnimationConfig>
         </View>
         {accessoryFragment}
       </Animated.View>
@@ -949,8 +951,8 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     bottom: '100%',
     height: 420,
   },
-  // Telegram 13's composer is a floating island over the wallpaper: 7 from the sides, 9 above
-  // the bottom inset (`ChatInputViewsContainer`); the band around it stays transparent.
+  // The composer is a floating island over the wallpaper: 7 from the sides, 9 above
+  // the bottom inset; the band around it stays transparent.
   container: {
     backgroundColor: theme.colors.inputBarBackground,
     paddingTop: 4,
@@ -959,7 +961,14 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   },
   // The island itself: a 44 capsule (radius 22) that grows upward with the text and holds the
   // reply banner on top. It does not clip, so the record button can grow out of it.
+  // The send / record button sits outside the field's capsule, in its own 44 cell to the right.
+  islandRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
   island: {
+    flex: 1,
     minHeight: theme.composer.minHeight,
     borderRadius: theme.radii.inputField,
   },
@@ -1021,7 +1030,7 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   // Everything sits inside the island now, so the field group draws nothing of its own:
-  // [emoji 44] [text] [attach 44], with the send/mic cell after it (`CAEV:2719-2840`).
+  // [emoji 44] [text] [attach 44], with the send/mic cell after it.
   fieldGroup: {
     flex: 1,
     flexDirection: 'row',

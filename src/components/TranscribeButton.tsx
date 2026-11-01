@@ -19,20 +19,20 @@ import {
 // eased out-quint.
 const LOADING_FADE_MS = 250
 const EASE_OUT_QUINT = Easing.bezier(0.23, 1, 0.32, 1)
-// Telegram runs a stroke segment round the outline while loading; a dashed
-// outline breathing on about the same beat stands in for it.
+// While loading, a dashed outline breathes on the beat of a stroke segment
+// running round it.
 const LOADING_PULSE_MS = 650
 // The transcription opens with the bubble's height change
 // (`transitionParams.animateChangeProgress`, about 220ms) and fades in with it.
 const OPEN_MS = 220
-// Telegram fills the button with its color at 0.156 alpha (`setColor`).
+// The button is filled with its color at 0.156 alpha.
 const BACKGROUND_ALPHA = 0.156
 
 export type TranscribeTapAction = 'none' | 'request' | 'collapse' | 'expand'
 
 /**
- * What a tap on the transcribe button does. Telegram ignores taps while a
- * transcription is loading (`processClick = !loading`), asks for one when there
+ * What a tap on the transcribe button does. It ignores taps while a
+ * transcription is loading, asks for one when there
  * is none yet, and otherwise toggles the text.
  */
 export const transcribeTapAction = ({
@@ -55,7 +55,7 @@ export const transcribeTapAction = ({
  * Transcription state for one voice note. The button shows when the app can
  * transcribe (`onTranscribe`) or the message already carries a transcription.
  * Asking for one shows the loading outline until `transcription` arrives, and
- * then opens it, as Telegram does.
+ * then opens it.
  */
 export const useTranscription = <TMessage, >(
   message: TMessage | undefined,
@@ -102,7 +102,7 @@ export const useTranscription = <TMessage, >(
 }
 
 /**
- * Telegram's transcribe button, drawn here rather than its Lottie: an arrow
+ * The transcribe button, drawn as vectors: an arrow
  * into an "A" in a softly filled rounded rect. The arrow turns up once the
  * text is open, so the button reads as "collapse".
  */

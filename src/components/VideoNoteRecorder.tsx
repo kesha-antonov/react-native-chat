@@ -24,7 +24,7 @@ const svg = getSvg()
 const Svg: any = svg ? svg.Svg ?? svg.default : null
 const SvgCircle: any = svg?.Circle ?? null
 
-// The preview fills most of the screen width, as Telegram's does.
+// The preview fills most of the screen width.
 const NOTE_WIDTH_RATIO = 0.88
 const MAX_ROUND_SIZE = 360
 /** Gap between the circle's edge and the progress arc. */
@@ -37,7 +37,7 @@ const withFileScheme = (path: string) =>
   path.startsWith('file://') || path.startsWith('http') ? path : `file://${path}`
 
 /**
- * `m:ss,t` with tenths, like Telegram's recording bar - the moving decimal is
+ * `m:ss,t` with tenths, like the recording bar - the moving decimal is
  * what tells you the recorder is actually live.
  */
 const formatElapsedTenths = (ms: number) => {
@@ -58,7 +58,7 @@ export interface VideoNoteRecorderProps<TMessage extends IMessage = IMessage> {
 }
 
 /**
- * Telegram-style round video note recorder: records the front camera into a
+ * Round video note recorder: records the front camera into a
  * circular preview. When react-native-vision-camera's native module is missing
  * (a simulator, or a binary built before the dependency was added) it shows an
  * unavailable state with the shutter disabled rather than fabricating a note.
@@ -127,7 +127,7 @@ function RecorderChrome ({
 }) {
   const progress = Math.min(1, elapsed / maxMs)
   const { voice } = useTheme()
-  // Telegram's preview is most of the screen width, not a fixed 220pt puck.
+  // The preview is most of the screen width, not a fixed 220pt puck.
   const { width } = useWindowDimensions()
   const roundSize = Math.min(width * NOTE_WIDTH_RATIO, MAX_ROUND_SIZE)
   const ringRadius = roundSize / 2 + RING_GAP
@@ -219,7 +219,7 @@ function RecorderChrome ({
       <View style={[styles.ringWrapper, { width: ringBox, height: ringBox }]} pointerEvents='box-none'>
         {SvgCircle && progress > 0 && (
           <Svg width={ringBox} height={ringBox} style={StyleSheet.absoluteFill} pointerEvents='none'>
-            {/* No track behind it: Telegram draws only the elapsed arc. */}
+            {/* No track behind it: only the elapsed arc is drawn. */}
             <SvgCircle
               cx={ringBox / 2}
               cy={ringBox / 2}
@@ -242,7 +242,7 @@ function RecorderChrome ({
 
       <View style={styles.controls} pointerEvents='box-none'>
         <View style={styles.controlsRow} pointerEvents='box-none'>
-          {/* Camera flip and torch share one pill on the left, as in Telegram.
+          {/* Camera flip and torch share one pill on the left.
               With neither available the pill would be an empty white blob. */}
           <View style={(onFlipCamera || onToggleTorch) ? styles.utilityPill : undefined}>
             {onFlipCamera && (
@@ -444,7 +444,7 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   const labels = useLabels()
   const visionCamera = getVisionCamera()
   const Camera = visionCamera.Camera
-  // Telegram lets you flip to the rear camera; a note starts on the front one.
+  // The camera can flip to the rear one; a note starts on the front one.
   const [facing, setFacing] = useState<'front' | 'back'>('front')
   const device = visionCamera.useCameraDevice(facing)
   const otherDevice = visionCamera.useCameraDevice(facing === 'front' ? 'back' : 'front')
@@ -576,7 +576,7 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
     stopRecording()
   }, [stopRecording])
 
-  // Cancelling closes the recorder, as Telegram's does; it used to stay open
+  // Cancelling closes the recorder; it used to stay open
   // on a dimmed screen that then had to be dismissed by hand.
   const onShutterCancel = useCallback(() => {
     setIsLocked(false)
@@ -654,7 +654,7 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
 }
 
 const styles = StyleSheet.create({
-  // Dim, not black: Telegram keeps the conversation visible behind the recorder.
+  // Dim, not black: the conversation stays visible behind the recorder.
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',

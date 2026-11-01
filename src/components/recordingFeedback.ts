@@ -1,5 +1,5 @@
 /*
- * Small pieces of Telegram's recording behavior that live outside any one
+ * Small pieces of recording behavior that live outside any one
  * component: the haptic tick, the per-session hint counters and the
  * remembered voice / video choice.
  */
@@ -7,15 +7,15 @@
 import { impactHaptic } from './haptics'
 
 /**
- * Telegram's only recording haptic is `HapticFeedbackConstants.KEYBOARD_TAP`
+ * Recording uses a single light keyboard-tap haptic
  * (record start and stop, lock, the tap that switches voice / video, video
- * start and resume), so a single light tick covers all of them.
+ * start and resume).
  */
 export const recordingHaptic = () => impactHaptic('Light')
 
 /**
- * Telegram shows "Slide up to lock" for the first three takes and never again
- * once the user has locked one (`SharedConfig.lockRecordAudioVideoHint`). The
+ * "Slide up to lock" shows for the first three takes and never again
+ * once the user has locked one. The
  * library has no storage of its own, so the count lasts for the app session.
  */
 const LOCK_HINT_LIMIT = 3
@@ -49,8 +49,8 @@ export const retirePauseHint = () => {
 }
 
 /**
- * Resuming a trimmed take throws the cut audio away, so Telegram asks first,
- * once (`trimvoicehint`).
+ * Resuming a trimmed take throws the cut audio away, so ask first,
+ * once.
  */
 let isTrimOnResumeConfirmed = false
 
@@ -61,8 +61,8 @@ export const confirmTrimOnResume = () => {
 }
 
 /**
- * The voice / video choice of the shared record button. Telegram keeps it in
- * its preferences (`currentModeVideo`, voice by default); here it lasts for
+ * The voice / video choice of the shared record button, voice by default. It
+ * lasts for
  * the app session, so every chat opens on the mode used last.
  */
 let lastRecordMode: 'voice' | 'video' = 'voice'
@@ -74,8 +74,7 @@ export const setLastRecordMode = (mode: 'voice' | 'video') => {
 }
 
 /**
- * `m:ss,t` with tenths, Telegram's recording timer
- * (`AndroidUtilities.formatTimerDurationFast`) - the moving decimal is what
+ * `m:ss,t` with tenths, the recording timer - the moving decimal is what
  * tells you the recorder is live.
  */
 export const formatRecordingTime = (ms: number) => {

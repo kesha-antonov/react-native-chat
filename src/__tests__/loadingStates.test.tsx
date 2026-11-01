@@ -65,8 +65,8 @@ const user = { _id: 1 }
 const other = { _id: 2 }
 const base = { text: '', createdAt: new Date(2024, 0, 1, 12, 0), user: other }
 
-describe('RadialProgress geometry (MediaActionDrawable)', () => {
-  it('uses Telegram transition lengths', () => {
+describe('RadialProgress geometry', () => {
+  it('uses the loading transition lengths', () => {
     expect(transitionDuration('download', 'cancel')).toBe(400)
     expect(transitionDuration('play', 'pause')).toBe(300)
     expect(transitionDuration('cancel', 'play')).toBe(220)
@@ -138,7 +138,7 @@ describe('RadialProgress geometry (MediaActionDrawable)', () => {
   })
 })
 
-describe('Spinner (RadialProgressView)', () => {
+describe('Spinner', () => {
   it('breathes between 4 and 270 degrees in 500ms phases', () => {
     expect(spinnerFrame(0).sweep).toBeCloseTo(4)
     expect(spinnerFrame(499.99).sweep).toBeCloseTo(270, 0)

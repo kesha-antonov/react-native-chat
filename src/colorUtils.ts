@@ -1,5 +1,5 @@
 /**
- * Small color helpers for the tokens that Telegram derives from others: a reply box is its
+ * Small color helpers for the tokens derived from others: a reply box is its
  * accent line at 10%, an unchosen reaction pill its accent at 15.6%, and a glass surface with
  * blur off is its fill made opaque.
  */
@@ -49,7 +49,7 @@ export function formatColor ({ r, g, b, a }: RGBA): string {
 }
 
 /**
- * `color` with its alpha multiplied by `alpha` (Telegram's `multAlpha`). A color it cannot
+ * `color` with its alpha multiplied by `alpha`. A color it cannot
  * parse (a named or platform color) comes back unchanged.
  */
 export function multiplyAlpha (color: string, alpha: number): string {
@@ -69,7 +69,7 @@ export function withAlpha (color: string, alpha: number): string {
   return formatColor({ ...parsed, a: alpha })
 }
 
-/** Average perceived brightness (HSB "B", 0..1) of a set of colors, as Telegram picks a pattern tint. */
+/** Average perceived brightness (HSB "B", 0..1) of a set of colors, used to pick a pattern tint. */
 export function averageBrightness (colors: string[]): number {
   const parsed = colors.map(parseColor).filter((c): c is RGBA => !!c)
   if (parsed.length === 0)

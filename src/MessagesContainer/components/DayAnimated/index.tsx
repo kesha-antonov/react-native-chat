@@ -15,7 +15,7 @@ export const DayAnimated = ({ scrolledY, daysPositions, listHeight, isScrollActi
   const containerHeight = useSharedValue(0)
   const isLoadingAnim = useSharedValue(isLoading)
 
-  // Telegram only shows the floating date while scrolling; this opacity fades in on
+  // The floating date only shows while scrolling; this opacity fades in on
   // scroll start and out after the gesture fully ends.
   const ownOpacity = useScrollGatedOpacity(isScrollActive)
   const opacity = opacityProp ?? ownOpacity
@@ -31,7 +31,7 @@ export const DayAnimated = ({ scrolledY, daysPositions, listHeight, isScrollActi
 
   const [createdAt, setCreatedAt] = useState<number | undefined>()
 
-  // Telegram-style sticky day header (iOS section-header behaviour).
+  // Sticky day header (iOS section-header behaviour).
   //
   // The list is inverted: older days sit higher on screen, newer days lower.
   // `daysPositionsArray` is sorted by createdAt (newest first), so index 0 is the

@@ -11,19 +11,17 @@ import { EmojiGrid } from './EmojiGrid'
 import { EmojiCategoryKey, emojiRecents } from './emojiStore'
 
 /*
- * Telegram Android's in-app emoji keyboard (`ChatActivityEnterView` + `EmojiView`, 13.1.1):
- * the panel takes the system keyboard's place at the last keyboard height (200 before one was
- * seen, `CAEV:3565, 12712`), so switching keyboard <-> emoji keeps the composer still; from
- * nothing it slides up over 250ms on `ChatListItemAnimator.DEFAULT_INTERPOLATOR`
- * (`CAEV:12746-12765`). The panel is a sheet with 29 top corners under the floating composer
- * (`ChatInputViewsContainer.INPUT_KEYBOARD_RADIUS`).
+ * The in-app emoji keyboard: the panel takes the system keyboard's place at the last keyboard
+ * height (200 before one was seen), so switching keyboard <-> emoji keeps the composer still;
+ * from nothing it slides up over 250ms on the list's move curve. The panel is a sheet with 29
+ * top corners under the floating composer.
  */
 const SWITCH = { duration: 250, easing: Easing.bezier(0.1992, 0.0106, 0.2792, 0.9103) }
 const SHEET_RADIUS = 29
 // While searching, the search row and two rows of results stay above the system keyboard.
 const SEARCH_MODE_HEIGHT = 50 + 2 * 48 + 6
 
-// The last system keyboard height, shared by every chat (Telegram keeps it as `kbd_height`).
+// The last system keyboard height, shared by every chat.
 let lastKeyboardHeight = 0
 
 /** Props for a custom `emojiKeyboard.renderEmojiKeyboard`. */
@@ -52,7 +50,7 @@ export interface EmojiKeyboardProps {
   /** Which tabs to offer, in order. Default: all. */
   categories?: EmojiCategoryKey[]
   /**
-   * Telegram's recents (by use count, at most 48). `false` hides them. They persist through
+   * Recents (by use count, at most 48). `false` hides them. They persist through
    * `@react-native-async-storage/async-storage` when it is installed, under `storageKey`.
    */
   recents?: boolean | { isEnabled?: boolean, storageKey?: string, isPersisted?: boolean }
@@ -133,7 +131,7 @@ export function useEmojiKeyboard ({ isEnabled, focusComposer, defaultHeight }: U
     return () => show?.remove?.()
   }, [finishClose])
 
-  // Android's back closes the panel first, as Telegram's does.
+  // Android's back closes the panel first.
   useEffect(() => {
     if (!isOpen || Platform.OS !== 'android')
       return

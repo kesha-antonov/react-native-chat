@@ -93,7 +93,7 @@ const ExpoAudioPlayer = ({
   }, [player])
 
   // Recording pauses this note where it is; another note starting resets it,
-  // as Telegram's `cleanupPlayer` does.
+  // so only one note is ever current.
   const onStop = useCallback((reason: StopReason) => {
     pause()
     if (reason === 'replaced') {
@@ -121,7 +121,7 @@ const ExpoAudioPlayer = ({
     // fallback used to play over them.
     claimPlayback(playerId, onStop)
 
-    // Telegram marks an incoming note read the moment it starts playing.
+    // An incoming note counts as read the moment it starts playing.
     if (position === 'left' && isMediaUnread) {
       setIsHeard(true)
       markReadRef.current()
@@ -184,7 +184,7 @@ const ExpoAudioPlayer = ({
   })
 
   // A view-once note plays from wherever it is and burns its track away as
-  // it goes, like SeekBarWaveform's `explodeProgress`.
+  // it goes.
   const fill = viewOnce.isSpent
     ? 0
     : isViewOnce
@@ -240,7 +240,7 @@ const ExpoAudioPlayer = ({
             <Text style={styles.time}>
               {formatVoiceDuration(isCurrent ? currentTime : duration)}
             </Text>
-            {/* Telegram's unread dot, centred 6 past the time in the progress color. */}
+            {/* The unread dot, centred 6 past the time in the progress color. */}
             <View style={styles.dotSlot}>
               <UnreadDot isVisible={isUnread} color={styles.unreadDot.backgroundColor} />
             </View>

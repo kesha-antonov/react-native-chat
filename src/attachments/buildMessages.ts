@@ -82,7 +82,7 @@ export const isAttachmentTabAvailable = (tab: AttachmentTab): boolean => {
 }
 
 /**
- * The tabs to show: the requested ones (or Telegram's Gallery, File, Location) that have their
+ * The tabs to show: the requested ones (or Gallery, File, Location) that have their
  * peer. Camera gets a tab of its own only when there is no in-sheet grid to hold its tile.
  */
 export const getAttachmentTabs = (requested?: AttachmentTab[]): AttachmentTab[] => {

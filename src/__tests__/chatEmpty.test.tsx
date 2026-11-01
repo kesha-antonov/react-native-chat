@@ -18,7 +18,7 @@ const mountChat = async (ui: React.ReactElement) => {
 }
 
 describe('empty chat', () => {
-  it('shows Telegram\'s greeting card when there are no messages', async () => {
+  it('shows the greeting card when there are no messages', async () => {
     const { getByText } = await mountChat(<Chat messages={[]} onSend={() => {}} user={ME} />)
     expect(getByText('No messages here yet...')).toBeTruthy()
     expect(getByText('Send a message or tap the greeting below.')).toBeTruthy()

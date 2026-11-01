@@ -87,7 +87,7 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
       return { opacity: 1 }
 
     // Past the line the header stands in for this separator - but only while it is
-    // showing. At rest it fades out (Telegram hides the floating date when idle), and the
+    // showing. At rest it fades out (the floating date hides when idle), and the
     // separator fades back in where it really is; otherwise a list that settles with a
     // date just under the top - or that a growing row nudges past the line - shows none.
     return {
@@ -140,7 +140,7 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
   const isDayBoundary = props.currentMessage?.createdAt != null &&
     !isSameDay(props.currentMessage, props.previousMessage)
 
-  // Telegram's unread bar is a row of its own right above the first unread message, under its
+  // The unread bar is a row of its own right above the first unread message, under its
   // date if it opens a day.
   const isFirstUnread = firstUnreadMessageId != null && props.currentMessage._id === firstUnreadMessageId
   const unreadSeparator = isFirstUnread

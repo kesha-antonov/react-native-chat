@@ -116,10 +116,10 @@ export function useLinkPreview (
 
 const hostOf = (url: string) => url.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split(/[/?#]/)[0]
 
-// `ReplyMessageLine` (TYPE_LINK) fills the block with its accent at 10%.
+// The preview block is filled with its accent at 10%.
 const BOX_ALPHA = 0.1
 const BOX_ALPHA_ON_WHITE_LINE = 0.12
-/** `smallImageSide` and `smallSideMargin`, `ChatMessageCell:7828`. */
+/** The thumbnail's side and its margin. */
 const SMALL_IMAGE = 48
 const SMALL_IMAGE_MARGIN = 10
 /** Insets of the block's content: past the 3dp bar on the left, `dp(10)` on the right. */
@@ -128,7 +128,7 @@ const INSET_RIGHT = 10
 const MAX_IMAGE_HEIGHT = 320
 
 /**
- * Telegram Android's web page preview (`ChatMessageCell.drawLinkPreview`): a rounded block in
+ * The web page preview: a rounded block in
  * the sender's color at 10% with a 3dp bar down its left side, the site name in that color,
  * the title in bold, a few lines of description, and the page's picture - full width under the
  * text, or a 48dp thumbnail at the top right. A tap opens the page.
@@ -213,7 +213,7 @@ export function LinkPreviewCard<TMessage extends IMessage> ({
   )
 }
 
-// Text in `chat_replyNamePaint` / `chat_replyTextPaint`: (2 * 16 + 10) / 3 = 14dp; site name and
+// Text at the reply quote's size, (2 * 16 + 10) / 3 = 14dp; site name and
 // title bold. The block starts 6 below the text and keeps the reply quote's corner radii.
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
   card: {

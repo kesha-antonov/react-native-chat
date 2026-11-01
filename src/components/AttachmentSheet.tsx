@@ -17,7 +17,7 @@ import { IconRenderer } from '../Icons'
 import { getTrueSheet } from '../optional'
 import { ChatTheme } from '../Theme'
 
-// Optional native bottom sheet (Telegram-style: native grabber, dimmed backdrop,
+// Optional native bottom sheet (native grabber, dimmed backdrop,
 // drag-to-dismiss, detents). Resolved through the optional-peer registry (`src/optional`) so the bundle
 // works whether or not it's installed; without it we fall back to a Modal sheet.
 const TrueSheet = getTrueSheet()?.TrueSheet ?? null
@@ -213,7 +213,7 @@ const ModalAttachment = ({ visible, actions, onClose, tintColor }: AttachmentShe
 }
 
 /**
- * Telegram-style attachment sheet. Uses the native `react-native-true-sheet`
+ * Attachment sheet. Uses the native `react-native-true-sheet`
  * when installed (native grabber, dimmed backdrop, drag-to-dismiss); otherwise
  * falls back to a dependency-free Modal sheet. No Cancel button - dismiss by
  * dragging down or tapping the backdrop.

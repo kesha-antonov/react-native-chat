@@ -24,7 +24,7 @@ const FILLED = new Set<IconName>(['play', 'pause'])
 // Lucide glyph geometry (24x24 viewBox), one entry per IconName. Copied verbatim
 // from lucide.dev so the icons match the design system exactly.
 const glyphs: Record<IconName, () => React.ReactNode> = {
-  // lucide `circle-check`, for the menu's Select (Telegram's `msg_select`).
+  // lucide `circle-check`, for the menu's Select.
   checkCircle: () => [
     <Circle key='a' cx={12} cy={12} r={10} />,
     <Path key='b' d='m9 12 2 2 4-4' />,

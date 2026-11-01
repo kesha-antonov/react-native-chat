@@ -9,10 +9,9 @@ import { Icon } from './Icon'
 import { PencilIcon, ReplyArrowIcon, TrashIcon } from './MediaControls'
 
 /**
- * Telegram's order for the actions the library can offer by itself, as Telegram Android's
- * `ChatActivity.fillMessageMenu` adds them for a regular message: Reply, Copy, Forward,
- * Pin / Unpin, Edit, Delete - with Select (which Telegram Android starts from the long-press
- * itself) before Delete.
+ * The order of the actions the library can offer by itself, as a messenger lists them for a
+ * regular message: Reply, Copy, Forward, Pin / Unpin, Edit, Delete - with Select before
+ * Delete.
  */
 export const DEFAULT_MESSAGE_ACTION_KEYS: MessageActionKey[] = ['reply', 'copy', 'forward', 'pin', 'edit', 'select', 'delete']
 
@@ -30,9 +29,7 @@ const iconRenderer = (name: IconName, Fallback?: DrawnIcon): IconRenderer => {
   return render
 }
 
-// Built once: a fresh renderer per menu would be a fresh prop per row. The glyphs follow
-// Telegram Android's `menu_reply`, `msg_copy`, `msg_forward`, `msg_pin` / `msg_unpin`,
-// `msg_edit` and `msg_delete` (`ChatActivity.fillMessageMenu`).
+// Built once: a fresh renderer per menu would be a fresh prop per row.
 const ICONS: Record<MessageActionKey | 'unpin', IconRenderer> = {
   reply: iconRenderer('reply', ReplyArrowIcon),
   copy: iconRenderer('copy'),
@@ -126,8 +123,7 @@ export function buildDefaultMessageActions<TMessage extends IMessage> ({
             key,
             label: labels.actionDelete,
             icon: ICONS.delete,
-            // Not red: Telegram Android's message menu draws Delete like any other row
-            // (`ChatActivity.fillMessageMenu`).
+            // Not red: the message menu draws Delete like any other row.
             onPress: () => onDelete(message),
           })
         break

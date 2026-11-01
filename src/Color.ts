@@ -1,7 +1,7 @@
 export const Color = {
   defaultColor: '#b2b2b2',
   backgroundTransparent: 'transparent',
-  // Modern azure accent (Telegram-style), replacing the old Messenger blue.
+  // Modern azure accent, replacing the old Messenger blue.
   // Also exposed as `theme.colors.accent`; kept here for components that read
   // Color directly (reply preview, swipe-to-reply icon) so the accent stays
   // consistent across the whole UI.

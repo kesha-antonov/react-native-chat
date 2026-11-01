@@ -2,17 +2,15 @@ import { useEffect } from 'react'
 import { Easing, ReduceMotion, SharedValue, useSharedValue, withTiming } from 'react-native-reanimated'
 
 /*
- * Numbers and state for the chrome Telegram draws on a playing round note
- * (`ChatMessageCell.drawRoundProgress`): the progress ring, the paused seek
+ * Numbers and state for the chrome drawn on a playing round note: the progress ring, the paused seek
  * knob and its vignette. Reimplemented from the observed behaviour.
  */
 
-// Telegram's chat list animates a cell's size change over 250ms on this curve
-// (`ChatListItemAnimator.DEFAULT_DURATION` / `DEFAULT_INTERPOLATOR`).
+// The chat list animates a row's size change over 250ms on this curve.
 export const NOTE_GROW_MS = 250
 export const noteGrowEasing = Easing.bezier(0.199, 0.011, 0.279, 0.91)
 
-/** `chat_radialProgressPaint`: white at 0x9f alpha, 3dp, round caps. */
+/** The progress ring: white at 0x9f alpha, 3dp, round caps. */
 export const RING_OPACITY = 0x9f / 255
 export const RING_STROKE = 3
 /** The ring sits 1.5dp inside the circle's edge... */
@@ -52,7 +50,7 @@ export const ROUND_TRANSCRIBE_GROWN_OUT = 28
 export const ROUND_TRANSCRIBE_GROWN_LIFT = 28
 
 /**
- * Where `ChatMessageCell` puts the transcribe button beside a round note:
+ * Where the transcribe button beside a round note:
  * just past the right side of an incoming note, or the left side of an
  * outgoing one, level with its bottom. As the note grows to fill the screen
  * width there is no room outside it, so the button moves in onto the corner of
@@ -74,7 +72,7 @@ export const roundTranscribePosition = (isIncoming: boolean, size: number, grow:
 
 /**
  * Android's `OvershootInterpolator` at its default tension of 2, which
- * Telegram applies to the ring moving in as a note pauses.
+ * applied to the ring moving in as a note pauses.
  */
 export const overshoot = (t: number) => {
   'worklet'
@@ -122,7 +120,7 @@ export const angleToFraction = (size: number, x: number, y: number) => {
 
 /**
  * Whether a touch may start a scrub: on the knob, or anywhere in the outer
- * band, as Telegram's `checkRoundSeekbar` allows. The band reaches a little
+ * band. The band reaches a little
  * past the edge so a touch landing just outside the circle still counts.
  */
 export const isSeekTouch = (size: number, knob: { x: number, y: number }, x: number, y: number) => {
@@ -180,7 +178,7 @@ export const useRoundNoteChrome = ({
   const wrapAlpha = useSharedValue(0)
   const wrapProgress = useSharedValue(0)
 
-  // Telegram shows the ring at full strength the moment a note becomes
+  // The ring shows at full strength the moment a note becomes
   // current and only fades it once it stops, holding the last position.
   useEffect(() => {
     ringAlpha.value = isCurrent ? 1 : withTiming(0, { duration: FADE_MS })

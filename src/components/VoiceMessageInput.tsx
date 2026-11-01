@@ -76,7 +76,7 @@ export interface VoiceRecordingState {
 const LEVEL_HISTORY = 48
 /** Metering floor in dB; anything quieter reads as silence. */
 const METERING_FLOOR_DB = -60
-/** Telegram drops a voice take of 700ms or less (`MediaController`, `duration > 700`). */
+/** A voice take of 700ms or less is dropped. */
 const DEFAULT_MIN_DURATION_MS = 700
 /**
  * A clip recorded after a resume and stopped at once has nothing worth
@@ -118,7 +118,7 @@ export interface VoiceMessageInputProps {
   onStateChange?: (state: VoiceRecordingState) => void
   /**
    * Single tap on the mic. When provided, the control switches to tap-to-toggle
-   * (voice <-> video) and only records once the press is held, matching Telegram.
+   * (voice <-> video) and only records once the press is held.
    */
   onTap?: () => void
   /** Tooltip shown above the idle button, e.g. after a mode switch. */
@@ -136,10 +136,10 @@ const IDLE_STATE: VoiceRecordingState = {
 }
 
 /**
- * Telegram-style hold-to-record voice notes. Hold the mic to record, slide left
+ * Hold-to-record voice notes. Hold the mic to record, slide left
  * to cancel, slide up to lock for hands-free recording, or release to send. A
- * locked take can be paused into a preview to replay before sending, as in
- * Telegram. A take of `minDurationMs` or less is discarded.
+ * locked take can be paused into a preview to replay before sending. A
+ * take of `minDurationMs` or less is discarded.
  *
  * This component owns the recorder; the button and its gesture are
  * `RecordButton`, and the bar - timer, "slide to cancel", the preview - is
@@ -172,7 +172,7 @@ function VoiceMessageInputInner (
   // While a paused take is being joined into its preview file, which takes
   // a moment once it has been trimmed, so the bar stays put meanwhile.
   const [isJoining, setIsJoining] = useState(false)
-  // Telegram's `voiceOnce`: off at the start of a take but kept across its
+  // View-once: off at the start of a take but kept across its
   // pauses and resumes, read when it is sent.
   const [isViewOnce, setIsViewOnce] = useState(false)
   const isViewOnceRef = useRef(false)
@@ -280,7 +280,7 @@ function VoiceMessageInputInner (
         : earlier
       clipsRef.current = clips
 
-      // As in Telegram, a paused take is joined into one file right away,
+      // A paused take is joined into one file right away,
       // so the preview plays exactly what would be sent.
       const joined = await renderClips(clips)
       const durationMs = clipsDuration(clips)
@@ -321,7 +321,7 @@ function VoiceMessageInputInner (
     baseElapsedRef.current = clipsDuration(clipsRef.current)
     setPreview(null)
 
-    // Recording takes the audio over, as in Telegram: pause whatever note is
+    // Recording takes the audio over: pause whatever note is
     // playing so it does not bleed into the take.
     stopAllPlayback()
 
@@ -352,8 +352,8 @@ function VoiceMessageInputInner (
       setIsRecording(true)
 
       clearTimer()
-      // 100ms drives the tenths in the timer and the halo at roughly
-      // Telegram's rate while staying cheap.
+      // 100ms drives the tenths in the timer and the halo smoothly
+      // enough while staying cheap.
       timerRef.current = setInterval(() => {
         const ms = baseElapsedRef.current + Date.now() - startedAtRef.current
         setElapsed(ms)
@@ -467,7 +467,7 @@ function VoiceMessageInputInner (
     }
   }, [preview, onSend, config, trimmedClips])
 
-  // Telegram's resume: cut the take to the handles, then record onto its end.
+  // Resume: cut the take to the handles, then record onto its end.
   const resume = useCallback(() => {
     const go = () => {
       clipsRef.current = trimmedClips()
@@ -478,7 +478,7 @@ function VoiceMessageInputInner (
       start(true)
     }
 
-    // Telegram asks once before a trim throws audio away for good.
+    // Ask once before a trim throws audio away for good.
     if (isTrimmed() && shouldConfirmTrimOnResume() && Platform.OS !== 'web') {
       Alert.alert(labels.trimRecordingTitle, labels.trimRecordingText, [
         { text: labels.cancel, style: 'cancel' },
@@ -573,7 +573,7 @@ export interface RecordedVoicePreviewProps {
 type TrimDrag = { kind: 'start' | 'end' | 'seek', wasPlaying: boolean }
 
 /**
- * The paused take in the composer, Telegram's `RecordedAudioPlayerView`: a
+ * The paused take in the composer: a
  * play button over the take's waveform and its length. When the take can be
  * trimmed, handles at either end of the waveform set the part that is kept,
  * and a drag between them seeks. Only rendered while voice recording is
@@ -701,7 +701,7 @@ export function RecordedVoicePreview ({ preview, onTrim }: RecordedVoicePreviewP
       const { range: current, duration: seconds } = live.current
       live.current.onTrim?.(current.start, current.end)
 
-      // Telegram keeps playing from where the drag leaves off.
+      // Keep playing from where the drag leaves off.
       if (drag.kind === 'seek')
         live.current.play()
       else if (drag.kind === 'start' && drag.wasPlaying)
@@ -769,7 +769,7 @@ export function RecordedVoicePreview ({ preview, onTrim }: RecordedVoicePreviewP
 }
 
 const createPreviewStyles = (theme: ChatTheme) => StyleSheet.create({
-  // A pill in the accent color, like Telegram's recorded-audio panel.
+  // A pill in the accent color.
   row: {
     flex: 1,
     flexDirection: 'row',
@@ -811,7 +811,7 @@ const createPreviewStyles = (theme: ChatTheme) => StyleSheet.create({
   waveformTrimmable: {
     paddingHorizontal: TRIM_INSET,
   },
-  // Telegram darkens the pill outside the kept range.
+  // The pill is darkened outside the kept range.
   cut: {
     position: 'absolute',
     top: -6,

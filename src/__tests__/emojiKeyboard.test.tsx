@@ -61,7 +61,7 @@ describe('text edits', () => {
 })
 
 describe('emoji data', () => {
-  it('has Telegram\'s tabs, in Telegram\'s order', () => {
+  it('has the emoji tabs, in order', () => {
     const categories = getEmojiCategories()
     expect(categories.map(category => category.key)).toEqual([
       'smileys', 'animals', 'food', 'activities', 'travel', 'objects', 'symbols', 'flags',
@@ -91,7 +91,7 @@ describe('emoji data', () => {
     expect(withoutSkinTone('👍🏽')).toBe('👍')
   })
 
-  it('keeps Telegram\'s recents: seeded, counted, sorted only on demand, capped at 48', () => {
+  it('keeps recents: seeded, counted, sorted only on demand, capped at 48', () => {
     expect(emojiRecents.getRecents()).toEqual(DEFAULT_RECENT_EMOJIS)
     for (let i = 0; i < 100; i += 1)
       emojiRecents.add('🦄')
