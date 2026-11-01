@@ -20,7 +20,6 @@ import localizedFormat from 'dayjs/plugin/localizedFormat'
 import '../dayjsLocales'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
-import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { ChatEmpty } from '../components/ChatEmpty'
 import { ChatOverlayProvider, ChatOverlaySlot } from '../components/ChatOverlay'
@@ -61,6 +60,7 @@ import stylesCommon from '../styles'
 import { ChatTheme, resolveTheme } from '../Theme'
 import { renderComponentOrElement } from '../utils'
 import { ChatKeyboardAvoidingView } from './ChatKeyboardAvoidingView'
+import { ChatSafeAreaProvider } from './ChatSafeAreaProvider'
 import styles from './styles'
 import { ChatProps } from './types'
 
@@ -142,12 +142,6 @@ function ChatSelectionBar<TMessage extends IMessage> ({
     return <>{renderSelectionBar({ ...props, messages: ordered })}</>
 
   return <SelectionBar {...props} />
-}
-
-/** Seed for Chat's own SafeAreaProvider - real frame, but no insets claimed yet. */
-const INITIAL_SAFE_AREA_METRICS = {
-  frame: initialWindowMetrics?.frame ?? { x: 0, y: 0, width: 0, height: 0 },
-  insets: { top: 0, left: 0, right: 0, bottom: 0 },
 }
 
 function Chat<TMessage extends IMessage = IMessage> (
@@ -1011,18 +1005,12 @@ function ChatWrapper<TMessage extends IMessage = IMessage> (props: ChatProps<TMe
   const content = (
     // Chat measures its *own* insets rather than reusing the app's. Reusing them
     // double-pads: a navigator has usually already inset the screen, so the
-    // window's bottom inset is consumed before the chat even renders.
-    //
-    // The provider is seeded with zero insets on purpose. Without `initialMetrics`
-    // react-native-safe-area-context seeds a nested provider from its parent, so
-    // the first frame used the window's insets and the second the measured ones -
-    // bottom 34 -> 0 on an iPhone, which is the jump you see on every mount.
-    // Seeding zero matches what a chat inside a navigator settles on, so nothing
-    // moves; a genuinely full-screen chat grows into its inset on the next frame
-    // instead of collapsing out of one.
-    <SafeAreaProvider initialMetrics={INITIAL_SAFE_AREA_METRICS}>
+    // window's bottom inset is consumed before the chat even renders. The provider
+    // is seeded from where the chat sits in the window, so the first frame already
+    // has the insets the native measurement will report.
+    <ChatSafeAreaProvider>
       {withKeyboardProvider}
-    </SafeAreaProvider>
+    </ChatSafeAreaProvider>
   )
 
   // Apps are meant to mount `GestureHandlerRootView` once, at the root, same as
