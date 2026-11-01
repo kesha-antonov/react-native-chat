@@ -274,9 +274,9 @@ function Chat<TMessage extends IMessage = IMessage> (
   )
 
   const messagesContainerRef = useMemo(
-    () => props.messagesContainerRef || createRef<AnimatedList<TMessage>>(),
+    () => props.messagesContainerRef || createRef<AnimatedList>(),
     [props.messagesContainerRef]
-  ) as RefObject<AnimatedList<TMessage>>
+  ) as RefObject<AnimatedList>
 
   const textInputRef = useMemo(
     () => props.textInputRef || createRef<React.ComponentRef<typeof TextInput>>(),
@@ -336,20 +336,10 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   const scrollToBottom = useCallback(
     (isAnimated = true) => {
-      if (!messagesContainerRef?.current)
-        return
-
-      if (isInverted) {
-        messagesContainerRef.current.scrollToOffset({
-          offset: 0,
-          animated: isAnimated,
-        })
-        return
-      }
-
-      messagesContainerRef.current.scrollToEnd({ animated: isAnimated })
+      // The list renders oldest first, so the newest message is at its end.
+      messagesContainerRef?.current?.scrollToEnd({ animated: isAnimated })
     },
-    [isInverted, messagesContainerRef]
+    [messagesContainerRef]
   )
 
   const scrollAfterSendTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -413,15 +403,11 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   // The now-playing bar scrolls to the playing message.
   const scrollToMessage = useCallback((messageId: string | number) => {
-    const index = messagesRef.current.findIndex(message => message._id === messageId)
-    if (index < 0)
+    if (!messagesRef.current.some(message => message._id === messageId))
       return
 
-    try {
-      messagesContainerRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 })
-    } catch {
-      // Not laid out yet (virtualized away); nothing to jump to.
-    }
+    // By key: the list reaches a row it has not measured yet, far up the history, too.
+    messagesContainerRef.current?.scrollToKey({ key: String(messageId), animated: true, viewPosition: 0.5 })
   }, [messagesContainerRef])
 
   // Tapping a quote jumps to the message it quotes and flashes it. The scroll-to-bottom button

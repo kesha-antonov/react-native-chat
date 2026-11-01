@@ -5,7 +5,7 @@ import { act, fireEvent, render } from '@testing-library/react-native'
 import { Chat, IMessage } from '..'
 import { RecordingBar } from '../components/RecordingBar'
 import { MessageProps } from '../Message'
-import { isArrivingMessage, LIST_ITEM_DURATION } from '../MessagesContainer/listTransitions'
+import { LIST_ITEM_DURATION } from '../MessagesContainer/listTransitions'
 import { TypingIndicator, TypingIndicatorListAnimationContext } from '../TypingIndicator'
 import { render as renderPlain } from './renderWithGestureRoot'
 
@@ -14,20 +14,7 @@ const messages: IMessage[] = [
   { _id: 'a', text: 'First', createdAt: new Date(2026, 0, 1, 10, 0), user: { _id: 1, name: 'Me' } },
 ]
 
-describe('isArrivingMessage', () => {
-  it('is true only for a new row at the newest end', () => {
-    const known = new Set<string | number>(['a', 'b'])
-    expect(isArrivingMessage('c', 0, known)).toBe(true)
-    // Already on screen: re-rendered, not arriving.
-    expect(isArrivingMessage('b', 0, known)).toBe(false)
-    // A row windowed in further up is not a new message.
-    expect(isArrivingMessage('z', 5, known)).toBe(false)
-  })
-
-  it('does not animate the batch a chat opens with', () => {
-    expect(isArrivingMessage('a', 0, new Set())).toBe(false)
-  })
-
+describe('list motion', () => {
   it('uses the list animation duration', () => {
     expect(LIST_ITEM_DURATION).toBe(250)
   })

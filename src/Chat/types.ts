@@ -48,7 +48,7 @@ import { TimeProps } from '../Time'
 export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<MessagesContainerProps<TMessage>, 'messageReplyContainerStyle'>>,
   Pick<BubbleProps<TMessage>, 'fetchLinkPreview' | 'renderLinkPreview' | 'onPressLinkPreview'> {
   /* Messages container ref */
-  messagesContainerRef?: RefObject<AnimatedList<TMessage>>
+  messagesContainerRef?: RefObject<AnimatedList>
   /* text input ref */
   textInputRef?: RefObject<React.ComponentRef<typeof TextInput> | null>
   /**

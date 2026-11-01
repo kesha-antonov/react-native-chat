@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import Animated, {
   interpolateColor,
@@ -33,8 +33,12 @@ const TAIL_SHADOW_PATH = 'M0 1 L1 1 A6.5 10 0 0 0 6.708 10.925 L6.4 12 L0 12 Z'
 export interface BubbleGradientStore {
   scrolledY: SharedValue<number>
   listHeight: SharedValue<number>
-  /** Each row's cell in list content coordinates, keyed by message id. */
-  cellLayouts: SharedValue<Record<string, { y: number, height: number }>>
+  /**
+   * One row's place in list content coordinates, by message id; undefined until the list has
+   * placed it. One shared value per message, so a row that moves re-runs its own bubble's
+   * worklets and no other's.
+   */
+  cellLayout: (messageId: string) => SharedValue<{ y: number, height: number } | undefined>
   isInverted: boolean
 }
 
@@ -162,13 +166,13 @@ const evenStops = (count: number) => {
  * offset - no measuring on the UI thread.
  */
 const ScreenGradientBackground = ({ stops, messageId, bottomGap, cornerStyle, tailSide, store }: GradientBackgroundProps & { store: BubbleGradientStore }) => {
-  const { scrolledY, listHeight, cellLayouts, isInverted } = store
-  const id = String(messageId)
+  const { scrolledY, listHeight, isInverted } = store
+  const cellLayout = useMemo(() => store.cellLayout(String(messageId)), [store, messageId])
   const positions = evenStops(stops.length)
 
   // The bubble's bottom edge, in points from the top of the list.
   const bubbleBottom = useDerivedValue(() => {
-    const layout = cellLayouts.value[id]
+    const layout = cellLayout.value
     const height = listHeight.value
     if (!layout || height <= 0)
       return height > 0 ? height / 2 : 0

@@ -46,7 +46,8 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
   const {
     scrolledY,
     daysPositions,
-    listHeight,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    listHeight: _listHeight,
     floatingRenderedDate,
     floatingDayOpacity,
     ...rest
@@ -78,7 +79,7 @@ const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage
     // Infinity (treated as below the pin, i.e. visible) until the day is measured.
     const day = dayPosition.value
     const separatorScreenTop = day
-      ? dayPositionScreenTop(listHeight.value + scrolledY.value, day)
+      ? dayPositionScreenTop(scrolledY.value, day)
       : Infinity
 
     const belowHandoff = separatorScreenTop > DAY_HANDOFF_OFFSET

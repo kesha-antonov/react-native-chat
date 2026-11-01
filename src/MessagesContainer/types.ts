@@ -1,11 +1,7 @@
 import { RefObject } from 'react'
-import {
-  FlatListProps,
-  StyleProp,
-  ViewStyle,
-} from 'react-native'
-import { FlatList } from 'react-native-gesture-handler'
-import Animated, { ScrollEvent } from 'react-native-reanimated'
+import { StyleProp, ViewStyle } from 'react-native'
+import type { LegendListRef } from '@legendapp/list/react-native'
+import type { AnimatedLegendListProps } from '@legendapp/list/reanimated'
 
 import { DayProps } from '../Day'
 import { LoadEarlierMessagesProps } from '../LoadEarlierMessages'
@@ -15,31 +11,16 @@ import { ReactionsProps } from '../Reactions'
 import { ReplyProps } from '../Reply'
 import { TypingIndicatorProps } from '../TypingIndicator/types'
 
-/** Animated FlatList created from react-native-gesture-handler's FlatList */
-const RNGHAnimatedFlatList = Animated.createAnimatedComponent(FlatList)
+/** Extra props for the message list, a Legend List (`@legendapp/list`). */
+export type AnimatedListProps<TMessage extends IMessage = IMessage> = Partial<AnimatedLegendListProps<TMessage>>
 
-/**
- * Typed AnimatedFlatList component that preserves generic type parameter.
- * Uses react-native-gesture-handler's FlatList which respects keyboardShouldPersistTaps.
- */
-export const AnimatedFlatList = RNGHAnimatedFlatList as <TMessage>(
-  props: FlatListProps<TMessage> & {
-    ref?: RefObject<FlatList<TMessage>>
-  }
-) => React.ReactElement
-
-export type AnimatedListProps<TMessage extends IMessage = IMessage> = Partial<
-  Omit<FlatListProps<TMessage>, 'onScroll'> & {
-    onScroll?: (event: ScrollEvent) => void
-  }
->
-
-export type AnimatedList<TMessage> = FlatList<TMessage>
+/** The message list's ref: Legend List's (`scrollToEnd`, `scrollToKey`, `scrollToOffset`, `getState`...). */
+export type AnimatedList = LegendListRef
 
 export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
   extends Omit<TypingIndicatorProps, 'style'> {
-  /** Ref for the FlatList message container */
-  forwardRef?: RefObject<AnimatedList<TMessage>>
+  /** Ref for the message list (a Legend List) */
+  forwardRef?: RefObject<AnimatedList | null>
   /** Messages to display */
   messages?: TMessage[]
   /** Format to use for rendering dates; default is 'll' */
@@ -48,7 +29,7 @@ export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
   dateFormatCalendar?: object
   /** User sending the messages: { _id, name, avatar } */
   user?: User
-  /** Additional props for FlatList */
+  /** Additional props for the message list, a [Legend List](https://legendapp.com/open-source/list/) */
   listProps?: AnimatedListProps<TMessage>
   /** Reverses display order of messages; default is true */
   isInverted?: boolean

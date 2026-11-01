@@ -1,13 +1,12 @@
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
-  FlatListProps,
   GestureResponderEvent,
-  LayoutChangeEvent,
-  ListRenderItemInfo,
-  Platform } from 'react-native'
+  LayoutChangeEvent } from 'react-native'
+import type { ViewabilityConfigCallbackPair, ViewToken } from '@legendapp/list/react-native'
+import { AnimatedLegendList } from '@legendapp/list/reanimated'
 import { Pressable } from 'react-native-gesture-handler'
-import Animated, { Easing, runOnJS, ScrollEvent, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { Easing, makeMutable, runOnJS, SharedValue, useAnimatedReaction, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated'
 import { BubbleGradientContext, BubbleGradientStore } from '../components/BubbleBackground'
 import { useComposerPanels } from '../components/composerPanels'
 import { GlassSurface } from '../components/GlassSurface'
@@ -24,20 +23,20 @@ import { DayAnimated } from './components/DayAnimated'
 import { useScrollGatedOpacity } from './components/DayAnimated/useScrollGatedOpacity'
 import { MessageRow } from './components/Item'
 import { PageDownCounter } from './components/PageDownCounter'
-import { isArrivingMessage, listCellTransition, newestCellEntering } from './listTransitions'
+import { listCellTransition } from './listTransitions'
 import { PageDownReturnContext } from './pageDownReturn'
 import { MessageRowConfigContext, useStableRowConfig } from './rowConfig'
 import { MessageRowStore, MessageRowStoreContext, sameOrder } from './rowStore'
 import styles, { createThemedStyles } from './styles'
-import { MessagesContainerProps, DaysPositions, AnimatedFlatList } from './types'
+import { MessagesContainerProps, DaysPositions } from './types'
 
-// React Native 0.88's strict TypeScript API no longer exports `ViewToken`,
-// `ViewabilityConfigCallbackPair` or `CellRendererProps`, and older versions do
-// not have its `ListViewToken` replacement - so derive them from `FlatListProps`,
-// which both generations of the typings ship.
-type ViewabilityConfigCallbackPair = NonNullable<FlatListProps<unknown>['viewabilityConfigCallbackPairs']>[number]
-type ViewToken = Parameters<ViewabilityConfigCallbackPair['onViewableItemsChanged']>[0]['viewableItems'][number]
-type CellRendererProps = React.ComponentProps<NonNullable<FlatListProps<unknown>['CellRendererComponent']>>
+
+/** The parts of Legend List's state the container reads. */
+interface ListState {
+  positionByKey: (key: string) => number | undefined
+  listenToPosition: (key: string, callback: (position: number) => void) => () => void
+  sizes: Map<string, number>
+}
 
 
 export * from './types'
@@ -100,23 +99,10 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const isTopAligned = isAlignedTop === 'auto'
     ? !isKeyboardVisible
     : isAlignedTop === true
+  // The list renders oldest first, top to bottom, and a conversation shorter than the list sits
+  // at its bottom - unless `isAlignedTop` says otherwise.
+  const alignItemsAtEnd = !isTopAligned
 
-  // Alignment lives on the list's content container rather than on the wrapper: with
-  // `flexGrow` the content is at least a viewport tall, so `justifyContent` places a
-  // short conversation and is a no-op once the messages outgrow the list - which keeps
-  // long chats scrollable instead of letting the list size itself to its content.
-  // An inverted list is flipped, so its content-container start is the visual bottom.
-  const alignmentStyle = useMemo(() => {
-    if (!isAlignedTop)
-      return undefined
-
-    return {
-      flexGrow: 1,
-      justifyContent: isTopAligned === isInverted ? 'flex-end' : 'flex-start',
-    } as const
-  }, [isAlignedTop, isTopAligned, isInverted])
-
-  const listPropsOnScrollProp = listProps?.onScroll
 
   // Which rows are on screen, for the floating round note. The list reads viewability
   // callbacks once, at mount, and FlatList refuses
@@ -179,19 +165,57 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const daysPositions = useSharedValue<DaysPositions>({})
   const listHeight = useSharedValue(0)
   const contentHeight = useSharedValue(0)
-  const scrolledY = useSharedValue(0)
+  // The list's scroll offset, from the top, kept on the UI thread by the list itself.
+  const scrollOffset = useSharedValue(0)
+  const sharedValues = useMemo(() => ({ scrollOffset }), [scrollOffset])
+  // Rows' positions count from the first row, below the list's header ("Load earlier"); the
+  // scroll offset counts from the very top. The day header, the inline separators and the
+  // gradient bubbles read the offset in the rows' terms.
+  const headerSize = useSharedValue(0)
+  const scrolledY = useDerivedValue(() => scrollOffset.value - headerSize.value)
   // The date (createdAt ms) the floating day header is currently rendering. Used to
   // keep the inline separator visible until the header's text has caught up, hiding
   // the 1-frame JS-thread lag of the header on each day change.
   const floatingRenderedDate = useSharedValue<number | undefined>(undefined)
-  // Every row's cell, for the bubbles that show their slice of a screen-fixed gradient.
-  const cellLayouts = useSharedValue<Record<string, { y: number, height: number }>>({})
+  // Where each screen-gradient bubble's row sits: one shared value per message, created when its
+  // bubble asks, and fed by the list's own position listener for that row - so a row moving
+  // re-runs its bubble's worklets and no other's.
+  const cellValuesRef = useRef(new Map<string, { value: SharedValue<{ y: number, height: number } | undefined>, unsubscribe?: () => void }>())
+  const listState = useCallback((): ListState | undefined =>
+    (forwardRef?.current as unknown as { getState?: () => ListState } | null)?.getState?.()
+  , [forwardRef])
+  const subscribeCell = useCallback((id: string) => {
+    const entry = cellValuesRef.current.get(id)
+    const state = listState()
+    if (!entry || entry.unsubscribe || !state)
+      return
+    const update = (y: number) => {
+      entry.value.value = { y, height: state.sizes.get(id) ?? 0 }
+    }
+    const y = state.positionByKey(id)
+    if (y != null)
+      update(y)
+    entry.unsubscribe = state.listenToPosition(id, update)
+  }, [listState])
+  const cellLayout = useCallback((id: string) => {
+    let entry = cellValuesRef.current.get(id)
+    if (!entry) {
+      entry = { value: makeMutable<{ y: number, height: number } | undefined>(undefined) }
+      cellValuesRef.current.set(id, entry)
+      subscribeCell(id)
+    }
+    return entry.value
+  }, [subscribeCell])
+  useEffect(() => () => {
+    cellValuesRef.current.forEach(entry => entry.unsubscribe?.())
+    cellValuesRef.current.clear()
+  }, [])
   const isScreenGradient = !!theme.bubble.outgoingGradient && theme.bubble.outgoingGradient.length > 1 &&
     theme.bubble.outgoingGradientMode === 'screen'
   const gradientStore = useMemo((): BubbleGradientStore | null => isScreenGradient
-    ? { scrolledY, listHeight, cellLayouts, isInverted }
+    ? { scrolledY, listHeight, cellLayout, isInverted: false }
     : null
-  , [isScreenGradient, scrolledY, listHeight, cellLayouts, isInverted])
+  , [isScreenGradient, scrolledY, listHeight, cellLayout])
   // true while the user is actively scrolling (finger down dragging or momentum
   // running). Drives the floating day header visibility so it stays opaque for the
   // whole gesture and only fades once scrolling fully stops.
@@ -213,12 +237,11 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // Only a custom footer is handed the props, so only then does it depend on them - the
   // typing indicator would otherwise be rebuilt, and the list with it, on every render.
   const footerProps = renderFooterProp ? props : undefined
-  const ListFooterComponent = useMemo(() => {
-    if (renderFooterProp)
-      return renderFooterProp(footerProps!)
-
-    return renderTypingIndicator()
-  }, [renderFooterProp, renderTypingIndicator, footerProps])
+  const ListFooterComponent = useMemo(() => (
+    <>
+      {renderFooterProp ? renderFooterProp(footerProps!) : renderTypingIndicator()}
+    </>
+  ), [renderFooterProp, renderTypingIndicator, footerProps])
 
   const renderLoadEarlier = useCallback(() => {
     if (loadEarlierMessagesProps?.isAvailable) {
@@ -253,11 +276,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       })
     })
 
-  const scrollTo = useCallback((options: { animated?: boolean, offset: number }) => {
-    if (options)
-      forwardRef?.current?.scrollToOffset(options)
-  }, [forwardRef])
-
   const pageDownReturn = useContext(PageDownReturnContext)
   const returnToMessageId = pageDownReturn?.messageId ?? null
   // A jump to a quoted message brings the button up, whatever the scroll did.
@@ -275,52 +293,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     isShownByScroll.value = false
     scrollTravel.value = 0
 
-    if (isInverted)
-      scrollTo({ offset: 0, animated })
-    else if (forwardRef?.current)
-      forwardRef.current.scrollToEnd({ animated })
-  }, [forwardRef, isInverted, scrollTo, isScrollingDown, isScrollToBottomShown, isShownByScroll, scrollTravel])
+    forwardRef?.current?.scrollToEnd({ animated })
+  }, [forwardRef, isScrollingDown, isScrollToBottomShown, isShownByScroll, scrollTravel])
 
-  // The only part of scroll handling that genuinely needs the JS thread: handing the
-  // event to a consumer's own `onScroll`. Everything else is shared-value arithmetic
-  // and stays in the worklet below.
-  const notifyConsumerScroll = useCallback((event: ScrollEvent) => {
-    listPropsOnScrollProp?.(event)
-  }, [listPropsOnScrollProp])
-
-  const hasConsumerOnScroll = !!listPropsOnScrollProp
-
-  // Auto-scroll to the newest message when it arrives in a non-inverted list.
-  // Inverted lists keep the newest message visible on their own, but a
-  // non-inverted list appends new messages off-screen at the end (#2612).
-  // Only scroll when the user is already near the bottom so we don't yank
-  // them away while they are reading earlier messages.
-  const latestMessageId = !isInverted && messages.length > 0
-    ? messages[messages.length - 1]._id
-    : undefined
-  const previousLatestMessageId = useRef(latestMessageId)
-  useEffect(() => {
-    if (isInverted) {
-      previousLatestMessageId.current = latestMessageId
-      return
-    }
-
-    if (
-      latestMessageId != null &&
-      latestMessageId !== previousLatestMessageId.current &&
-      // skip the very first render; initial positioning is handled on layout
-      previousLatestMessageId.current !== undefined
-    ) {
-      const isNearBottom =
-        contentHeight.value === 0 ||
-        lastScrolledY.value + listHeight.value >= contentHeight.value - scrollToBottomOffset!
-
-      if (isNearBottom)
-        doScrollToBottom(true)
-    }
-
-    previousLatestMessageId.current = latestMessageId
-  }, [latestMessageId, isInverted, doScrollToBottom, contentHeight, lastScrolledY, listHeight, scrollToBottomOffset])
 
   // The messages by id, for the rows to subscribe to (see rowStore). Synced while rendering so
   // rows mounting now read the new messages; rows already on screen hear about it on commit.
@@ -335,9 +310,20 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const listDataRef = useRef<TMessage[] | undefined>(undefined)
   const listData = sameOrder(listDataRef.current, messages)
   listDataRef.current = listData
-  // For the callbacks that need the messages but should not change with them.
-  const messagesRef = useRef(messages)
-  messagesRef.current = messages
+  // The list renders oldest first; `messages` comes newest first unless `isInverted` is off.
+  const orderedData = useMemo(() => isInverted ? [...listData].reverse() : listData, [listData, isInverted])
+
+  // A chat with unread messages opens on its "Unread Messages" bar, at the top of the screen,
+  // and one without them at the newest message. Decided once, when the list first renders.
+  const [initialScroll] = useState(() => {
+    const index = firstUnreadMessageId != null
+      ? orderedData.findIndex(message => message._id === firstUnreadMessageId)
+      : -1
+    // The newest message already is the first unread one: the list starts there anyway.
+    return index >= 0 && index < orderedData.length - 1
+      ? { initialScrollIndex: { index, viewPosition: 0 } }
+      : { initialScrollAtEnd: true }
+  })
 
   // What every row shares, kept stable across renders that change nothing a row can see.
   const {
@@ -374,7 +360,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     floatingDayOpacity,
   })
 
-  const renderItem = useCallback(({ item }: ListRenderItemInfo<unknown>): React.ReactElement =>
+  const renderItem = useCallback(({ item }: { item: unknown }): React.ReactElement =>
     <MessageRow id={String((item as TMessage)._id)} />
   , [])
 
@@ -385,23 +371,11 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     return renderChatEmptyProp()
   }, [renderChatEmptyProp])
 
-  // An inverted list flips its empty component along with its rows, so it is flipped back here.
-  const renderChatEmpty = useCallback(() => {
-    if (renderChatEmptyProp)
-      return isInverted
-        ? (
-          <View style={[stylesCommon.fill, styles.emptyChatContainer]}>
-            {emptyContent}
-          </View>
-        )
-        : (
-          <View style={stylesCommon.fill}>
-            {emptyContent}
-          </View>
-        )
-
-    return <View style={stylesCommon.fill} />
-  }, [isInverted, renderChatEmptyProp, emptyContent])
+  const renderChatEmpty = useMemo(() => (
+    <View style={stylesCommon.fill}>
+      {renderChatEmptyProp ? emptyContent : null}
+    </View>
+  ), [renderChatEmptyProp, emptyContent])
 
   const ListHeaderComponent = useMemo(() => {
     const content = renderLoadEarlier()
@@ -571,28 +545,12 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     listHeight.value = event.nativeEvent.layout.height
     setIsListLaidOut(true)
 
-    // Tied to an explicit `isScrollToBottomEnabled`, as it was before the button became a
-    // default, so a non-inverted chat that never asked for it is not scrolled on every layout.
-    if (
-      !isInverted &&
-      messagesRef.current.length &&
-      props.isScrollToBottomEnabled === true
-    ) {
-      // Layout fires repeatedly (keyboard, rotation, content growth), so this is
-      // re-armed rather than stacked, and cancelled on unmount - otherwise every
-      // layout left a 500ms timer holding this closure.
-      clearTimeout(initialScrollTimeout.current)
-      initialScrollTimeout.current = setTimeout(() => {
-        doScrollToBottom(false)
-      }, 500)
-    }
-
-    // listProps.onLayout may be a SharedValue in Reanimated types, but we only accept functions
     const onLayoutProp = listProps?.onLayout as ((event: LayoutChangeEvent) => void) | undefined
     onLayoutProp?.(event)
-  }, [isInverted, doScrollToBottom, listHeight, listProps, props.isScrollToBottomEnabled])
+  }, [listHeight, listProps])
 
-  const onEndReached = useCallback(() => {
+  // The oldest messages are at the top, so infinite scroll loads earlier ones on reaching it.
+  const onStartReached = useCallback(() => {
     if (
       loadEarlierMessagesProps &&
       loadEarlierMessagesProps.isAvailable &&
@@ -602,200 +560,98 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       loadEarlierMessagesProps.onPress()
   }, [loadEarlierMessagesProps])
 
-  // `scrollToIndex` to a row that is not laid out yet (a quoted message far up the history)
-  // fails; jump to its estimated offset, then retry once the rows there have rendered, with the
-  // placement the request asked for.
-  const scrollRequestRef = useRef({ viewPosition: 0.5, animated: true })
-  const scrollRetriesRef = useRef(0)
-  const scrollRetryTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  useEffect(() => () => clearTimeout(scrollRetryTimeout.current), [])
-  const onScrollToIndexFailed = useCallback((info: { index: number, averageItemLength: number }) => {
-    if (scrollRetriesRef.current >= 5) {
-      scrollRetriesRef.current = 0
-      return
-    }
-    scrollRetriesRef.current += 1
-    forwardRef?.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: scrollRequestRef.current.animated })
-    clearTimeout(scrollRetryTimeout.current)
-    scrollRetryTimeout.current = setTimeout(() => {
-      try {
-        forwardRef?.current?.scrollToIndex({ index: info.index, ...scrollRequestRef.current })
-        scrollRetriesRef.current = 0
-      } catch {
-        // gave up; the list stays at the estimate
-      }
-    }, 250)
-  }, [forwardRef])
 
-  // A chat with unread messages opens on its "Unread Messages" bar, scrolled to the top
-  // of the screen. The row has to be
-  // rendered to be scrolled to, so the first render reaches it.
-  const unreadIndex = firstUnreadMessageId != null
-    ? messages.findIndex(message => message._id === firstUnreadMessageId)
-    : -1
-  const scrolledToUnreadRef = useRef<string | number | null>(null)
-  const unreadScrollTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const scrollRequestResetTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  useEffect(() => () => {
-    clearTimeout(unreadScrollTimeout.current)
-    clearTimeout(scrollRequestResetTimeout.current)
-  }, [])
-  useEffect(() => {
-    if (!isListLaidOut || unreadIndex < 0 || firstUnreadMessageId == null || scrolledToUnreadRef.current === firstUnreadMessageId)
-      return
-
-    scrolledToUnreadRef.current = firstUnreadMessageId
-    // The newest message already is the first unread one: the list starts there anyway.
-    if (unreadIndex === (isInverted ? 0 : messages.length - 1))
-      return
-
-    clearTimeout(unreadScrollTimeout.current)
-    // After the first rows have measured themselves.
-    unreadScrollTimeout.current = setTimeout(() => {
-      const request = { viewPosition: isInverted ? 1 : 0, animated: false }
-      scrollRequestRef.current = request
-      try {
-        forwardRef?.current?.scrollToIndex({ index: unreadIndex, ...request })
-      } catch {
-        // Not measured yet; `onScrollToIndexFailed` retries.
-      }
-      // Later jumps (to a quoted message) go back to the middle, animated.
-      scrollRequestResetTimeout.current = setTimeout(() => {
-        scrollRequestRef.current = { viewPosition: 0.5, animated: true }
-      }, 1500)
-    }, 50)
-  }, [isListLaidOut, unreadIndex, firstUnreadMessageId, isInverted, messages.length, forwardRef])
 
   const keyExtractor = useCallback((item: unknown) => (item as TMessage)._id.toString(), [])
 
-  const initialScrollTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  useEffect(() => () => {
-    clearTimeout(initialScrollTimeout.current)
-  }, [])
-
-  // Records where each message sits in the content so the floating day header
-  // knows which day is currently on screen. Shared by both cell renderers.
-  const trackDayPosition = useCallback((message: IMessage | undefined, layout: { y: number, height: number }) => {
-    // Recorded whatever the theme: a cell is only measured when it lays out, so a switch
-    // into the screen-gradient theme (dark mode) would otherwise find no rows to paint.
-    if (message) {
-      const cell = { y: layout.y, height: layout.height }
-      const key = message._id.toString()
-      cellLayouts.modify(value => {
-        'worklet'
-
-        value[key] = cell
-        return value
-      })
+  // Where each day's opening message sits, for the floating day header: the list reports a
+  // row's position whenever it changes, so only the rows that open a day are followed, and
+  // their moves reach the UI thread once a frame.
+  const dayStartIds = useMemo(() => {
+    const ids: string[] = []
+    for (let i = 0; i < messages.length; i++) {
+      const previous = isInverted ? messages[i + 1] : messages[i - 1]
+      if (!previous || !isSameDay(messages[i], previous))
+        ids.push(messages[i]._id.toString())
     }
+    return ids
+  }, [messages, isInverted])
 
-    // Only track positions when day animation is enabled
-    if (!isDayAnimationEnabled || !message)
+  useEffect(() => {
+    const state = isListLaidOut && isDayAnimationEnabled ? listState() : undefined
+    if (!state)
       return
 
-    const id = message._id.toString()
-    const { y, height } = layout
+    let pending: Record<string, DaysPositions[string]> | null = null
+    let frame: number | null = null
+    const flush = () => {
+      frame = null
+      const batch = pending
+      pending = null
+      if (batch)
+        daysPositions.modify(value => {
+          'worklet'
 
-    // Both the timestamp and the calendar-day key are resolved here, on the JS thread,
-    // so the worklet below never has to build a Date to decide whether two entries fall
-    // on the same day - it runs on every cell layout, which is constant during a
-    // recycling scroll.
-    const date = new Date(message.createdAt)
-    const newValue = {
-      y,
-      height,
-      createdAt: date.getTime(),
-      dayKey: date.getFullYear() * 10000 + date.getMonth() * 100 + date.getDate(),
+          for (const key in batch)
+            value[key] = batch[key]
+          return value
+        })
     }
 
-    daysPositions.modify(value => {
-      'worklet'
-
-      // A plain for-in avoids the array `Object.entries` would allocate per layout.
-      for (const key in value) {
-        const item = value[key]
-        if (item.dayKey === newValue.dayKey && (isInverted ? item.y <= newValue.y : item.y >= newValue.y)) {
-          delete value[key]
-          break
-        }
-      }
-
-      // @ts-expect-error: https://docs.swmansion.com/react-native-reanimated/docs/core/useSharedValue#remarks
-      value[id] = newValue
-      return value
+    const initial: DaysPositions = {}
+    const unsubscribes = dayStartIds.map(id => {
+      const message = rowStore.getMessage(id)
+      const date = new Date(message?.createdAt ?? 0)
+      const entry = (y: number): DaysPositions[string] => ({
+        x: 0,
+        width: 0,
+        y,
+        height: state.sizes.get(id) ?? 0,
+        createdAt: date.getTime(),
+        dayKey: date.getFullYear() * 10000 + date.getMonth() * 100 + date.getDate(),
+      })
+      const y = state.positionByKey(id)
+      if (y != null)
+        initial[id] = entry(y)
+      return state.listenToPosition(id, position => {
+        (pending ??= {})[id] = entry(position)
+        frame ??= requestAnimationFrame(flush)
+      })
     })
-  }, [daysPositions, isInverted, isDayAnimationEnabled, cellLayouts])
+    // The days this list shows now, replacing any that went with a deleted or earlier message.
+    daysPositions.value = initial
 
-  // The ids on screen as of the last commit, to tell a message that has just arrived from a
-  // row the list mounts late (windowing, or scrolling back down).
-  const knownIdsRef = useRef<ReadonlySet<string | number>>(new Set(messages.map(message => message._id)))
-  useEffect(() => {
-    knownIdsRef.current = new Set(messages.map(message => message._id))
-  }, [messages])
-
-  // Rows slide to their new place when one arrives or changes height, and the newest
-  // message rises in from below. Only inverted: a non-inverted chat scrolls to a new
-  // message instead.
-  const areCellsAnimated = isInverted
-
-  const renderCell = useCallback((props: CellRendererProps) => {
-    const { item, index, onLayout: onLayoutProp, children } = props
-
-    const handleOnLayout = (event: LayoutChangeEvent) => {
-      onLayoutProp?.(event)
-      // The list's own item can be an older copy of the message (its data keeps its identity
-      // while the order does); the store has the current one.
-      trackDayPosition(rowStore.getMessage((item as IMessage)._id) ?? item as IMessage, event.nativeEvent.layout)
+    return () => {
+      unsubscribes.forEach(unsubscribe => unsubscribe())
+      if (frame != null)
+        cancelAnimationFrame(frame)
     }
+  }, [dayStartIds, isListLaidOut, isDayAnimationEnabled, listState, daysPositions, rowStore])
 
-    if (!areCellsAnimated)
-      return (
-        <View
-          {...props}
-          onLayout={handleOnLayout}
-        >
-          {children}
-        </View>
-      )
+  // Gradient bubbles that asked for their row before the list could report positions.
+  useEffect(() => {
+    if (isListLaidOut)
+      cellValuesRef.current.forEach((_, id) => subscribeCell(id))
+  }, [isListLaidOut, subscribeCell])
 
-    const isArriving = isArrivingMessage((item as IMessage)._id, index, knownIdsRef.current)
+  // A row that changes height (a reaction, a reply loaded) keeps its place but moves its
+  // bottom edge, which the gradient bubbles paint from.
+  const onItemSizeChanged = useCallback(({ itemKey, size }: { itemKey: string, size: number }) => {
+    const entry = cellValuesRef.current.get(itemKey)
+    const current = entry?.value.value
+    if (entry && current)
+      entry.value.value = { y: current.y, height: size }
+  }, [])
 
-    return (
-      <Animated.View
-        {...props}
-        layout={listCellTransition}
-        entering={isArriving ? newestCellEntering : undefined}
-        onLayout={handleOnLayout}
-      >
-        {children}
-      </Animated.View>
-    )
-  }, [trackDayPosition, areCellsAnimated, rowStore])
-
-  // No dependency array: on native Reanimated logs a warning for one on every render,
-  // and it compares the handlers' worklet closures itself to pick up changes.
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: event => {
-      const y = event.contentOffset.y
-      const contentSizeHeight = event.contentSize.height
-      const layoutHeight = event.layoutMeasurement.height
-
-      scrolledY.value = y
-
-      isScrollingDown.value = isInverted
-        ? lastScrolledY.value > y
-        : lastScrolledY.value < y
-
+  // Scroll state, on the UI thread from the list's scroll offset: how far the viewport is from
+  // the newest message decides the scroll-to-bottom button.
+  useAnimatedReaction(
+    () => scrollOffset.value,
+    y => {
+      isScrollingDown.value = lastScrolledY.value < y
       lastScrolledY.value = y
-      contentHeight.value = contentSizeHeight
 
-      // How far the viewport sits from the newest message. An inverted list counts
-      // that straight from the offset (0 is the bottom); a normal list measures the
-      // gap left below the viewport.
-      const distanceFromNewest = isInverted
-        ? y
-        : contentSizeHeight - layoutHeight - y
-
+      const distanceFromNewest = Math.max(0, contentHeight.value - listHeight.value - y)
       const delta = distanceFromNewest - distanceFromNewestSV.value
       distanceFromNewestSV.value = distanceFromNewest
 
@@ -825,51 +681,28 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
           isShownByScroll.value = false
         }
       }
-
-      if (hasConsumerOnScroll)
-        runOnJS(notifyConsumerScroll)(event)
-    },
-    onBeginDrag: () => {
-      isScrollActive.value = true
-    },
-    onEndDrag: () => {
-      // Momentum (if any) re-asserts isScrollActive via onMomentumBegin within the
-      // header's fade-out delay, so a flick keeps the header visible.
-      isScrollActive.value = false
-    },
-    onMomentumBegin: () => {
-      isScrollActive.value = true
-    },
-    onMomentumEnd: () => {
-      isScrollActive.value = false
-    },
-  })
-
-  // removes unrendered days positions when messages are added/removed
-  useEffect(() => {
-    // Skip cleanup when day animation is disabled
-    if (!isDayAnimationEnabled)
-      return
-
-    Object.keys(daysPositions.value).forEach(key => {
-      const messageIndex = messages.findIndex(m => m._id.toString() === key)
-      let shouldRemove = messageIndex === -1
-
-      if (!shouldRemove) {
-        const prevMessage = messages[messageIndex + (isInverted ? 1 : -1)]
-        const message = messages[messageIndex]
-        shouldRemove = !!prevMessage && isSameDay(message, prevMessage)
-      }
-
-      if (shouldRemove)
-        daysPositions.modify(value => {
-          'worklet'
-
-          delete value[key]
-          return value
-        })
     })
-  }, [messages, daysPositions, isInverted, isDayAnimationEnabled])
+
+  // The floating day header shows while a finger or momentum moves the list.
+  const onScrollBeginDrag = useCallback(() => {
+    isScrollActive.value = true
+  }, [isScrollActive])
+  // Momentum (if any) re-asserts it within the header's fade-out delay, so a flick keeps the
+  // header up.
+  const dragEndedAtRef = useRef(0)
+  const onScrollEndDrag = useCallback(() => {
+    dragEndedAtRef.current = Date.now()
+    isScrollActive.value = false
+  }, [isScrollActive])
+  const onMomentumScrollEnd = useCallback(() => {
+    isScrollActive.value = false
+  }, [isScrollActive])
+  const onContentSizeChange = useCallback((_width: number, height: number) => {
+    contentHeight.value = height
+  }, [contentHeight])
+  const onMetricsChange = useCallback((metrics: { headerSize: number }) => {
+    headerSize.value = metrics.headerSize
+  }, [headerSize])
 
   // A tap on the chat (not a scroll) closes the emoji keyboard.
   const composerPanels = useComposerPanels()
@@ -887,50 +720,59 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       composerPanels.close()
   }, [composerPanels])
 
-  const contentContainerStyle = useMemo(() => [styles.messagesContainer, alignmentStyle], [alignmentStyle])
-  const listFooter = useMemo(() => isInverted ? ListHeaderComponent : <>{ListFooterComponent}</>, [isInverted, ListHeaderComponent, ListFooterComponent])
-  const listHeader = useMemo(() => isInverted ? <>{ListFooterComponent}</> : ListHeaderComponent, [isInverted, ListHeaderComponent, ListFooterComponent])
-  const initialNumToRender = Math.max(12, unreadIndex + 4)
+  // Only a fling's momentum counts: the list's own scrolls (opening at the newest message,
+  // following a new one) start momentum on Android without ever ending it, which left the
+  // header up for good.
+  const onMomentumScrollBegin = useCallback(() => {
+    if (Date.now() - dragEndedAtRef.current < 300)
+      isScrollActive.value = true
+  }, [isScrollActive])
+
+  // New messages keep the list at the newest one while it is there (or near), and the
+  // newest message comes up from below with the scroll, as the rows above it make room.
+  const maintainScrollAtEnd = useMemo(() => ({ animated: true }), [])
 
   // Memoized, so a render of the container that leaves the list's inputs alone - a status
-  // change or a reaction, which keep the data's identity - does not walk the list's cells.
-  const listEngine = useMemo(() => {
-    return (
-      <AnimatedFlatList
-        ref={forwardRef}
-        keyExtractor={keyExtractor}
-        data={listData}
-        renderItem={renderItem}
-        inverted={isInverted}
-        style={stylesCommon.fill}
-        contentContainerStyle={contentContainerStyle}
-        ListEmptyComponent={renderChatEmpty}
-        ListFooterComponent={listFooter}
-        ListHeaderComponent={listHeader}
-        scrollEventThrottle={1}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.1}
-        keyboardDismissMode='interactive'
-        keyboardShouldPersistTaps='handled'
-        onScrollToIndexFailed={onScrollToIndexFailed}
-        automaticallyAdjustContentInsets={false}
-        // Virtualization defaults tuned for chat lists. All are overridable via
-        // `listProps` below (spread last), so consumers keep full control.
-        removeClippedSubviews={Platform.OS === 'android'}
-        initialNumToRender={initialNumToRender}
-        maxToRenderPerBatch={10}
-        windowSize={9}
-        updateCellsBatchingPeriod={50}
-        {...listProps}
-        onScroll={scrollHandler}
-        onViewableItemsChanged={undefined}
-        viewabilityConfig={undefined}
-        viewabilityConfigCallbackPairs={viewabilityPairs}
-        onLayout={onLayoutList}
-        CellRendererComponent={renderCell}
-      />
-    )
-  }, [forwardRef, keyExtractor, listData, renderItem, isInverted, contentContainerStyle, renderChatEmpty, listFooter, listHeader, onEndReached, onScrollToIndexFailed, listProps, scrollHandler, viewabilityPairs, onLayoutList, renderCell, initialNumToRender])
+  // change or a reaction, which keep the data's identity - does not walk the list's rows.
+  const listEngine = useMemo(() => (
+    <AnimatedLegendList
+      ref={forwardRef}
+      keyExtractor={keyExtractor}
+      data={orderedData}
+      renderItem={renderItem}
+      estimatedItemSize={64}
+      // Oldest first, top to bottom: no inverted list, no flipped rows.
+      alignItemsAtEnd={alignItemsAtEnd}
+      {...initialScroll}
+      maintainScrollAtEnd={maintainScrollAtEnd}
+      maintainVisibleContentPosition
+      // Rows that move (a message arriving, a row growing a reaction, the typing bubble
+      // coming or going) slide to their new place instead of jumping there.
+      itemLayoutAnimation={listCellTransition}
+      sharedValues={sharedValues}
+      style={stylesCommon.fill}
+      contentContainerStyle={styles.messagesContainer}
+      ListEmptyComponent={renderChatEmpty}
+      ListHeaderComponent={ListHeaderComponent}
+      ListFooterComponent={ListFooterComponent}
+      onStartReached={onStartReached}
+      onStartReachedThreshold={0.1}
+      keyboardDismissMode='interactive'
+      keyboardShouldPersistTaps='handled'
+      {...listProps}
+      onScrollBeginDrag={onScrollBeginDrag}
+      onScrollEndDrag={onScrollEndDrag}
+      onMomentumScrollBegin={onMomentumScrollBegin}
+      onMomentumScrollEnd={onMomentumScrollEnd}
+      onContentSizeChange={onContentSizeChange}
+      onItemSizeChanged={onItemSizeChanged}
+      onMetricsChange={onMetricsChange}
+      onViewableItemsChanged={undefined}
+      viewabilityConfig={undefined}
+      viewabilityConfigCallbackPairs={viewabilityPairs}
+      onLayout={onLayoutList}
+    />
+  ), [forwardRef, keyExtractor, orderedData, renderItem, alignItemsAtEnd, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, onScrollBeginDrag, onScrollEndDrag, onMomentumScrollBegin, onMomentumScrollEnd, onContentSizeChange, onItemSizeChanged, onMetricsChange, viewabilityPairs, onLayoutList])
 
   const list = (
     <View
@@ -958,7 +800,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   )
 
   const animatedList = (
-    <TypingIndicatorListAnimationContext.Provider value={areCellsAnimated}>
+    <TypingIndicatorListAnimationContext.Provider value>
       {list}
     </TypingIndicatorListAnimationContext.Provider>
   )

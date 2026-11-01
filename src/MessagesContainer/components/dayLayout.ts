@@ -27,12 +27,12 @@ export const DAY_HANDOFF_OFFSET = DAY_PIN_OFFSET - DAY_MARGIN_TOP
 
 type DayPosition = DaysPositions[string]
 
-// On-screen Y of a day separator's top edge. `scrolledTop` is `listHeight + scrolledY`.
-// (Inverted list: a separator is above the pin when this is <= DAY_HANDOFF_OFFSET.)
-export const dayPositionScreenTop = (scrolledTop: number, day: DayPosition) => {
+// On-screen Y of a day separator's top edge: where its row starts in the list's content, less
+// how far the list has scrolled. A separator is above the pin when this is <= DAY_HANDOFF_OFFSET.
+export const dayPositionScreenTop = (scrolledY: number, day: DayPosition) => {
   'worklet'
 
-  return scrolledTop - (day.y + day.height)
+  return day.y - scrolledY
 }
 
 // The measured position of the day with the given createdAt (ms), or undefined if

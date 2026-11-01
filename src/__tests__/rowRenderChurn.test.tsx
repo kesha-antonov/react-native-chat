@@ -32,6 +32,17 @@ jest.mock('react-native-reanimated', () => {
         ref.current = mockUseSharedValue(init)
       return ref.current
     },
+    // Same for derived values: one object for the component's life, reading the latest result.
+    useDerivedValue: (updater: () => unknown) => {
+      const latest = ReactLocal.useRef(updater)
+      latest.current = updater
+      const ref = ReactLocal.useRef(undefined as any)
+      if (ref.current === undefined)
+        ref.current = { get value () {
+          return latest.current() 
+        } }
+      return ref.current
+    },
   }
 })
 

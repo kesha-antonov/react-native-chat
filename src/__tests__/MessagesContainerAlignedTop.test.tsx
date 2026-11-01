@@ -1,5 +1,4 @@
 import React from 'react'
-import { StyleSheet } from 'react-native'
 import { act } from '@testing-library/react-native'
 
 import { MessagesContainer } from '..'
@@ -37,12 +36,14 @@ const MESSAGES = [
   { ...DEFAULT_TEST_MESSAGE, _id: 'test2' },
 ]
 
-const getListContentStyle = (tree: any): Record<string, unknown> => {
+// The list renders oldest first, top to bottom; `alignItemsAtEnd` puts a conversation shorter
+// than the list at its bottom.
+const getAlignItemsAtEnd = (tree: any): unknown => {
   const findList = (node: any): any => {
     if (node == null || typeof node !== 'object')
       return undefined
 
-    if (node.props?.contentContainerStyle !== undefined)
+    if (node.props?.alignItemsAtEnd !== undefined)
       return node
 
     const children = (Array.isArray(node) ? node : node.children ?? []) as any[]
@@ -50,38 +51,31 @@ const getListContentStyle = (tree: any): Record<string, unknown> => {
     return children.reduce<any>((found, child) => found ?? findList(child), undefined)
   }
 
-  return StyleSheet.flatten(findList(tree)?.props?.contentContainerStyle) ?? {}
+  return findList(tree)?.props?.alignItemsAtEnd
 }
 
 beforeEach(() => mockKeyboardListeners.clear())
 
-it('leaves the content container alone by default', async () => {
+it('keeps a short conversation at the bottom by default', async () => {
   const { toJSON } = await render(<MessagesContainer messages={MESSAGES} user={{ _id: 1 }} />)
 
-  expect(getListContentStyle(toJSON())).not.toHaveProperty('justifyContent')
+  expect(getAlignItemsAtEnd(toJSON())).toBe(true)
 })
 
 it('pins a short conversation to the top when isAlignedTop is set', async () => {
-  // Inverted lists are flipped, so the content container's end is the visual top.
   const { toJSON } = await render(
     <MessagesContainer messages={MESSAGES} user={{ _id: 1 }} isAlignedTop />
   )
 
-  expect(getListContentStyle(toJSON())).toMatchObject({
-    flexGrow: 1,
-    justifyContent: 'flex-end',
-  })
+  expect(getAlignItemsAtEnd(toJSON())).toBe(false)
 })
 
-it('flips the alignment for a non-inverted list', async () => {
+it('pins to the top the same way for a non-inverted list', async () => {
   const { toJSON } = await render(
     <MessagesContainer messages={MESSAGES} user={{ _id: 1 }} isAlignedTop isInverted={false} />
   )
 
-  expect(getListContentStyle(toJSON())).toMatchObject({
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-  })
+  expect(getAlignItemsAtEnd(toJSON())).toBe(false)
 })
 
 it('re-anchors to the bottom while the keyboard is open with isAlignedTop=auto (#2736)', async () => {
@@ -89,13 +83,13 @@ it('re-anchors to the bottom while the keyboard is open with isAlignedTop=auto (
     <MessagesContainer messages={MESSAGES} user={{ _id: 1 }} isAlignedTop='auto' />
   )
 
-  expect(getListContentStyle(toJSON())).toMatchObject({ justifyContent: 'flex-end' })
+  expect(getAlignItemsAtEnd(toJSON())).toBe(false)
 
   await emitKeyboardEvent('keyboardWillShow')
-  expect(getListContentStyle(toJSON())).toMatchObject({ justifyContent: 'flex-start' })
+  expect(getAlignItemsAtEnd(toJSON())).toBe(true)
 
   await emitKeyboardEvent('keyboardWillHide')
-  expect(getListContentStyle(toJSON())).toMatchObject({ justifyContent: 'flex-end' })
+  expect(getAlignItemsAtEnd(toJSON())).toBe(false)
 })
 
 it('does not react to the keyboard unless isAlignedTop is auto', async () => {
@@ -106,5 +100,5 @@ it('does not react to the keyboard unless isAlignedTop is auto', async () => {
   expect(mockKeyboardListeners.size).toBe(0)
 
   await emitKeyboardEvent('keyboardWillShow')
-  expect(getListContentStyle(toJSON())).toMatchObject({ justifyContent: 'flex-end' })
+  expect(getAlignItemsAtEnd(toJSON())).toBe(false)
 })

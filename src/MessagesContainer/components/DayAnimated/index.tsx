@@ -11,7 +11,8 @@ import { useScrollGatedOpacity } from './useScrollGatedOpacity'
 
 export * from './types'
 
-export const DayAnimated = ({ scrolledY, daysPositions, listHeight, isScrollActive, opacity: opacityProp, floatingRenderedDate, renderDay, isLoading, ...rest }: DayAnimatedProps) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- `listHeight` stays out of the props passed to Day
+export const DayAnimated = ({ scrolledY, daysPositions, listHeight: _listHeight, isScrollActive, opacity: opacityProp, floatingRenderedDate, renderDay, isLoading, ...rest }: DayAnimatedProps) => {
   const containerHeight = useSharedValue(0)
   const isLoadingAnim = useSharedValue(isLoading)
 
@@ -33,7 +34,7 @@ export const DayAnimated = ({ scrolledY, daysPositions, listHeight, isScrollActi
 
   // Sticky day header (iOS section-header behaviour).
   //
-  // The list is inverted: older days sit higher on screen, newer days lower.
+  // Older days sit higher on screen, newer days lower.
   // `daysPositionsArray` is sorted by createdAt (newest first), so index 0 is the
   // newest day. Each separator's on-screen top edge is `dayPositionScreenTop`; the
   // separator's pill renders DAY_MARGIN_TOP below that, and the floating header
@@ -55,7 +56,7 @@ export const DayAnimated = ({ scrolledY, daysPositions, listHeight, isScrollActi
     if (n === 0)
       return { top: DAY_PIN_OFFSET, createdAt: undefined as number | undefined, curSep: NaN }
 
-    const scrolledTop = listHeight.value + scrolledY.value
+    const scrolledTop = scrolledY.value
 
     let idx = n - 1
     for (let i = 0; i < n; i++)

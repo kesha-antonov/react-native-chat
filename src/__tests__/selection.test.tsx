@@ -42,7 +42,8 @@ const settle = () => act(async () => {
 
 /**
  * Long-presses a message and picks "Select". Every row registers its gesture under the same test
- * id and the last one wins, so this is the oldest message (`_id` 1, the last row).
+ * id and the last one wins; the list renders oldest first, so this is the newest message (`_id`
+ * 3, the last row). The checkboxes run in the same order: `_id` 1, 2, 3.
  */
 const startSelecting = async (utils: Awaited<ReturnType<typeof mountChat>>) => {
   await act(() => {
@@ -101,12 +102,12 @@ describe('multi-select', () => {
       <Chat messages={MESSAGES} onSend={() => {}} user={ME} onSelectionChange={onSelectionChange} />
     )
     await startSelecting(utils)
-    expect(onSelectionChange).toHaveBeenLastCalledWith([MESSAGES[2]])
+    expect(onSelectionChange).toHaveBeenLastCalledWith([MESSAGES[0]])
 
     const toggles = utils.getAllByTestId('message-select-toggle')
     await fireEvent.press(toggles[1])
     expect(utils.getByText('2')).toBeTruthy()
-    expect(onSelectionChange).toHaveBeenLastCalledWith([MESSAGES[2], MESSAGES[1]])
+    expect(onSelectionChange).toHaveBeenLastCalledWith([MESSAGES[0], MESSAGES[1]])
 
     // Unchecking everything ends the mode.
     await fireEvent.press(toggles[2])
@@ -134,7 +135,7 @@ describe('multi-select', () => {
     await fireEvent.press(utils.getAllByTestId('message-select-toggle')[1])
 
     await fireEvent.press(utils.getByLabelText('Delete'))
-    expect(onDeleteMessage.mock.calls.map(([message]) => message._id)).toEqual([1, 2])
+    expect(onDeleteMessage.mock.calls.map(([message]) => message._id)).toEqual([2, 3])
   })
 
   it('prefers the batch callbacks when given', async () => {
@@ -151,7 +152,7 @@ describe('multi-select', () => {
     )
     await startSelecting(utils)
     await fireEvent.press(utils.getByLabelText('Forward'))
-    expect(onForwardMessages).toHaveBeenCalledWith([MESSAGES[2]])
+    expect(onForwardMessages).toHaveBeenCalledWith([MESSAGES[0]])
   })
 
   it('closes with the X', async () => {
@@ -171,7 +172,7 @@ describe('multi-select', () => {
       />
     )
     await startSelecting(custom)
-    expect(custom.getByText('picked 1: 1')).toBeTruthy()
+    expect(custom.getByText('picked 1: 3')).toBeTruthy()
     await custom.unmount()
 
     const none = await mountChat(<Chat messages={MESSAGES} onSend={() => {}} user={ME} renderSelectionBar={null} />)

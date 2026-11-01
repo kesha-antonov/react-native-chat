@@ -94,3 +94,48 @@ jest.mock('react-native/Libraries/Modal/Modal', () => {
 
   return { __esModule: true, default: Modal }
 })
+
+// Legend List lays its rows out from measurements, which Jest never produces, so a test would
+// see an empty list. This stand-in renders the header, every row and the footer (or the empty
+// component) in a ScrollView, and exposes the ref methods the chat calls as mocks.
+jest.mock('@legendapp/list/reanimated', () => {
+  const React = require('react')
+  const { ScrollView, View } = require('react-native')
+
+  const render = (component: unknown) => {
+    if (component == null)
+      return null
+    if (React.isValidElement(component))
+      return component
+    return React.createElement(component as React.ComponentType)
+  }
+
+  const AnimatedLegendList = React.forwardRef((props: Record<string, any>, ref: React.Ref<unknown>) => {
+    const { data = [], renderItem, keyExtractor, ListHeaderComponent, ListFooterComponent, ListEmptyComponent, onLayout, testID, ...rest } = props
+    React.useImperativeHandle(ref, () => ({
+      scrollToEnd: jest.fn(),
+      scrollToKey: jest.fn(),
+      scrollToIndex: jest.fn(),
+      scrollToOffset: jest.fn(),
+      getState: () => ({
+        positionByKey: () => undefined,
+        listenToPosition: () => () => {},
+        sizes: new Map(),
+      }),
+    }))
+
+    return React.createElement(
+      ScrollView,
+      { ...rest, testID, onLayout },
+      render(ListHeaderComponent),
+      data.length === 0
+        ? render(ListEmptyComponent)
+        : data.map((item: unknown, index: number) =>
+          React.createElement(View, { key: keyExtractor ? keyExtractor(item, index) : index }, renderItem({ item, index }))
+        ),
+      render(ListFooterComponent)
+    )
+  })
+
+  return { AnimatedLegendList }
+})

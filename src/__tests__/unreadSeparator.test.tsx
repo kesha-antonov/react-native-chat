@@ -1,9 +1,9 @@
-import React, { createRef } from 'react'
+import React from 'react'
 import { Text, View } from 'react-native'
-import { act, fireEvent, render } from '@testing-library/react-native'
+import { fireEvent, render } from '@testing-library/react-native'
 
 import { Chat, IMessage } from '..'
-import type { AnimatedList } from '../MessagesContainer'
+import { waitForRows } from './waitForRows'
 
 const ME = { _id: 1, name: 'Me' }
 const ALICE = { _id: 2, name: 'Alice' }
@@ -60,27 +60,28 @@ describe('unread messages bar', () => {
   })
 
   it('opens scrolled so the bar is at the top', async () => {
-    const ref = createRef<AnimatedList<IMessage>>()
     const { getByTestId } = await mountChat(
       <Chat
         messages={MESSAGES}
         onSend={() => {}}
         user={ME}
         firstUnreadMessageId={26}
-        messagesContainerRef={ref as React.RefObject<AnimatedList<IMessage>>}
         listProps={{ testID: 'message-list' }}
       />
     )
-    const scrollToIndex = jest.spyOn(ref.current!, 'scrollToIndex').mockImplementation(() => {})
+    await waitForRows()
 
-    await fireEvent(getByTestId('message-list'), 'layout', {
-      nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 700 } },
-    })
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 100))
-    })
+    // The list renders oldest first, so message 26 is at index 25; viewPosition 0 is the top.
+    expect(getByTestId('message-list').props.initialScrollIndex).toEqual({ index: 25, viewPosition: 0 })
+    expect(getByTestId('message-list').props.initialScrollAtEnd).toBeUndefined()
+  })
 
-    // Index 4 in the newest-first list; viewPosition 1 is the top of an inverted list.
-    expect(scrollToIndex).toHaveBeenCalledWith({ index: 4, viewPosition: 1, animated: false })
+  it('opens at the newest message without an unread one', async () => {
+    const { getByTestId } = await mountChat(
+      <Chat messages={MESSAGES} onSend={() => {}} user={ME} listProps={{ testID: 'message-list' }} />
+    )
+    await waitForRows()
+
+    expect(getByTestId('message-list').props.initialScrollAtEnd).toBe(true)
   })
 })

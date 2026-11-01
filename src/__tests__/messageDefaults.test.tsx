@@ -331,8 +331,10 @@ describe('Chat defaults', () => {
     )
 
     expect(queryByTestId('message-highlight')).toBeNull()
-    // The quote repeats the original's text; the first match is the quote inside the answer.
-    await fireEvent.press(getAllByText('message 1')[0])
+    // The quote repeats the original's text. The list renders oldest first, so the original
+    // comes first and the quote inside the answer is the last match.
+    const matches = getAllByText('message 1')
+    await fireEvent.press(matches[matches.length - 1])
     expect(getByTestId('message-highlight')).toBeTruthy()
   })
 

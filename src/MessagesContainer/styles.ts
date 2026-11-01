@@ -1,4 +1,4 @@
-import { Platform, StyleSheet } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { multiplyAlpha } from '../colorUtils'
 import { ChatTheme } from '../Theme'
 
@@ -43,10 +43,6 @@ export default StyleSheet.create({
   },
   messagesContainer: {
     paddingBottom: 10,
-  },
-  // Undoes the list's own inversion: both axes on Android, the vertical one elsewhere.
-  emptyChatContainer: {
-    transform: Platform.OS === 'android' ? [{ scale: -1 }] : [{ scaleY: -1 }],
   },
   // The scroll-to-bottom button: a 44pt glass circle about 7 from the screen edge and 10
   // above the composer island.

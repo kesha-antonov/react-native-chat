@@ -2297,6 +2297,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@legendapp/list@npm:3.7.1":
+  version: 3.7.1
+  resolution: "@legendapp/list@npm:3.7.1"
+  dependencies:
+    use-sync-external-store: "npm:^1.5.0"
+  peerDependencies:
+    react: "*"
+  peerDependenciesMeta:
+    react-dom:
+      optional: true
+    react-native:
+      optional: true
+  checksum: 10c0/a445838e5b99a637fe88b0badc408dc2b9763e57e9e107c0122135359555521c126c44e50767754ec297ec2788874d9b9fec76ce3c90fad5444586e40addd303
+  languageName: node
+  linkType: hard
+
 "@lodev09/react-native-true-sheet@npm:^4.0.1":
   version: 4.0.1
   resolution: "@lodev09/react-native-true-sheet@npm:4.0.1"
@@ -5187,6 +5203,7 @@ __metadata:
     "@expo/react-native-action-sheet": "npm:^4.1.1"
     "@expo/vector-icons": "npm:^15.1.1"
     "@kesha-antonov/react-native-chat": "link:.."
+    "@legendapp/list": "npm:3.7.1"
     "@lodev09/react-native-true-sheet": "npm:^4.0.1"
     "@react-native-async-storage/async-storage": "npm:^3.1.1"
     "@react-native/metro-config": "npm:~0.88.1"
@@ -9984,6 +10001,15 @@ __metadata:
   peerDependencies:
     react: ">=16.8"
   checksum: 10c0/6523747b2d76f12a91cf80a3cd9803449571e9defa8db69e9a03b8199b211127d88c038063714fe31d3c2e63ca51a491bd05f4e34203795a1c692a5a44416610
+  languageName: node
+  linkType: hard
+
+"use-sync-external-store@npm:^1.5.0":
+  version: 1.7.0
+  resolution: "use-sync-external-store@npm:1.7.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/6bae7cb778ce611131ec830c4e469fbc2872acefc25d2e4cf1c28b8628690689770742a9f2f0642c95134f9c77041fee60f0352f81ca43f96643b0ed01774726
   languageName: node
   linkType: hard
 
