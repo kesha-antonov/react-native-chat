@@ -59,6 +59,7 @@ import {
   barHeight,
   formatVoiceDuration,
   levelsFromSamples,
+  levelsFromWaveform,
   voiceContentWidth,
   voiceTrackWidth,
 } from './voiceWaveform'
@@ -225,7 +226,7 @@ export function WaveformPlayer ({
   const styles = useThemedStyles(position === 'right' ? createRightStyles : createLeftStyles)
   const playerId = useId()
 
-  const [levels, setLevels] = useState<number[]>([])
+  const [decodedLevels, setLevels] = useState<number[]>([])
   const [failed, setFailed] = useState(false)
   // Telegram's voice button while the file is not here yet (`ChatMessageCell.updateButtonState`):
   // the download arrow until it is fetched (`buttonState 2`), the cancel ✕ with a progress ring
@@ -302,6 +303,11 @@ export function WaveformPlayer ({
   const barCount = barCountForWidth(trackWidth > 0 ? trackWidth : expectedTrackWidth)
   const barCountRef = useRef(barCount)
   barCountRef.current = barCount
+  // Telegram draws the waveform the server sent with the note (`TL_documentAttributeAudio`), so
+  // the bars are there before the file is; only without one is it decoded from the audio.
+  const serverWaveform = message?.waveform
+  const serverLevels = useMemo(() => levelsFromWaveform(serverWaveform, barCount), [serverWaveform, barCount])
+  const levels = serverLevels.length ? serverLevels : decodedLevels
 
   const setProgressValue = useCallback((next: number) => {
     progressRef.current = next

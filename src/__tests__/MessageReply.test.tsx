@@ -1,5 +1,5 @@
 import React from 'react'
-import { render } from '@testing-library/react-native'
+import { fireEvent, render } from '@testing-library/react-native'
 
 import { MessageReply } from '../components/MessageReply'
 import { IMessage, ReplyMessage } from '../Models'
@@ -51,4 +51,14 @@ it('should render <MessageReply /> on right position and compare with snapshot',
   )
 
   expect(toJSON()).toMatchSnapshot()
+})
+
+// The message carrying the quote goes along, so the scroll-to-bottom button can bring you back.
+it('hands the tap the quote and the message that carries it', async () => {
+  const onPress = jest.fn()
+  const { getByText } = await render(
+    <MessageReply replyMessage={replyMessage} currentMessage={currentMessage} position='left' onPress={onPress} />
+  )
+  await fireEvent.press(getByText('Original message text'))
+  expect(onPress).toHaveBeenCalledWith(replyMessage, currentMessage)
 })

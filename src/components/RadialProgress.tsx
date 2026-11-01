@@ -7,6 +7,7 @@ import Animated, {
   useAnimatedProps,
   useAnimatedReaction,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -112,6 +113,18 @@ const line = (x1: number, y1: number, x2: number, y2: number) => {
 }
 
 /** The two strokes of an ✕ of half-size `d`, scaled by `k` and turned `deg` about the centre. */
+const crossLines = (c: number, d: number, k: number, deg: number) => {
+  'worklet'
+  if (d <= 0 || k <= 0)
+    return []
+
+  const r = (deg * Math.PI) / 180
+  const cos = Math.cos(r) * k
+  const sin = Math.sin(r) * k
+  const p = (x: number, y: number) => [c + x * cos - y * sin, c + x * sin + y * cos]
+  return [...p(-d, -d), ...p(d, d), ...p(d, -d), ...p(-d, d)]
+}
+
 const cross = (c: number, d: number, k: number, deg: number) => {
   'worklet'
   if (d <= 0 || k <= 0)
@@ -141,6 +154,15 @@ export interface RadialFrame {
   /** The play/pause glyph's scale and alpha. */
   glyphScale: number
   glyphAlpha: number
+  /**
+   * The same strokes as numbers, for drawing without react-native-svg: the arrow's straight
+   * strokes and the ✕'s, as flat `x1 y1 x2 y2` runs, and the arc's start, sweep and radius.
+   */
+  arrowLines: number[]
+  crossLines: number[]
+  arcStart: number
+  arcSweep: number
+  arcRadius: number
 }
 
 /**
@@ -172,6 +194,11 @@ export const radialFrame = (
     arcAlpha: 0,
     glyphScale: 0,
     glyphAlpha: 0,
+    arrowLines: [],
+    crossLines: [],
+    arcStart: 0,
+    arcSweep: 0,
+    arcRadius: 0,
   }
 
   // The download arrow (`:332-452`).
@@ -242,6 +269,7 @@ export const radialFrame = (
         if (p2 > 0) {
           d = 7 * p2 * scale
           out.cross = cross(c, d, 1, -45 * (1 - p2))
+          out.crossLines = crossLines(c, d, 1, -45 * (1 - p2))
           out.crossAlpha = p2
         }
       }
@@ -252,10 +280,14 @@ export const radialFrame = (
       x2 = c + 8 * scale
       y3 = y2 - 8 * scale
     }
-    if (y1 !== y2)
+    if (y1 !== y2) {
       out.arrow += line(c, y1, c, y2)
-    if (x1 !== c)
+      out.arrowLines.push(c, y1, c, y2)
+    }
+    if (x1 !== c) {
       out.arrow += line(x1, y3, c, y2) + line(x2, y3, c, y2)
+      out.arrowLines.push(x1, y3, c, y2, x2, y3, c, y2)
+    }
   }
 
   // The cancel ✕ and the progress ring (`:454-572`).
@@ -303,6 +335,7 @@ export const radialFrame = (
     }
 
     out.cross = cross(c, d, iconScale, rotation)
+    out.crossLines = crossLines(c, d, iconScale, rotation)
     out.crossAlpha = alpha
     if (alpha > 0) {
       // At least 4 degrees, so a download that has not started still shows a dot.
@@ -311,6 +344,9 @@ export const radialFrame = (
       const r = c - inset
       out.arc = arcPath(c, c, r, r, rad, sweep)
       out.arcAlpha = alpha
+      out.arcStart = rad
+      out.arcSweep = sweep
+      out.arcRadius = r
     }
   }
 
@@ -334,6 +370,86 @@ export const radialFrame = (
   
 
   return out
+}
+
+/** One straight stroke of the frame with round caps, for drawing without react-native-svg. */
+function FallbackStroke ({ frame, isCross, index, color, width }: {
+  frame: SharedValue<RadialFrame>
+  isCross: boolean
+  index: number
+  color: string
+  width: number
+}) {
+  const style = useAnimatedStyle(() => {
+    const lines = isCross ? frame.value.crossLines : frame.value.arrowLines
+    const i = index * 4
+    if (lines.length < i + 4)
+      return { opacity: 0, width: 0 }
+
+    const x1 = lines[i]
+    const y1 = lines[i + 1]
+    const x2 = lines[i + 2]
+    const y2 = lines[i + 3]
+    const length = Math.hypot(x2 - x1, y2 - y1) + width
+    return {
+      opacity: isCross ? frame.value.crossAlpha : frame.value.arrowAlpha,
+      width: length,
+      left: (x1 + x2) / 2 - length / 2,
+      top: (y1 + y2) / 2 - width / 2,
+      transform: [{ rotate: `${Math.atan2(y2 - y1, x2 - x1)}rad` }],
+    }
+  })
+  return <Animated.View style={[styles.stroke, { height: width, borderRadius: width / 2, backgroundColor: color }, style]} />
+}
+
+/**
+ * The progress arc without react-native-svg: two half rings, each clipped to its half of the
+ * circle and turned in from the other side, and the whole turned to the arc's start.
+ */
+function FallbackRing ({ frame, color, width, size, isMini }: {
+  frame: SharedValue<RadialFrame>
+  color: string
+  width: number
+  size: number
+  isMini: boolean
+}) {
+  const radius = size / 2 - (isMini ? 2 : 4)
+  const diameter = radius * 2 + width
+  const offset = size / 2 - diameter / 2
+  // Drawn from 12 o'clock; Android's arcs start at 3.
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: frame.value.arcAlpha,
+    transform: [{ rotate: `${frame.value.arcStart + 90}deg` }],
+  }))
+  const firstHalfStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${45 + Math.min(frame.value.arcSweep, 180) - 180}deg` }],
+  }))
+  // Hidden until it is needed: parked on the far side, its ends sit on the clip's edge and
+  // antialias into a hairline there.
+  const secondHalfStyle = useAnimatedStyle(() => ({
+    opacity: frame.value.arcSweep > 180 ? 1 : 0,
+    transform: [{ rotate: `${45 + Math.max(frame.value.arcSweep, 180) - 180}deg` }],
+  }))
+  const halfRing = {
+    width: diameter,
+    height: diameter,
+    borderRadius: diameter / 2,
+    borderWidth: width,
+    borderTopColor: color,
+    borderRightColor: color,
+    borderBottomColor: 'transparent',
+    borderLeftColor: 'transparent',
+  }
+  return (
+    <Animated.View style={[styles.ring, { left: offset, top: offset, width: diameter, height: diameter }, ringStyle]}>
+      <View style={[styles.half, { left: diameter / 2, width: diameter / 2, height: diameter }]}>
+        <Animated.View style={[styles.halfRing, halfRing, { left: -diameter / 2 }, firstHalfStyle]} />
+      </View>
+      <View style={[styles.half, { left: 0, width: diameter / 2, height: diameter }]}>
+        <Animated.View style={[styles.halfRing, halfRing, { left: 0 }, secondHalfStyle]} />
+      </View>
+    </Animated.View>
+  )
 }
 
 export interface RadialProgressProps {
@@ -463,6 +579,10 @@ export function RadialProgress ({
     const r = radialFrame(current.value, next.value, t.value, saved.value, arc.value, rad.value, size, isMini)
     return { d: r.arc || 'M0 0', opacity: r.arcAlpha }
   })
+  // Only drawn without react-native-svg.
+  const frame = useDerivedValue(() =>
+    radialFrame(current.value, next.value, t.value, saved.value, arc.value, rad.value, size, isMini))
+
   const glyphStyle = useAnimatedStyle(() => {
     const result = radialFrame(current.value, next.value, t.value, saved.value, 0, 0, size, isMini)
     return { opacity: result.glyphAlpha, transform: [{ scale: result.glyphScale }] }
@@ -519,6 +639,17 @@ export function RadialProgress ({
           />
         </Svg>
       )}
+      {!Svg && (
+        <>
+          <FallbackRing frame={frame} color={color} width={strokeWidth} size={size} isMini={isMini} />
+          {[0, 1, 2].map(index => (
+            <FallbackStroke key={`arrow${index}`} frame={frame} isCross={false} index={index} color={color} width={strokeWidth} />
+          ))}
+          {[0, 1].map(index => (
+            <FallbackStroke key={`cross${index}`} frame={frame} isCross index={index} color={color} width={strokeWidth} />
+          ))}
+        </>
+      )}
     </View>
   )
 }
@@ -530,5 +661,20 @@ const styles = StyleSheet.create({
   center: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  stroke: {
+    position: 'absolute',
+  },
+  ring: {
+    position: 'absolute',
+  },
+  half: {
+    position: 'absolute',
+    top: 0,
+    overflow: 'hidden',
+  },
+  halfRing: {
+    position: 'absolute',
+    top: 0,
   },
 })

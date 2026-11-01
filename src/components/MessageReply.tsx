@@ -38,8 +38,8 @@ export interface MessageReplyProps<TMessage extends IMessage = IMessage> {
   textStyleRight?: StyleProp<TextStyle>
   /** Image style for the reply */
   imageStyle?: StyleProp<ImageStyle>
-  /** Callback when reply is pressed */
-  onPress?: (replyMessage: ReplyMessage) => void
+  /** Called with the quote and the message that carries it. */
+  onPress?: (replyMessage: ReplyMessage, message: TMessage) => void
 }
 
 // `ReplyMessageLine`: the box is its accent at 10% (12% on a dark outgoing bubble).
@@ -133,7 +133,7 @@ export function MessageReply<TMessage extends IMessage = IMessage> ({
   const boxAlpha = position === 'right' && accent.toUpperCase() === '#FFFFFF' ? BOX_ALPHA_ON_WHITE_LINE : BOX_ALPHA
 
   const handlePress = () => {
-    onPress?.(replyMessage)
+    onPress?.(replyMessage, currentMessage)
   }
 
   const containerStyles = [

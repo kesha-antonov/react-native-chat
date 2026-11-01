@@ -538,6 +538,8 @@ interface IMessage {
   transfer?: MediaTransfer
   /** Media not fetched by itself: Telegram's download arrow, which calls `mediaTransfer.onDownload` */
   isDownloadRequired?: boolean
+  /** A voice note's waveform from the server (0..1, or Telegram's 0..31), drawn before the audio downloads */
+  waveform?: number[]
   quickReplies?: QuickReplies
   replyMessage?: ReplyMessage
   reactions?: MessageReaction[]
@@ -918,7 +920,7 @@ Swipe on a message to reply to it, showing a reply preview in the input toolbar 
 
 Replying works out of the box: long-press a message and pick **Reply**, or swipe it left. The swipe follows Telegram Android (`ChatActivity`): it takes over from the list after 0.4cm (about 25pt) of mostly sideways travel, the row follows the finger up to 80pt, a reply arrow fades in from 20pt and fills by 50pt, where a light haptic ticks; letting go past 50pt starts the reply, and the row slides back over 180ms. Turn the swipe off with `reply={{ swipe: { isEnabled: false } }}`, or all replying with `reply={{ isEnabled: false }}`.
 
-Tapping a quote inside a bubble scrolls to the quoted message and highlights its row for a second, then fades it out over 300ms, as Telegram Android does. Pass `reply.onPress` to do something else.
+Tapping a quote inside a bubble scrolls to the quoted message and highlights its row for a second, then fades it out over 300ms, as Telegram Android does. The scroll-to-bottom button then comes up, and its first tap takes you back to the message you tapped the quote in. Pass `reply.onPress(replyMessage, message)` to do something else.
 
 #### Reply Props (Grouped)
 

@@ -151,6 +151,26 @@ export const levelsFromSamples = (data: ArrayLike<number>, count: number) => {
 }
 
 /**
+ * `IMessage.waveform` resampled to `count` bars: levels in 0..1, or Telegram's 5-bit 0..31
+ * values (read on that scale when any is above 1).
+ */
+export const levelsFromWaveform = (waveform: ArrayLike<number> | undefined, count: number) => {
+  if (!waveform?.length || count <= 0)
+    return []
+
+  let max = 0
+  for (let i = 0; i < waveform.length; i++)
+    max = Math.max(max, waveform[i] || 0)
+  const scale = max > 1 ? LEVEL_MAX : 1
+  const normalized = Array.from(waveform, value => Math.max(0, (value || 0) / scale))
+  if (normalized.length >= count)
+    return levelsFromSamples(normalized, count)
+
+  // Fewer values than bars: each value covers several bars.
+  return Array.from({ length: count }, (_, i) => Math.min(1, normalized[Math.floor((i * normalized.length) / count)]))
+}
+
+/**
  * Telegram runs the bar-growth animation (`setSent`) only on a note that has
  * just been sent from this device. We approximate "just sent" as an outgoing
  * message created in the last couple of seconds.

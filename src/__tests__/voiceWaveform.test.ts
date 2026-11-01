@@ -67,3 +67,14 @@ describe('voiceWaveform', () => {
     expect(isFreshOutgoingNote('right', undefined, now)).toBe(false)
   })
 })
+
+describe('levelsFromWaveform', () => {
+  const { levelsFromWaveform } = jest.requireActual('../components/voiceWaveform')
+
+  it('reads Telegram\'s 0..31 values and resamples them to the bar count', () => {
+    expect(levelsFromWaveform([0, 31, 0, 31], 2)).toEqual([1, 1])
+    expect(levelsFromWaveform([0, 0.5, 1], 6)).toEqual([0, 0, 0.5, 0.5, 1, 1])
+    expect(levelsFromWaveform(undefined, 10)).toEqual([])
+  })
+})
+

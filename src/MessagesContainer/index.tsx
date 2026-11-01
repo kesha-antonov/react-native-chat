@@ -6,7 +6,6 @@ import {
   LayoutChangeEvent,
   ListRenderItemInfo,
   StyleProp,
-  Text,
   ViewStyle,
   Platform } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
@@ -28,8 +27,10 @@ import { DayAnimated } from './components/DayAnimated'
 import { useScrollGatedOpacity } from './components/DayAnimated/useScrollGatedOpacity'
 import { Item } from './components/Item'
 import { ItemProps } from './components/Item/types'
+import { PageDownCounter } from './components/PageDownCounter'
 import { AnimatedFlashList, isFlashListAvailable } from './FlashList'
 import { isArrivingMessage, listCellTransition, newestCellEntering } from './listTransitions'
+import { PageDownReturnContext } from './pageDownReturn'
 import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions, AnimatedFlatList } from './types'
 
@@ -56,8 +57,16 @@ const NEWEST_SLOP = 5
 // decelerate curve (`ChatActivitySideControlsButtonsLayout:177-224`).
 const SCROLL_BUTTON_SHOW = { duration: 280, easing: Easing.out(Easing.quad) }
 const SCROLL_BUTTON_RISE = 80
-// `ScaleStateListAnimator.apply(button, .13f, 2f)`: 13% smaller while pressed.
+// `ScaleStateListAnimator.apply(button, .13f, 2f)`: 13% smaller in 80ms while pressed, back
+// over 350ms on an overshoot with tension 2.
 const SCROLL_BUTTON_PRESSED = 0.87
+const overshoot = (tension: number) => (t: number) => {
+  'worklet'
+  const x = t - 1
+  return x * x * ((tension + 1) * x + tension) + 1
+}
+const SCROLL_BUTTON_PRESS_IN = { duration: 80 }
+const SCROLL_BUTTON_PRESS_OUT = { duration: 350, easing: overshoot(2) }
 
 // Stable reference for the missing prev/next message at the list edges.
 const EMPTY_MESSAGE = Object.freeze({}) as IMessage
@@ -188,6 +197,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false)
   const [isListLaidOut, setIsListLaidOut] = useState(false)
   const scrollToBottomPressScale = useSharedValue(1)
+  // The pressed state is the icon color at 15% over the circle (`createInsetRoundRectDrawable`).
+  const scrollToBottomPressed = useSharedValue(0)
+  const scrollToBottomPressedStyle = useAnimatedStyle(() => ({ opacity: scrollToBottomPressed.value }))
   const scrollToBottomStyleAnim = useAnimatedStyle(() => ({
     opacity: scrollToBottomOpacity.value,
     transform: [
@@ -274,6 +286,17 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     if (options)
       forwardRef?.current?.scrollToOffset(options)
   }, [forwardRef])
+
+  const pageDownReturn = useContext(PageDownReturnContext)
+  const returnToMessageId = pageDownReturn?.messageId ?? null
+  // A jump to a quoted message brings the button up, whatever the scroll did.
+  useEffect(() => {
+    if (returnToMessageId == null)
+      return
+
+    isShownByScroll.value = false
+    isScrollToBottomShown.value = true
+  }, [returnToMessageId, isShownByScroll, isScrollToBottomShown])
 
   const doScrollToBottom = useCallback((animated: boolean = true) => {
     isScrollingDown.value = true
@@ -470,10 +493,15 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       setUnreadCount(unreadIdsRef.current.size)
   }
 
+  // Through a ref: the callback changes with every new message, and re-running this then would
+  // clear a count just set by a message that arrived before the button had come up.
+  const clearPageDownReturnRef = useRef(pageDownReturn?.clear)
+  clearPageDownReturnRef.current = pageDownReturn?.clear
   useEffect(() => {
     if (!isScrollToBottomVisible) {
       unreadIdsRef.current.clear()
       setUnreadCount(0)
+      clearPageDownReturnRef.current?.()
     }
   }, [isScrollToBottomVisible])
 
@@ -492,17 +520,25 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     )
   }, [scrollToBottomComponentProp, themedStyles])
 
+  const goBackFromQuote = pageDownReturn?.goBack
   const handleScrollToBottomPress = useCallback(() => {
+    if (returnToMessageId != null && goBackFromQuote) {
+      goBackFromQuote()
+      return
+    }
+
     doScrollToBottom()
-  }, [doScrollToBottom])
+  }, [doScrollToBottom, returnToMessageId, goBackFromQuote])
 
   const handleScrollToBottomPressIn = useCallback(() => {
-    scrollToBottomPressScale.value = withTiming(SCROLL_BUTTON_PRESSED, { duration: 100 })
-  }, [scrollToBottomPressScale])
+    scrollToBottomPressScale.value = withTiming(SCROLL_BUTTON_PRESSED, SCROLL_BUTTON_PRESS_IN)
+    scrollToBottomPressed.value = 1
+  }, [scrollToBottomPressScale, scrollToBottomPressed])
 
   const handleScrollToBottomPressOut = useCallback(() => {
-    scrollToBottomPressScale.value = withTiming(1, { duration: 150 })
-  }, [scrollToBottomPressScale])
+    scrollToBottomPressScale.value = withTiming(1, SCROLL_BUTTON_PRESS_OUT)
+    scrollToBottomPressed.value = withTiming(0, { duration: 150 })
+  }, [scrollToBottomPressScale, scrollToBottomPressed])
 
   const scrollToBottomContent = useMemo(() => {
     return (
@@ -519,17 +555,19 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
           borderColor={theme.colors.inputFieldBorder}
           style={styles.scrollToBottomSurface}
         />
+        <Animated.View
+          pointerEvents='none'
+          style={[styles.scrollToBottomPressed, themedStyles.scrollToBottomPressed, scrollToBottomPressedStyle]}
+        />
         {renderScrollBottomComponent()}
-        {unreadCount > 0 && (
-          <View style={[styles.scrollToBottomBadge, themedStyles.scrollToBottomBadge]}>
-            <Text style={themedStyles.scrollToBottomBadgeText} numberOfLines={1}>
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </Text>
-          </View>
-        )}
+        <PageDownCounter
+          count={unreadCount}
+          style={[styles.scrollToBottomBadge, themedStyles.scrollToBottomBadge]}
+          textStyle={themedStyles.scrollToBottomBadgeText}
+        />
       </Animated.View>
     )
-  }, [scrollToBottomStyleAnim, scrollToBottomContentStyle, renderScrollBottomComponent, themedStyles, unreadCount, theme])
+  }, [scrollToBottomStyleAnim, scrollToBottomContentStyle, renderScrollBottomComponent, themedStyles, unreadCount, theme, scrollToBottomPressedStyle])
 
   const ScrollToBottomWrapper = useCallback(() => {
     if (!isScrollToBottomEnabled)

@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native'
+import { multiplyAlpha } from '../colorUtils'
 import { ChatTheme } from '../Theme'
 
 export const createThemedStyles = (theme: ChatTheme) => StyleSheet.create({
@@ -17,6 +18,9 @@ export const createThemedStyles = (theme: ChatTheme) => StyleSheet.create({
   },
   scrollToBottomBadge: {
     backgroundColor: theme.colors.scrollToBottomBadge,
+  },
+  scrollToBottomPressed: {
+    backgroundColor: multiplyAlpha(theme.colors.scrollToBottomIcon, 0.15),
   },
   // `CounterView`: 13 bold white.
   scrollToBottomBadgeText: {
@@ -67,9 +71,12 @@ export default StyleSheet.create({
     height: 44,
     width: 44,
     borderRadius: 22,
-    transformOrigin: 'bottom',
   },
   scrollToBottomSurface: {
+    borderRadius: 22,
+  },
+  scrollToBottomPressed: {
+    ...StyleSheet.absoluteFill,
     borderRadius: 22,
   },
 })

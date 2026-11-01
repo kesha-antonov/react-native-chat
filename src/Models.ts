@@ -167,6 +167,12 @@ export interface IMessage {
    * downloads itself on the tap.
    */
   isDownloadRequired?: boolean
+  /**
+   * A voice note's waveform, as the server sends it with the note: levels in 0..1, or Telegram's
+   * 5-bit 0..31 values. Drawn at once, before the audio has downloaded, and resampled to the
+   * bubble's bar count; without it the waveform is decoded from the audio.
+   */
+  waveform?: number[]
 }
 
 /** An upload or download of a message's media, `IMessage.transfer`. */

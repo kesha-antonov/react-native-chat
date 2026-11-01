@@ -109,6 +109,26 @@ describe('RadialProgress geometry (MediaActionDrawable)', () => {
     expect(mid.arcAlpha).toBeCloseTo(0.75)
   })
 
+  it('gives the strokes and arc as numbers for drawing without react-native-svg', () => {
+    const arrow = radialFrame(DOWNLOAD, DOWNLOAD, 1, 1, 0, 0, 48, false)
+    // The stem and the two strokes of the head.
+    expect(arrow.arrowLines).toHaveLength(12)
+    const cancel = radialFrame(CANCEL, CANCEL, 1, 1, 0.25, 112, 48, false)
+    expect(cancel.crossLines).toHaveLength(8)
+    expect(cancel.arcStart).toBe(112)
+    expect(cancel.arcSweep).toBe(90)
+    expect(cancel.arcRadius).toBe(20)
+  })
+
+  it('draws the ring and the cross from views when react-native-svg is missing', async () => {
+    const { RadialProgress } = jest.requireActual('../components/RadialProgress')
+    const { toJSON } = await renderPlain(<RadialProgress icon='cancel' progress={0.5} color='#fff' />)
+    const tree = JSON.stringify(toJSON())
+    // The two half rings, and the cross's two strokes.
+    expect(tree.match(/"borderTopColor":"#fff"/g)).toHaveLength(2)
+    expect(tree.match(/"backgroundColor":"#fff"/g)?.length).toBeGreaterThanOrEqual(5)
+  })
+
   it('never lets a full ring collapse into a dot', () => {
     const ring = arcPath(24, 24, 20, 20, 90, 360)
     // Two half arcs, ending back where they started.

@@ -82,7 +82,7 @@ export interface ReplyProps<TMessage extends IMessage> {
    * Callback when the reply quote inside a bubble is pressed. Default: scroll to the quoted
    * message and flash it, as Telegram does.
    */
-  onPress?: (replyMessage: ReplyMessage) => void
+  onPress?: (replyMessage: ReplyMessage, message: IMessage) => void
   /** Custom render for reply preview in input toolbar */
   renderPreview?: (props: ReplyPreviewProps) => React.ReactNode
   /** Custom render for message reply inside bubble */

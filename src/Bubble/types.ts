@@ -71,7 +71,7 @@ export interface BubbleReplyProps<TMessage extends IMessage> extends MessageRepl
   /** Custom render for message reply; rendered on top of message content */
   renderMessageReply?: (props: MessageReplyProps<TMessage>) => React.ReactNode
   /** Callback when message reply is pressed */
-  onPress?: (replyMessage: ReplyMessage) => void
+  onPress?: (replyMessage: ReplyMessage, message: IMessage) => void
 }
 
 export interface BubbleProps<TMessage extends IMessage> {

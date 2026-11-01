@@ -54,6 +54,7 @@ import { resolveLabels } from '../i18n'
 import { InputToolbar } from '../InputToolbar'
 import { devHint } from '../logging'
 import { MessagesContainer, AnimatedList } from '../MessagesContainer'
+import { PageDownReturn, PageDownReturnContext } from '../MessagesContainer/pageDownReturn'
 import { appendMessages, prependMessages, toggleReaction } from '../messageUtils'
 import { IMessage, MessageMenuItem, ReplyMessage, User } from '../Models'
 import { getClipboard, hasRoundVideoCapture, hasVoiceRecording, getExpoImagePicker } from '../optional'
@@ -418,11 +419,28 @@ function Chat<TMessage extends IMessage = IMessage> (
     }
   }, [messages, messagesContainerRef])
 
-  // Tapping a quote jumps to the message it quotes and flashes it.
-  const jumpToQuotedMessage = useCallback((replyMessage: ReplyMessage) => {
+  // Tapping a quote jumps to the message it quotes and flashes it. The scroll-to-bottom button
+  // then comes up and takes you back to where you tapped it (`returnToMessageId`).
+  const [returnToMessageId, setReturnToMessageId] = useState<string | number | null>(null)
+  const jumpToQuotedMessage = useCallback((replyMessage: ReplyMessage, fromMessage?: IMessage) => {
     scrollToMessage(replyMessage._id)
     highlightStore.highlight(replyMessage._id)
+    if (fromMessage && fromMessage._id !== replyMessage._id)
+      setReturnToMessageId(fromMessage._id)
   }, [scrollToMessage, highlightStore])
+
+  const pageDownReturn = useMemo((): PageDownReturn => ({
+    messageId: returnToMessageId,
+    goBack: () => {
+      if (returnToMessageId == null)
+        return
+
+      scrollToMessage(returnToMessageId)
+      highlightStore.highlight(returnToMessageId)
+      setReturnToMessageId(null)
+    },
+    clear: () => setReturnToMessageId(null),
+  }), [returnToMessageId, scrollToMessage, highlightStore])
 
   // Rebuilt on the way down to the list, so it has to keep its identity across renders that
   // change nothing: it is passed through `MessagesContainer` into every row, and `Item`'s memo
@@ -614,20 +632,22 @@ function Chat<TMessage extends IMessage = IMessage> (
         {/* The list's own area, so the floating round note docks to it and
             not over the "now playing" bar above. */}
         <View style={stylesCommon.fill}>
-          <MessagesContainer<TMessage>
-            {...messagesContainerProps}
-            {...{
-              messageActions: resolvedMessageActions,
-              reactions: resolvedReactions,
-              isAvatarVisible,
-              isUsernameVisible,
-            }}
-            isInverted={isInverted}
-            messages={messages}
-            forwardRef={messagesContainerRef}
-            isTyping={isTyping}
-            reply={replyForList}
-          />
+          <PageDownReturnContext.Provider value={pageDownReturn}>
+            <MessagesContainer<TMessage>
+              {...messagesContainerProps}
+              {...{
+                messageActions: resolvedMessageActions,
+                reactions: resolvedReactions,
+                isAvatarVisible,
+                isUsernameVisible,
+              }}
+              isInverted={isInverted}
+              messages={messages}
+              forwardRef={messagesContainerRef}
+              isTyping={isTyping}
+              reply={replyForList}
+            />
+          </PageDownReturnContext.Provider>
           {isChatEmptyShown && (
             <View style={styles.emptyOverlay} pointerEvents='box-none'>
               <ChatEmpty greeting={emptyChatGreeting} onPressGreeting={sendGreeting} />
@@ -649,6 +669,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     messagesContainerRef,
     renderChatFooter,
     replyForList,
+    pageDownReturn,
     isNowPlayingBarEnabled,
     isFloatingRoundNoteEnabled,
     getSenderName,

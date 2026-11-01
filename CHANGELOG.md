@@ -104,11 +104,15 @@ Voice and round video notes now look and behave like Telegram's (Android source 
 - **`reactions.renderExpandedPicker`**: Telegram's expand button. The reactions bar ends in a chevron that grows the bar in place into a panel holding your content (a full emoji grid, say)
 - **`ReactionPickerProps.messagePreview`**: a custom `renderReactionPicker` receives a copy of the pressed bubble to draw above its backdrop; while it is rendered, the original is hidden. `ReactionPickerProps` also gets `touchX` / `touchY`
 - **`ContextMenu` props for custom pickers**: `messagePreview`, `children`, and `reactions.containerStyle` / `emojiStyle` / `renderAccessory` / `renderExpandedPicker`
+- **`IMessage.waveform`**: a voice note's waveform as the server sends it (0..1, or Telegram's 5-bit 0..31). It is drawn straight away, before the audio has downloaded, as in Telegram; without it the waveform is still decoded from the audio
+- **Back from a quote**: after tapping a quote, the scroll-to-bottom button comes up and its first tap returns to the message you tapped it in (Telegram's `returnToMessageId`). `reply.onPress` now also receives the message carrying the quote
 
 ### ⚡ Performance
 - **The expanded reactions panel no longer re-lays out its content on every frame of the expand.** The content is laid out once at the panel's final size and revealed by the growing, clipped panel, as in Telegram. Before, a grid passed to `reactions.renderExpandedPicker` was resized and re-rendered each frame
 
 ### 🐛 Fixes
+- **The scroll-to-bottom button presses and counts as Telegram's.** Pressed, it shrinks to 87% in 80ms with a 15% tint and springs back over 350ms on an overshoot (`ScaleStateListAnimator`); it grows from its centre rather than its bottom edge. The unread counter pops in (220ms overshoot), shrinks away (150ms), and a new number rolls in over the old one with a small bump (`CounterView`, 430ms), where it used to appear and change in a single frame
+- **The media progress ring, arrow and ✕ draw without `react-native-svg`.** They used to be left out, so a downloading voice note or photo showed an empty circle; they are now built from views when the package is missing
 - **The attachment menu's File tab closed the sheet instead of opening the document picker** on iOS: the sheet's Modal was dismissed in the same tick the picker was presented. The picker now opens over the sheet, which closes only once something was picked and stays open on cancel, as in Telegram
 - **The sending clock is Telegram's** (`MsgClockDrawable`): a 12 face with a minute hand turning every 1.5s and an hour hand every 4.5s, where both hands turned together every 1.2s
 - **Status changes animate as in Telegram** (`createStatusDrawableAnimator`): the clock shrinks and fades into the check over 150ms, and sent -> read slides the check 4 left while the second check grows in (220ms). A lone "sent" check now sits where the read state's second check ends
