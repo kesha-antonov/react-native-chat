@@ -76,6 +76,7 @@ interface IMessage {
   replyMessage?: { _id: string | number, text: string, user: User, image?: string, audio?: string }
   reactions?: { emoji: string, userIds: (string | number)[] }[]
   location?: { latitude: number, longitude: number }
+  file?: { uri: string, name: string, size?: number, mimeType?: string } // document bubble
 }
 ```
 
@@ -85,7 +86,7 @@ prepends correctly for that ordering.
 ## Props you will reach for first
 
 - `messages`, `user`, `onSend` - required
-- `text` + `textInputProps.onChangeText` - only if you control the composer text externally
+- `text` + `textInputProps.onChangeText` - only if you control the composer text externally (the built-in emoji keyboard inserts either way)
 - `theme` / `darkTheme` - deep-merged token overrides (`colors`, `radii`, `spacing`, `typography`, `bubble`, `wallpaper`, `nameColors`, …). The default look is Telegram Android: swirl wallpaper, tails, the time on the last line; `wallpaper: { isEnabled: false }`, `bubble: { hasTail: false, isTimeInline: false }` turn those off
 - `renderWallpaper` - replace the background (`null` = plain `colors.background`)
 - `colorScheme` - `'light' | 'dark'` to force a scheme; omit to follow the system
@@ -105,6 +106,18 @@ prepends correctly for that ordering.
 - Swipe left to reply (`reply={{ swipe: { isEnabled: false } }}` to turn off); tapping a quote jumps
   to the original and highlights it.
 - Scroll-to-bottom button with an unread badge.
+- Emoji keyboard behind the composer's emoji button (tabs, search, recents, skin tones), in the
+  system keyboard's place. `emojiKeyboard={false}` hides it; `emojiKeyboard={{ columns, categories,
+  recents, isSearchEnabled, renderEmojiKeyboard }}` configures it; `onPressEmoji` replaces it.
+- Attachment menu behind the paperclip: photo grid with numbered picks + caption (`expo-media-library`),
+  system photo picker / camera (`expo-image-picker`), File (`expo-document-picker`), Location
+  (`expo-location`) - each tab only when its peer is installed. Picks arrive in `onSend` as `image`,
+  `video`, `file` or `location` messages. `attachments={{ tabs, onPick, renderAttachmentMenu }}`
+  configures it (`onPick` can upload first and return the messages to send); `attachments={false}`
+  hides it; `actions` / `onPressActionButton` / `renderActions` replace it. iOS needs the usage strings
+  (`NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription`, `NSLocationWhenInUseUsageDescription`);
+  in Expo, list the packages' config plugins.
+- The reactions bar's chevron opens the built-in emoji grid (`reactions.renderExpandedPicker: null` drops it).
 - `getChatCapabilities()` tells which optional features the installed peers allow.
 
 ## Optional features and the peers they need
@@ -123,6 +136,9 @@ Each is inert until you install its peer and turn it on - nothing is forced on t
 | Location messages | `IMessage.location` | none |
 | Emoji reactions | `reactions={{ onReactionPress }}` (+ `Chat.toggleReaction`) | none |
 | Long-press action menu | on by default; `messageActions` to extend or replace | `expo-clipboard` for Copy |
+| Emoji recents across launches | on with the emoji keyboard | `@react-native-async-storage/async-storage` |
+| Attachment menu tabs | on by default | `expo-media-library` / `expo-image-picker`, `expo-document-picker`, `expo-location` |
+| File messages | `IMessage.file` | none; `expo-sharing` opens them in the share sheet |
 | Rich markdown for AI replies | `messageTextProps={{ markdown: true }}` | none (built-in), `react-native-streamdown` upgrades it |
 | Recycling list for huge histories | `isFlashListEnabled` | `@shopify/flash-list` |
 | Custom icons | `icons={{ send: … }}` | `react-native-svg` for the built-in Lucide glyphs |

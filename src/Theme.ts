@@ -268,6 +268,89 @@ export interface ChatThemeWallpaper {
   patternColor?: string
 }
 
+export interface ChatThemeEmojiKeyboard {
+  /** Panel background (`chat_emojiPanelBackground`). */
+  background: string
+  /** Tab icons (`chat_emojiPanelIcon`). */
+  icon: string
+  /** The selected tab's icon (`chat_emojiPanelIconSelected`). */
+  iconSelected: string
+  /** The round-rect behind the selected tab (`chat_emojiPanelIcon` at 18%). */
+  tabIndicator: string
+  /** Section headers ("Smileys & People"; `chat_emojiPanelStickerSetName`). */
+  sectionTitle: string
+  /** The search pill (`chat_emojiSearchBackground`). */
+  searchBackground: string
+  /** Search icon and hint (`chat_emojiSearchIcon`). */
+  searchIcon: string
+  /** Text typed into search. */
+  searchText: string
+  /** The backspace key (`chat_emojiPanelBackspace`). */
+  backspace: string
+  /** The hairline above the tab strip (`chat_emojiPanelShadowLine`). */
+  shadowLine: string
+  /** The skin-tone popup (`dialogBackground`). */
+  popupBackground: string
+  /** The press highlight in the popup and on cells (`listSelector`). */
+  selector: string
+  /** Panel height before any system keyboard has been seen (Telegram's 200). */
+  defaultHeight: number
+  /** Target width of a grid cell; the column count is `max(1, width / cellSize)` (45). */
+  cellSize: number
+  /** Emoji glyph size in a cell. */
+  emojiSize: number
+}
+
+export interface ChatThemeContextMenu {
+  /** Menu and reactions bar fill (`actionBarDefaultSubmenuBackground`). */
+  background: string
+  /** Item text (`actionBarDefaultSubmenuItem`). */
+  text: string
+  /** Item icons (`actionBarDefaultSubmenuItemIcon`). */
+  icon: string
+  /** The 8dp gap between item groups (`actionBarDefaultSubmenuSeparator`). */
+  separator: string
+  /** Pressed item (`dialogButtonSelector`). */
+  pressed: string
+  /** A `destructive` item (`text_RedRegular`). */
+  destructive: string
+  /** The dim over the chat while the menu is open (black at 0.2). */
+  scrim: string
+  /** The circle behind a reaction you already chose (`listSelector`). */
+  reactionSelected: string
+}
+
+export interface ChatThemeAttachments {
+  /** Sheet background (`dialogBackground`). */
+  background: string
+  /** The dim behind the sheet (black at 51/255). */
+  dim: string
+  /** Titles and the caption text (`dialogTextBlack`). */
+  text: string
+  /** Secondary text: file sizes, hints, the caption placeholder. */
+  secondaryText: string
+  /** The drag handle. */
+  handle: string
+  /** The floating tab pill (`windowBackgroundWhite` at 0.85). */
+  tabBackground: string
+  /** Unselected tab icon and label (`glass_tabUnselected`). */
+  tabText: string
+  /** Selected tab icon, and its capsule at 9% (`glass_tabSelected`). */
+  tabSelected: string
+  /** Selected tab label. */
+  tabSelectedText: string
+  /** Selection disc (`chat_attachCheckBoxBackground`). */
+  checkbox: string
+  /** Number / check on the disc (`chat_attachCheckBoxCheck`). */
+  checkboxCheck: string
+  /** Empty photo cell (`chat_attachPhotoBackground`). */
+  cellBackground: string
+  /** Send button (`dialogFloatingButton`). */
+  sendButton: string
+  /** Send button icon. */
+  sendButtonIcon: string
+}
+
 export interface ChatTheme {
   colors: ChatThemeColors
   radii: ChatThemeRadii
@@ -279,6 +362,12 @@ export interface ChatTheme {
   voice: ChatThemeVoice
   bubble: ChatThemeBubble
   wallpaper: ChatThemeWallpaper
+  /** The built-in emoji keyboard (`EmojiView`). */
+  emojiKeyboard: ChatThemeEmojiKeyboard
+  /** The long-press menu and reactions bar (`ActionBarPopupWindow`, `ReactionsContainerLayout`). */
+  contextMenu: ChatThemeContextMenu
+  /** The built-in attachment menu (`ChatAttachAlert`). */
+  attachments: ChatThemeAttachments
   /** Sender name colors, picked per user id (`avatar_nameInMessage*`); empty uses `colors.senderName`. */
   nameColors: string[]
 }
@@ -294,6 +383,9 @@ export type PartialChatTheme = {
   voice?: Partial<ChatThemeVoice>
   bubble?: Partial<ChatThemeBubble>
   wallpaper?: Partial<ChatThemeWallpaper>
+  emojiKeyboard?: Partial<ChatThemeEmojiKeyboard>
+  contextMenu?: Partial<ChatThemeContextMenu>
+  attachments?: Partial<ChatThemeAttachments>
   nameColors?: string[]
 }
 
@@ -373,6 +465,9 @@ const sharedBubble: Omit<ChatThemeBubble, 'outgoingGradient'> = {
   maxWidthInset: 80,
 }
 
+// `EmojiView`: 200 before any keyboard was measured, 45 per column, 32 glyphs (`EV:3013, 2819`).
+const sharedEmojiKeyboardMetrics = { defaultHeight: 200, cellSize: 45, emojiSize: 30 }
+
 export const defaultLightTheme: ChatTheme = {
   colors: {
     accent: '#229AF0',
@@ -449,6 +544,47 @@ export const defaultLightTheme: ChatTheme = {
     patternOpacity: 0.34,
   },
   nameColors: ['#CC5049', '#D67722', '#955CDB', '#40A920', '#309EBA', '#368AD1', '#C7508B'],
+  emojiKeyboard: {
+    ...sharedEmojiKeyboardMetrics,
+    background: '#F0F2F5',
+    icon: '#9DA4AB',
+    iconSelected: '#5E6976',
+    tabIndicator: 'rgba(157, 164, 171, 0.18)',
+    sectionTitle: '#828B94',
+    searchBackground: '#E5E9EE',
+    searchIcon: '#94A1AF',
+    searchText: '#000000',
+    backspace: '#8C9197',
+    shadowLine: 'rgba(0, 0, 0, 0.07)',
+    popupBackground: '#FFFFFF',
+    selector: 'rgba(0, 0, 0, 0.06)',
+  },
+  contextMenu: {
+    background: '#FFFFFF',
+    text: '#1A1D21',
+    icon: '#1A1D21',
+    separator: '#F5F5F5',
+    pressed: 'rgba(0, 0, 0, 0.06)',
+    destructive: '#CC2929',
+    scrim: 'rgba(0, 0, 0, 0.2)',
+    reactionSelected: 'rgba(0, 0, 0, 0.06)',
+  },
+  attachments: {
+    background: '#FFFFFF',
+    dim: 'rgba(0, 0, 0, 0.2)',
+    text: '#222222',
+    secondaryText: '#8A8A8A',
+    handle: 'rgba(0, 0, 0, 0.15)',
+    tabBackground: 'rgba(255, 255, 255, 0.85)',
+    tabText: '#1A1D21',
+    tabSelected: '#1A91E6',
+    tabSelectedText: '#0D7FCF',
+    checkbox: '#229AF0',
+    checkboxCheck: '#FFFFFF',
+    cellBackground: 'rgba(0, 0, 0, 0.047)',
+    sendButton: '#229AF0',
+    sendButtonIcon: '#FFFFFF',
+  },
 }
 
 export const defaultDarkTheme: ChatTheme = {
@@ -531,6 +667,49 @@ export const defaultDarkTheme: ChatTheme = {
     patternOpacity: 0.38,
   },
   nameColors: ['#E88878', '#E8AB5A', '#8C8DEA', '#7DD071', '#53CCC6', '#5CADEA', '#E8749A'],
+  emojiKeyboard: {
+    ...sharedEmojiKeyboardMetrics,
+    background: '#1D2733',
+    icon: '#677687',
+    iconSelected: '#64B5EF',
+    tabIndicator: 'rgba(103, 118, 135, 0.18)',
+    sectionTitle: '#828B94',
+    // Dark Blue leaves the search pill at the day color; in the chat's glass panel it is the
+    // icon color at 6%, which is what reads right on the dark sheet.
+    searchBackground: 'rgba(255, 255, 255, 0.06)',
+    searchIcon: '#94A1AF',
+    searchText: '#FFFFFF',
+    backspace: '#677687',
+    shadowLine: 'rgba(0, 0, 0, 0.196)',
+    popupBackground: '#212D3B',
+    selector: 'rgba(255, 255, 255, 0.08)',
+  },
+  contextMenu: {
+    background: '#283848',
+    text: '#FFFFFF',
+    icon: '#FFFFFF',
+    separator: '#1F2E3F',
+    pressed: '#324156',
+    destructive: '#EE686F',
+    scrim: 'rgba(0, 0, 0, 0.2)',
+    reactionSelected: 'rgba(255, 255, 255, 0.08)',
+  },
+  attachments: {
+    background: '#212D3B',
+    dim: 'rgba(0, 0, 0, 0.2)',
+    text: '#FFFFFF',
+    secondaryText: '#7D8B99',
+    handle: 'rgba(255, 255, 255, 0.15)',
+    tabBackground: 'rgba(29, 39, 51, 0.85)',
+    tabText: '#FFFFFF',
+    tabSelected: '#229AF0',
+    tabSelectedText: '#229AF0',
+    checkbox: '#229AF0',
+    checkboxCheck: '#FFFFFF',
+    cellBackground: 'rgba(255, 255, 255, 0.05)',
+    sendButton: '#229AF0',
+    sendButtonIcon: '#FFFFFF',
+  },
 }
 
 export interface ChatThemeOverrides {
@@ -591,6 +770,9 @@ export function mergeTheme (base: ChatTheme, override?: PartialChatTheme): ChatT
     voice: { ...base.voice, ...override.voice },
     bubble,
     wallpaper: { ...base.wallpaper, ...override.wallpaper },
+    emojiKeyboard: { ...base.emojiKeyboard, ...override.emojiKeyboard },
+    contextMenu: { ...base.contextMenu, ...override.contextMenu },
+    attachments: { ...base.attachments, ...override.attachments },
     nameColors,
   }
 }

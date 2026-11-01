@@ -5,8 +5,12 @@ import Animated, { Easing, FadeIn, FadeOut, Keyframe, LayoutAnimationConfig, Zoo
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Actions, ActionsProps } from './Actions'
+import { AttachmentButton, resolveAttachments } from './attachments/AttachmentButton'
+import { getAttachmentTabs } from './attachments/buildMessages'
+import { AttachmentsProps } from './attachments/types'
 import { AttachmentAction } from './components/AttachmentSheet'
 import { useChatOverlay } from './components/ChatOverlay'
+import { useComposerPanels } from './components/composerPanels'
 import { GlassSurface } from './components/GlassSurface'
 import { Icon } from './components/Icon'
 import { EmojiIcon, TrashIcon } from './components/MediaControls'
@@ -27,6 +31,8 @@ import {
   isVoiceRecordingAvailable,
 } from './components/VoiceMessageInput'
 import { Composer, ComposerProps } from './Composer'
+import { EmojiKeyboardPanel, EmojiKeyboardProps, resolveEmojiKeyboard, useEmojiKeyboard } from './emoji/EmojiKeyboard'
+import { TextSelection, deleteBackward, insertText } from './emoji/textEditing'
 import { useIsRTL } from './hooks/useIsRTL'
 import { useLabels } from './hooks/useLabels'
 import { useTheme, useThemedStyles } from './hooks/useTheme'
@@ -147,6 +153,8 @@ const swapOut = new Keyframe({
   0: { opacity: 1, transform: [{ scale: 1 }] },
   100: { opacity: 0, transform: [{ scale: 0.1 }], easing: EASE_OUT_QUINT },
 }).duration(SWAP_MS)
+// The emoji button's smile <-> keyboard morph (a ~300ms Lottie in Telegram, `CAEV` icon view).
+const EMOJI_ICON_SWAP = { duration: 200, easing: Easing.out(Easing.quad) }
 // The paperclip steps aside while there is text: half size and transparent over 100ms.
 const ATTACH_HIDE = { duration: 100 }
 
@@ -184,8 +192,24 @@ export interface InputToolbarProps<TMessage extends IMessage> {
   isSendButtonAlwaysVisible?: boolean
   /** Current composer text (used to swap the send button for the mic button) */
   text?: string
-  /** Show an emoji button inset on the left of the field; called on press. */
+  /** Props for the composer's `TextInput`, forwarded from `Chat`. */
+  textInputProps?: ComposerProps['textInputProps']
+  /**
+   * Called when the emoji button is pressed, instead of opening the built-in emoji keyboard.
+   * Passing it shows the button even with `emojiKeyboard={false}`.
+   */
   onPressEmoji?: () => void
+  /**
+   * The built-in emoji keyboard the emoji button opens in the system keyboard's place. On by
+   * default; `false` hides the button (unless `onPressEmoji` is set).
+   */
+  emojiKeyboard?: boolean | EmojiKeyboardProps
+  /**
+   * The built-in attachment menu behind the paperclip. On by default (each tab shows when its
+   * optional peer is installed); `false` hides the paperclip. `actions`, `onPressActionButton`
+   * and `renderActions` take precedence.
+   */
+  attachments?: boolean | AttachmentsProps<TMessage>
   /**
    * Whether the composer accepts multiple lines. `true` (default) keeps the
    * return key inserting a newline; `false` turns it into Send.
@@ -225,6 +249,48 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const isRTL = useIsRTL()
+  const labels = useLabels()
+
+  // The built-in emoji keyboard, unless the app handles the button itself.
+  const emojiConfig = props.onPressEmoji ? null : resolveEmojiKeyboard(props.emojiKeyboard)
+  const textInputRef = (props.textInputProps as { ref?: React.RefObject<{ focus?: () => void } | null> } | undefined)?.ref
+  const focusComposer = useCallback(() => {
+    textInputRef?.current?.focus?.()
+  }, [textInputRef])
+  const emoji = useEmojiKeyboard({
+    isEnabled: !!emojiConfig,
+    focusComposer,
+    defaultHeight: theme.emojiKeyboard.defaultHeight,
+  })
+
+  // The message list closes the panel on a tap, as Telegram's does.
+  const composerPanels = useComposerPanels()
+  const closeEmoji = emoji.close
+  useEffect(() => {
+    composerPanels?.setCloser(closeEmoji)
+    return () => composerPanels?.setCloser(null)
+  }, [composerPanels, closeEmoji])
+
+  // Edits go through the composer's own change handler, so they work whether the app controls
+  // `text` or not. Kept in refs, as several taps can land before the next render.
+  const textRef = useRef(props.text ?? '')
+  textRef.current = props.text ?? ''
+  const selectionRef = useRef<TextSelection | null>(null)
+  const onChangeTextRef = useRef(props.textInputProps?.onChangeText)
+  onChangeTextRef.current = props.textInputProps?.onChangeText
+
+  const applyEdit = useCallback((edit: { text: string, selection: TextSelection }) => {
+    textRef.current = edit.text
+    selectionRef.current = edit.selection
+    onChangeTextRef.current?.(edit.text)
+  }, [])
+  const insertEmoji = useCallback((value: string) => {
+    applyEdit(insertText(textRef.current, value, selectionRef.current))
+  }, [applyEdit])
+  const deleteBackwardInComposer = useCallback(() => {
+    applyEdit(deleteBackward(textRef.current, selectionRef.current))
+  }, [applyEdit])
+
 
   // The island floats 9 above the home indicator (`INPUT_BUBBLE_BOTTOM`), and 9 above the
   // keyboard once it covers the indicator: the inset fades out with the keyboard's progress.
@@ -234,8 +300,10 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const keyboardProgress = keyboard?.progress ?? noKeyboard
   const bottomInset = insets.bottom
   const bottomGap = theme.spacing.inputToolbarPaddingV
+  // The emoji panel covers the indicator just as the keyboard does.
+  const emojiOpen = emoji.open
   const insetStyle = useAnimatedStyle(() => ({
-    paddingBottom: bottomGap + bottomInset * (1 - Math.min(1, Math.max(0, keyboardProgress.value))),
+    paddingBottom: bottomGap + bottomInset * (1 - Math.min(1, Math.max(0, keyboardProgress.value, emojiOpen.value))),
   }))
 
   const containerStyles = useMemo(() => [
@@ -255,6 +323,22 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     isRTL && styles.rowReverse,
   ], [styles, isRTL])
 
+  // The built-in attachment menu, behind the paperclip when no legacy `actions` are given.
+  const attachmentsProp = props.attachments
+  const attachmentsConfig = useMemo(() => resolveAttachments<TMessage>(attachmentsProp), [attachmentsProp])
+  const requestedTabs = attachmentsConfig?.tabs
+  const requestedTabsId = requestedTabs?.join(',')
+  const attachmentTabs = useMemo(
+    () => (attachmentsConfig ? getAttachmentTabs(requestedTabs) : []),
+    // The tab list, not its identity: an inline array would rebuild the menu every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [!!attachmentsConfig, requestedTabsId]
+  )
+  const onSendProp = (props as { onSend?: OnSend<TMessage> }).onSend
+  const onSendForAttachments = useCallback((messages: Partial<TMessage>[], shouldReset: boolean) => {
+    onSendProp?.(messages, shouldReset)
+  }, [onSendProp])
+
   const actionsFragment = useMemo(() => {
     const actionsProps = {
       onPressActionButton,
@@ -271,6 +355,18 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     if (onPressActionButton || actions?.length)
       return <Actions {...actionsProps} />
 
+    if (attachmentsConfig && attachmentTabs.length > 0)
+      return (
+        <AttachmentButton<TMessage>
+          tabs={attachmentTabs}
+          config={attachmentsConfig}
+          onSend={onSendForAttachments}
+          onOpen={closeEmoji}
+          icon={icon}
+          wrapperStyle={wrapperStyle}
+        />
+      )
+
     return null
   }, [
     renderActions,
@@ -280,34 +376,79 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     icon,
     wrapperStyle,
     containerStyle,
+    attachmentsConfig,
+    attachmentTabs,
+    onSendForAttachments,
+    closeEmoji,
   ])
 
+  const emojiShown = useSharedValue(0)
+  useEffect(() => {
+    emojiShown.value = withTiming(emoji.isOpen ? 1 : 0, EMOJI_ICON_SWAP)
+  }, [emoji.isOpen, emojiShown])
+  const smileIconStyle = useAnimatedStyle(() => ({
+    opacity: 1 - emojiShown.value,
+    transform: [{ scale: 1 - 0.5 * emojiShown.value }],
+  }))
+  const keyboardIconStyle = useAnimatedStyle(() => ({
+    opacity: emojiShown.value,
+    transform: [{ scale: 0.5 + 0.5 * emojiShown.value }],
+  }))
+
+  const onPressEmoji = props.onPressEmoji
+  const toggleEmoji = emoji.toggle
+  const isEmojiOpen = emoji.isOpen
   const emojiFragment = useMemo(() => {
-    if (!props.onPressEmoji)
+    if (!onPressEmoji && !emojiConfig)
       return null
 
     const size = styles.insetColor.fontSize
+    const color = styles.insetColor.color
     return (
       <Pressable
-        onPress={props.onPressEmoji}
+        onPress={onPressEmoji ?? toggleEmoji}
         hitSlop={8}
         accessibilityRole='button'
-        accessibilityLabel='emoji'
+        accessibilityLabel={isEmojiOpen ? labels.keyboardButton : labels.emojiButton}
         style={styles.insetCell}
       >
-        <Icon name='emoji' color={styles.insetColor.color} size={size} fallback={<EmojiIcon color={styles.insetColor.color} size={size} />} />
+        <Animated.View style={smileIconStyle}>
+          <Icon name='emoji' color={color} size={size} fallback={<EmojiIcon color={color} size={size} />} />
+        </Animated.View>
+        {emojiConfig && (
+          <Animated.View style={[StyleSheet.absoluteFill, styles.centered, keyboardIconStyle]} pointerEvents='none'>
+            <Icon name='keyboard' color={color} size={size} fallback={<Text style={[styles.keyboardFallback, { color }]}>{'⌨'}</Text>} />
+          </Animated.View>
+        )}
       </Pressable>
     )
-  }, [props.onPressEmoji, styles])
+  }, [onPressEmoji, emojiConfig, toggleEmoji, isEmojiOpen, labels, styles, smileIconStyle, keyboardIconStyle])
 
+  const onComposerFocus = emoji.onComposerFocus
   const composerFragment = useMemo(() => {
-    const composerProps = props as ComposerProps
+    const textInputProps = props.textInputProps
+    // The composer reports its caret, so an emoji lands where it is, and its focus, which
+    // brings the system keyboard back in the emoji panel's place.
+    const composerProps = {
+      ...props,
+      textInputProps: {
+        ...textInputProps,
+        onFocus: (event: Parameters<NonNullable<NonNullable<ComposerProps['textInputProps']>['onFocus']>>[0]) => {
+          onComposerFocus()
+          textInputProps?.onFocus?.(event)
+        },
+        onSelectionChange: (event: Parameters<NonNullable<NonNullable<ComposerProps['textInputProps']>['onSelectionChange']>>[0]) => {
+          selectionRef.current = event.nativeEvent.selection
+          textInputProps?.onSelectionChange?.(event)
+        },
+      },
+    } as ComposerProps
 
     if (renderComposer)
       return renderComponentOrElement(renderComposer, composerProps)
 
     return <Composer {...composerProps} />
-  }, [renderComposer, props])
+  }, [renderComposer, props, onComposerFocus])
 
   const sendFragment = useMemo(() => {
     if (renderSend)
@@ -319,8 +460,6 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   // onSend is forwarded from Chat at runtime; it isn't part of the public
   // InputToolbarProps surface, so read it through a typed cast.
   const onSend = (props as { onSend?: OnSend<TMessage> }).onSend
-
-  const labels = useLabels()
 
   // Recording state is owned by VoiceMessageInput (it holds the recorder) and
   // by the video session; both report up here so the bar - timer, "slide to
@@ -392,6 +531,12 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const isPreviewing = !!voicePreview || !!videoPreview
   const isRecordingActive = recording.active
   const isTakeInProgress = isRecordingActive || isPreviewing
+
+  // A take replaces the field, so the emoji panel goes with it.
+  useEffect(() => {
+    if (isTakeInProgress)
+      closeEmoji()
+  }, [isTakeInProgress, closeEmoji])
 
   // A cancelled take keeps the bar up a moment for the trash can, then the
   // composer comes back (`recordDeleteImageView`).
@@ -653,114 +798,124 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const returning = hasHadTakeRef.current ? returnRef.current : null
 
   return (
-    <Animated.View style={containerStyles}>
-      {!setOverlay && videoOverlay && (
-        <View style={styles.detachedOverlay} pointerEvents='box-none'>
-          {videoOverlay}
-        </View>
-      )}
-      <View style={styles.island}>
-        <GlassSurface color={theme.colors.inputBackground} borderColor={theme.colors.inputFieldBorder} style={styles.islandSurface} />
-        {replyPreviewFragment}
-        <View style={primaryStyles}>
-          {isPreviewing
-            ? (
+    <>
+      <Animated.View style={containerStyles}>
+        {!setOverlay && videoOverlay && (
+          <View style={styles.detachedOverlay} pointerEvents='box-none'>
+            {videoOverlay}
+          </View>
+        )}
+        <View style={styles.island}>
+          <GlassSurface color={theme.colors.inputBackground} borderColor={theme.colors.inputFieldBorder} style={styles.islandSurface} />
+          {replyPreviewFragment}
+          <View style={primaryStyles}>
+            {isPreviewing
+              ? (
             // A paused take: delete on the left, the take in the middle, send
             // in the record button's slot (`recordedAudioPanel`).
-              <View style={[styles.recordingBar, styles.previewBar, isRTL && styles.rowReverse]}>
-                {/* The delete button pops in once the circle has shrunk away. */}
-                <Animated.View entering={ZoomIn.delay(150).duration(150)}>
-                  <Pressable
-                    style={styles.recTrash}
-                    hitSlop={8}
-                    onPress={cancelRecording}
-                    accessibilityRole='button'
-                    accessibilityLabel='delete recording'
-                  >
-                    <Icon
-                      name='trash'
-                      color={styles.recTrashColor.color}
-                      size={20}
-                      fallback={<TrashIcon color={styles.recTrashColor.color} size={20} />}
-                    />
-                  </Pressable>
-                </Animated.View>
-                <Animated.View
-                  entering={voicePreview ? voiceStretchIn : videoStretchIn}
-                  exiting={stretchOut}
-                  // The pill grows out of the record button's side.
-                  style={[styles.previewContent, { transformOrigin: isRTL ? 'left center' : 'right center' }]}
-                >
-                  {voicePreview
-                    ? (
-                      <RecordedVoicePreview
-                        key={voicePreview.uri}
-                        preview={voicePreview}
-                        onTrim={trimVoicePreview}
+                <View style={[styles.recordingBar, styles.previewBar, isRTL && styles.rowReverse]}>
+                  {/* The delete button pops in once the circle has shrunk away. */}
+                  <Animated.View entering={ZoomIn.delay(150).duration(150)}>
+                    <Pressable
+                      style={styles.recTrash}
+                      hitSlop={8}
+                      onPress={cancelRecording}
+                      accessibilityRole='button'
+                      accessibilityLabel='delete recording'
+                    >
+                      <Icon
+                        name='trash'
+                        color={styles.recTrashColor.color}
+                        size={20}
+                        fallback={<TrashIcon color={styles.recTrashColor.color} size={20} />}
                       />
-                    )
-                    : (
-                      <View style={styles.videoPreviewPill}>
-                        <Text style={styles.videoPreviewTime}>{formatElapsed(videoPreview?.durationMs ?? 0)}</Text>
-                      </View>
-                    )}
-                </Animated.View>
-              </View>
-            )
-            : isRecordingActive || isCancelLingering
-              ? (
-                <RecordingBar
-                  elapsed={isRecordingActive ? recording.elapsed : lastElapsedRef.current}
-                  isLocked={isRecordingActive && recording.locked}
-                  isBlinking={!isVideoTake || videoSession.isCapturing}
-                  isCancelled={!isRecordingActive}
-                  slideProgress={slideProgress}
-                  slideDistance={slideDistance}
-                  onCancel={cancelRecording}
-                />
-              )
-              : (
-                <Animated.View
-                  style={fieldGroupStyles}
-                  // The pill itself only fades; its parts move on their own.
-                  entering={hasHadTakeRef.current ? FadeIn.duration(CONTROLS_MS) : undefined}
-                  exiting={canTakeAway ? FadeOut.duration(CONTROLS_MS) : undefined}
-                >
-                  {emojiFragment && (
-                    <Animated.View entering={returning?.emoji} exiting={canTakeAway ? emojiOut : undefined}>
-                      {emojiFragment}
-                    </Animated.View>
-                  )}
-                  <Animated.View
-                    style={[
-                      styles.composerSlot,
-                      !emojiFragment && (isRTL ? styles.composerSlotEndInset : styles.composerSlotStartInset),
-                      !actionsFragment && !videoFragment && (isRTL ? styles.composerSlotStartInset : styles.composerSlotEndInset),
-                    ]}
-                    entering={returning?.text}
-                    exiting={canTakeAway ? (isRTL ? textOutRTL : textOut) : undefined}
-                  >
-                    {composerFragment}
+                    </Pressable>
                   </Animated.View>
-                  {actionsFragment && (
-                    <Animated.View entering={returning?.attach} exiting={canTakeAway ? (isRTL ? attachOutRTL : attachOut) : undefined}>
-                      <Animated.View style={attachStyle} pointerEvents={hasText ? 'none' : 'auto'}>
-                        {actionsFragment}
+                  <Animated.View
+                    entering={voicePreview ? voiceStretchIn : videoStretchIn}
+                    exiting={stretchOut}
+                    // The pill grows out of the record button's side.
+                    style={[styles.previewContent, { transformOrigin: isRTL ? 'left center' : 'right center' }]}
+                  >
+                    {voicePreview
+                      ? (
+                        <RecordedVoicePreview
+                          key={voicePreview.uri}
+                          preview={voicePreview}
+                          onTrim={trimVoicePreview}
+                        />
+                      )
+                      : (
+                        <View style={styles.videoPreviewPill}>
+                          <Text style={styles.videoPreviewTime}>{formatElapsed(videoPreview?.durationMs ?? 0)}</Text>
+                        </View>
+                      )}
+                  </Animated.View>
+                </View>
+              )
+              : isRecordingActive || isCancelLingering
+                ? (
+                  <RecordingBar
+                    elapsed={isRecordingActive ? recording.elapsed : lastElapsedRef.current}
+                    isLocked={isRecordingActive && recording.locked}
+                    isBlinking={!isVideoTake || videoSession.isCapturing}
+                    isCancelled={!isRecordingActive}
+                    slideProgress={slideProgress}
+                    slideDistance={slideDistance}
+                    onCancel={cancelRecording}
+                  />
+                )
+                : (
+                  <Animated.View
+                    style={fieldGroupStyles}
+                    // The pill itself only fades; its parts move on their own.
+                    entering={hasHadTakeRef.current ? FadeIn.duration(CONTROLS_MS) : undefined}
+                    exiting={canTakeAway ? FadeOut.duration(CONTROLS_MS) : undefined}
+                  >
+                    {emojiFragment && (
+                      <Animated.View entering={returning?.emoji} exiting={canTakeAway ? emojiOut : undefined}>
+                        {emojiFragment}
                       </Animated.View>
+                    )}
+                    <Animated.View
+                      style={[
+                        styles.composerSlot,
+                        !emojiFragment && (isRTL ? styles.composerSlotEndInset : styles.composerSlotStartInset),
+                        !actionsFragment && !videoFragment && (isRTL ? styles.composerSlotStartInset : styles.composerSlotEndInset),
+                      ]}
+                      entering={returning?.text}
+                      exiting={canTakeAway ? (isRTL ? textOutRTL : textOut) : undefined}
+                    >
+                      {composerFragment}
                     </Animated.View>
-                  )}
-                  {videoFragment}
-                </Animated.View>
-              )}
-          <LayoutAnimationConfig skipEntering>
-            <Animated.View key={rightControlKind} style={styles.rightSlot} entering={swapIn} exiting={swapOut}>
-              {rightControl}
-            </Animated.View>
-          </LayoutAnimationConfig>
+                    {actionsFragment && (
+                      <Animated.View entering={returning?.attach} exiting={canTakeAway ? (isRTL ? attachOutRTL : attachOut) : undefined}>
+                        <Animated.View style={attachStyle} pointerEvents={hasText ? 'none' : 'auto'}>
+                          {actionsFragment}
+                        </Animated.View>
+                      </Animated.View>
+                    )}
+                    {videoFragment}
+                  </Animated.View>
+                )}
+            <LayoutAnimationConfig skipEntering>
+              <Animated.View key={rightControlKind} style={styles.rightSlot} entering={swapIn} exiting={swapOut}>
+                {rightControl}
+              </Animated.View>
+            </LayoutAnimationConfig>
+          </View>
         </View>
-      </View>
-      {accessoryFragment}
-    </Animated.View>
+        {accessoryFragment}
+      </Animated.View>
+      {emojiConfig && (
+        <EmojiKeyboardPanel
+          controller={emoji}
+          config={emojiConfig}
+          onSelect={insertEmoji}
+          onBackspace={deleteBackwardInComposer}
+        />
+      )}
+    </>
   )
 }
 
@@ -880,6 +1035,13 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   },
   rightSlot: {
     alignSelf: 'flex-end',
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keyboardFallback: {
+    fontSize: 22,
   },
   // Carries inset icon color + size (kept out of JSX): `glass_defaultIcon`.
   insetColor: {

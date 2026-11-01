@@ -58,6 +58,18 @@ export interface MessageReaction {
   userIds: (string | number)[]
 }
 
+/** A document attached to a message (`IMessage.file`), drawn as Telegram's file bubble. */
+export interface IMessageFile {
+  /** Where the file is: a local `file://` path or a remote URL. */
+  uri: string
+  /** The file name shown in the bubble, with its extension. */
+  name: string
+  /** Size in bytes, shown under the name. */
+  size?: number
+  /** MIME type, used when the file is opened or shared. */
+  mimeType?: string
+}
+
 export interface IMessage {
   _id: string | number
   text: string
@@ -108,6 +120,8 @@ export interface IMessage {
     latitude: number
     longitude: number
   }
+  /** A document: Telegram's file bubble (icon, name, size); a tap opens it. */
+  file?: IMessageFile
 }
 
 export type IChatMessage = IMessage
@@ -126,6 +140,14 @@ export interface MessageAudioProps<TMessage extends IMessage> {
   containerStyle?: StyleProp<ViewStyle>
   audioStyle?: StyleProp<ViewStyle>
   audioProps?: object
+}
+
+export interface MessageFileProps<TMessage extends IMessage> {
+  currentMessage: TMessage
+  position?: 'left' | 'right'
+  containerStyle?: StyleProp<ViewStyle>
+  /** Override opening the file (the system share sheet with `expo-sharing`, else `Linking`). */
+  onPress?: (file: IMessageFile) => void
 }
 
 export interface MessageLocationProps<TMessage extends IMessage> {

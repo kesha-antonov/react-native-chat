@@ -118,7 +118,8 @@ export function buildDefaultMessageActions<TMessage extends IMessage> ({
             key,
             label: labels.actionDelete,
             icon: ICONS.delete,
-            destructive: true,
+            // Not red: Telegram Android's message menu draws Delete like any other row
+            // (`ChatActivity.fillMessageMenu`).
             onPress: () => onDelete(message),
           })
         break

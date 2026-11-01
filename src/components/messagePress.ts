@@ -1,12 +1,7 @@
-// Telegram's press (Telegram-iOS, submodules/Display/Source/ContextGesture.swift
-// and ContextControllerSourceNode.swift): nothing for the first 0.12s, then the
-// content shrinks linearly over 0.2s - by 15pt of its width, never below 0.7 -
-// and the menu opens as the shrink completes, 0.32s in. Let go earlier and it
-// eases back over 0.2s.
-export const PRESS_DELAY_MS = 120
-export const PRESS_SHRINK_MS = 200
-export const PRESS_RELEASE_MS = 200
-export const PRESS_HOLD_MS = PRESS_DELAY_MS + PRESS_SHRINK_MS
+// Telegram Android's long-press: the list's item long-click fires after the system long-press
+// timeout (`RecyclerListView` uses `ViewConfiguration.getLongPressTimeout()`, 400ms), with no
+// shrink or lift on the way - the message stays where it is and the menu opens beside the finger.
+export const PRESS_HOLD_MS = 400
 
 const noop = () => {}
 

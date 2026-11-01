@@ -101,6 +101,7 @@
     "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.72.1",
     "babel-jest": "^30.5.2",
+    "emoji-datasource": "16.0.0",
     "eslint": "^10.14.0",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
@@ -125,15 +126,21 @@
   },
   "peerDependencies": {
     "@lodev09/react-native-true-sheet": ">=3.0.0",
+    "@react-native-async-storage/async-storage": "*",
     "@react-native-clipboard/clipboard": "*",
     "@shopify/flash-list": "*",
     "expo-audio": "*",
     "expo-blur": "*",
     "expo-clipboard": "*",
     "expo-device": "*",
+    "expo-document-picker": "*",
     "expo-file-system": "*",
     "expo-haptics": "*",
+    "expo-image": "*",
     "expo-image-picker": "*",
+    "expo-location": "*",
+    "expo-media-library": "*",
+    "expo-sharing": "*",
     "expo-video": "*",
     "react": ">=19.0.0",
     "react-native": ">=0.82.0",
@@ -148,6 +155,9 @@
   },
   "peerDependenciesMeta": {
     "@lodev09/react-native-true-sheet": {
+      "optional": true
+    },
+    "@react-native-async-storage/async-storage": {
       "optional": true
     },
     "@react-native-clipboard/clipboard": {
@@ -168,13 +178,28 @@
     "expo-device": {
       "optional": true
     },
+    "expo-document-picker": {
+      "optional": true
+    },
     "expo-file-system": {
       "optional": true
     },
     "expo-haptics": {
       "optional": true
     },
+    "expo-image": {
+      "optional": true
+    },
     "expo-image-picker": {
+      "optional": true
+    },
+    "expo-location": {
+      "optional": true
+    },
+    "expo-media-library": {
+      "optional": true
+    },
+    "expo-sharing": {
       "optional": true
     },
     "expo-video": {

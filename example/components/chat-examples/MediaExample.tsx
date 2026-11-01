@@ -1,16 +1,9 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { Alert, StyleSheet, View } from 'react-native'
-import { AttachmentAction, Chat, IMessage } from '@kesha-antonov/react-native-chat'
-// Deep imports, not the `lucide-react-native` barrel: the barrel re-exports every icon in the
-// set and Metro has no tree-shaking, so importing from it ships all ~1600 of them (~1.2 MB).
-import CameraIcon from 'lucide-react-native/icons/camera'
-import FileText from 'lucide-react-native/icons/file-text'
-import ImageIcon from 'lucide-react-native/icons/image'
-import MapPin from 'lucide-react-native/icons/map-pin'
+import { StyleSheet, View } from 'react-native'
+import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { getColorSchemeStyle } from '../../utils/styleUtils'
-import EmojiPicker from '../EmojiPicker'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Media Bot' }
@@ -41,6 +34,13 @@ const INITIAL_MESSAGES: IMessage[] = [
     duration: 8,
   },
   {
+    _id: 'file',
+    text: '',
+    createdAt: new Date(Date.now() - 1000 * 50),
+    user: BOT,
+    file: { uri: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', name: 'Quarterly report.pdf', size: 13264, mimeType: 'application/pdf' },
+  },
+  {
     _id: 'loc',
     text: '',
     createdAt: new Date(Date.now() - 1000 * 60),
@@ -63,7 +63,7 @@ const INITIAL_MESSAGES: IMessage[] = [
   },
   {
     _id: 'intro',
-    text: 'This screen shows audio, video and location messages. Hold the mic to record a voice note, or tap the camera to record a video. Tap the location card to open maps.',
+    text: 'This screen shows audio, video, file and location messages. Hold the mic to record a voice note, or tap the camera to record a video. The paperclip opens the built-in attachment menu: pick photos, a file or your location.',
     createdAt: new Date(Date.now() - 1000 * 240),
     user: BOT,
   },
@@ -72,17 +72,9 @@ const INITIAL_MESSAGES: IMessage[] = [
 export default function MediaExample () {
   const colorScheme = useColorScheme()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
-  const [text, setText] = useState('')
-  const [isEmojiOpen, setIsEmojiOpen] = useState(false)
 
   const onSend = useCallback((newMessages: IMessage[] = []) => {
-    const withIds = newMessages.map(msg => ({
-      ...msg,
-      _id: msg._id || Math.random().toString(36).slice(2),
-      user: msg.user || USER,
-      createdAt: msg.createdAt || new Date(),
-    }))
-    setMessages(previous => Chat.append(previous, withIds))
+    setMessages(previous => Chat.append(previous, newMessages))
   }, [])
 
   const audioRecording = useMemo(() => ({ isEnabled: true }), [])
@@ -90,44 +82,19 @@ export default function MediaExample () {
   // simulator there is no camera, so the recorder runs in POC mode.
   const videoRecording = useMemo(() => ({ isEnabled: true, maxDuration: 30 }), [])
 
-  // Tap the paperclip in the field to open a Telegram-style attachment grid.
-  // Providing `icon`/`color` switches the sheet from a list to a grid of tiles;
-  // the icons here are Lucide glyphs (rendered white on the colored tiles).
-  const attachmentActions = useMemo<AttachmentAction[]>(() => [
-    { title: 'Gallery', color: '#8E44AD', icon: ({ color, size }) => <ImageIcon color={color} size={size} />, action: () => {} },
-    { title: 'File', color: '#3498DB', icon: ({ color, size }) => <FileText color={color} size={size} />, action: () => {} },
-    {
-      title: 'Location',
-      color: '#2ECC71',
-      icon: ({ color, size }) => <MapPin color={color} size={size} />,
-      action: () => onSend([{ _id: '', text: '', user: USER, location: { latitude: 51.5074, longitude: -0.1278 } } as IMessage]),
-    },
-    { title: 'Camera', color: '#E74C3C', icon: ({ color, size }) => <CameraIcon color={color} size={size} />, action: () => Alert.alert('Camera', 'Camera capture is available on a physical device.') },
-  ], [onSend])
-
   return (
     <View style={[styles.container, getColorSchemeStyle(styles, 'container', colorScheme)]}>
       <Chat<IMessage>
         messages={messages}
         onSend={onSend}
         user={USER}
-        // Controlled text so the emoji button can insert into the field.
-        text={text}
-        textInputProps={{ onChangeText: setText }}
         // This example wires the optional media peers:
         //   - expo-audio              -> voice recording + simple audio playback
         //   - expo-video              -> inline video playback
         //   - react-native-vision-camera -> round video notes (camera button in the bar)
+        //   - expo-media-library, expo-document-picker, expo-location -> the attachment menu
         audioRecording={audioRecording}
         videoRecording={videoRecording}
-        actions={attachmentActions}
-        // Emoji button inset on the left of the field opens the emoji picker.
-        onPressEmoji={() => setIsEmojiOpen(true)}
-      />
-      <EmojiPicker
-        visible={isEmojiOpen}
-        onClose={() => setIsEmojiOpen(false)}
-        onSelect={emoji => setText(t => t + emoji)}
       />
     </View>
   )

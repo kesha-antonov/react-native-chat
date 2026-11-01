@@ -94,6 +94,62 @@ export interface ChatLabels {
   actionForward: string
   /** Message context menu: delete the message. */
   actionDelete: string
+  /** Emoji keyboard: the search field placeholder. */
+  emojiSearch: string
+  /** Emoji keyboard: the recents tab. */
+  emojiRecent: string
+  /** Emoji keyboard: smileys and people section. */
+  emojiSmileys: string
+  /** Emoji keyboard: animals section. */
+  emojiAnimals: string
+  /** Emoji keyboard: food section. */
+  emojiFood: string
+  /** Emoji keyboard: activities section. */
+  emojiActivities: string
+  /** Emoji keyboard: travel section. */
+  emojiTravel: string
+  /** Emoji keyboard: objects section. */
+  emojiObjects: string
+  /** Emoji keyboard: symbols section. */
+  emojiSymbols: string
+  /** Emoji keyboard: flags section. */
+  emojiFlags: string
+  /** Emoji keyboard: shown when a search finds nothing. */
+  emojiNoResults: string
+  /** Accessibility label of the composer's emoji button. */
+  emojiButton: string
+  /** Accessibility label of the emoji button while the emoji keyboard is open. */
+  keyboardButton: string
+  /** Accessibility label of the emoji keyboard's backspace. */
+  backspace: string
+  /** Accessibility label of the composer's paperclip. */
+  attachButton: string
+  /** Attachment menu: the Gallery tab. */
+  attachGallery: string
+  /** Attachment menu: the File tab. */
+  attachFile: string
+  /** Attachment menu: the Location tab. */
+  attachLocation: string
+  /** Attachment menu: the Camera tab and tile. */
+  attachCamera: string
+  /** Attachment menu: the caption field placeholder. */
+  attachCaption: string
+  /** Attachment menu: the button that sends your position. */
+  attachSendLocation: string
+  /** Attachment menu: shown while the position is being found. */
+  attachLocating: string
+  /** Attachment menu: accuracy of the found position; `{meters}` is replaced. */
+  attachLocationAccuracy: string
+  /** Attachment menu: shown when photo access is denied. */
+  attachPhotosAccess: string
+  /** Attachment menu: shown when the library has no photos. */
+  attachNoPhotos: string
+  /** Attachment menu: opens the system photo picker. */
+  attachChooseFromGallery: string
+  /** Attachment menu: the File tab's button. */
+  attachChooseFile: string
+  /** Attachment menu: shown when location access is denied. */
+  attachLocationDenied: string
 }
 
 export const defaultLabels: ChatLabels = {
@@ -138,6 +194,34 @@ export const defaultLabels: ChatLabels = {
   actionEdit: 'Edit',
   actionForward: 'Forward',
   actionDelete: 'Delete',
+  emojiSearch: 'Search Emoji',
+  emojiRecent: 'Recently Used',
+  emojiSmileys: 'Smileys & People',
+  emojiAnimals: 'Animals & Nature',
+  emojiFood: 'Food & Drink',
+  emojiActivities: 'Activity',
+  emojiTravel: 'Travel & Places',
+  emojiObjects: 'Objects',
+  emojiSymbols: 'Symbols',
+  emojiFlags: 'Flags',
+  emojiNoResults: 'No emoji found',
+  emojiButton: 'Emoji',
+  keyboardButton: 'Keyboard',
+  backspace: 'Backspace',
+  attachButton: 'Attach',
+  attachGallery: 'Gallery',
+  attachFile: 'File',
+  attachLocation: 'Location',
+  attachCamera: 'Camera',
+  attachCaption: 'Add a caption...',
+  attachSendLocation: 'Send My Current Location',
+  attachLocating: 'Locating...',
+  attachLocationAccuracy: 'Accurate to {meters} m',
+  attachPhotosAccess: 'Allow access to your photos to send them',
+  attachNoPhotos: 'No photos yet',
+  attachChooseFromGallery: 'Choose from Gallery',
+  attachChooseFile: 'Choose a file to send',
+  attachLocationDenied: 'Location access is off. Turn it on in Settings to send your location.',
 }
 
 /**

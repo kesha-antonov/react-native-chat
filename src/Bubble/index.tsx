@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ImageStyle,
   Keyboard,
-  LayoutChangeEvent,
   View,
   Pressable,
   StyleProp,
@@ -13,12 +12,9 @@ import {
   useWindowDimensions } from 'react-native'
 import { GestureDetector, useExclusiveGestures, useLongPressGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
-  Easing,
-  ReduceMotion,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withTiming,
 } from 'react-native-reanimated'
 
@@ -28,7 +24,7 @@ import { ContextMenu } from '../components/ContextMenu'
 import { impactHaptic } from '../components/haptics'
 import { MediaPlaybackContext, useNoteTimeShift } from '../components/mediaPlayback'
 import { BubbleHighlightTint, useMessageHighlightToken } from '../components/messageHighlight'
-import { PRESS_DELAY_MS, PRESS_HOLD_MS, PRESS_RELEASE_MS, PRESS_SHRINK_MS } from '../components/messagePress'
+import { PRESS_HOLD_MS } from '../components/messagePress'
 import { MessageReply } from '../components/MessageReply'
 import { MessageStatus, MessageStatusKind } from '../components/MessageStatus'
 import { NOTE_GROW_MS, noteGrowEasing } from '../components/roundNoteChrome'
@@ -37,6 +33,7 @@ import { useIsRTL } from '../hooks/useIsRTL'
 import { useLabels } from '../hooks/useLabels'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { MessageAudio } from '../MessageAudio'
+import { MessageFile } from '../MessageFile'
 import { MessageImage } from '../MessageImage'
 import { MessageLocation } from '../MessageLocation'
 import { MessageText } from '../MessageText'
@@ -62,9 +59,6 @@ interface PickerAnchor {
   bubbleWidth: number
   bubbleHeight: number
 }
-
-// CA's easeOut.
-const PRESS_RELEASE_EASING = Easing.bezier(0, 0, 0.58, 1)
 
 // A lifted copy must not undo the original's margins: the overlay places it by
 // the measured bubble box, which excludes them.
@@ -137,7 +131,8 @@ export type PressableBubbleRowProps<TMessage extends IMessage> = {
   /** The overlay is showing a lifted copy, so the original is hidden. */
   isLifted?: boolean
   onPressMessage?: (context: unknown, message: TMessage) => void
-  onLongPressStart: () => void
+  /** The long-press fired; the finger's window coordinates, when known. */
+  onLongPressStart: (touchX?: number, touchY?: number) => void
   measureBubble: () => void
   context: unknown
   currentMessage: TMessage
@@ -170,16 +165,6 @@ const PressableBubbleRow = <TMessage extends IMessage>({
   bubbleContainerRef,
   children,
 }: PressableBubbleRowProps<TMessage>) => {
-  const messageScale = useSharedValue(1)
-  const bubbleWidth = useSharedValue(0)
-  const onBubbleLayout = useCallback((event: LayoutChangeEvent) => {
-    bubbleWidth.value = event.nativeEvent.layout.width
-  }, [bubbleWidth])
-
-  const bubbleScaleStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: messageScale.value }],
-  }))
-
   const tapGesture = useTapGesture({
     // Only attached when there is something to call - otherwise it would
     // compete with interactive content inside the bubble for no reason.
@@ -194,29 +179,16 @@ const PressableBubbleRow = <TMessage extends IMessage>({
     },
   })
 
+  // Telegram Android neither shrinks nor lifts the message: it opens the menu where the finger is.
   const longPressGesture = useLongPressGesture({
     testID: 'message-long-press',
     minDuration: PRESS_HOLD_MS,
     cancelsTouchesInView: false,
     onBegin: () => {
-      const width = bubbleWidth.value
-      const pressed = width > 0 ? Math.max(0.7, (width - 15) / width) : 1
-      messageScale.value = withDelay(
-        PRESS_DELAY_MS,
-        withTiming(pressed, { duration: PRESS_SHRINK_MS, easing: Easing.linear, reduceMotion: ReduceMotion.System }),
-        ReduceMotion.System
-      )
       runOnJS(measureBubble)()
     },
-    onActivate: () => {
-      runOnJS(onLongPressStart)()
-    },
-    onFinalize: () => {
-      messageScale.value = withTiming(1, {
-        duration: PRESS_RELEASE_MS,
-        easing: PRESS_RELEASE_EASING,
-        reduceMotion: ReduceMotion.System,
-      })
+    onActivate: event => {
+      runOnJS(onLongPressStart)(event.absoluteX, event.absoluteY)
     },
   })
 
@@ -229,11 +201,11 @@ const PressableBubbleRow = <TMessage extends IMessage>({
   // space beside the bubble opens the picker too - the way Telegram behaves.
   const bubbleRow = (
     <View style={rowSurfaceStyle}>
-      <Animated.View style={[bubbleScaleStyle, isLifted && hiddenStyle]}>
-        <View style={wrapperStyleList} ref={bubbleContainerRef} onLayout={onBubbleLayout}>
+      <View style={isLifted ? hiddenStyle : undefined}>
+        <View style={wrapperStyleList} ref={bubbleContainerRef}>
           {children}
         </View>
-      </Animated.View>
+      </View>
     </View>
   )
 
@@ -349,6 +321,11 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     !currentMessage?.image && !currentMessage?.video && !currentMessage?.location &&
     !props.renderMessageAudio
 
+  // A bare file keeps its time on the size line too, as Telegram's document cell does.
+  const isFileNote = !!currentMessage?.file && !currentMessage?.text && !currentMessage?.image &&
+    !currentMessage?.video && !currentMessage?.audio && !currentMessage?.location &&
+    !props.renderMessageFile
+
   // Telegram's runs: the same sender within five minutes. A run shares one tail, one name.
   const isGroupedWithPrevious = isSameGroup(currentMessage, previousMessage)
   const isGroupedWithNext = isSameGroup(currentMessage, nextMessage)
@@ -394,10 +371,13 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   // too, which outlasts `isPickerVisible`.
   const [isLifted, setIsLifted] = useState(false)
 
-  const openPicker = useCallback(() => {
+  // Where the finger was: Telegram opens the menu beside it.
+  const [touchPoint, setTouchPoint] = useState<{ touchX?: number, touchY?: number }>({})
+  const openPicker = useCallback((touchX?: number, touchY?: number) => {
     // Telegram Android's long-press tick, `HapticFeedbackConstants.LONG_PRESS`
     // (`RecyclerListView`'s item long-click), mapped to a medium impact.
     impactHaptic('Medium')
+    setTouchPoint({ touchX, touchY })
     setIsPickerVisible(true)
   }, [])
 
@@ -482,7 +462,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const metaMode: MetaMode = useMemo(() => {
     if (isVideoNote)
       return 'note'
-    if (isVoiceNote)
+    if (isVoiceNote || isFileNote)
       return 'voice'
     if (!theme.bubble.isTimeInline || props.renderTime || (props.isCustomViewBottom && props.renderCustomView))
       return 'row'
@@ -493,7 +473,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     if (currentMessage?.image && !currentMessage.video && !currentMessage.location && !currentMessage.audio && !props.renderMessageImage)
       return 'overlay'
     return 'row'
-  }, [isVideoNote, isVoiceNote, theme, props.renderTime, props.isCustomViewBottom, props.renderCustomView, props.renderMessageText, props.renderMessageImage, hasDefaultReactions, currentMessage])
+  }, [isVideoNote, isVoiceNote, isFileNote, theme, props.renderTime, props.isCustomViewBottom, props.renderCustomView, props.renderMessageText, props.renderMessageImage, hasDefaultReactions, currentMessage])
 
   const timeFormat = (props as { timeFormat?: string }).timeFormat ?? TIME_FORMAT
   const timeTextStyle = (props as { timeTextStyle?: LeftRightStyle<TextStyle> }).timeTextStyle
@@ -696,6 +676,24 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return <MessageLocation {...messageLocationProps} />
   }, [props, currentMessage])
 
+  const renderMessageFile = useCallback(() => {
+    if (!currentMessage?.file)
+      return null
+
+    const {
+      /* eslint-disable @typescript-eslint/no-unused-vars */
+      containerStyle,
+      wrapperStyle,
+      /* eslint-enable @typescript-eslint/no-unused-vars */
+      ...messageFileProps
+    } = props
+
+    if (props.renderMessageFile)
+      return renderComponentOrElement(props.renderMessageFile, messageFileProps)
+
+    return <MessageFile {...messageFileProps} />
+  }, [props, currentMessage])
+
   // `tone` picks the colors: in the bubble, on a photo's dark pill, or on a round note's pill.
   const renderTicks = useCallback((tone: 'bubble' | 'media' | 'note') => {
     const { renderTicks } = props
@@ -862,6 +860,13 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     }
   }, [currentMessage, position, props.user, reactions])
 
+  // The reactions you already picked, which the menu's bar draws smaller, in a circle.
+  const currentUserId = props.user?._id
+  const chosenReactions = useMemo(() => currentUserId == null
+    ? undefined
+    : currentMessage?.reactions?.filter(reaction => reaction.userIds.includes(currentUserId)).map(reaction => reaction.emoji)
+  , [currentMessage?.reactions, currentUserId])
+
   // Telegram draws the pills inside the bubble, under the text, with the time on their last
   // row when it fits.
   const renderReactionsInside = useCallback(() => {
@@ -886,6 +891,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         {renderMessageVideo()}
         {renderMessageAudio()}
         {renderMessageLocation()}
+        {renderMessageFile()}
         {renderMessageText()}
         {props.isCustomViewBottom && renderCustomView()}
         {renderReactionsInside()}
@@ -898,6 +904,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     renderMessageVideo,
     renderMessageAudio,
     renderMessageLocation,
+    renderMessageFile,
     renderMessageText,
     renderReactionsInside,
     props.isCustomViewBottom,
@@ -973,7 +980,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         style={[
           styles.bottom,
           isVideoNote && styles.noteMetaPill,
-          isVoiceNote && styles.voiceMeta,
+          (isVoiceNote || isFileNote) && styles.voiceMeta,
           bottomContainerStyle?.[position],
           isVideoNote && noteTimeStyle,
         ]}
@@ -986,7 +993,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         </View>
       </Animated.View>
     )
-  }, [metaMode, renderTicks, renderTime, styles, isRTL, position, bottomContainerStyle, isVideoNote, isVoiceNote, noteTimeStyle])
+  }, [metaMode, renderTicks, renderTime, styles, isRTL, position, bottomContainerStyle, isVideoNote, isVoiceNote, isFileNote, noteTimeStyle])
 
   const renderBubbleBody = useCallback(() => (
     <>
@@ -1081,6 +1088,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       onDismiss: closePicker,
       position,
       ...pickerAnchor,
+      ...touchPoint,
       pickerContainerStyle: reactions.pickerContainerStyle,
       pickerEmojiStyle: reactions.pickerEmojiStyle,
       messagePreview,
@@ -1092,14 +1100,15 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
 
     // The built-in picker aligns to the side the bubble is drawn on.
     return <ReactionPicker {...pickerProps} position={visualPosition} />
-  }, [reactions, isPickerVisible, currentMessage, position, visualPosition, pickerAnchor, messagePreview, closePicker, selectReaction])
+  }, [reactions, isPickerVisible, currentMessage, position, visualPosition, pickerAnchor, touchPoint, messagePreview, closePicker, selectReaction])
 
   const renderContextMenu = useCallback(() => {
     const reactionsRow = reactions?.isEnabled
       ? {
         emojis: reactions.emojis ?? DEFAULT_REACTION_EMOJIS,
         onSelect: selectReaction,
-        renderExpandedPicker: reactions.renderExpandedPicker,
+        selected: chosenReactions,
+        renderExpandedPicker: reactions.renderExpandedPicker ?? undefined,
       }
       : undefined
 
@@ -1110,11 +1119,12 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         onDismiss={closePicker}
         position={visualPosition}
         {...pickerAnchor}
+        {...touchPoint}
         reactions={reactionsRow}
         messagePreview={messagePreview}
       />
     )
-  }, [reactions, menuItems, isPickerVisible, visualPosition, pickerAnchor, messagePreview, closePicker, selectReaction])
+  }, [reactions, menuItems, isPickerVisible, visualPosition, pickerAnchor, touchPoint, chosenReactions, messagePreview, closePicker, selectReaction])
 
   // Overlay path: a long-press opens either the Telegram-style context menu
   // (when messageActions are provided, optionally with a reactions row) or the

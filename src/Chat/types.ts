@@ -8,11 +8,13 @@ import {
 import { KeyboardProvider, KeyboardAvoidingViewProps } from 'react-native-keyboard-controller'
 
 import { ActionsProps } from '../Actions'
+import { AttachmentsProps } from '../attachments/types'
 import { AvatarProps } from '../Avatar'
 import { BubbleProps } from '../Bubble'
 import { ActionSheetOptions } from '../ChatContext'
 import { AttachmentAction } from '../components/AttachmentSheet'
 import { ComposerProps } from '../Composer'
+import { EmojiKeyboardProps } from '../emoji/EmojiKeyboard'
 import { ChatLabels } from '../i18n'
 import { ChatIcons } from '../Icons'
 import { InputToolbarProps } from '../InputToolbar'
@@ -26,6 +28,7 @@ import {
   LeftRightStyle,
   MessageActionKey,
   MessageAudioProps,
+  MessageFileProps,
   MessageLocationProps,
   MessageMenuItem,
   MessageVideoProps,
@@ -172,6 +175,8 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   renderMessageAudio?: (props: MessageAudioProps<TMessage>) => React.ReactNode
   /* Custom message location */
   renderMessageLocation?: (props: MessageLocationProps<TMessage>) => React.ReactNode
+  /** Custom file bubble for `IMessage.file` (Telegram's document cell by default). */
+  renderMessageFile?: (props: MessageFileProps<TMessage>) => React.ReactNode
   /* Custom view inside the bubble */
   renderCustomView?: (props: BubbleProps<TMessage>) => React.ReactNode
   /* Custom time inside a message */
@@ -252,7 +257,7 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    * instead of `onSend`.
    */
   onEditMessage?: (message: TMessage, text: string) => void
-  /** Turns on the red "Delete" action. */
+  /** Turns on the "Delete" action. */
   onDeleteMessage?: (message: TMessage) => void
   /** Turns on the "Forward" action. */
   onForwardMessage?: (message: TMessage) => void
@@ -272,8 +277,27 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    * @default true
    */
   isMessageGestureEnabled?: boolean | ((message: TMessage) => boolean)
-  /** Show an emoji button inset on the left of the composer field; called on press */
+  /**
+   * Called when the composer's emoji button is pressed, instead of opening the built-in emoji
+   * keyboard. Passing it shows the button even with `emojiKeyboard={false}`.
+   */
   onPressEmoji?: () => void
+  /**
+   * The built-in emoji keyboard (Telegram's `EmojiView`): the emoji button opens it in the
+   * system keyboard's place, and a tap inserts at the caret - whether or not you control `text`.
+   * On by default; `false` hides the emoji button. An object configures it:
+   * `{ columns, categories, recents, isSearchEnabled, renderEmojiKeyboard }`.
+   */
+  emojiKeyboard?: boolean | EmojiKeyboardProps
+  /**
+   * The built-in attachment menu (Telegram's `ChatAttachAlert`) behind the composer's paperclip:
+   * a photo grid with numbered selection, a caption and "Send N", plus File and Location tabs.
+   * Each tab shows only when its optional peer is installed; picks become `IMessage`s sent
+   * through `onSend`. On by default; `false` hides the paperclip. `actions`,
+   * `onPressActionButton` and `renderActions` take precedence. An object configures it:
+   * `{ tabs, onPick, renderAttachmentMenu }`.
+   */
+  attachments?: boolean | AttachmentsProps<TMessage>
   /**
    * Whether the composer accepts multiple lines. `true` (default) keeps the
    * return key inserting a newline; `false` turns it into Send.

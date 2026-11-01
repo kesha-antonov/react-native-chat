@@ -18,6 +18,7 @@ import {
   Omit,
   MessageVideoProps,
   MessageAudioProps,
+  MessageFileProps,
   MessageLocationProps,
   MessageMenuItem,
 } from '../Models'
@@ -50,6 +51,12 @@ export type RenderMessageLocationProps<TMessage extends IMessage> = Omit<
   'containerStyle' | 'wrapperStyle'
 > &
   MessageLocationProps<TMessage>
+
+export type RenderMessageFileProps<TMessage extends IMessage> = Omit<
+  BubbleProps<TMessage>,
+  'containerStyle' | 'wrapperStyle'
+> &
+  MessageFileProps<TMessage>
 
 export type RenderMessageTextProps<TMessage extends IMessage> = Omit<
   BubbleProps<TMessage>,
@@ -102,6 +109,8 @@ export interface BubbleProps<TMessage extends IMessage> {
   renderMessageLocation?: (
     props: RenderMessageLocationProps<TMessage>
   ) => React.ReactNode
+  /** Custom file bubble for `IMessage.file`. */
+  renderMessageFile?: (props: RenderMessageFileProps<TMessage>) => React.ReactNode
   renderMessageText?: (props: RenderMessageTextProps<TMessage>) => React.ReactNode
   renderCustomView?: (bubbleProps: BubbleProps<TMessage>) => React.ReactNode
   renderTime?: (timeProps: TimeProps<TMessage>) => React.ReactNode

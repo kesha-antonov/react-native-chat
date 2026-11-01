@@ -22,6 +22,7 @@ import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-c
 import { ChatContext } from '../ChatContext'
 import { ChatOverlayProvider, ChatOverlaySlot } from '../components/ChatOverlay'
 import { ChatWallpaper, useOutgoingStep } from '../components/ChatWallpaper'
+import { ComposerPanelsContext, createComposerPanelsStore } from '../components/composerPanels'
 import { buildDefaultMessageActions, DEFAULT_MESSAGE_ACTION_KEYS } from '../components/defaultMessageActions'
 import { FloatingRoundNote } from '../components/FloatingRoundNote'
 import {
@@ -33,6 +34,7 @@ import {
 import { createMessageHighlightStore, MessageHighlightContext } from '../components/messageHighlight'
 import { NowPlayingBar } from '../components/NowPlayingBar'
 import { TEST_ID } from '../Constant'
+import { renderDefaultExpandedPicker } from '../emoji/defaultExpandedPicker'
 import { normalizeColorScheme } from '../hooks/useColorScheme'
 import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
 import { useKeyboardVerticalOffset } from '../hooks/useKeyboardVerticalOffset'
@@ -216,6 +218,7 @@ function Chat<TMessage extends IMessage = IMessage> (
   // The message being edited in the composer (Telegram's edit mode), or null.
   const [editingMessage, setEditingMessage] = useState<TMessage | null>(null)
   const [highlightStore] = useState(createMessageHighlightStore)
+  const [composerPanels] = useState(createComposerPanelsStore)
   useEffect(() => () => highlightStore.dispose(), [highlightStore])
 
   // Use controlled or uncontrolled reply state
@@ -381,8 +384,15 @@ function Chat<TMessage extends IMessage = IMessage> (
   const isUsernameVisible = isUsernameVisibleProp ?? isGroupChat
 
   // Reactions turn on by themselves once the app can apply them.
+  // The expand button opens the built-in emoji grid unless the app passes its own (or `null`).
   const resolvedReactions = useMemo(() => reactions
-    ? { ...reactions, isEnabled: reactions.isEnabled ?? !!reactions.onReactionPress }
+    ? {
+      ...reactions,
+      isEnabled: reactions.isEnabled ?? !!reactions.onReactionPress,
+      renderExpandedPicker: reactions.renderExpandedPicker === undefined
+        ? renderDefaultExpandedPicker
+        : reactions.renderExpandedPicker,
+    }
     : undefined
   , [reactions])
 
@@ -747,10 +757,12 @@ function Chat<TMessage extends IMessage = IMessage> (
           >
             <MediaPlaybackContext.Provider value={mediaController}>
               <MessageHighlightContext.Provider value={highlightStore}>
-                <ChatOverlayProvider>
-                  {renderMessages}
-                  {inputToolbarFragment}
-                </ChatOverlayProvider>
+                <ComposerPanelsContext.Provider value={composerPanels}>
+                  <ChatOverlayProvider>
+                    {renderMessages}
+                    {inputToolbarFragment}
+                  </ChatOverlayProvider>
+                </ComposerPanelsContext.Provider>
               </MessageHighlightContext.Provider>
             </MediaPlaybackContext.Provider>
           </View>

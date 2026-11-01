@@ -113,7 +113,7 @@ describe('ContextMenu (Telegram details)', () => {
     expect(queryByLabelText('more reactions')).toBeNull()
   })
 
-  it('draws an icon per action, in red for a destructive one', async () => {
+  it('draws an icon per action in the menu color, red for a destructive one', async () => {
     const icon = jest.fn(({ color }: { color: string }) => <Text>{`icon ${color}`}</Text>)
     const { getByText } = await renderMenu({
       items: [
@@ -122,9 +122,10 @@ describe('ContextMenu (Telegram details)', () => {
       ],
     })
 
-    expect(getByText('icon #000000')).toBeTruthy()
-    expect(getByText('icon #DB3535')).toBeTruthy()
-    expect(icon).toHaveBeenCalledWith({ color: '#DB3535', size: 24 })
+    // `actionBarDefaultSubmenuItemIcon` and `text_RedRegular`.
+    expect(getByText('icon #1A1D21')).toBeTruthy()
+    expect(getByText('icon #CC2929')).toBeTruthy()
+    expect(icon).toHaveBeenCalledWith({ color: '#CC2929', size: 24 })
   })
 })
 
@@ -149,5 +150,82 @@ describe('ReactionPicker', () => {
 
     expect(onSelect).toHaveBeenCalledWith('😂')
     expect(onDismiss).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ContextMenu (Telegram Android)', () => {
+  const flatten = (style: unknown) => require('react-native').StyleSheet.flatten(style)
+
+  it('opens beside the finger: its right edge 20 left of it, its top at it', async () => {
+    const { getByLabelText } = await renderMenu({
+      touchX: 300,
+      touchY: 200,
+      items: [{ label: 'Copy', onPress: jest.fn() }],
+    })
+
+    // The rows sit in the card, positioned on the card's wrapper.
+    let node = getByLabelText('Copy').parent
+    let style = flatten(node?.props.style)
+    while (node && style?.position !== 'absolute') {
+      node = node.parent
+      style = flatten(node?.props.style)
+    }
+    expect(style.left).toBe(300 - 20 - 200)
+    expect(style.top).toBe(200)
+  })
+
+  it('stays inside the screen when the finger is near its edge', async () => {
+    const { getByLabelText } = await renderMenu({
+      touchX: 30,
+      touchY: 5,
+      items: [{ label: 'Copy', onPress: jest.fn() }],
+    })
+    let node = getByLabelText('Copy').parent
+    let style = flatten(node?.props.style)
+    while (node && style?.position !== 'absolute') {
+      node = node.parent
+      style = flatten(node?.props.style)
+    }
+    expect(style.left).toBe(6)
+    expect(style.top).toBeGreaterThanOrEqual(24)
+  })
+
+  it('marks reactions you already picked', async () => {
+    const { getByLabelText } = await renderMenu({
+      reactions: { emojis: ['👍', '❤️'], selected: ['❤️'], onSelect: jest.fn() },
+    })
+    expect(getByLabelText('❤️').props.accessibilityState).toEqual({ selected: true })
+    expect(getByLabelText('👍').props.accessibilityState).toEqual({ selected: false })
+  })
+
+  it('shows at most seven quick reactions before the expand button', async () => {
+    const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣']
+    const { queryByLabelText } = await renderMenu({
+      reactions: { emojis, onSelect: jest.fn(), renderExpandedPicker: () => null },
+    })
+    expect(queryByLabelText('7️⃣')).toBeTruthy()
+    expect(queryByLabelText('8️⃣')).toBeNull()
+    expect(queryByLabelText('more reactions')).toBeTruthy()
+  })
+
+  it('reopens collapsed after the panel was expanded', async () => {
+    const reactions = {
+      emojis: ['👍'],
+      onSelect: jest.fn(),
+      renderExpandedPicker: () => <Text>{'full grid'}</Text>,
+    }
+    const utils = await renderMenu({ reactions })
+    await fireEvent.press(utils.getByLabelText('more reactions'))
+    expect(utils.getByText('full grid')).toBeTruthy()
+
+    await fireEvent.press(utils.getByLabelText('dismiss'))
+    await utils.rerender(
+      <ContextMenu visible={false} items={[]} onDismiss={jest.fn()} reactions={reactions} />
+    )
+    await utils.rerender(
+      <ContextMenu visible items={[]} onDismiss={jest.fn()} reactions={reactions} />
+    )
+    expect(utils.queryByText('full grid')).toBeNull()
+    expect(utils.getByLabelText('more reactions')).toBeTruthy()
   })
 })

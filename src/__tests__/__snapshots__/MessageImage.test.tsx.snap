@@ -21,7 +21,7 @@ exports[`MessageImage should  render <MessageImage /> and compare with snapshot 
     }
   >
     <RNGestureHandlerButton
-      delayLongPress={320}
+      delayLongPress={400}
       needsOffscreenAlphaCompositing={true}
       testID="message-image-touchable"
     >

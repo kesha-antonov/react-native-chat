@@ -45,12 +45,12 @@ const build = (overrides: Partial<Parameters<typeof buildDefaultMessageActions>[
   })
 
 describe('default message actions', () => {
-  it('offers Telegram\'s set in Telegram\'s order, with icons and a red Delete', () => {
+  it('offers Telegram\'s set in Telegram\'s order, with icons and a plain Delete', () => {
     const items = build()
     expect(items.map(item => item.key)).toEqual(['reply', 'copy', 'forward', 'pin', 'edit', 'delete'])
     expect(items.map(item => item.label)).toEqual(['Reply', 'Copy', 'Forward', 'Pin', 'Edit', 'Delete'])
     expect(items.every(item => typeof item.icon === 'function')).toBe(true)
-    expect(items.find(item => item.key === 'delete')!.destructive).toBe(true)
+    expect(items.find(item => item.key === 'delete')!.destructive).toBeFalsy()
   })
 
   it('shows each action only when it can work', () => {
@@ -310,4 +310,19 @@ describe('Chat defaults', () => {
     expect(getByTestId('message-highlight')).toBeTruthy()
   })
 
+  it('gives the reactions bar an expand button with the built-in emoji grid, unless turned off', async () => {
+    const reactions = { onReactionPress: jest.fn() }
+    const withGrid = await mountChat(<Chat messages={[message(1)]} onSend={() => {}} user={ME} reactions={reactions} />)
+    await longPress()
+    await fireEvent.press(withGrid.getByLabelText('more reactions'))
+    expect(withGrid.getByLabelText('Search Emoji')).toBeTruthy()
+    await withGrid.unmount()
+
+    const without = await mountChat(
+      <Chat messages={[message(1)]} onSend={() => {}} user={ME} reactions={{ ...reactions, renderExpandedPicker: null }} />
+    )
+    await longPress()
+    expect(without.getByLabelText('👍')).toBeTruthy()
+    expect(without.queryByLabelText('more reactions')).toBeNull()
+  })
 })

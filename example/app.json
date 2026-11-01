@@ -27,7 +27,11 @@
       "package": "com.anonymous.example",
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO"
       ]
     },
     "web": {
@@ -56,7 +60,34 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-asset",
-      "react-native-audio-api"
+      "react-native-audio-api",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "$(PRODUCT_NAME) needs photo library access to send photos.",
+          "cameraPermission": "$(PRODUCT_NAME) needs camera access to take photos and record video messages.",
+          "microphonePermission": "$(PRODUCT_NAME) needs microphone access to record video messages."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "$(PRODUCT_NAME) needs photo library access to show your recent photos in the attachment menu.",
+          "savePhotosPermission": "$(PRODUCT_NAME) saves photos you choose to your library.",
+          "granularPermissions": [
+            "photo",
+            "video"
+          ]
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "$(PRODUCT_NAME) needs your location to send it in a chat."
+        }
+      ],
+      "expo-document-picker",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

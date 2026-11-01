@@ -7,11 +7,11 @@ import { ReactionPickerProps } from './types'
 const NO_ITEMS: never[] = []
 
 /**
- * Lightweight quick-picker shown on long-press: the chat dims, the pressed
- * message is lifted above it, and a row of emojis springs out of the bubble's
- * edge. It is the context menu without actions, so both feel the same. For a
- * full emoji browser, pass a custom component via
- * `reactions.renderReactionPicker` (see the example app).
+ * Lightweight quick-picker shown on long-press: the chat dims while the pressed
+ * message stays lit in place, and Telegram Android's reactions bar pops out
+ * beside the finger. It is the context menu without actions, so both feel the same. Its expand
+ * button opens the built-in emoji grid unless `reactions.renderExpandedPicker` says
+ * otherwise.
  */
 export const ReactionPicker = <TMessage extends IMessage = IMessage>(
   props: ReactionPickerProps<TMessage>
@@ -26,6 +26,8 @@ export const ReactionPicker = <TMessage extends IMessage = IMessage>(
     pageY,
     bubbleWidth,
     bubbleHeight,
+    touchX,
+    touchY,
     pickerContainerStyle,
     pickerEmojiStyle,
     messagePreview,
@@ -37,7 +39,7 @@ export const ReactionPicker = <TMessage extends IMessage = IMessage>(
     onSelect,
     containerStyle: pickerContainerStyle,
     emojiStyle: pickerEmojiStyle,
-    renderExpandedPicker,
+    renderExpandedPicker: renderExpandedPicker ?? undefined,
   }), [emojis, onSelect, pickerContainerStyle, pickerEmojiStyle, renderExpandedPicker])
 
   return (
@@ -50,6 +52,8 @@ export const ReactionPicker = <TMessage extends IMessage = IMessage>(
       pageY={pageY}
       bubbleWidth={bubbleWidth}
       bubbleHeight={bubbleHeight}
+      touchX={touchX}
+      touchY={touchY}
       reactions={reactions}
       messagePreview={messagePreview}
     />

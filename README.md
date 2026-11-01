@@ -130,11 +130,13 @@ That is the whole setup - everything below is optional.
 - 🌗 **[Dark mode & theming](#theming--dark-mode)** - full light/dark token system, switchable at runtime
 - 🤖 **[Streaming AI messages](#streaming-ai-messages)** - token-by-token replies with a typing caret and stop control
 - 😀 **[Emoji reactions](#emoji-reactions)** - long-press picker and reaction pills
+- ⌨️ **[Emoji keyboard](#emoji-keyboard-and-attachment-menu)** - Telegram's emoji panel in the keyboard's place, with search, recents and skin tones
+- 📎 **[Attachment menu](#emoji-keyboard-and-attachment-menu)** - photo grid with numbered selection and a caption, files and location
 - 🎥 **[Video & audio messages](#-whats-new-vs-react-native-gifted-chat)** - real inline playback, with a tappable fallback
 - 🎙️ **[Voice & video recording](#-whats-new-vs-react-native-gifted-chat)** - Telegram-style hold-to-record notes (opt-in)
 - 📍 **[Location messages](#-whats-new-vs-react-native-gifted-chat)** - map card that opens the system maps app
 - ↩️ **[Swipe to reply](#reply-to-messages)** - reply preview and message threading
-- 📋 **[Long-press actions](#message-actions-long-press-context-menu)** - themed context menu anchored to the bubble
+- 📋 **[Long-press actions](#message-actions-long-press-context-menu)** - Telegram Android's context menu beside the finger, with a reactions bar
 - ⚡ **[Quick replies](#quick-replies)** - bot-style reply buttons
 - 🔗 **[Smart link parsing](#smart-link-parsing)** - URLs, emails, phones, hashtags, mentions
 - 👤 **[Avatars](#avatars)** - user initials or custom images
@@ -175,6 +177,9 @@ Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/Farid
 | Light/Dark **theme system** | per-component color props | ✅ `theme` / `darkTheme` tokens, runtime switch |
 | Streaming (AI) messages | ❌ | ✅ token-by-token + typing cursor |
 | Emoji reactions | ❌ | ✅ long-press picker + reaction pills |
+| Emoji keyboard | ❌ | ✅ built in: tabs, search, recents, skin tones |
+| Attachment menu | ❌ (`actions` sheet) | ✅ built in: photo grid + caption, files, location |
+| File messages | ❌ | ✅ `IMessage.file` document bubble |
 | Swipe-to-reply + reply preview | ❌ | ✅ built in |
 | **Video / audio messages** | "not implemented, render your own" | ✅ inline players + tappable fallback |
 | **Voice notes** (hold-to-record + waveform) | ❌ | ✅ optional, Telegram-style |
@@ -238,6 +243,60 @@ Recording and playback follow Telegram:
 - While a note plays or is paused, a "now playing" bar at the top of the chat has play/pause, the sender, the speed (1x / 1.5x / 2x; long-press for more, shared by every note) and close; a tap on the title scrolls to the note.
 - Round notes rest in the list on their first frame with a play button (or loop silently with `isRoundVideoAutoplayEnabled`). A tap plays one from the start with sound and grows it, hiding the sender's avatar; a tap pauses it, and a paused note can be scrubbed by dragging around its ring. Its length, in a pill at its bottom-left, counts down while it plays, and playing bars replace its unread dot once it is heard.
 - Set `isMediaUnread` on a message for the unread dot; `mediaPlayback.onMediaRead` reports when an incoming one is played.
+
+</details>
+
+### Emoji keyboard and attachment menu
+
+<details>
+<summary><strong>Built in, on by default</strong></summary>
+
+The composer's emoji button opens Telegram Android's emoji keyboard in the system keyboard's place - at the last keyboard height, so switching between the two keeps the composer still. It has the category tabs, search (scroll the grid up to reveal it), recents by use count, a skin-tone popup on long-press and a repeating backspace. A tap inserts at the caret whether or not you control `text`.
+
+The paperclip opens Telegram Android's attachment menu: your newest photos in a 3-column grid (with `expo-media-library`), numbered as you pick them, a caption and a "Send N" button; File and Location tabs; a camera tile. Picks arrive in `onSend` as ordinary messages - `image`, `video`, `file` (`{ uri, name, size?, mimeType? }`) or `location` - so there is nothing to wire.
+
+```bash
+# Each tab shows only when its package is installed:
+npx expo install expo-media-library expo-image-picker expo-document-picker expo-location
+# Optional: keep emoji recents across launches, share received files, fast ph:// thumbnails
+npx expo install @react-native-async-storage/async-storage expo-sharing expo-image
+```
+
+```tsx
+<Chat
+  emojiKeyboard={{ columns: 8, recents: { storageKey: 'my-app/emoji' } }}
+  attachments={{
+    tabs: ['gallery', 'file'],
+    // Upload first, then send what your backend returns (or `null` to send nothing).
+    onPick: async (picked, { caption }) => upload(picked, caption),
+  }}
+  {...props}
+/>
+```
+
+Hide either with `emojiKeyboard={false}` / `attachments={false}`. `onPressEmoji` replaces the emoji keyboard and `actions` / `onPressActionButton` / `renderActions` replace the attachment menu, as before.
+
+**Permissions.** iOS kills an app that asks for a permission without a usage string. In Expo, list the plugins with your own strings (the defaults are generic):
+
+```json
+"plugins": [
+  ["expo-image-picker", { "photosPermission": "...", "cameraPermission": "..." }],
+  ["expo-media-library", { "photosPermission": "...", "savePhotosPermission": "...", "granularPermissions": ["photo", "video"] }],
+  ["expo-location", { "locationWhenInUsePermission": "..." }],
+  "expo-document-picker",
+  "expo-sharing"
+]
+```
+
+In a bare app add the keys yourself, then rebuild the native app:
+
+| Package | iOS `Info.plist` | Android manifest |
+|---|---|---|
+| `expo-media-library` | `NSPhotoLibraryUsageDescription` (`NSPhotoLibraryAddUsageDescription` to save) | `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO` (`READ_EXTERNAL_STORAGE` below Android 13) |
+| `expo-image-picker` | `NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription` (`NSMicrophoneUsageDescription` for video) | `CAMERA` (and `RECORD_AUDIO` for video) |
+| `expo-location` | `NSLocationWhenInUseUsageDescription` | `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION` |
+| `expo-document-picker` | none (iCloud documents need the iCloud entitlement) | none |
+| `expo-sharing` | none | none |
 
 </details>
 
@@ -376,6 +435,13 @@ Every feature below turns itself on when its package is installed and stays hidd
 | `react-native-streamdown` | Rich streaming markdown | `markdown` |
 | `@lodev09/react-native-true-sheet` | Native attachment sheet | `nativeSheet` |
 | `@shopify/flash-list` | The FlashList list engine | `flashList` |
+| `expo-media-library` | The attachment menu's photo grid | `mediaLibrary` |
+| `expo-image-picker` | The attachment menu's system photo picker and camera | `imagePicker` |
+| `expo-document-picker` | The attachment menu's File tab | `documentPicker` |
+| `expo-location` | The attachment menu's Location tab | `location` |
+| `expo-sharing` | Opening a received file in the share sheet (otherwise `Linking`) | `sharing` |
+| `@react-native-async-storage/async-storage` | Emoji recents and skin tones kept across launches | `persistentEmojiRecents` |
+| `expo-image` | Gallery thumbnails straight from the photo library | - |
 
 ---
 
@@ -454,6 +520,13 @@ interface IMessage {
   location?: {
     latitude: number
     longitude: number
+  }
+  /** A document: Telegram's file bubble (icon, name, size); a tap opens it */
+  file?: {
+    uri: string
+    name: string
+    size?: number
+    mimeType?: string
   }
 }
 
@@ -556,7 +629,8 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`renderSend`** _(Component | Function)_ - Custom send button; you can pass children to the original `Send` component quite easily, for example, to use a custom icon ([example](https://github.com/kesha-antonov/react-native-chat/pull/487))
 - **`renderActions`** _(Component | Function)_ - Custom action button on the left of the message composer
 - **`renderAccessory`** _(Component | Function)_ - Custom second line of actions below the message composer
-- **`onPressEmoji`** _(Function)_ - Callback for the optional emoji button on the left of the composer field. When omitted, the emoji button is hidden.
+- **`emojiKeyboard`** _(Bool | Object)_ - The built-in emoji keyboard behind the composer's emoji button, on by default. It opens in the system keyboard's place at the last keyboard height (200 + the bottom inset before a keyboard was seen) and inserts at the caret, whether or not you control `text`. `false` hides the emoji button. An object configures it: `{ isEnabled?, columns?, categories?, recents?, isSearchEnabled?, renderEmojiKeyboard? }` - `columns` fixes the column count (default: as many 45pt columns as fit); `categories` picks and orders the tabs (`'smileys' | 'animals' | 'food' | 'activities' | 'travel' | 'objects' | 'symbols' | 'flags'`); `recents` is `false` or `{ isEnabled?, storageKey?, isPersisted? }` (persisted through `@react-native-async-storage/async-storage` when installed); `isSearchEnabled` (default `true`); `renderEmojiKeyboard({ onSelect, onBackspace, onClose, height, bottomInset })` draws your own keyboard in the panel. Colors and sizes live in `theme.emojiKeyboard`.
+- **`onPressEmoji`** _(Function)_ - Called when the emoji button is pressed, instead of opening the built-in emoji keyboard. Passing it shows the button even with `emojiKeyboard={false}`.
 - **`audioRecording`** _(Object)_ - Enable Telegram-style hold-to-record voice notes. `{ isEnabled, minDurationMs?, maxDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `isViewOnceEnabled` shows Telegram's view-once toggle above the pause button while a take is locked or paused; a take sent with it on reaches `onSend` with `isViewOnce: true`. `minDurationMs` (default 700, as in Telegram) drops takes that long or shorter and calls `onTooShort`; `maxDurationMs` (default 600000) sends the take when reached. Requires the optional `expo-audio` peer (and `react-native-audio-api` for the playback waveform); the mic button is hidden when it is absent. A paused take can be resumed when `react-native-audio-api` is installed with FFmpeg (the M4A recordings are joined without re-encoding), and trimmed when `expo-file-system` is installed too; a trimmed take reaches `onSend` as a 16-bit mono WAV at 24kHz, an untrimmed one as the recorder's M4A.
 - **`videoRecording`** _(Object)_ - Enable round video notes. `{ isEnabled, maxDuration?, minDurationMs?, isViewOnceEnabled?, onPermissionDenied?, onTooShort?, onError? }`. `maxDuration` is in seconds (default 60); `minDurationMs` (default 800) drops shorter takes and calls `onTooShort`; `isViewOnceEnabled` works as in `audioRecording`, for round notes recorded with vision-camera. With `react-native-vision-camera` 5 or newer linked (plus its `react-native-nitro-modules` and `react-native-nitro-image` peers; it has no Expo config plugin, so add `NSCameraUsageDescription`/`NSMicrophoneUsageDescription` and the `CAMERA`/`RECORD_AUDIO` permissions yourself), the record button records a note on the first hold, like Telegram - shared with voice notes when both are enabled, on its own otherwise. Reaching `maxDuration` stops into a preview (sends directly without `expo-video`). Without vision-camera it falls back to `expo-image-picker`'s system camera, which sends a plain (non-round) video.
 - **`mediaPlayback`** _(Object)_ - How voice and round video notes play. `{ isAutoPlayNextEnabled?, playbackRate?, onPlaybackRateChange?, isRoundVideoAutoplayEnabled?, isNowPlayingBarEnabled?, isFloatingRoundNoteEnabled?, onMediaRead?, isNearEar?, onTranscribe?, onViewOnceEnd? }`. `isNowPlayingBarEnabled` (default `true`) shows Telegram's "now playing" bar at the top of the chat while a note plays or is paused. `isFloatingRoundNoteEnabled` (default `true`) keeps a round note that is playing or paused going in a small draggable circle over the list once its row scrolls out of view; set it to `false` to stop the note with its row instead. `isAutoPlayNextEnabled` (default `true`) starts the next newer voice or round note in the chat when one plays to its end. The playback speed is shared by every note; `playbackRate` sets it, and `onPlaybackRateChange` reports changes so the app can keep the speed across launches. `isRoundVideoAutoplayEnabled` (default `false`) loops round notes silently in the list instead of holding their first frame. `onMediaRead(message)` is called when an incoming note with `isMediaUnread` starts playing, so the app can mark it listened. `isNearEar` is Telegram's raise to listen: feed it from the app's proximity sensor, and while it is `true` the current voice or round note plays through the earpiece (restarting if it was under a second in); when it goes back to `false` the note pauses and the speaker route returns. `onTranscribe(message)` shows a transcribe button on voice notes and beside round notes; tapping it calls this, shows a loading outline until the app sets `message.transcription`, then opens the text under the waveform, or in a bubble under the round note (tap again to collapse or expand). `onViewOnceEnd(message)` is called once a view-once note (`isViewOnce`) has played to its end or been stopped after starting, so the app can remove it. A view-once round note carries the "1" marker on its play button, never autoplays or floats, and cannot be scrubbed.
@@ -566,6 +640,7 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 
 ### Actions & Action Sheet
 
+- **`attachments`** _(Bool | Object)_ - The built-in attachment menu behind the composer's paperclip, on by default; the paperclip shows when at least one tab's peer is installed. Tabs: `gallery` (an in-sheet grid with `expo-media-library`, the system picker with `expo-image-picker` otherwise), `camera` (`expo-image-picker`; a tab of its own only without the grid, which has a camera tile), `file` (`expo-document-picker`) and `location` (`expo-location`). Picks are sent through `onSend`: one `image` / `video` message per photo or video with the caption on the first, a `file` message per document, a `location` message. `false` hides the paperclip. An object configures it: `{ isEnabled?, tabs?, onPick?, renderAttachmentMenu? }` - `tabs` picks and orders them; `onPick(attachments, { caption })` intercepts the picks (`PickedAttachment[]`) and returns the messages to send, `null` to send nothing, or nothing for the default; `renderAttachmentMenu({ visible, onClose, tabs, onSend })` draws your own menu. Colors live in `theme.attachments`. `actions`, `onPressActionButton` and `renderActions` take precedence. See [Emoji keyboard and attachment menu](#emoji-keyboard-and-attachment-menu) for the permissions each peer needs.
 - **`actions`** _(Array)_ - Action options for the composer "+" button. Array of `{ title, action }`; add `icon` (and optional `color`) to an action to render a Telegram-style attachment **grid** (tiles) instead of a list. Opens the built-in themed `AttachmentSheet` - no extra dependency.
 - **`onPressActionButton`** _(Function)_ - Callback when the "+" button is pressed (if set, the built-in `AttachmentSheet` is not shown)
 - **`actionSheet`** _(Function)_ - Escape hatch for a custom system action sheet. **The bundled `@expo/react-native-action-sheet` dependency was removed**, so `context.actionSheet()` defaults to a no-op; pass your own implementation (with `ActionSheetProvider` in your tree) if you relied on it.
@@ -594,10 +669,11 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`renderMessageVideo`** _(Component | Function)_ - Custom message video
 - **`renderMessageAudio`** _(Component | Function)_ - Custom message audio
 - **`renderMessageLocation`** _(Component | Function)_ - Custom renderer for `IMessage.location`; defaults to a map card that opens the system maps app on tap
+- **`renderMessageFile`** _(Component | Function)_ - Custom renderer for `IMessage.file`; defaults to Telegram's document bubble (a circle with the extension, the name, the size) that opens the file in the share sheet (`expo-sharing`) or through `Linking` on tap
 - **`messageActions`** _(Array | Function(`message`, `defaults`))_ - Long-press context menu actions. Each item is `{ key?, label, icon?, onPress, destructive? }`. An array **replaces** the built-in actions; a function receives the message and the built-in actions for it and returns what to show, so you can extend, filter or reorder them. See [Message actions](#message-actions-long-press-context-menu).
 - **`defaultMessageActions`** _(Bool | `MessageActionKey[]`)_ - The built-in actions, in Telegram's order: `reply`, `copy`, `forward`, `pin`, `edit`, `delete`. Default `true` (all that can work); an array picks and orders them; `false` turns them off. Each shows only when it can work: Reply when `reply.isEnabled` is not `false`; Copy for messages with text when `expo-clipboard` or `@react-native-clipboard/clipboard` is installed; Edit on your own text messages when `onEditMessage` is set; Forward / Pin / Delete when their callbacks are set. They are also off when `onLongPressMessage` is set and `messageActions` is not, so an app that handles long-press itself keeps doing so.
 - **`onEditMessage`** _(Function(`message`, `text`))_ - Turns on the "Edit" action for your own text messages. Edit puts the text in the composer under an "Editing" banner; sending then calls this instead of `onSend`. Closing the banner cancels the edit.
-- **`onDeleteMessage`** _(Function(`message`))_ - Turns on the red "Delete" action.
+- **`onDeleteMessage`** _(Function(`message`))_ - Turns on the "Delete" action (not red, as in Telegram Android).
 - **`onForwardMessage`** _(Function(`message`))_ - Turns on the "Forward" action.
 - **`onPinMessage`** _(Function(`message`))_ - Turns on the "Pin" action; it reads "Unpin" on a message with `isPinned: true`. Toggle `isPinned` in the handler.
 - **`renderCustomView`** _(Component | Function)_ - Custom view inside the bubble
@@ -1013,7 +1089,7 @@ There are two renderers and you get the best available one automatically:
 
 ### Emoji Reactions
 
-Long-press a message to open a quick emoji picker; selected reactions render as pills below the bubble and toggle on tap. The quick picker ships in the core with no extra dependencies; a full emoji browser is optional via the `renderReactionPicker` override.
+Long-press a message to open a quick emoji picker; selected reactions render as pills in the bubble and toggle on tap. The bar's chevron opens the built-in full emoji grid (search, tabs, recents) in place; both ship in the core with no extra dependencies, and `renderExpandedPicker` / `renderReactionPicker` replace them.
 
 <p align="center">
   <img width="200" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/reactions-picker.png" />
@@ -1064,7 +1140,7 @@ For a prototype, `useChatMessages({ initialMessages, user })` keeps the messages
 - **`renderReactions`** _(Function)_ - Override the reactions-display component rendered below the bubble
 - **`renderReactionPicker`** _(Function)_ - Override the picker shown on long-press (use for a full emoji browser). It receives [`ReactionPickerProps`](src/Reactions/types.ts): `visible`, `message`, `emojis`, `onSelect`, `onDismiss`, `position`, the bubble's on-screen box (`pageX`, `pageY`, `bubbleWidth`, `bubbleHeight`), the two picker styles and:
   - **`messagePreview`** _(ReactNode, optional)_ - A copy of the pressed bubble to draw lifted above your backdrop at the bubble's box. While it is mounted the original bubble is hidden, so the message seems to rise out of the list; if you never render it, the original simply stays put. The easiest way to get the built-in look is to render the exported `ContextMenu` with `items={[]}`, as the example app's `EmojiReactionPicker` does (see [Message actions](#message-actions-long-press-context-menu) for its props)
-- **`renderExpandedPicker`** _(Function(`{ onSelect }`), optional)_ - Telegram's expand button. When set, the reactions bar (in the quick picker and above the context menu) ends in a chevron that grows the bar in place into a panel up to 300pt tall, holding what this returns - typically a full emoji grid. Call `onSelect(emoji)` with the pick; the overlay closes and `onReactionPress` is called. Also passed to a custom `renderReactionPicker`
+- **`renderExpandedPicker`** _(Function(`{ onSelect }`) | null, optional)_ - Telegram's expand button. The reactions bar (in the quick picker and above the context menu) ends in a chevron that grows the bar in place into a panel holding what this returns. Defaults to the built-in emoji grid (8 columns, search, tabs, recents); pass your own, or `null` to drop the button. Call `onSelect(emoji)` with the pick; the overlay closes and `onReactionPress` is called. Also passed to a custom `renderReactionPicker`
 - **`containerStyle`**, **`reactionStyle`**, **`reactionActiveStyle`**, **`reactionTextStyle`**, **`reactionCountStyle`** - Styles for the reaction pills
 - **`pickerContainerStyle`**, **`pickerEmojiStyle`** - Styles for the quick picker
 
@@ -1105,7 +1181,7 @@ For full control, pass custom `matchers` (`{ type, pattern, getLinkUrl?, getLink
 <details>
 <summary><strong>Telegram-style floating menu</strong></summary>
 
-Long-press a message to open a floating, themed context menu anchored to the bubble. It opens by default with Telegram's actions (order from Telegram Android's `ChatActivity.fillMessageMenu`): **Reply**, **Copy** (with `expo-clipboard` or `@react-native-clipboard/clipboard` installed), **Forward**, **Pin / Unpin**, **Edit** (your own text messages) and a red **Delete** - the last four appear once you pass `onForwardMessage`, `onPinMessage`, `onEditMessage` and `onDeleteMessage`. When reactions are enabled, a reactions row is shown on top of the menu automatically.
+Long-press a message to open Telegram Android's context menu beside your finger. It opens by default with Telegram's actions (order from Telegram Android's `ChatActivity.fillMessageMenu`): **Reply**, **Copy** (with `expo-clipboard` or `@react-native-clipboard/clipboard` installed), **Forward**, **Pin / Unpin**, **Edit** (your own text messages) and **Delete** - the last four appear once you pass `onForwardMessage`, `onPinMessage`, `onEditMessage` and `onDeleteMessage`. When reactions are enabled, a reactions row is shown on top of the menu automatically.
 
 ```tsx
 <Chat
@@ -1128,7 +1204,7 @@ To change the set, pass `messageActions`. A function receives the built-in actio
 />
 ```
 
-It follows Telegram's iOS client, timings included: the bubble shrinks by 15pt of its width while you hold it, and after 0.32s the menu opens with a medium haptic (if `expo-haptics` is installed). The chat blurs (`expo-blur`, optional; a stronger dim without it) and dims, and the message is lifted above it in place. The reactions bar grows out of a circle at the bubble's corner with its emojis rippling in, and the actions - each with its icon on the left, a destructive one in red, with a highlight while pressed - scale out of the corner below the message. When they don't all fit, the message, the bar and the menu move together until they do. A picked reaction is applied and flies to the message; an action runs once the menu has closed; a tap on the backdrop plays it all in reverse. Every animation runs on Reanimated and follows the system Reduce Motion setting. The reaction-only picker (`reactions` without `messageActions`) is the same overlay without actions.
+It follows Telegram Android (`ActionBarPopupWindow`, `ReactionsContainerLayout`), timings included: after 0.4s the menu opens with a haptic (if `expo-haptics` is installed). The message neither shrinks nor lifts - the chat dims under a black 0.2 scrim and the pressed message stays lit where it is. The menu - a 200-wide card of 48pt rows with icons, in `theme.contextMenu` colors - opens with its right edge just left of your finger and its top at it, unrolling from the top while each row drops into place. The reactions bar above it pops out from its right end with a slight overshoot, with Telegram's "thought bubble" tail; reactions you already picked sit smaller in a circle, and the chevron at its end grows the bar into the emoji panel. A picked reaction grows and flies into the message's reaction pill; an action runs once the menu has closed; a tap on the backdrop closes it all. Every animation runs on Reanimated and follows the system Reduce Motion setting. The reaction-only picker (`reactions` without `messageActions`) is the same overlay without actions.
 
 A fully custom menu - each item is `{ key?, label, icon?, onPress, destructive? }`:
 
@@ -1146,8 +1222,9 @@ import { Copy, Trash2 } from 'lucide-react-native' // optional icons
 
 `ContextMenu` is exported for custom pickers and menus. Beyond `visible`, `items`, `onDismiss` (called once its exit has played), `position` and the bubble's box (`pageX`, `pageY`, `bubbleWidth`, `bubbleHeight`), it takes these optional props:
 
-- **`reactions`** _(Object)_ - `{ emojis, onSelect, containerStyle?, emojiStyle?, renderAccessory?, renderExpandedPicker? }`. `renderAccessory` adds content at the end of the bar; `renderExpandedPicker` adds Telegram's expand button and the panel it opens (see `reactions.renderExpandedPicker` above)
-- **`messagePreview`** _(ReactNode)_ - The lifted copy of the message; pass the one a custom picker receives
+- **`reactions`** _(Object)_ - `{ emojis, onSelect, selected?, containerStyle?, emojiStyle?, renderAccessory?, renderExpandedPicker? }`. `selected` lists the reactions the user already picked (drawn smaller, in a circle); `renderAccessory` adds content at the end of the bar; `renderExpandedPicker` adds Telegram's expand button and the panel it opens (see `reactions.renderExpandedPicker` above)
+- **`touchX`**, **`touchY`** _(Number)_ - Where the finger was, in window coordinates; the menu opens beside it (beside the bubble's middle without them)
+- **`messagePreview`** _(ReactNode)_ - The copy of the message drawn above the scrim in place; pass the one a custom picker receives
 - **`children`** _(ReactNode)_ - Drawn above everything else in the overlay, e.g. a full emoji sheet
 
 > **Note:** This library no longer depends on `@expo/react-native-action-sheet`. Prefer `messageActions` above. If you specifically want a native action sheet, install it yourself, wrap your tree in `ActionSheetProvider`, and either call `useActionSheet()` in your own `onLongPressMessage` or pass an `actionSheet` prop - the `actionSheet` prop / `context.actionSheet()` escape hatch still works when you provide an implementation. The composer "+" actions use the built-in themed `AttachmentSheet` and need no setup.

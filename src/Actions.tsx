@@ -9,6 +9,7 @@ import { AttachmentAction, AttachmentSheet } from './components/AttachmentSheet'
 import { Icon } from './components/Icon'
 import { PaperclipIcon } from './components/MediaControls'
 import { TouchableOpacity } from './components/TouchableOpacity'
+import { useLabels } from './hooks/useLabels'
 import { useThemedStyles } from './hooks/useTheme'
 import stylesCommon from './styles'
 import { ChatTheme } from './Theme'
@@ -34,6 +35,7 @@ export function Actions ({
   buttonStyle,
 }: ActionsProps) {
   const styles = useThemedStyles(createStyles)
+  const labels = useLabels()
   const [isSheetVisible, setIsSheetVisible] = useState(false)
 
   const handlePress = useCallback(() => {
@@ -63,6 +65,8 @@ export function Actions ({
       <TouchableOpacity
         onPress={handlePress}
         hitSlop={8}
+        accessibilityRole='button'
+        accessibilityLabel={labels.attachButton}
         style={[styles.button, buttonStyle]}
       >
         {renderIcon()}

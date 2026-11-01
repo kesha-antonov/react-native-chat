@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } 
 import {
   View,
   FlatListProps,
+  GestureResponderEvent,
   LayoutChangeEvent,
   ListRenderItemInfo,
   StyleProp,
@@ -11,6 +12,7 @@ import {
 import { Pressable } from 'react-native-gesture-handler'
 import Animated, { Easing, runOnJS, ScrollEvent, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { BubbleGradientContext, BubbleGradientStore } from '../components/BubbleBackground'
+import { useComposerPanels } from '../components/composerPanels'
 import { GlassSurface } from '../components/GlassSurface'
 import { Icon } from '../components/Icon'
 import { MediaPlaybackContext } from '../components/mediaPlayback'
@@ -795,6 +797,22 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     })
   }, [messages, daysPositions, isInverted, isDayAnimationEnabled])
 
+  // A tap on the chat (not a scroll) closes the emoji keyboard, as in Telegram.
+  const composerPanels = useComposerPanels()
+  const touchStartRef = useRef<{ x: number, y: number } | null>(null)
+  const onListTouchStart = useCallback((event: GestureResponderEvent) => {
+    touchStartRef.current = { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY }
+  }, [])
+  const onListTouchEnd = useCallback((event: GestureResponderEvent) => {
+    const start = touchStartRef.current
+    touchStartRef.current = null
+    if (!start || !composerPanels)
+      return
+    const moved = Math.abs(event.nativeEvent.pageX - start.x) + Math.abs(event.nativeEvent.pageY - start.y)
+    if (moved < 10)
+      composerPanels.close()
+  }, [composerPanels])
+
   // Props shared by both list engines. FlatList-only virtualization knobs and
   // FlashList-only options are added at the call sites below.
   const commonListProps = {
@@ -817,7 +835,11 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }
 
   const list = (
-    <View style={[styles.contentContainerStyle, themedStyles.root, stylesCommon.fill]}>
+    <View
+      style={[styles.contentContainerStyle, themedStyles.root, stylesCommon.fill]}
+      onTouchStart={onListTouchStart}
+      onTouchEnd={onListTouchEnd}
+    >
       {isFlashList
         ? (
           <AnimatedFlashList

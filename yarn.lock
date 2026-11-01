@@ -2823,6 +2823,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:^8.72.1"
     babel-jest: "npm:^30.5.2"
     dayjs: "npm:^1.11.23"
+    emoji-datasource: "npm:16.0.0"
     eslint: "npm:^10.14.0"
     eslint-import-resolver-typescript: "npm:^4.4.5"
     eslint-plugin-import: "npm:^2.32.0"
@@ -2847,27 +2848,39 @@ __metadata:
     test-renderer: "npm:^1.3.1"
     typescript: "npm:^6.0.3"
   peerDependencies:
-    "@lodev09/react-native-true-sheet": "*"
+    "@lodev09/react-native-true-sheet": ">=3.0.0"
+    "@react-native-async-storage/async-storage": "*"
+    "@react-native-clipboard/clipboard": "*"
     "@shopify/flash-list": "*"
     expo-audio: "*"
     expo-blur: "*"
+    expo-clipboard: "*"
     expo-device: "*"
+    expo-document-picker: "*"
     expo-file-system: "*"
     expo-haptics: "*"
+    expo-image: "*"
     expo-image-picker: "*"
+    expo-location: "*"
+    expo-media-library: "*"
+    expo-sharing: "*"
     expo-video: "*"
-    react: ">=18.0.0"
-    react-native: "*"
+    react: ">=19.0.0"
+    react-native: ">=0.82.0"
     react-native-audio-api: "*"
-    react-native-gesture-handler: ">=2.0.0"
+    react-native-gesture-handler: ">=3.0.0"
     react-native-keyboard-controller: ">=1.0.0"
     react-native-reanimated: ">=3.0.0 || ^4.0.0"
     react-native-safe-area-context: ">=5.0.0"
     react-native-streamdown: "*"
     react-native-svg: "*"
-    react-native-vision-camera: "*"
+    react-native-vision-camera: ">=5.0.0"
   peerDependenciesMeta:
     "@lodev09/react-native-true-sheet":
+      optional: true
+    "@react-native-async-storage/async-storage":
+      optional: true
+    "@react-native-clipboard/clipboard":
       optional: true
     "@shopify/flash-list":
       optional: true
@@ -2875,13 +2888,25 @@ __metadata:
       optional: true
     expo-blur:
       optional: true
+    expo-clipboard:
+      optional: true
     expo-device:
+      optional: true
+    expo-document-picker:
       optional: true
     expo-file-system:
       optional: true
     expo-haptics:
       optional: true
+    expo-image:
+      optional: true
     expo-image-picker:
+      optional: true
+    expo-location:
+      optional: true
+    expo-media-library:
+      optional: true
+    expo-sharing:
       optional: true
     expo-video:
       optional: true
@@ -5812,6 +5837,13 @@ __metadata:
   version: 0.13.1
   resolution: "emittery@npm:0.13.1"
   checksum: 10c0/1573d0ae29ab34661b6c63251ff8f5facd24ccf6a823f19417ae8ba8c88ea450325788c67f16c99edec8de4b52ce93a10fe441ece389fd156e88ee7dab9bfa35
+  languageName: node
+  linkType: hard
+
+"emoji-datasource@npm:16.0.0":
+  version: 16.0.0
+  resolution: "emoji-datasource@npm:16.0.0"
+  checksum: 10c0/a34c7ce3a163eaa26f2c2f067b09b81bc210b2fd72673cd2ba8913f251abadfaab8d2d027528b9bc7f83f551a484a4522c28e5f08560df040481d7cc4bca29aa
   languageName: node
   linkType: hard
 

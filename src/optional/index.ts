@@ -106,6 +106,59 @@ export const getFlashList = (): any => resolve('@shopify/flash-list', () => {
     return null
   }
 })
+export const getAsyncStorage = (): any => resolve('@react-native-async-storage/async-storage', () => {
+  try {
+    return require('@react-native-async-storage/async-storage')
+  } catch {
+    return null
+  }
+})
+// expo-media-library 58 moved the asset API used here to `expo-media-library/legacy` (the root
+// export now throws); earlier versions only have the root.
+export const getExpoMediaLibrary = (): any => resolve('expo-media-library', () => {
+  const legacy = resolve('expo-media-library/legacy', () => {
+    try {
+      return require('expo-media-library/legacy')
+    } catch {
+      return null
+    }
+  })
+  if (legacy?.getAssetsAsync)
+    return legacy
+  try {
+    return require('expo-media-library')
+  } catch {
+    return null
+  }
+})
+export const getExpoImage = (): any => resolve('expo-image', () => {
+  try {
+    return require('expo-image')
+  } catch {
+    return null
+  }
+})
+export const getExpoDocumentPicker = (): any => resolve('expo-document-picker', () => {
+  try {
+    return require('expo-document-picker')
+  } catch {
+    return null
+  }
+})
+export const getExpoLocation = (): any => resolve('expo-location', () => {
+  try {
+    return require('expo-location')
+  } catch {
+    return null
+  }
+})
+export const getExpoSharing = (): any => resolve('expo-sharing', () => {
+  try {
+    return require('expo-sharing')
+  } catch {
+    return null
+  }
+})
 // vision-camera 5 creates its native `CameraFactory` while it loads, so a JS package without the
 // native module behind it throws here and counts as not installed.
 export const getVisionCamera = (): any => resolve('react-native-vision-camera', () => {
@@ -213,6 +266,18 @@ export interface ChatCapabilities {
   nativeSheet: boolean
   /** The FlashList list engine (`@shopify/flash-list`). */
   flashList: boolean
+  /** Emoji keyboard recents and skin tones kept across launches (`@react-native-async-storage/async-storage`). */
+  persistentEmojiRecents: boolean
+  /** The attachment menu's in-sheet photo grid (`expo-media-library`). */
+  mediaLibrary: boolean
+  /** The attachment menu's system photo picker and camera (`expo-image-picker`). */
+  imagePicker: boolean
+  /** The attachment menu's File tab (`expo-document-picker`). */
+  documentPicker: boolean
+  /** The attachment menu's Location tab (`expo-location`). */
+  location: boolean
+  /** Opening a received file in the system share sheet (`expo-sharing`); without it, `Linking`. */
+  sharing: boolean
 }
 
 export const hasHaptics = () => !!getExpoHaptics()?.impactAsync
@@ -230,6 +295,23 @@ export const hasVideoPlayback = () => {
   const video = getExpoVideo()
   return !!(video?.VideoView && video?.useVideoPlayer)
 }
+export const hasAsyncStorage = () => {
+  const module = getAsyncStorage()
+  const storage = module?.default ?? module
+  return !!(storage?.getItem && storage?.setItem)
+}
+export const hasMediaLibrary = () => {
+  const library = getExpoMediaLibrary()
+  return !!(library?.getAssetsAsync && library?.requestPermissionsAsync)
+}
+export const hasImagePicker = () => !!getExpoImagePicker()?.launchImageLibraryAsync
+export const hasImagePickerCamera = () => !!getExpoImagePicker()?.launchCameraAsync
+export const hasDocumentPicker = () => !!getExpoDocumentPicker()?.getDocumentAsync
+export const hasLocation = () => {
+  const location = getExpoLocation()
+  return !!(location?.getCurrentPositionAsync && location?.requestForegroundPermissionsAsync)
+}
+export const hasSharing = () => !!getExpoSharing()?.shareAsync
 export const hasRoundVideoCapture = () => {
   const camera = getVisionCamera()
   return !!(camera?.Camera && camera?.useVideoOutput && camera?.VisionCamera)
@@ -260,5 +342,11 @@ export function getChatCapabilities (): ChatCapabilities {
     markdown: !!(getStreamdown()?.Streamdown ?? getStreamdown()?.default),
     nativeSheet: !!getTrueSheet()?.TrueSheet,
     flashList: !!getFlashList()?.FlashList,
+    persistentEmojiRecents: hasAsyncStorage(),
+    mediaLibrary: hasMediaLibrary(),
+    imagePicker: hasImagePicker(),
+    documentPicker: hasDocumentPicker(),
+    location: hasLocation(),
+    sharing: hasSharing(),
   }
 }

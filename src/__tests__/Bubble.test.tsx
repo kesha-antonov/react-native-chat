@@ -133,7 +133,7 @@ describe('bubble gestures', () => {
     expect(lastGestureOfType('LongPressGestureHandler').config.cancelsTouchesInView).toBe(false)
   })
 
-  it('holds for 0.32s, as Telegram does, before opening', async () => {
+  it('holds for the 0.4s system long-press timeout, as Telegram Android does, before opening', async () => {
     await render(
       <Bubble
         user={{ _id: 1 }}
@@ -143,7 +143,7 @@ describe('bubble gestures', () => {
       />
     )
 
-    expect(lastGestureOfType('LongPressGestureHandler').config.minDurationMs).toBe(320)
+    expect(lastGestureOfType('LongPressGestureHandler').config.minDurationMs).toBe(400)
   })
 
   it('only enables the tap gesture when onPressMessage is provided', async () => {

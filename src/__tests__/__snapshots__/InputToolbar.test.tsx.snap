@@ -108,6 +108,164 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
           ]
         }
       >
+        <View>
+          <View
+            accessibilityLabel="Emoji"
+            accessibilityRole="button"
+            accessibilityState={
+              {
+                "busy": undefined,
+                "checked": undefined,
+                "disabled": undefined,
+                "expanded": undefined,
+                "selected": undefined,
+              }
+            }
+            accessibilityValue={
+              {
+                "max": undefined,
+                "min": undefined,
+                "now": undefined,
+                "text": undefined,
+              }
+            }
+            accessible={true}
+            collapsable={false}
+            focusable={true}
+            hitSlop={8}
+            onBlur={[Function]}
+            onClick={[Function]}
+            onFocus={[Function]}
+            onResponderGrant={[Function]}
+            onResponderMove={[Function]}
+            onResponderRelease={[Function]}
+            onResponderTerminate={[Function]}
+            onResponderTerminationRequest={[Function]}
+            onStartShouldSetResponder={[Function]}
+            style={
+              {
+                "alignItems": "center",
+                "height": 44,
+                "justifyContent": "center",
+                "width": 44,
+              }
+            }
+          >
+            <View
+              style={
+                {
+                  "opacity": 1,
+                  "transform": [
+                    {
+                      "scale": 1,
+                    },
+                  ],
+                }
+              }
+            >
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "borderColor": "rgba(27, 34, 39, 0.6)",
+                    "borderRadius": 13,
+                    "borderWidth": 2,
+                    "height": 26,
+                    "justifyContent": "center",
+                    "width": 26,
+                  }
+                }
+              >
+                <View
+                  style={
+                    {
+                      "flexDirection": "row",
+                      "gap": 4.68,
+                      "marginTop": -1.56,
+                    }
+                  }
+                >
+                  <View
+                    style={
+                      {
+                        "backgroundColor": "rgba(27, 34, 39, 0.6)",
+                        "borderRadius": 2,
+                        "height": 2,
+                        "width": 2,
+                      }
+                    }
+                  />
+                  <View
+                    style={
+                      {
+                        "backgroundColor": "rgba(27, 34, 39, 0.6)",
+                        "borderRadius": 2,
+                        "height": 2,
+                        "width": 2,
+                      }
+                    }
+                  />
+                </View>
+                <View
+                  style={
+                    {
+                      "borderBottomLeftRadius": 5.2,
+                      "borderBottomRightRadius": 5.2,
+                      "borderBottomWidth": 2,
+                      "borderColor": "rgba(27, 34, 39, 0.6)",
+                      "borderLeftWidth": 2,
+                      "borderRightWidth": 2,
+                      "height": 5.2,
+                      "marginTop": 1.04,
+                      "width": 10.4,
+                    }
+                  }
+                />
+              </View>
+            </View>
+            <View
+              pointerEvents="none"
+              style={
+                [
+                  {
+                    "bottom": 0,
+                    "left": 0,
+                    "position": "absolute",
+                    "right": 0,
+                    "top": 0,
+                  },
+                  {
+                    "alignItems": "center",
+                    "justifyContent": "center",
+                  },
+                  {
+                    "opacity": 0,
+                    "transform": [
+                      {
+                        "scale": 0.5,
+                      },
+                    ],
+                  },
+                ]
+              }
+            >
+              <Text
+                style={
+                  [
+                    {
+                      "fontSize": 22,
+                    },
+                    {
+                      "color": "rgba(27, 34, 39, 0.6)",
+                    },
+                  ]
+                }
+              >
+                ⌨
+              </Text>
+            </View>
+          </View>
+        </View>
         <View
           style={
             [
@@ -117,9 +275,7 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
                 "flexDirection": "row",
                 "marginHorizontal": 4,
               },
-              {
-                "marginLeft": 12,
-              },
+              false,
               {
                 "marginRight": 8,
               },
@@ -160,6 +316,8 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
                 enablesReturnKeyAutomatically={true}
                 keyboardAppearance="default"
                 multiline={true}
+                onFocus={[Function]}
+                onSelectionChange={[Function]}
                 placeholder="Type a message..."
                 placeholderTextColor="#858A84"
                 selectionColor="#54A1DB"

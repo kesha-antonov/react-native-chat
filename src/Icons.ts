@@ -31,6 +31,20 @@ export type IconName =
   | 'copy'
   | 'pinOff'
   | 'forward'
+  | 'keyboard'
+  | 'search'
+  | 'backspace'
+  | 'emojiAnimals'
+  | 'emojiFood'
+  | 'emojiActivities'
+  | 'emojiTravel'
+  | 'emojiObjects'
+  | 'emojiSymbols'
+  | 'emojiFlags'
+  | 'gallery'
+  | 'file'
+  | 'location'
+  | 'download'
 
 /**
  * Icon override registry. Supply a render function for any icon to replace the

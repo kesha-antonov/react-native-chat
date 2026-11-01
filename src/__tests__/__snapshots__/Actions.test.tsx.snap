@@ -28,6 +28,8 @@ exports[`should render <Actions /> and compare with snapshot 1`] = `
     }
   >
     <RNGestureHandlerButton
+      accessibilityLabel="Attach"
+      accessibilityRole="button"
       hitSlop={8}
       needsOffscreenAlphaCompositing={true}
     >

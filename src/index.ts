@@ -21,6 +21,22 @@ export { SystemMessage } from './SystemMessage'
 export { MessageImage } from './MessageImage'
 export { MessageText } from './MessageText'
 export { MessageLocation } from './MessageLocation'
+export { MessageFile, formatFileSize } from './MessageFile'
+export { EmojiGrid } from './emoji/EmojiGrid'
+export type { EmojiGridProps } from './emoji/EmojiGrid'
+export type { EmojiKeyboardProps, EmojiKeyboardRenderProps } from './emoji/EmojiKeyboard'
+export { EMOJI_CATEGORY_KEYS, DEFAULT_RECENT_EMOJIS } from './emoji/emojiStore'
+export type { EmojiCategoryKey } from './emoji/emojiStore'
+export { AttachmentMenu } from './attachments/AttachmentMenu'
+export type { AttachmentMenuProps } from './attachments/AttachmentMenu'
+export { buildAttachmentMessages, getAttachmentTabs } from './attachments/buildMessages'
+export type {
+  AttachmentTab,
+  AttachmentsProps,
+  AttachmentMenuRenderProps,
+  AttachmentPickResult,
+  PickedAttachment
+} from './attachments/types'
 export { MediaCard } from './components/MediaCard'
 export { AttachmentSheet } from './components/AttachmentSheet'
 export { ContextMenu } from './components/ContextMenu'
