@@ -33,26 +33,50 @@ const customIcons: ChatIcons = {
   ),
 }
 
+// Light text and meta for a saturated outgoing bubble, as the default day theme's pale green
+// bubble carries dark text.
+const onColoredBubble = {
+  outgoingText: '#FFFFFF',
+  outgoingMeta: 'rgba(255, 255, 255, 0.75)',
+  outgoingLink: '#FFFFFF',
+  ticksSent: 'rgba(255, 255, 255, 0.75)',
+  ticksRead: '#FFFFFF',
+  outgoingReplyLine: '#FFFFFF',
+  outgoingReplyName: '#FFFFFF',
+  outgoingReaction: '#FFFFFF',
+  outgoingReactionText: '#FFFFFF',
+  outgoingVoiceFill: '#FFFFFF',
+  outgoingVoiceTrack: 'rgba(255, 255, 255, 0.4)',
+}
+
 // `theme` only applies in light mode; dark mode reads `darkTheme`. Each preset sets both,
 // so switching works whichever scheme the device is in.
 const PRESETS: Array<{ id: string, label: string, theme: PartialChatTheme, darkTheme: PartialChatTheme }> = [
   {
     id: 'default',
-    label: 'Telegram blue',
-    theme: { colors: { accent: '#3390EC', outgoingBubble: '#3390EC', background: '#EFEFF4' } },
-    darkTheme: { colors: { accent: '#3390EC', outgoingBubble: '#2B5278', background: '#0E1621' } },
+    label: 'Telegram',
+    // The built-in look: Telegram Android's day and night themes.
+    theme: {},
+    darkTheme: {},
+  },
+  {
+    id: 'blue',
+    label: 'Blue',
+    theme: { colors: { accent: '#3390EC', outgoingBubble: '#3390EC', ...onColoredBubble } },
+    darkTheme: { colors: { accent: '#3390EC', outgoingBubble: '#2B5278', ...onColoredBubble } },
   },
   {
     id: 'green',
     label: 'WhatsApp green',
-    theme: { colors: { accent: '#25D366', outgoingBubble: '#DCF8C6', outgoingText: '#000000', outgoingMeta: '#5DA46B', background: '#ECE5DD' } },
-    darkTheme: { colors: { accent: '#25D366', outgoingBubble: '#005C4B', outgoingText: '#E9EDEF', outgoingMeta: 'rgba(233, 237, 239, 0.6)', incomingBubble: '#202C33', background: '#0B141A', inputBarBackground: '#1F2C34' } },
+    // A flat background instead of the wallpaper.
+    theme: { colors: { accent: '#25D366', outgoingBubble: '#DCF8C6', outgoingText: '#000000', outgoingMeta: '#5DA46B', background: '#ECE5DD' }, wallpaper: { isEnabled: false } },
+    darkTheme: { colors: { accent: '#25D366', outgoingBubble: '#005C4B', outgoingText: '#E9EDEF', outgoingMeta: 'rgba(233, 237, 239, 0.6)', ticksSent: 'rgba(233, 237, 239, 0.6)', ticksRead: '#53BDEB', incomingBubble: '#202C33', background: '#0B141A' }, wallpaper: { isEnabled: false } },
   },
   {
     id: 'purple',
     label: 'Purple',
-    theme: { colors: { accent: '#8E44AD', outgoingBubble: '#8E44AD', background: '#F3ECFA' } },
-    darkTheme: { colors: { accent: '#B07CC6', outgoingBubble: '#6C3483', incomingBubble: '#2A1F33', background: '#160F1C', inputBarBackground: '#211829' } },
+    theme: { colors: { accent: '#8E44AD', outgoingBubble: '#8E44AD', ...onColoredBubble }, wallpaper: { colors: ['#F3ECFA', '#D7BDE2', '#EBDEF0', '#C39BD3'] } },
+    darkTheme: { colors: { accent: '#B07CC6', outgoingBubble: '#6C3483', incomingBubble: '#2A1F33', ...onColoredBubble }, wallpaper: { colors: ['#160F1C', '#2A1F33', '#1B1222', '#3B2547'] } },
   },
 ]
 

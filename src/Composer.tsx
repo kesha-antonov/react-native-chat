@@ -33,14 +33,10 @@ export interface ComposerProps {
   ): void
 }
 
-// Static text-input metrics. lineHeight matches typography.message.lineHeight
-// (21) so composed text and sent bubbles share identical metrics. The vertical
-// padding is derived from the bar height (see createStyles) so a single line of
-// text is vertically centered in the field.
-const TEXT_INPUT_METRICS = {
-  fontSize: 16,
-  lineHeight: 21,
-}
+// Telegram's input text is 18 (`CAEV:5811`), from `theme.typography.composer`. The vertical
+// padding is derived from the island height (see createStyles) so a single line of text is
+// vertically centered in it.
+const DEFAULT_LINE_HEIGHT = 21
 
 export function Composer ({
   text = '',
@@ -78,6 +74,8 @@ export function Composer ({
         accessible
         accessibilityLabel={placeholder}
         placeholderTextColor={textInputProps?.placeholderTextColor ?? theme.colors.placeholder}
+        selectionColor={theme.colors.inputCursor}
+        cursorColor={theme.colors.inputCursor}
         value={text}
         enablesReturnKeyAutomatically
         underlineColorAndroid='transparent'
@@ -110,7 +108,8 @@ export function Composer ({
 const createStyles = (theme: ChatTheme) => {
   // Center a single line vertically: split the leftover space (bar height minus
   // one line of text) into equal top/bottom padding.
-  const paddingVertical = Math.max(4, (theme.composer.minHeight - TEXT_INPUT_METRICS.lineHeight) / 2)
+  const lineHeight = theme.typography.composer.lineHeight ?? DEFAULT_LINE_HEIGHT
+  const paddingVertical = Math.max(4, (theme.composer.minHeight - lineHeight) / 2)
 
   return StyleSheet.create({
     // Transparent slot: the rounded pill is provided by the InputToolbar field
@@ -121,8 +120,9 @@ const createStyles = (theme: ChatTheme) => {
       minHeight: theme.composer.minHeight,
     },
     textInput: {
-      fontSize: TEXT_INPUT_METRICS.fontSize,
-      lineHeight: TEXT_INPUT_METRICS.lineHeight,
+      fontSize: theme.typography.composer.fontSize,
+      lineHeight,
+      fontWeight: theme.typography.composer.fontWeight,
       paddingTop: paddingVertical,
       paddingBottom: paddingVertical,
       paddingHorizontal: 0,

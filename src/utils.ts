@@ -64,6 +64,38 @@ export function isSameUser (
   )
 }
 
+/** Telegram Android groups bubbles sent within five minutes of each other (`ChatActivity:37905`). */
+export const GROUP_MAX_GAP_MS = 5 * 60 * 1000
+
+const toTime = (value: Date | number | undefined) => {
+  if (value == null)
+    return NaN
+
+  return typeof value === 'number' ? value : new Date(value).getTime()
+}
+
+/**
+ * Whether two adjacent messages belong to one run of bubbles: the same sender, the same day,
+ * at most five minutes apart, and neither a system message. A run shares one tail, one
+ * avatar and one sender name, with 2pt between its bubbles instead of 6.
+ */
+export function isSameGroup (
+  currentMessage: IMessage | null | undefined,
+  diffMessage: IMessage | null | undefined
+) {
+  if (!currentMessage || !diffMessage)
+    return false
+
+  if (currentMessage.system || diffMessage.system)
+    return false
+
+  if (!isSameUser(currentMessage, diffMessage) || !isSameDay(currentMessage, diffMessage))
+    return false
+
+  const gap = Math.abs(toTime(currentMessage.createdAt) - toTime(diffMessage.createdAt))
+  return Number.isFinite(gap) && gap <= GROUP_MAX_GAP_MS
+}
+
 function processCallbackArguments (args: unknown[]): unknown[] {
   const [e, ...rest] = args
   const { nativeEvent } = (e as { nativeEvent?: unknown }) || {}

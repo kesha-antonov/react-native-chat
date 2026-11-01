@@ -37,8 +37,9 @@ exports[`should render <Actions /> and compare with snapshot 1`] = `
             [
               {
                 "alignItems": "center",
+                "height": 44,
                 "justifyContent": "center",
-                "paddingBottom": 8,
+                "width": 44,
               },
               undefined,
             ],
@@ -76,7 +77,7 @@ exports[`should render <Actions /> and compare with snapshot 1`] = `
               style={
                 {
                   "borderBottomWidth": 0,
-                  "borderColor": "#8E8E93",
+                  "borderColor": "rgba(27, 34, 39, 0.6)",
                   "borderRadius": 6,
                   "borderWidth": 2,
                   "height": 18.72,

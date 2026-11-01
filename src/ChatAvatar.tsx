@@ -8,11 +8,12 @@ import {
   TextStyle,
   Text } from 'react-native'
 import { Color } from './Color'
+import { linearGradientStyle } from './components/BubbleBackground'
 import { TouchableOpacity } from './components/TouchableOpacity'
 import { useTheme, useThemedStyles } from './hooks/useTheme'
 import { User } from './Models'
 import stylesCommon from './styles'
-import { ChatTheme } from './Theme'
+import { ChatTheme, getUserColorIndex } from './Theme'
 
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
   avatarStyle: {
@@ -23,11 +24,12 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   avatarTransparent: {
     backgroundColor: Color.backgroundTransparent,
   },
+  // `AvatarDrawable`: 18 Medium for a 42 avatar, scaled with the size.
   textStyle: {
     color: theme.avatar.textColor,
-    fontSize: 16,
+    fontSize: Math.round(theme.avatar.size * 0.43),
     backgroundColor: Color.backgroundTransparent,
-    fontWeight: '100',
+    fontWeight: '500',
   },
 })
 
@@ -64,18 +66,20 @@ export function ChatAvatar (
       return ''
   }, [user?.name])
 
-  const backgroundColor = useMemo(() => {
-    let sumChars = 0
-    if (user?.name)
-      for (let i = 0; i < user.name.length; i += 1)
-        sumChars += user.name.charCodeAt(i)
+  // Telegram picks the color by user id (`abs(id % 7)`) and draws it as a vertical gradient
+  // (`AvatarDrawable`); `theme.avatar.paletteEnd` empty draws it flat.
+  const fillStyle = useMemo(() => {
+    const { palette, paletteEnd } = theme.avatar
+    if (!palette.length)
+      return undefined
 
-    // inspired by https://github.com/wbinnssmith/react-user-avatar
-    // palette is themeable via theme.avatar.palette
-    const colors = theme.avatar.palette
-
-    return colors[sumChars % colors.length]
-  }, [user?.name, theme])
+    const index = getUserColorIndex(user?._id ?? user?.name, palette.length)
+    const top = palette[index]
+    const bottom = paletteEnd[index]
+    return bottom
+      ? [{ backgroundColor: bottom }, linearGradientStyle([top, bottom])]
+      : { backgroundColor: top }
+  }, [user?._id, user?.name, theme])
 
   const renderAvatar = useCallback(() => {
     switch (typeof user?.avatar) {
@@ -162,7 +166,7 @@ export function ChatAvatar (
       style={[
         stylesCommon.centerItems,
         styles.avatarStyle,
-        { backgroundColor },
+        fillStyle,
         avatarStyle,
       ]}
       accessibilityRole='image'

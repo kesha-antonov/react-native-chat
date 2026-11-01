@@ -12,7 +12,7 @@ import { useThemedStyles } from './hooks/useTheme'
 import { IMessage, LeftRightStyle, User } from './Models'
 import { mirrorPosition } from './rtl'
 import { ChatTheme } from './Theme'
-import { isSameUser, isSameDay } from './utils'
+import { isSameGroup } from './utils'
 
 interface Styles {
   left: {
@@ -35,14 +35,17 @@ const createStyles = (theme: ChatTheme): Styles => {
     borderRadius: size / 2,
   }
 
+  // Telegram's avatar sits 6 from the screen edge and the bubble body 11 past it, leaving
+  // the tail room to curl in between (`ChatMessageCell:13861`, `:20621`). The row is inset
+  // 8, hence the -2.
   return {
     left: StyleSheet.create({
-      container: { marginRight: 8 },
+      container: { marginLeft: -2, marginRight: 11 },
       onTop: { alignSelf: 'flex-start' },
       image,
     }),
     right: StyleSheet.create({
-      container: { marginLeft: 8 },
+      container: { marginRight: -2, marginLeft: 11 },
       onTop: { alignSelf: 'flex-start' },
       image,
     }),
@@ -140,9 +143,7 @@ export function Avatar<TMessage extends IMessage = IMessage> (
   if (
     !isAvatarVisibleForEveryMessage &&
     currentMessage &&
-    messageToCompare &&
-    isSameUser(currentMessage, messageToCompare) &&
-    isSameDay(currentMessage, messageToCompare)
+    isSameGroup(currentMessage, messageToCompare)
   )
     return (
       <View

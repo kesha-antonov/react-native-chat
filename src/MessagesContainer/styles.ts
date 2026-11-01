@@ -1,35 +1,34 @@
-import { Platform, StyleSheet } from 'react-native'
-import { Color } from '../Color'
+import { StyleSheet } from 'react-native'
 import { ChatTheme } from '../Theme'
 
 export const createThemedStyles = (theme: ChatTheme) => StyleSheet.create({
+  // The chat's wallpaper (or `colors.background`) is painted behind the list by `Chat`.
   root: {
-    backgroundColor: theme.colors.background,
-  },
-  scrollSurface: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: 'transparent',
   },
   scrollChevron: {
     width: 10,
     height: 10,
     marginTop: -3,
-    borderColor: theme.colors.accent,
+    borderColor: theme.colors.scrollToBottomIcon,
     borderRightWidth: 2,
     borderBottomWidth: 2,
     transform: [{ rotate: '45deg' }],
   },
   scrollToBottomBadge: {
-    backgroundColor: theme.colors.accent,
+    backgroundColor: theme.colors.scrollToBottomBadge,
   },
+  // `CounterView`: 13 bold white.
   scrollToBottomBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+    color: theme.colors.scrollToBottomBadgeText,
+    fontSize: 13,
+    lineHeight: 16,
+    fontWeight: '500',
     fontVariant: ['tabular-nums'],
   },
-  // Carries the accent color for an overridden chevron icon.
+  // Carries the icon color for an overridden chevron icon.
   chevronColor: {
-    color: theme.colors.accent,
+    color: theme.colors.scrollToBottomIcon,
   },
 })
 
@@ -44,38 +43,33 @@ export default StyleSheet.create({
   emptyChatContainer: {
     transform: [{ scaleY: -1 }],
   },
+  // Telegram's pagedown: a 44pt glass circle about 7 from the screen edge and 10 above the
+  // composer island (`ChatActivityBlurredRoundButton`, `updatePagedownButtonsPosition`).
   scrollToBottom: {
     position: 'absolute',
-    right: 10,
-    bottom: 30,
+    right: 7,
+    bottom: 6,
     zIndex: 999,
   },
-  // Telegram's counter sits centred on the button's top edge.
+  // The counter is a 23pt pill centred on the circle's top edge (`CounterView`).
   scrollToBottomBadge: {
     position: 'absolute',
-    top: -9,
+    top: -11.5,
     alignSelf: 'center',
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
+    minWidth: 23,
+    height: 23,
+    borderRadius: 11.5,
     paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scrollToBottomContent: {
-    height: 40,
-    width: 40,
-    borderRadius: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: Color.black,
-        shadowOpacity: 0.12,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    height: 44,
+    width: 44,
+    borderRadius: 22,
+    transformOrigin: 'bottom',
+  },
+  scrollToBottomSurface: {
+    borderRadius: 22,
   },
 })

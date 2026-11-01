@@ -9,11 +9,13 @@ import {
   ViewStyle,
   Platform } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
-import Animated, { runOnJS, ScrollEvent, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { Easing, runOnJS, ScrollEvent, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { BubbleGradientContext, BubbleGradientStore } from '../components/BubbleBackground'
+import { GlassSurface } from '../components/GlassSurface'
 import { Icon } from '../components/Icon'
 import { MediaPlaybackContext } from '../components/mediaPlayback'
 import { useIsKeyboardVisible } from '../hooks/useIsKeyboardVisible'
-import { useThemedStyles } from '../hooks/useTheme'
+import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { LoadEarlierMessages } from '../LoadEarlierMessages'
 import { warning } from '../logging'
 import { IMessage } from '../Models'
@@ -45,6 +47,13 @@ const ROW_ON_SCREEN_CONFIG = { itemVisiblePercentThreshold: 0 }
 
 /** Telegram Android treats the list as at the newest message within `dp(5)`. */
 const NEWEST_SLOP = 5
+
+// The pagedown button comes up from 80 below at 0.7 scale and fades in, over 280ms on a
+// decelerate curve (`ChatActivitySideControlsButtonsLayout:177-224`).
+const SCROLL_BUTTON_SHOW = { duration: 280, easing: Easing.out(Easing.quad) }
+const SCROLL_BUTTON_RISE = 80
+// `ScaleStateListAnimator.apply(button, .13f, 2f)`: 13% smaller while pressed.
+const SCROLL_BUTTON_PRESSED = 0.87
 
 // Stable reference for the missing prev/next message at the list edges.
 const EMPTY_MESSAGE = Object.freeze({}) as IMessage
@@ -93,6 +102,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [isFlashListEnabled])
 
   const themedStyles = useThemedStyles(createThemedStyles)
+  const theme = useTheme()
 
   useEffect(() => {
     if (isFlashList && isAlignedTop)
@@ -171,8 +181,13 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const distanceFromNewestSV = useSharedValue(0)
   const lastScrolledY = useSharedValue(0)
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false)
+  const scrollToBottomPressScale = useSharedValue(1)
   const scrollToBottomStyleAnim = useAnimatedStyle(() => ({
     opacity: scrollToBottomOpacity.value,
+    transform: [
+      { translateY: (1 - scrollToBottomOpacity.value) * SCROLL_BUTTON_RISE },
+      { scale: (0.7 + 0.3 * scrollToBottomOpacity.value) * scrollToBottomPressScale.value },
+    ],
   }))
 
   const daysPositions = useSharedValue<DaysPositions>({})
@@ -183,6 +198,14 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // keep the inline separator visible until the header's text has caught up, hiding
   // the 1-frame JS-thread lag of the header on each day change.
   const floatingRenderedDate = useSharedValue<number | undefined>(undefined)
+  // Every row's cell, for the bubbles that show their slice of a screen-fixed gradient.
+  const cellLayouts = useSharedValue<Record<string, { y: number, height: number }>>({})
+  const isScreenGradient = !!theme.bubble.outgoingGradient && theme.bubble.outgoingGradient.length > 1 &&
+    theme.bubble.outgoingGradientMode === 'screen'
+  const gradientStore = useMemo((): BubbleGradientStore | null => isScreenGradient
+    ? { scrolledY, listHeight, cellLayouts, isInverted }
+    : null
+  , [isScreenGradient, scrolledY, listHeight, cellLayouts, isInverted])
   // true while the user is actively scrolling (finger down dragging or momentum
   // running). Drives the floating day header visibility so it stays opaque for the
   // whole gesture and only fades once scrolling fully stops.
@@ -229,7 +252,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       if (isVisible)
         runOnJS(setIsScrollToBottomVisible)(true)
 
-      scrollToBottomOpacity.value = withTiming(isVisible ? 1 : 0, { duration: 250 }, isFinished => {
+      scrollToBottomOpacity.value = withTiming(isVisible ? 1 : 0, SCROLL_BUTTON_SHOW, isFinished => {
         if (isFinished && !isVisible)
           runOnJS(setIsScrollToBottomVisible)(false)
       })
@@ -445,12 +468,12 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     if (scrollToBottomComponentProp)
       return scrollToBottomComponentProp()
 
-    // A downward chevron drawn with borders (no glyph), themed with the accent.
+    // Telegram's `pagedown` chevron in the glass icon color.
     return (
       <Icon
         name='chevronDown'
         color={themedStyles.chevronColor.color}
-        size={16}
+        size={26}
         fallback={<View style={themedStyles.scrollChevron} />}
       />
     )
@@ -460,17 +483,29 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     doScrollToBottom()
   }, [doScrollToBottom])
 
+  const handleScrollToBottomPressIn = useCallback(() => {
+    scrollToBottomPressScale.value = withTiming(SCROLL_BUTTON_PRESSED, { duration: 100 })
+  }, [scrollToBottomPressScale])
+
+  const handleScrollToBottomPressOut = useCallback(() => {
+    scrollToBottomPressScale.value = withTiming(1, { duration: 150 })
+  }, [scrollToBottomPressScale])
+
   const scrollToBottomContent = useMemo(() => {
     return (
       <Animated.View
         style={[
           stylesCommon.centerItems,
           styles.scrollToBottomContent,
-          themedStyles.scrollSurface,
           scrollToBottomContentStyle,
           scrollToBottomStyleAnim,
         ]}
       >
+        <GlassSurface
+          color={theme.colors.scrollToBottomBackground}
+          borderColor={theme.colors.inputFieldBorder}
+          style={styles.scrollToBottomSurface}
+        />
         {renderScrollBottomComponent()}
         {unreadCount > 0 && (
           <View style={[styles.scrollToBottomBadge, themedStyles.scrollToBottomBadge]}>
@@ -481,7 +516,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         )}
       </Animated.View>
     )
-  }, [scrollToBottomStyleAnim, scrollToBottomContentStyle, renderScrollBottomComponent, themedStyles, unreadCount])
+  }, [scrollToBottomStyleAnim, scrollToBottomContentStyle, renderScrollBottomComponent, themedStyles, unreadCount, theme])
 
   const ScrollToBottomWrapper = useCallback(() => {
     if (!isScrollToBottomEnabled)
@@ -494,11 +529,15 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       <Pressable
         style={[styles.scrollToBottom, scrollToBottomStyle]}
         onPress={handleScrollToBottomPress}
+        onPressIn={handleScrollToBottomPressIn}
+        onPressOut={handleScrollToBottomPressOut}
+        accessibilityRole='button'
+        hitSlop={6}
       >
         {scrollToBottomContent}
       </Pressable>
     )
-  }, [isScrollToBottomEnabled, isScrollToBottomVisible, handleScrollToBottomPress, scrollToBottomContent, scrollToBottomStyle])
+  }, [isScrollToBottomEnabled, isScrollToBottomVisible, handleScrollToBottomPress, handleScrollToBottomPressIn, handleScrollToBottomPressOut, scrollToBottomContent, scrollToBottomStyle])
 
   const onLayoutList = useCallback((event: LayoutChangeEvent) => {
     listHeight.value = event.nativeEvent.layout.height
@@ -567,6 +606,17 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // Records where each message sits in the content so the floating day header
   // knows which day is currently on screen. Shared by both cell renderers.
   const trackDayPosition = useCallback((message: IMessage | undefined, layout: { y: number, height: number }) => {
+    if (message && isScreenGradient) {
+      const cell = { y: layout.y, height: layout.height }
+      const key = message._id.toString()
+      cellLayouts.modify(value => {
+        'worklet'
+
+        value[key] = cell
+        return value
+      })
+    }
+
     // Only track positions when day animation is enabled
     if (!isDayAnimationEnabled || !message)
       return
@@ -602,7 +652,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       value[id] = newValue
       return value
     })
-  }, [daysPositions, isInverted, isDayAnimationEnabled])
+  }, [daysPositions, isInverted, isDayAnimationEnabled, isScreenGradient, cellLayouts])
 
   const renderCell = useCallback((props: CellRendererProps) => {
     const { item, onLayout: onLayoutProp, children } = props
@@ -766,7 +816,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     onScrollToIndexFailed,
   }
 
-  return (
+  const list = (
     <View style={[styles.contentContainerStyle, themedStyles.root, stylesCommon.fill]}>
       {isFlashList
         ? (
@@ -823,5 +873,14 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         />
       )}
     </View>
+  )
+
+  if (!gradientStore)
+    return list
+
+  return (
+    <BubbleGradientContext.Provider value={gradientStore}>
+      {list}
+    </BubbleGradientContext.Provider>
   )
 }

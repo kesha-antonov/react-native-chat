@@ -221,11 +221,11 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
 }
 
 const styles = StyleSheet.create({
+  // `Bubble` insets the photo by 2 and rounds its corners to follow the bubble's.
   image: {
-    width: 150,
-    height: 100,
-    borderRadius: 13,
-    margin: 3,
+    width: 240,
+    height: 180,
+    borderRadius: 15,
   },
   modalOverlay: {
     position: 'absolute',

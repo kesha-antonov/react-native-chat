@@ -38,6 +38,8 @@ export interface ChatLabels {
   replyingTo: string
   /** Edit banner title. */
   editing: string
+  /** Prefix of an edited message's time ("edited 14:05"). */
+  edited: string
   /** Shown in the video recorder when camera permission is missing. */
   cameraPermission: string
   /** Shown in the video recorder when no camera device is found. */
@@ -108,6 +110,7 @@ export const defaultLabels: ChatLabels = {
   slideToCancel: 'Slide left to cancel...',
   replyingTo: 'Replying to {name}',
   editing: 'Editing',
+  edited: 'edited',
   cameraPermission: 'Camera permission needed',
   noCamera: 'No camera available',
   stopAndSend: 'Tap to stop and send',

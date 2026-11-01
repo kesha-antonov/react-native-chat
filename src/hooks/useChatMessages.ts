@@ -52,7 +52,7 @@ export function useChatMessages<TMessage extends IMessage = IMessage> ({
   }, [isInverted])
 
   const onEditMessage = useCallback((message: TMessage, text: string) => {
-    setMessages(previous => previous.map(m => (m._id === message._id ? { ...m, text } : m)))
+    setMessages(previous => previous.map(m => (m._id === message._id ? { ...m, text, isEdited: true, editedAt: new Date() } : m)))
   }, [])
 
   const onDeleteMessage = useCallback((message: TMessage) => {

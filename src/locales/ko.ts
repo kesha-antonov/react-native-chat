@@ -14,6 +14,7 @@ export const ko: Partial<ChatLabels> = {
   slideToCancel: '왼쪽으로 밀어서 취소...',
   replyingTo: '{name}님에게 답장',
   editing: '편집 중',
+  edited: '수정됨',
   cameraPermission: '카메라 권한이 필요합니다',
   noCamera: '사용 가능한 카메라가 없습니다',
   stopAndSend: '탭하여 중지하고 전송',

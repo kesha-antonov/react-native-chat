@@ -2,9 +2,11 @@ import { useCallback } from 'react'
 import { runOnJS, useAnimatedReaction, useSharedValue, withTiming } from 'react-native-reanimated'
 import { DAY_DEBUG } from './debug'
 
+// Telegram fades the floating date in over 150ms while scrolling and out over 150ms after
+// `hideDateDelay` (1000ms) of idle (`ChatActivity:13714-13739`).
 const FADE_IN_DURATION = 150
-const FADE_OUT_DURATION = 300
-const FADE_OUT_DELAY = 600
+const FADE_OUT_DURATION = 150
+const FADE_OUT_DELAY = 1000
 
 // Opacity (0..1) that follows the scroll gesture, Telegram-style: the floating date
 // header is hidden at rest, fades in fast when scrolling starts, stays fully opaque

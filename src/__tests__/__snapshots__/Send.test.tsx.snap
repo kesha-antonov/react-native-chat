@@ -8,6 +8,7 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
         "alignItems": "center",
         "justifyContent": "center",
         "minHeight": 44,
+        "minWidth": 44,
       },
       undefined,
     ]
@@ -64,14 +65,22 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
             [
               {
                 "alignItems": "center",
-                "backgroundColor": "#3390EC",
+                "backgroundColor": "#229AF0",
                 "borderRadius": 18,
                 "height": 36,
                 "justifyContent": "center",
                 "width": 36,
               },
               {
-                "backgroundColor": "#8E8E93",
+                "backgroundColor": "#858A84",
+              },
+              {
+                "opacity": 1,
+                "transform": [
+                  {
+                    "scale": 1,
+                  },
+                ],
               },
             ]
           }
@@ -80,14 +89,14 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
             style={
               {
                 "alignItems": "center",
-                "height": 18,
+                "height": 22,
                 "justifyContent": "center",
                 "transform": [
                   {
                     "rotate": "-45deg",
                   },
                 ],
-                "width": 18,
+                "width": 22,
               }
             }
           >
@@ -95,13 +104,13 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
               style={
                 {
                   "borderBottomColor": "transparent",
-                  "borderBottomWidth": 7.38,
+                  "borderBottomWidth": 9.02,
                   "borderLeftColor": "#fff",
-                  "borderLeftWidth": 14.76,
+                  "borderLeftWidth": 18.04,
                   "borderTopColor": "transparent",
-                  "borderTopWidth": 7.38,
+                  "borderTopWidth": 9.02,
                   "height": 0,
-                  "marginLeft": 2.88,
+                  "marginLeft": 3.52,
                   "width": 0,
                 }
               }
@@ -122,6 +131,7 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
         "alignItems": "center",
         "justifyContent": "center",
         "minHeight": 44,
+        "minWidth": 44,
       },
       undefined,
     ]
@@ -178,14 +188,22 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
             [
               {
                 "alignItems": "center",
-                "backgroundColor": "#3390EC",
+                "backgroundColor": "#229AF0",
                 "borderRadius": 18,
                 "height": 36,
                 "justifyContent": "center",
                 "width": 36,
               },
               {
-                "backgroundColor": "#8E8E93",
+                "backgroundColor": "#858A84",
+              },
+              {
+                "opacity": 0,
+                "transform": [
+                  {
+                    "scale": 0.1,
+                  },
+                ],
               },
             ]
           }
@@ -194,14 +212,14 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
             style={
               {
                 "alignItems": "center",
-                "height": 18,
+                "height": 22,
                 "justifyContent": "center",
                 "transform": [
                   {
                     "rotate": "-45deg",
                   },
                 ],
-                "width": 18,
+                "width": 22,
               }
             }
           >
@@ -209,13 +227,13 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
               style={
                 {
                   "borderBottomColor": "transparent",
-                  "borderBottomWidth": 7.38,
+                  "borderBottomWidth": 9.02,
                   "borderLeftColor": "#fff",
-                  "borderLeftWidth": 14.76,
+                  "borderLeftWidth": 18.04,
                   "borderTopColor": "transparent",
-                  "borderTopWidth": 7.38,
+                  "borderTopWidth": 9.02,
                   "height": 0,
-                  "marginLeft": 2.88,
+                  "marginLeft": 3.52,
                   "width": 0,
                 }
               }
@@ -236,6 +254,7 @@ exports[`Send should render <Send /> where there is input and compare with snaps
         "alignItems": "center",
         "justifyContent": "center",
         "minHeight": 44,
+        "minWidth": 44,
       },
       undefined,
     ]
@@ -292,13 +311,21 @@ exports[`Send should render <Send /> where there is input and compare with snaps
             [
               {
                 "alignItems": "center",
-                "backgroundColor": "#3390EC",
+                "backgroundColor": "#229AF0",
                 "borderRadius": 18,
                 "height": 36,
                 "justifyContent": "center",
                 "width": 36,
               },
               false,
+              {
+                "opacity": 1,
+                "transform": [
+                  {
+                    "scale": 1,
+                  },
+                ],
+              },
             ]
           }
         >
@@ -306,14 +333,14 @@ exports[`Send should render <Send /> where there is input and compare with snaps
             style={
               {
                 "alignItems": "center",
-                "height": 18,
+                "height": 22,
                 "justifyContent": "center",
                 "transform": [
                   {
                     "rotate": "-45deg",
                   },
                 ],
-                "width": 18,
+                "width": 22,
               }
             }
           >
@@ -321,13 +348,13 @@ exports[`Send should render <Send /> where there is input and compare with snaps
               style={
                 {
                   "borderBottomColor": "transparent",
-                  "borderBottomWidth": 7.38,
+                  "borderBottomWidth": 9.02,
                   "borderLeftColor": "#fff",
-                  "borderLeftWidth": 14.76,
+                  "borderLeftWidth": 18.04,
                   "borderTopColor": "transparent",
-                  "borderTopWidth": 7.38,
+                  "borderTopWidth": 9.02,
                   "height": 0,
-                  "marginLeft": 2.88,
+                  "marginLeft": 3.52,
                   "width": 0,
                 }
               }

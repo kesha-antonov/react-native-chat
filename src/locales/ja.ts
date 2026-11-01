@@ -14,6 +14,7 @@ export const ja: Partial<ChatLabels> = {
   slideToCancel: '左にスライドしてキャンセル...',
   replyingTo: '{name} に返信',
   editing: '編集中',
+  edited: '編集済み',
   cameraPermission: 'カメラの許可が必要です',
   noCamera: '利用可能なカメラがありません',
   stopAndSend: 'タップして停止して送信',

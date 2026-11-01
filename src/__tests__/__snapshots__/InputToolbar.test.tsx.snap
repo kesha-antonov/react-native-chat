@@ -5,12 +5,13 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
   style={
     [
       {
-        "backgroundColor": "#FFFFFF",
-        "borderTopColor": "rgba(0, 0, 0, 0.08)",
-        "borderTopWidth": 0.5,
+        "backgroundColor": "transparent",
+        "paddingLeft": 7,
+        "paddingRight": 7,
+        "paddingTop": 4,
       },
       {
-        "paddingBottom": 0,
+        "paddingBottom": 9,
       },
       undefined,
     ]
@@ -18,62 +19,206 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
 >
   <View
     style={
-      [
-        {
-          "alignItems": "flex-end",
-          "flexDirection": "row",
-          "gap": 8,
-          "paddingLeft": 8,
-          "paddingRight": 8,
-          "paddingVertical": 8,
-          "position": "relative",
-        },
-        false,
-        undefined,
-      ]
+      {
+        "borderRadius": 22,
+        "minHeight": 44,
+      }
     }
   >
     <View
+      pointerEvents="none"
       style={
         [
           {
-            "alignItems": "flex-end",
-            "backgroundColor": "#F2F2F7",
-            "borderColor": "transparent",
-            "borderRadius": 18,
-            "borderWidth": 0.5,
-            "flex": 1,
-            "flexDirection": "row",
-            "gap": 6,
-            "minHeight": 44,
-            "paddingHorizontal": 12,
+            "bottom": 0,
+            "left": 0,
+            "position": "absolute",
+            "right": 0,
+            "top": 0,
           },
-          false,
+          {
+            "overflow": "hidden",
+          },
+          {
+            "boxShadow": [
+              {
+                "blurRadius": 1,
+                "color": "rgba(0, 0, 0, 0.125)",
+                "offsetX": 0,
+                "offsetY": 0.333,
+              },
+            ],
+          },
+          {
+            "borderRadius": 22,
+          },
         ]
       }
     >
       <View
         style={
+          [
+            {
+              "bottom": 0,
+              "left": 0,
+              "position": "absolute",
+              "right": 0,
+              "top": 0,
+            },
+            {
+              "backgroundColor": "rgba(255, 255, 255, 1)",
+            },
+            {
+              "borderColor": "#FFFFFF",
+              "borderWidth": 0.667,
+            },
+            {
+              "borderRadius": 22,
+            },
+          ]
+        }
+      />
+    </View>
+    <View
+      style={
+        [
           {
             "alignItems": "flex-end",
-            "flex": 1,
             "flexDirection": "row",
+            "position": "relative",
+          },
+          false,
+          undefined,
+        ]
+      }
+    >
+      <View
+        style={
+          [
+            {
+              "alignItems": "flex-end",
+              "borderColor": "transparent",
+              "borderWidth": 0.5,
+              "flex": 1,
+              "flexDirection": "row",
+              "minHeight": 44,
+              "paddingHorizontal": 2,
+            },
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "alignItems": "flex-end",
+                "flex": 1,
+                "flexDirection": "row",
+                "marginHorizontal": 4,
+              },
+              {
+                "marginLeft": 12,
+              },
+              {
+                "marginRight": 8,
+              },
+            ]
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+                "justifyContent": "center",
+                "minHeight": 44,
+              }
+            }
+          >
+            <View
+              handlerTags={
+                [
+                  1,
+                ]
+              }
+              moduleId={-1}
+              onGestureHandlerEvent={[Function]}
+              onGestureHandlerStateChange={[Function]}
+              onGestureHandlerTouchEvent={[Function]}
+              onStartShouldSetResponder={[Function]}
+              pointerEvents="box-none"
+              style={
+                {
+                  "display": "contents",
+                }
+              }
+            >
+              <TextInput
+                accessibilityLabel="Type a message..."
+                accessible={true}
+                cursorColor="#54A1DB"
+                enablesReturnKeyAutomatically={true}
+                keyboardAppearance="default"
+                multiline={true}
+                placeholder="Type a message..."
+                placeholderTextColor="#858A84"
+                selectionColor="#54A1DB"
+                style={
+                  [
+                    {
+                      "color": "#000000",
+                      "fontSize": 18,
+                      "fontWeight": "400",
+                      "lineHeight": 21,
+                      "paddingBottom": 11.5,
+                      "paddingHorizontal": 0,
+                      "paddingTop": 11.5,
+                    },
+                    {
+                      "outlineStyle": "none",
+                    },
+                    {
+                      "maxHeight": 149,
+                      "minHeight": 44,
+                    },
+                    false,
+                    undefined,
+                  ]
+                }
+                testID="Type a message..."
+                underlineColorAndroid="transparent"
+                value=""
+              />
+            </View>
+          </View>
+        </View>
+      </View>
+      <View
+        entering={BaseAnimationMock {}}
+        exiting={BaseAnimationMock {}}
+        style={
+          {
+            "alignSelf": "flex-end",
           }
         }
       >
         <View
           style={
-            {
-              "flex": 1,
-              "justifyContent": "center",
-              "minHeight": 44,
-            }
+            [
+              {
+                "alignItems": "center",
+                "justifyContent": "center",
+                "minHeight": 44,
+                "minWidth": 44,
+              },
+              undefined,
+            ]
           }
         >
           <View
             handlerTags={
               [
-                1,
+                2,
               ]
             }
             moduleId={-1}
@@ -88,152 +233,95 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
               }
             }
           >
-            <TextInput
-              accessibilityLabel="Type a message..."
+            <RNGestureHandlerButton
+              accessibilityLabel="send"
+              accessibilityRole="button"
+              accessibilityState={
+                {
+                  "disabled": true,
+                }
+              }
               accessible={true}
-              enablesReturnKeyAutomatically={true}
-              keyboardAppearance="default"
-              multiline={true}
-              placeholder="Type a message..."
-              placeholderTextColor="#8E8E93"
-              style={
-                [
-                  {
-                    "color": "#000000",
-                    "fontSize": 16,
-                    "lineHeight": 21,
-                    "paddingBottom": 11.5,
-                    "paddingHorizontal": 0,
-                    "paddingTop": 11.5,
-                  },
-                  {
-                    "outlineStyle": "none",
-                  },
-                  {
-                    "maxHeight": 120,
-                    "minHeight": 44,
-                  },
-                  false,
-                  undefined,
-                ]
-              }
-              testID="Type a message..."
-              underlineColorAndroid="transparent"
-              value=""
-            />
-          </View>
-        </View>
-      </View>
-    </View>
-    <View
-      style={
-        [
-          {
-            "alignItems": "center",
-            "justifyContent": "center",
-            "minHeight": 44,
-          },
-          undefined,
-        ]
-      }
-    >
-      <View
-        handlerTags={
-          [
-            2,
-          ]
-        }
-        moduleId={-1}
-        onGestureHandlerEvent={[Function]}
-        onGestureHandlerStateChange={[Function]}
-        onGestureHandlerTouchEvent={[Function]}
-        onStartShouldSetResponder={[Function]}
-        pointerEvents="box-none"
-        style={
-          {
-            "display": "contents",
-          }
-        }
-      >
-        <RNGestureHandlerButton
-          accessibilityLabel="send"
-          accessibilityRole="button"
-          accessibilityState={
-            {
-              "disabled": true,
-            }
-          }
-          accessible={true}
-          enabled={false}
-          needsOffscreenAlphaCompositing={true}
-          testID="GC_SEND_TOUCHABLE"
-        >
-          <View
-            style={
-              [
-                {
-                  "justifyContent": "center",
-                },
-                {
-                  "opacity": 1,
-                },
-                {
-                  "pointerEvents": "none",
-                },
-              ]
-            }
-          >
-            <View
-              style={
-                [
-                  {
-                    "alignItems": "center",
-                    "backgroundColor": "#3390EC",
-                    "borderRadius": 18,
-                    "height": 36,
-                    "justifyContent": "center",
-                    "width": 36,
-                  },
-                  {
-                    "backgroundColor": "#8E8E93",
-                  },
-                ]
-              }
+              enabled={false}
+              needsOffscreenAlphaCompositing={true}
+              testID="GC_SEND_TOUCHABLE"
             >
               <View
                 style={
-                  {
-                    "alignItems": "center",
-                    "height": 18,
-                    "justifyContent": "center",
-                    "transform": [
-                      {
-                        "rotate": "-45deg",
-                      },
-                    ],
-                    "width": 18,
-                  }
+                  [
+                    {
+                      "justifyContent": "center",
+                    },
+                    {
+                      "opacity": 1,
+                    },
+                    {
+                      "pointerEvents": "none",
+                    },
+                  ]
                 }
               >
                 <View
                   style={
-                    {
-                      "borderBottomColor": "transparent",
-                      "borderBottomWidth": 7.38,
-                      "borderLeftColor": "#fff",
-                      "borderLeftWidth": 14.76,
-                      "borderTopColor": "transparent",
-                      "borderTopWidth": 7.38,
-                      "height": 0,
-                      "marginLeft": 2.88,
-                      "width": 0,
-                    }
+                    [
+                      {
+                        "alignItems": "center",
+                        "backgroundColor": "#229AF0",
+                        "borderRadius": 18,
+                        "height": 36,
+                        "justifyContent": "center",
+                        "width": 36,
+                      },
+                      {
+                        "backgroundColor": "#858A84",
+                      },
+                      {
+                        "opacity": 0,
+                        "transform": [
+                          {
+                            "scale": 0.1,
+                          },
+                        ],
+                      },
+                    ]
                   }
-                />
+                >
+                  <View
+                    style={
+                      {
+                        "alignItems": "center",
+                        "height": 22,
+                        "justifyContent": "center",
+                        "transform": [
+                          {
+                            "rotate": "-45deg",
+                          },
+                        ],
+                        "width": 22,
+                      }
+                    }
+                  >
+                    <View
+                      style={
+                        {
+                          "borderBottomColor": "transparent",
+                          "borderBottomWidth": 9.02,
+                          "borderLeftColor": "#fff",
+                          "borderLeftWidth": 18.04,
+                          "borderTopColor": "transparent",
+                          "borderTopWidth": 9.02,
+                          "height": 0,
+                          "marginLeft": 3.52,
+                          "width": 0,
+                        }
+                      }
+                    />
+                  </View>
+                </View>
               </View>
-            </View>
+            </RNGestureHandlerButton>
           </View>
-        </RNGestureHandlerButton>
+        </View>
       </View>
     </View>
   </View>

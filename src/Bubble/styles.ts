@@ -29,10 +29,11 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       alignItems: 'flex-end',
     },
 
+    // The body. Its corners, width cap and shadow are worked out per message (see `Bubble`);
+    // the tail is drawn outside it, so it must not clip.
     wrapper: {
       borderRadius: radii.bubble,
       minHeight: 20,
-      maxWidth: '70%',
     },
     wrapper_left: {
       backgroundColor: colors.incomingBubble,
@@ -42,9 +43,80 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       backgroundColor: colors.outgoingBubble,
       justifyContent: 'flex-end',
     },
+    // The gradient is a layer inside the body.
+    gradientWrapper: {
+      backgroundColor: 'transparent',
+    },
     // A round video note floats with no bubble background/chrome (Telegram-style).
     noteWrapper: {
       backgroundColor: 'transparent',
+    },
+
+    // The time on the last line of text (or of reaction pills): Telegram's time text ends
+    // 6.5dp above the cell's bottom, 3.5 above the body's, 7dp in from its edge - the checks
+    // 7.5dp in, with the time 4 to their left (`ChatMessageCell:13826`, `:24535`, `:24860`).
+    meta: {
+      position: 'absolute',
+      bottom: 3.5,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    // At the end of the line: the right, or the left in a right-to-left layout.
+    metaIncomingEnd: {
+      right: 7,
+    },
+    metaOutgoingEnd: {
+      right: 7.5,
+    },
+    metaIncomingStart: {
+      left: 7,
+    },
+    metaOutgoingStart: {
+      left: 7.5,
+    },
+    // Matches the time text, so the copy reserving its place has exactly its width.
+    metaSpacer: {
+      fontSize: typography.time.fontSize,
+      fontWeight: typography.time.fontWeight,
+    },
+    metaSpacerHidden: {
+      color: 'transparent',
+    },
+
+    // Telegram's time pill over a photo: 17 tall, radius 8, 6 in from the photo's corner,
+    // `chat_mediaTimeBackground` with white text (`ChatMessageCell:24068`).
+    mediaMeta: {
+      position: 'absolute',
+      bottom: 8,
+      height: 17,
+      borderRadius: radii.mediaTimePill,
+      paddingHorizontal: 6,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      backgroundColor: colors.mediaTimeBackground,
+    },
+    mediaMetaEnd: {
+      right: 8,
+    },
+    mediaMetaStart: {
+      left: 8,
+    },
+    mediaMetaText: {
+      color: colors.mediaTimeText,
+    },
+    // The photo sits 2 in from the body, so its 15 corners run parallel to the bubble's 17.
+    mediaFrame: {
+      margin: 2,
+    },
+
+    // Text followed by reaction pills, or by a time row of its own, ends closer to it.
+    textAboveReactions: {
+      marginBottom: 6,
+    },
+    textAboveMetaRow: {
+      marginBottom: 2,
     },
 
     // With the bubble background gone, the meta row would render white-on-light.
@@ -92,27 +164,14 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       bottom: 0,
     },
 
+    // The time on a row of its own, for content the time cannot flow into.
     bottom: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-end',
-      paddingHorizontal: spacing.bubblePaddingH,
-      paddingBottom: spacing.bubblePaddingV,
-    },
-
-    // Soften the inner corners of grouped messages instead of squaring them off.
-    containerToNext_left: {
-      borderBottomLeftRadius: radii.bubbleGrouped,
-    },
-    containerToNext_right: {
-      borderBottomRightRadius: radii.bubbleGrouped,
-    },
-
-    containerToPrevious_left: {
-      borderTopLeftRadius: radii.bubbleGrouped,
-    },
-    containerToPrevious_right: {
-      borderTopRightRadius: radii.bubbleGrouped,
+      paddingLeft: spacing.bubblePaddingH,
+      paddingRight: 7.5,
+      paddingBottom: 3.5,
     },
 
     messageTimeAndStatusContainer: {
@@ -120,7 +179,7 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-end',
-      gap: 3,
+      gap: 4,
     },
 
     messageStatusContainer: {
@@ -128,12 +187,16 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       alignItems: 'center',
     },
 
+    // Telegram's name block: 14 Medium in the sender's color, 5 + 14 tall, the text starting
+    // right under it (`ChatMessageCell:21285`, `getNameHeight`).
     usernameContainer: {
       paddingHorizontal: spacing.bubblePaddingH,
-      paddingTop: spacing.bubblePaddingV,
+      paddingTop: 6,
+      marginBottom: -3,
     },
     username: {
       fontSize: typography.senderName.fontSize,
+      lineHeight: typography.senderName.lineHeight,
       fontWeight: typography.senderName.fontWeight,
       color: colors.senderName,
     },

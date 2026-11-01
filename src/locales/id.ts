@@ -14,6 +14,7 @@ export const id: Partial<ChatLabels> = {
   slideToCancel: 'Geser ke kiri untuk membatalkan...',
   replyingTo: 'Membalas {name}',
   editing: 'Mengedit',
+  edited: 'diedit',
   cameraPermission: 'Izin kamera diperlukan',
   noCamera: 'Tidak ada kamera yang tersedia',
   stopAndSend: 'Ketuk untuk berhenti dan kirim',

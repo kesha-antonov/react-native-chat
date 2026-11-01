@@ -93,6 +93,12 @@ export interface IMessage {
   sent?: boolean
   received?: boolean
   pending?: boolean
+  /** Sending failed: the ticks give way to Telegram's red error badge. */
+  isFailed?: boolean
+  /** The message was edited; its time reads "edited 14:05". Set by `useChatMessages`'s edit. */
+  isEdited?: boolean
+  /** When the message was last edited; any value also shows the "edited" mark. */
+  editedAt?: Date | number
   /** True while this message's text is still being streamed in (shows a typing cursor) */
   streaming?: boolean
   quickReplies?: QuickReplies

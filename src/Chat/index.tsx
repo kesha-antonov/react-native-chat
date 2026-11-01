@@ -21,6 +21,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { ChatOverlayProvider, ChatOverlaySlot } from '../components/ChatOverlay'
+import { ChatWallpaper, useOutgoingStep } from '../components/ChatWallpaper'
 import { buildDefaultMessageActions, DEFAULT_MESSAGE_ACTION_KEYS } from '../components/defaultMessageActions'
 import { FloatingRoundNote } from '../components/FloatingRoundNote'
 import {
@@ -44,13 +45,42 @@ import { IMessage, MessageMenuItem, ReplyMessage, User } from '../Models'
 import { getClipboard, hasRoundVideoCapture, hasVoiceRecording, getExpoImagePicker } from '../optional'
 import { isRTLLocale } from '../rtl'
 import stylesCommon from '../styles'
-import { resolveTheme } from '../Theme'
+import { ChatTheme, resolveTheme } from '../Theme'
 import { renderComponentOrElement } from '../utils'
 import { ChatKeyboardAvoidingView } from './ChatKeyboardAvoidingView'
 import styles from './styles'
 import { ChatProps } from './types'
 
 dayjs.extend(localizedFormat)
+
+/**
+ * The wallpaper behind the list and the floating composer. It sits outside the keyboard
+ * avoiding view, so the keyboard does not squash it, and holds the outgoing-message count
+ * itself, so a send re-renders only this.
+ */
+function ChatBackground ({
+  messages,
+  userId,
+  isInverted,
+  theme,
+  renderWallpaper,
+}: {
+  messages: IMessage[]
+  userId: string | number | undefined
+  isInverted: boolean
+  theme: ChatTheme
+  renderWallpaper?: (() => React.ReactNode) | null
+}) {
+  const step = useOutgoingStep(messages, userId, isInverted)
+
+  if (renderWallpaper !== undefined)
+    return renderWallpaper ? <>{renderWallpaper()}</> : null
+
+  if (!theme.wallpaper.isEnabled)
+    return null
+
+  return <ChatWallpaper step={step} />
+}
 
 /** Seed for Chat's own SafeAreaProvider - real frame, but no insets claimed yet. */
 const INITIAL_SAFE_AREA_METRICS = {
@@ -103,6 +133,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     isAvatarVisible: isAvatarVisibleProp,
     isUsernameVisible: isUsernameVisibleProp,
     renderAvatar,
+    renderWallpaper,
   } = props
 
   // One playlist per chat: players register by message id and the controller
@@ -684,9 +715,16 @@ function Chat<TMessage extends IMessage = IMessage> (
       <View
         testID={TEST_ID.WRAPPER}
         ref={keyboardOffset.ref}
-        style={[stylesCommon.fill, styles.contentContainer]}
+        style={[stylesCommon.fill, styles.contentContainer, { backgroundColor: resolvedTheme.colors.background }]}
         onLayout={onInitialLayoutViewLayout}
       >
+        <ChatBackground
+          messages={messages}
+          userId={userId}
+          isInverted={isInverted}
+          theme={resolvedTheme}
+          renderWallpaper={renderWallpaper}
+        />
         <ChatKeyboardAvoidingView
           keyboardVerticalOffset={keyboardOffset.keyboardVerticalOffset}
           keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}

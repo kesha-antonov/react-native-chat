@@ -48,6 +48,12 @@ export type MessageTextProps<TMessage extends IMessage> = {
   markdown?: boolean
   /** Extra props forwarded to the Streamdown component (its own theming/rules API); only used when streamdown is installed. */
   markdownProps?: Record<string, unknown>
+  /**
+   * Inline content after the last word. `Bubble` puts an invisible copy of the time here, so
+   * the visible time can sit on the last line when it fits and the text wraps around it
+   * when it does not - Telegram's trailing time. Markdown gets it on a line of its own.
+   */
+  trailing?: React.ReactNode
 }
 
 export function MessageText<TMessage extends IMessage>({
@@ -69,12 +75,13 @@ export function MessageText<TMessage extends IMessage>({
   stripPrefix = false,
   markdown,
   markdownProps,
+  trailing,
 }: MessageTextProps<TMessage>) {
   const styles = useThemedStyles(createStyles)
 
   const linkStyle = useMemo(() => StyleSheet.flatten([
     styles.link,
-    position === 'left' && styles.link_left,
+    styles[`link_${position}`],
     linkStyleProp?.[position],
   ]), [styles, position, linkStyleProp])
 
@@ -97,15 +104,20 @@ export function MessageText<TMessage extends IMessage>({
   // otherwise fall back to the built-in dependency-free renderer.
   const wantMarkdown = markdown !== false && (markdown === true || isStreaming)
 
+  // Blocks of markdown have no last line to share, so the time gets one of its own.
+  const trailingLine = trailing ? <Text style={style}>{trailing}</Text> : null
+
   if (wantMarkdown && isMarkdownAvailable)
     return (
-      <MarkdownMessageText
-        text={currentMessage!.text}
-        isStreaming={isStreaming}
-        textStyle={style}
-        containerStyle={[styles.container, containerStyle?.[position]]}
-        componentProps={markdownProps}
-      />
+      <View style={[styles.container, containerStyle?.[position]]}>
+        <MarkdownMessageText
+          text={currentMessage!.text}
+          isStreaming={isStreaming}
+          textStyle={style}
+          componentProps={markdownProps}
+        />
+        {trailingLine}
+      </View>
     )
 
   if (wantMarkdown)
@@ -122,6 +134,7 @@ export function MessageText<TMessage extends IMessage>({
             <StreamingCursor />
           </Text>
         )}
+        {trailingLine}
       </View>
     )
 
@@ -151,13 +164,14 @@ export function MessageText<TMessage extends IMessage>({
         containerStyle?.[position],
       ]}
     >
-      {isStreaming
+      {isStreaming || trailing
         ? (
-          // Wrap in a Text so the caret flows inline after the last word and
-          // inherits the bubble text color.
+          // Wrap in a Text so the caret and the reserved time space flow inline after the
+          // last word and inherit the bubble text color.
           <Text style={style}>
             {parsed}
-            <StreamingCursor />
+            {isStreaming && <StreamingCursor />}
+            {trailing}
           </Text>
         )
         : parsed}
@@ -167,7 +181,8 @@ export function MessageText<TMessage extends IMessage>({
 
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
   container: {
-    marginVertical: theme.spacing.bubblePaddingV,
+    marginTop: theme.spacing.bubblePaddingV,
+    marginBottom: theme.spacing.bubblePaddingBottom,
     marginHorizontal: theme.spacing.bubblePaddingH,
   },
   text: {
@@ -181,10 +196,12 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   text_right: {
     color: theme.colors.outgoingText,
   },
-  link: {
-    textDecorationLine: 'underline',
-  },
+  // Telegram colors links without underlining them.
+  link: {},
   link_left: {
-    color: theme.colors.accent,
+    color: theme.colors.incomingLink,
+  },
+  link_right: {
+    color: theme.colors.outgoingLink,
   },
 })

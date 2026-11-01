@@ -49,11 +49,13 @@ describe('voiceWaveform', () => {
     expect(voiceContentWidth(3, true)).toBe(voiceContentWidth(3) + VOICE_META_TICKS_WIDTH)
   })
 
-  it('draws the unplayed incoming bars lighter than a dark bubble, not black', () => {
-    expect(getMediaPalette(defaultDarkTheme, 'left').track).toBe('rgba(109, 127, 143, 0.7)')
-    expect(getMediaPalette(defaultLightTheme, 'left').track).toBe('rgba(142, 142, 147, 0.7)')
-    const custom = { ...defaultDarkTheme, colors: { ...defaultDarkTheme.colors, incomingMeta: 'gray' } }
-    expect(getMediaPalette(custom, 'left').track).toBe('rgba(0, 0, 0, 0.20)')
+  it('draws the bars in Telegram\'s voice colors, lighter than a dark bubble', () => {
+    expect(getMediaPalette(defaultDarkTheme, 'left').track).toBe('#5D6F80')
+    expect(getMediaPalette(defaultLightTheme, 'left').track).toBe('#DEE5EB')
+    expect(getMediaPalette(defaultLightTheme, 'right')).toMatchObject({ control: '#78C272', track: '#BBE3AC' })
+    expect(getMediaPalette(defaultDarkTheme, 'right')).toMatchObject({ control: '#FFFFFF', progress: '#FFFFFF' })
+    const custom = { ...defaultDarkTheme, colors: { ...defaultDarkTheme.colors, incomingVoiceTrack: 'gray' } }
+    expect(getMediaPalette(custom, 'left').track).toBe('gray')
   })
 
   it('grows bars only on a just-sent outgoing note', () => {

@@ -14,6 +14,7 @@ export const zh: Partial<ChatLabels> = {
   slideToCancel: '向左滑动取消...',
   replyingTo: '回复 {name}',
   editing: '编辑中',
+  edited: '已编辑',
   cameraPermission: '需要相机权限',
   noCamera: '没有可用的相机',
   stopAndSend: '点击停止并发送',

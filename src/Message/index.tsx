@@ -12,7 +12,7 @@ import { IMessage } from '../Models'
 import { mirrorPosition } from '../rtl'
 import { getStyleWithPosition } from '../styles'
 import { SystemMessage } from '../SystemMessage'
-import { isSameUser, renderComponentOrElement } from '../utils'
+import { isSameGroup, renderComponentOrElement } from '../utils'
 import styles from './styles'
 import { SwipeToReplyRow } from './SwipeToReply'
 import { MessageProps } from './types'
@@ -143,8 +143,9 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
       onSwipeToReply(currentMessage)
   }, [onSwipeToReply, currentMessage])
 
-  const sameUser = useMemo(() =>
-    isSameUser(currentMessage, nextMessage!)
+  // 2pt inside a run of bubbles, 6pt between runs (Telegram's grouping: same sender, five minutes).
+  const isGroupedWithNext = useMemo(() =>
+    isSameGroup(currentMessage, nextMessage)
   , [currentMessage, nextMessage])
 
   const messageContent = useMemo(() => {
@@ -155,12 +156,12 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
       <View
         style={[
           getStyleWithPosition(styles, 'container', visualPosition),
-          { marginBottom: sameUser ? theme.spacing.withinGroup : theme.spacing.betweenGroups },
+          { marginBottom: isGroupedWithNext ? theme.spacing.withinGroup : theme.spacing.betweenGroups },
           containerStyle?.[position],
         ]}
       >
         {!!highlightToken && (
-          <HighlightOverlay token={highlightToken} color={theme.colors.accent} />
+          <HighlightOverlay token={highlightToken} color={theme.colors.selectionBackground} opacity={1} />
         )}
         {visualPosition === 'left' && renderAvatar()}
         {renderBubble()}
@@ -172,7 +173,7 @@ export const Message = <TMessage extends IMessage = IMessage>(props: MessageProp
     renderSystemMessage,
     position,
     visualPosition,
-    sameUser,
+    isGroupedWithNext,
     theme,
     containerStyle,
     renderAvatar,

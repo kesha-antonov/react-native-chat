@@ -22,49 +22,26 @@ export interface MediaPalette {
 }
 
 /**
- * `color` at `alpha`, for a 6- or 3-digit hex; any other format (rgba, a
- * named color) comes back as `fallback`, since it cannot be faded reliably.
+ * Telegram's voice colors (`chat_{in,out}VoiceSeekbar*`, `chat_{in,out}Loader`): the play
+ * button and played bars in the bubble's fill color, unplayed bars in its track color. On the
+ * day theme's green bubble they are greens; on the night gradient, white.
  */
-const fadeHex = (color: string, alpha: number, fallback: string) => {
-  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim())
-  if (!match)
-    return fallback
-
-  const hex = match[1].length === 3
-    ? match[1].split('').map(c => c + c).join('')
-    : match[1]
-  const r = parseInt(hex.slice(0, 2), 16)
-  const g = parseInt(hex.slice(2, 4), 16)
-  const b = parseInt(hex.slice(4, 6), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
-
-/*
- * Telegram's unplayed incoming bars (`chat_inVoiceSeekbar`) are a mid gray
- * that sits lighter than a dark bubble and darker than a light one - #5D6F80
- * on the dark-blue theme's #232E3B bubble, #BAC0C8 on the day theme's white.
- * A fixed black tint vanished on the dark bubble, so the track is the
- * incoming meta gray faded towards the bubble instead.
- */
-const INCOMING_TRACK_ALPHA = 0.7
-const INCOMING_TRACK_FALLBACK = 'rgba(0, 0, 0, 0.20)'
-
 export const getMediaPalette = (
   theme: ChatTheme,
   position: 'left' | 'right'
 ): MediaPalette =>
   position === 'right'
     ? {
-      control: theme.colors.outgoingText,
+      control: theme.colors.outgoingVoiceFill,
       glyph: theme.colors.outgoingBubble,
-      progress: theme.colors.outgoingText,
-      track: 'rgba(255, 255, 255, 0.45)',
-      meta: theme.colors.outgoingText,
+      progress: theme.colors.outgoingVoiceFill,
+      track: theme.colors.outgoingVoiceTrack,
+      meta: theme.colors.outgoingMeta,
     }
     : {
-      control: theme.colors.accent,
+      control: theme.colors.incomingVoiceFill,
       glyph: '#FFFFFF',
-      progress: theme.colors.accent,
-      track: fadeHex(theme.colors.incomingMeta, INCOMING_TRACK_ALPHA, INCOMING_TRACK_FALLBACK),
+      progress: theme.colors.incomingVoiceFill,
+      track: theme.colors.incomingVoiceTrack,
       meta: theme.colors.incomingMeta,
     }

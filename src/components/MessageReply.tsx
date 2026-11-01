@@ -11,9 +11,10 @@ import {
   ViewStyle,
 } from 'react-native'
 
-import { useThemedStyles } from '../hooks/useTheme'
+import { multiplyAlpha } from '../colorUtils'
+import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { IMessage, ReplyMessage } from '../Models'
-import { ChatTheme } from '../Theme'
+import { ChatTheme, getNameColor } from '../Theme'
 import { isSameUser } from '../utils'
 
 export interface MessageReplyProps<TMessage extends IMessage = IMessage> {
@@ -41,46 +42,55 @@ export interface MessageReplyProps<TMessage extends IMessage = IMessage> {
   onPress?: (replyMessage: ReplyMessage) => void
 }
 
+// `ReplyMessageLine`: the box is its accent at 10% (12% on a dark outgoing bubble).
+const BOX_ALPHA = 0.1
+const BOX_ALPHA_ON_WHITE_LINE = 0.12
+
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
+  // A rounded box with a 3pt accent bar down its left edge, 8 in from the bubble's edges
+  // (`ChatMessageCell:22774-22826`, `ReplyMessageLine:540`).
   container: {
-    borderRadius: 8,
-    marginBottom: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  containerLeft: {
-    backgroundColor: theme.colors.reactionBackground,
-    borderLeftColor: theme.colors.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    marginHorizontal: 6,
+    marginBottom: 1,
     borderLeftWidth: 3,
+    borderTopLeftRadius: theme.radii.replyQuote,
+    borderBottomLeftRadius: theme.radii.replyQuote,
+    borderTopRightRadius: theme.radii.replyQuote * 2,
+    borderBottomRightRadius: theme.radii.replyQuote,
+    paddingLeft: 8,
+    paddingRight: 8,
+    paddingTop: 3,
+    paddingBottom: 4,
+    overflow: 'hidden',
   },
-  containerRight: {
-    backgroundColor: theme.colors.outgoingOverlay,
-    borderLeftColor: theme.colors.outgoingMeta,
-    borderLeftWidth: 3,
-  },
+  // A 35pt square, radius 4, with the text moved over by its width + 3.
   image: {
+    width: 35,
+    height: 35,
     borderRadius: 4,
-    height: 40,
-    marginTop: 4,
-    width: 40,
+    marginRight: 6,
+    marginLeft: -2,
+  },
+  content: {
+    flexShrink: 1,
+  },
+  username: {
+    fontSize: theme.typography.replyName.fontSize,
+    lineHeight: theme.typography.replyName.lineHeight,
+    fontWeight: theme.typography.replyName.fontWeight,
   },
   text: {
-    fontSize: 13,
+    fontSize: theme.typography.replyText.fontSize,
+    lineHeight: theme.typography.replyText.lineHeight,
+    fontWeight: theme.typography.replyText.fontWeight,
   },
   textLeft: {
     color: theme.colors.incomingText,
   },
   textRight: {
-    color: theme.colors.outgoingText,
-  },
-  username: {
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  usernameLeft: {
-    color: theme.colors.accent,
-  },
-  usernameRight: {
     color: theme.colors.outgoingText,
   },
 })
@@ -98,6 +108,7 @@ export function MessageReply<TMessage extends IMessage = IMessage> ({
   imageStyle,
   onPress,
 }: MessageReplyProps<TMessage>) {
+  const theme = useTheme()
   const styles = useThemedStyles(createStyles)
 
   const isCurrentUser = useMemo(
@@ -112,24 +123,34 @@ export function MessageReply<TMessage extends IMessage = IMessage> ({
     return replyMessage.user?.name || 'Unknown'
   }, [isCurrentUser, replyMessage.user?.name])
 
+  // Incoming quotes take the quoted author's own color; outgoing ones the bubble's.
+  const accent = position === 'left'
+    ? (theme.nameColors.length ? getNameColor(theme, replyMessage.user?._id) : theme.colors.incomingReplyLine)
+    : theme.colors.outgoingReplyLine
+  const nameColor = position === 'left'
+    ? (theme.nameColors.length ? accent : theme.colors.incomingReplyName)
+    : theme.colors.outgoingReplyName
+  const boxAlpha = position === 'right' && accent.toUpperCase() === '#FFFFFF' ? BOX_ALPHA_ON_WHITE_LINE : BOX_ALPHA
+
   const handlePress = () => {
     onPress?.(replyMessage)
   }
 
   const containerStyles = [
     styles.container,
-    position === 'left' ? styles.containerLeft : styles.containerRight,
+    { borderLeftColor: accent, backgroundColor: multiplyAlpha(accent, boxAlpha) },
     containerStyle,
     position === 'left' ? containerStyleLeft : containerStyleRight,
   ]
 
   const usernameStyles = [
     styles.username,
-    position === 'left' ? styles.usernameLeft : styles.usernameRight,
+    { color: nameColor },
     textStyle,
     position === 'left' ? textStyleLeft : textStyleRight,
   ]
 
+  const hasText = !!replyMessage.text
   const textStyles = [
     styles.text,
     position === 'left' ? styles.textLeft : styles.textRight,
@@ -140,20 +161,22 @@ export function MessageReply<TMessage extends IMessage = IMessage> ({
   return (
     <Pressable onPress={handlePress}>
       <View style={containerStyles}>
-        <Text style={usernameStyles} numberOfLines={1}>
-          {displayName}
-        </Text>
-        {replyMessage.text && (
-          <Text style={textStyles} numberOfLines={2}>
-            {replyMessage.text}
-          </Text>
-        )}
         {replyMessage.image && (
           <Image
             source={{ uri: replyMessage.image }}
             style={[styles.image, imageStyle]}
           />
         )}
+        <View style={styles.content}>
+          <Text style={usernameStyles} numberOfLines={1}>
+            {displayName}
+          </Text>
+          {hasText && (
+            <Text style={textStyles} numberOfLines={1}>
+              {replyMessage.text}
+            </Text>
+          )}
+        </View>
       </View>
     </Pressable>
   )

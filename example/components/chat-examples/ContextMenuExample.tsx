@@ -38,7 +38,7 @@ export default function ContextMenuExample () {
   // The menu's Reply and Copy are built in; these callbacks add Edit (on your own messages),
   // Pin / Unpin, and a red Delete.
   const handleEditMessage = useCallback((message: ChatMessage, text: string) => {
-    setMessages(previous => previous.map(m => (m._id === message._id ? { ...m, text } : m)))
+    setMessages(previous => previous.map(m => (m._id === message._id ? { ...m, text, editedAt: new Date() } : m)))
   }, [])
 
   const handlePinMessage = useCallback((message: ChatMessage) => {

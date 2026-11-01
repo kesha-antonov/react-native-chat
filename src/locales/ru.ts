@@ -14,6 +14,7 @@ export const ru: Partial<ChatLabels> = {
   slideToCancel: 'смахните для отмены',
   replyingTo: 'Ответ {name}',
   editing: 'Редактирование',
+  edited: 'изменено',
   cameraPermission: 'Требуется доступ к камере',
   noCamera: 'Камера недоступна',
   stopAndSend: 'Нажмите, чтобы остановить и отправить',

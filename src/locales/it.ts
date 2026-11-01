@@ -14,6 +14,7 @@ export const it: Partial<ChatLabels> = {
   slideToCancel: 'Scorri a sinistra per annullare...',
   replyingTo: 'Risposta a {name}',
   editing: 'Modifica',
+  edited: 'modificato',
   cameraPermission: 'Autorizzazione fotocamera necessaria',
   noCamera: 'Nessuna fotocamera disponibile',
   stopAndSend: 'Tocca per fermare e inviare',

@@ -3,7 +3,7 @@ import { StyleProp, TextStyle, ViewStyle } from 'react-native'
 
 import { IMessage, MessageReaction } from '../Models'
 
-/** Props passed to the default (or custom) reactions-display component rendered below each bubble */
+/** Props passed to the reactions display: the built-in one draws pills inside the bubble, a custom `renderReactions` one renders below it */
 export interface MessageReactionsDisplayProps<TMessage extends IMessage> {
   message: TMessage
   reactions: MessageReaction[]
@@ -15,6 +15,13 @@ export interface MessageReactionsDisplayProps<TMessage extends IMessage> {
   reactionActiveStyle?: StyleProp<ViewStyle>
   reactionTextStyle?: StyleProp<TextStyle>
   reactionCountStyle?: StyleProp<TextStyle>
+  /**
+   * Inline content after the last pill: `Bubble` passes an invisible copy of the message
+   * time, so the time sits on the last row of pills when it fits.
+   */
+  trailing?: React.ReactNode
+  /** Text sits above the pills, so they need no top inset of their own. */
+  hasContentAbove?: boolean
 }
 
 /** Props passed to the default (or custom) reaction-picker component shown on long-press */

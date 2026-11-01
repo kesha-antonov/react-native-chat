@@ -14,6 +14,7 @@ export const de: Partial<ChatLabels> = {
   slideToCancel: 'zum Abbrechen wischen',
   replyingTo: 'Antwort an {name}',
   editing: 'Bearbeiten',
+  edited: 'bearbeitet',
   cameraPermission: 'Kameraberechtigung erforderlich',
   noCamera: 'Keine Kamera verfugbar',
   stopAndSend: 'Tippen zum Beenden und Senden',

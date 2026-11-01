@@ -82,16 +82,18 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Telegram's paperclip takes a 44 cell inside the composer island (`CAEV:2829`).
   button: {
+    width: 44,
+    height: theme.composer.minHeight,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 8,
   },
-  // Inset attachment icon: borderless, sized/colored as a field inset control.
+  // Inset attachment icon: borderless, in the island's icon color (`glass_defaultIcon`).
   iconText: {
-    color: theme.colors.incomingMeta,
+    color: theme.colors.composerIcon,
     fontWeight: 'bold',
-    fontSize: theme.composer.insetIconSize,
-    lineHeight: theme.composer.insetIconSize,
+    fontSize: 24,
+    lineHeight: 24,
   },
 })

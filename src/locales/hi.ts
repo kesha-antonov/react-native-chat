@@ -14,6 +14,7 @@ export const hi: Partial<ChatLabels> = {
   slideToCancel: 'रद्द करने के लिए बाईं ओर स्लाइड करें...',
   replyingTo: '{name} को जवाब',
   editing: 'संपादन हो रहा है',
+  edited: 'संपादित',
   cameraPermission: 'कैमरा अनुमति आवश्यक है',
   noCamera: 'कोई कैमरा उपलब्ध नहीं है',
   stopAndSend: 'रोकने और भेजने के लिए टैप करें',

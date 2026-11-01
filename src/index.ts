@@ -51,6 +51,8 @@ export { useIcons } from './hooks/useIcons'
 export { useLabels } from './hooks/useLabels'
 export { useIsRTL } from './hooks/useIsRTL'
 export { Icon } from './components/Icon'
+export { ChatWallpaper } from './components/ChatWallpaper'
+export type { ChatWallpaperProps } from './components/ChatWallpaper'
 export { useStreamingMessages } from './hooks/useStreamingMessages'
 export type {
   UseStreamingMessagesOptions,

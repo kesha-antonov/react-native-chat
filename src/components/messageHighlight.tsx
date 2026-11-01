@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useSyncExternalStore } from 'react'
-import { StyleSheet } from 'react-native'
+import { StyleProp, StyleSheet, ViewStyle } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -76,30 +76,53 @@ const HIGHLIGHT_FADE_MS = 300
 // `key_chat_selectedBackground` is 0x280a90f0: the accent at 0x28 / 0xff.
 const HIGHLIGHT_OPACITY = 0x28 / 0xff
 
-/**
- * Telegram's band across the whole row behind a highlighted message (`ChatActivity`'s
- * `ChatListView` draws `key_chat_selectedBackground` under the cell). It shows at once and
- * fades out. Mounted only while its message is flashing, so the rest of the list carries no
- * shared value for it.
- */
-export const HighlightOverlay = ({ token, color }: { token: number, color: string }) => {
-  const opacity = useSharedValue(HIGHLIGHT_OPACITY)
+/** Shows at once, holds, then fades out - restarted by every new token. */
+const useHighlightFade = (token: number, peak: number) => {
+  const opacity = useSharedValue(peak)
 
   useEffect(() => {
-    opacity.value = HIGHLIGHT_OPACITY
+    opacity.value = peak
     opacity.value = withDelay(
       HIGHLIGHT_HOLD_MS,
       withTiming(0, { duration: HIGHLIGHT_FADE_MS, easing: Easing.linear })
     )
-  }, [token, opacity])
+  }, [token, opacity, peak])
 
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }))
+  return useAnimatedStyle(() => ({ opacity: opacity.value }))
+}
+
+/**
+ * Telegram's band across the whole row behind a highlighted message (`ChatActivity`'s
+ * `ChatListView` draws `key_chat_selectedBackground` under the cell). It shows at once and
+ * fades out. Mounted only while its message is flashing, so the rest of the list carries no
+ * shared value for it. `Message` passes `colors.selectionBackground`, which carries its own
+ * alpha, at `opacity` 1; the default draws a plain accent at Telegram's 0x28.
+ */
+export const HighlightOverlay = ({ token, color, opacity = HIGHLIGHT_OPACITY }: { token: number, color: string, opacity?: number }) => {
+  const style = useHighlightFade(token, opacity)
 
   return (
     <Animated.View
       testID='message-highlight'
       pointerEvents='none'
       style={[StyleSheet.absoluteFill, { backgroundColor: color }, style]}
+    />
+  )
+}
+
+/**
+ * The bubble's own part of the flash: Telegram swaps it to its selected color
+ * (`chat_inBubbleSelected` / `chat_outBubbleSelected`, `ChatMessageCell:20790`) for as long as
+ * the row band shows.
+ */
+export const BubbleHighlightTint = ({ token, color, cornerStyle }: { token: number, color: string, cornerStyle: StyleProp<ViewStyle> }) => {
+  const style = useHighlightFade(token, 1)
+
+  return (
+    <Animated.View
+      testID='bubble-highlight'
+      pointerEvents='none'
+      style={[StyleSheet.absoluteFill, { backgroundColor: color }, cornerStyle, style]}
     />
   )
 }

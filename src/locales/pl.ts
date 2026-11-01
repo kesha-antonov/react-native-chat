@@ -14,6 +14,7 @@ export const pl: Partial<ChatLabels> = {
   slideToCancel: 'Przesuń w lewo, aby anulować...',
   replyingTo: 'Odpowiedź do {name}',
   editing: 'Edytowanie',
+  edited: 'edytowano',
   cameraPermission: 'Wymagane uprawnienie do aparatu',
   noCamera: 'Brak dostępnego aparatu',
   stopAndSend: 'Stuknij, aby zatrzymać i wysłać',

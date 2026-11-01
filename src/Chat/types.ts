@@ -285,4 +285,11 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   videoRecording?: VideoRecordingProps
   /** Playback speed and auto-play-next for voice and round video notes */
   mediaPlayback?: MediaPlaybackProps
+  /**
+   * The chat background. By default Chat draws Telegram's swirl gradient wallpaper from
+   * `theme.wallpaper` (turning one step per message you send). Return your own element to
+   * replace it - an image, a gradient, `ChatWallpaper` with other props - or pass `null` for
+   * the plain `theme.colors.background`.
+   */
+  renderWallpaper?: (() => React.ReactNode) | null
 }

@@ -171,7 +171,7 @@ Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/Farid
 | Added in this fork | react-native-gifted-chat | @kesha-antonov/react-native-chat |
 | --- | :---: | :---: |
 | Active maintenance | 💤 sporadic | ✅ active |
-| Modern default UI (Telegram-inspired) | dated 2020 look | ✅ modern, fully overridable |
+| Modern default UI (Telegram Android's look) | dated 2020 look | ✅ wallpaper, tails, inline time, fully overridable |
 | Light/Dark **theme system** | per-component color props | ✅ `theme` / `darkTheme` tokens, runtime switch |
 | Streaming (AI) messages | ❌ | ✅ token-by-token + typing cursor |
 | Emoji reactions | ❌ | ✅ long-press picker + reaction pills |
@@ -180,7 +180,7 @@ Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/Farid
 | **Voice notes** (hold-to-record + waveform) | ❌ | ✅ optional, Telegram-style |
 | **Video messages** (round camera notes) | ❌ | ✅ optional, Telegram-style |
 | **Location messages** | ❌ ignored | ✅ map card → opens system maps |
-| Bubble tails + tighter message grouping | flat bubbles | ✅ |
+| Bubble tails, inline time + Telegram run grouping | flat bubbles | ✅ |
 
 </details>
 
@@ -441,6 +441,11 @@ interface IMessage {
   sent?: boolean
   received?: boolean
   pending?: boolean
+  /** Sending failed: a red badge replaces the checks */
+  isFailed?: boolean
+  /** The message was edited: its time reads "edited 14:05" */
+  isEdited?: boolean
+  editedAt?: Date | number
   /** True while the text is still streaming in (shows a typing cursor) */
   streaming?: boolean
   quickReplies?: QuickReplies
@@ -491,7 +496,8 @@ Every group below is collapsed - open the one you need.
 - **`messageIdGenerator`** _(Function)_ - Generate an id for new messages. Defaults to a simple random string generator.
 - **`locale`** _(String)_ - Locale to localize the dates. You need first to import the locale you need (ie. `require('dayjs/locale/de')` or `import 'dayjs/locale/fr'`)
 - **`colorScheme`** _('light' | 'dark')_ - Force color scheme (light/dark mode). When set to `'light'` or `'dark'`, it overrides the system color scheme. When `undefined`, it uses the system color scheme. Default is `undefined`.
-- **`theme`** _(Object)_ - Override the default light theme tokens (`colors` / `radii` / `spacing` / `typography` / `avatar` / `sendButton` / `composer` / `voice`). Deep-merged over `defaultLightTheme`; any subset is allowed. See [Theming & Dark Mode](#theming--dark-mode).
+- **`theme`** _(Object)_ - Override the default light theme tokens (`colors` / `radii` / `spacing` / `typography` / `avatar` / `sendButton` / `composer` / `voice` / `bubble` / `wallpaper` / `nameColors`). Deep-merged over `defaultLightTheme`; any subset is allowed. See [Theming & Dark Mode](#theming--dark-mode).
+- **`renderWallpaper`** _(Function | null)_ - The chat background. By default `Chat` draws Telegram's swirl gradient from `theme.wallpaper`, turning one step per message you send. Return your own element (an image, `ChatWallpaper` with other props...) to replace it, or pass `null` for the plain `theme.colors.background`.
 - **`darkTheme`** _(Object)_ - Same as `theme`, applied when the resolved color scheme is dark (deep-merged over `defaultDarkTheme`).
 - **`icons`** _(Object)_ - Icon override registry. Supply a render function for any built-in icon to replace it (e.g. with `lucide-react-native`). See [Custom icons](#custom-icons-eg-lucide).
 - **`labels`** _(Object)_ - Override any UI string. See [Localization (i18n)](#localization-i18n).
@@ -1173,21 +1179,31 @@ If a message must own every touch that lands on it, set `isMessageGestureEnabled
 <details>
 <summary><strong>Token groups, runtime switching and themed components</strong></summary>
 
-The chat ships with a modern default look and a full token-based theme. Override any subset of tokens via `theme` (light) and `darkTheme` (dark); your overrides are deep-merged over `defaultLightTheme` / `defaultDarkTheme`, and the resolved theme switches at runtime with the color scheme (system, or forced via `colorScheme`). Explicit per-component style props still win over the theme.
+The default look is Telegram for Android: the classic day theme (pale green outgoing bubbles over a green swirl wallpaper) and the "Dark Blue" night theme (a purple-to-blue outgoing gradient fixed to the screen). Every value is a token. Override any subset via `theme` (light) and `darkTheme` (dark); your overrides are deep-merged over `defaultLightTheme` / `defaultDarkTheme`, and the resolved theme switches at runtime with the color scheme (system, or forced via `colorScheme`). Explicit per-component style props still win over the theme.
 
 ```tsx
 <Chat
   theme={{
-    colors: { accent: '#3390EC', outgoingBubble: '#EFFEDE' },
+    colors: { accent: '#3390EC', outgoingBubble: '#3390EC', outgoingText: '#FFFFFF' },
     radii: { bubble: 18 },
+    wallpaper: { colors: ['#7FA381', '#FFF5C5', '#336F55', '#FBE37D'] },
   }}
-  darkTheme={{ colors: { background: '#0E1621', incomingBubble: '#182533' } }}
+  darkTheme={{ bubble: { outgoingGradient: ['#5B3FA8', '#2F6FD6'] } }}
   // colorScheme="dark"   // optional: force a scheme instead of following the system
   {...props}
 />
 ```
 
-Token groups: `colors`, `radii`, `spacing`, `typography`, `avatar`, `sendButton`, `composer`, `voice`. Build your own theme-aware components with the exported hooks:
+Token groups: `colors`, `radii`, `spacing`, `typography`, `avatar`, `sendButton`, `composer`, `voice`, plus:
+
+- **`bubble`** - `hasTail` (Telegram's curled tail on the last bubble of a run; drawn with `react-native-svg` when installed), `isTimeInline` (the time on the last line of text when it fits; `false` gives it a row), `outgoingGradient` (stops, top to bottom, or `null` for the solid `colors.outgoingBubble`), `outgoingGradientMode` (`'screen'`: one gradient across the list, each bubble shows its slice, as in Telegram; `'bubble'`: each bubble carries the whole gradient), `maxWidthInset` (the text column is `min(width, height) - maxWidthInset`, 80 by default).
+- **`wallpaper`** - `isEnabled`, `colors` (three or four, for Telegram's swirl gradient), `isAnimated` (one step per outgoing message), `pattern` (an image tiled over the gradient; Telegram's own doodles are GPL and not bundled), `patternOpacity`, `patternColor`. Off, the chat shows `colors.background`. Replace it entirely with the `renderWallpaper` prop, or draw it elsewhere with the exported `ChatWallpaper` component.
+- **`nameColors`** - the seven sender-name colors, picked per user id (Telegram's `avatar_nameInMessage*`). Empty uses `colors.senderName`.
+- **`avatar.palette` / `avatar.paletteEnd`** - initials avatar gradient stops, picked per user id. An empty `paletteEnd` draws flat colors.
+
+A few behaviours follow from the tokens: setting `colors.outgoingBubble` turns the gradient off, setting `colors.senderName` empties `nameColors`, and setting `avatar.palette` without `paletteEnd` draws flat avatars - so an app that picks its own colors keeps seeing them. Bubbles in a run (same sender, at most five minutes apart, `utils.isSameGroup`) share one tail and one name, 2pt apart (`spacing.withinGroup`), with 6pt between runs (`spacing.betweenGroups`).
+
+Build your own theme-aware components with the exported hooks:
 
 ```tsx
 import { useTheme, useThemedStyles } from '@kesha-antonov/react-native-chat'
@@ -1202,7 +1218,7 @@ const MyBadge = () => {
 }
 ```
 
-Also exported: `defaultLightTheme`, `defaultDarkTheme`, and the `ChatTheme` / `PartialChatTheme` types.
+Also exported: `defaultLightTheme`, `defaultDarkTheme`, `ChatWallpaper`, and the `ChatTheme` / `PartialChatTheme` types.
 
 </details>
 
@@ -1230,7 +1246,7 @@ Exported helpers: `ChatLabels` (type), `defaultLabels`, `translations`, `resolve
 <details>
 <summary><strong>Tick indicators for sent / delivered / read</strong></summary>
 
-Set `sent`, `received`, or `pending` on a message to show its delivery status. By default these render as tick indicators next to the timestamp (`✓` sent, `✓✓` received, `🕓` pending):
+Set `sent`, `received`, `pending` or `isFailed` on a message to show its delivery status. They render beside the time as Telegram draws them: one check once sent, two once received (read), a spinning clock while pending, a red badge when sending failed. `isEdited` or `editedAt` prefix the time with "edited":
 
 ```tsx
 const message: IMessage = {

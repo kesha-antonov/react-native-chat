@@ -1,18 +1,9 @@
 import { TouchableOpacity, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { defaultDarkTheme, defaultLightTheme } from '@kesha-antonov/react-native-chat'
 import { Stack, useRouter } from 'expo-router'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
-import { useColorScheme } from '@/hooks/use-color-scheme'
 
 export default function ChatLayout () {
-  const insets = useSafeAreaInsets()
   const router = useRouter()
-  // The inset under the composer continues its bar, so it takes the bar's
-  // colour; a fixed white showed as a strip under the dark chat.
-  const colorScheme = useColorScheme()
-  const insetBackground = (colorScheme === 'dark' ? defaultDarkTheme : defaultLightTheme).colors.inputBarBackground
 
   return (
     <Stack
@@ -24,7 +15,8 @@ export default function ChatLayout () {
         // scroll edge effect, and on an inverted chat list that blur covers the
         // whole list. An opaque header keeps the list below it.
         headerTransparent: false,
-        contentStyle: { paddingBottom: insets.bottom, backgroundColor: insetBackground },
+        // No bottom padding: the chat's wallpaper runs under the home indicator, and the
+        // composer island keeps itself clear of it.
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name='chevron-back' size={24} color='#007AFF' />

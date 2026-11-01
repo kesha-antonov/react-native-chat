@@ -14,6 +14,7 @@ export const nl: Partial<ChatLabels> = {
   slideToCancel: 'Veeg naar links om te annuleren...',
   replyingTo: 'Antwoorden aan {name}',
   editing: 'Bewerken',
+  edited: 'bewerkt',
   cameraPermission: 'Camerapermissie vereist',
   noCamera: 'Geen camera beschikbaar',
   stopAndSend: 'Tik om te stoppen en te verzenden',

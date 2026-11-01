@@ -20,13 +20,13 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#FFFFFF",
+          "backgroundColor": "transparent",
           "borderBottomColor": "rgba(0, 0, 0, 0.08)",
           "borderBottomWidth": 0.5,
           "flexDirection": "row",
           "overflow": "hidden",
-          "paddingLeft": 8,
-          "paddingRight": 8,
+          "paddingLeft": 7,
+          "paddingRight": 7,
         },
         undefined,
       ]
@@ -52,7 +52,7 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
           style={
             {
               "borderBottomWidth": 2,
-              "borderColor": "#3390EC",
+              "borderColor": "#229AF0",
               "borderLeftWidth": 2,
               "height": 6.12,
               "left": 0,
@@ -70,7 +70,7 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
         <View
           style={
             {
-              "backgroundColor": "#3390EC",
+              "backgroundColor": "#229AF0",
               "borderRadius": 1,
               "height": 2,
               "left": 2.16,
@@ -86,7 +86,7 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
       style={
         {
           "alignSelf": "stretch",
-          "backgroundColor": "#3390EC",
+          "backgroundColor": "#229AF0",
           "borderRadius": 2,
           "marginVertical": 8,
           "width": 3,
@@ -121,7 +121,7 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
             numberOfLines={1}
             style={
               {
-                "color": "#3390EC",
+                "color": "#229AF0",
                 "fontSize": 13,
                 "fontWeight": "600",
                 "marginBottom": 2,
@@ -201,7 +201,7 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
         <View
           style={
             {
-              "backgroundColor": "#8E8E93",
+              "backgroundColor": "#858A84",
               "borderRadius": 1,
               "height": 2,
               "position": "absolute",
@@ -217,7 +217,7 @@ exports[`should render <ReplyPreview /> and compare with snapshot 1`] = `
         <View
           style={
             {
-              "backgroundColor": "#8E8E93",
+              "backgroundColor": "#858A84",
               "borderRadius": 1,
               "height": 2,
               "position": "absolute",
@@ -256,13 +256,13 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#FFFFFF",
+          "backgroundColor": "transparent",
           "borderBottomColor": "rgba(0, 0, 0, 0.08)",
           "borderBottomWidth": 0.5,
           "flexDirection": "row",
           "overflow": "hidden",
-          "paddingLeft": 8,
-          "paddingRight": 8,
+          "paddingLeft": 7,
+          "paddingRight": 7,
         },
         undefined,
       ]
@@ -288,7 +288,7 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
           style={
             {
               "borderBottomWidth": 2,
-              "borderColor": "#3390EC",
+              "borderColor": "#229AF0",
               "borderLeftWidth": 2,
               "height": 6.12,
               "left": 0,
@@ -306,7 +306,7 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
         <View
           style={
             {
-              "backgroundColor": "#3390EC",
+              "backgroundColor": "#229AF0",
               "borderRadius": 1,
               "height": 2,
               "left": 2.16,
@@ -322,7 +322,7 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
       style={
         {
           "alignSelf": "stretch",
-          "backgroundColor": "#3390EC",
+          "backgroundColor": "#229AF0",
           "borderRadius": 2,
           "marginVertical": 8,
           "width": 3,
@@ -375,7 +375,7 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
             numberOfLines={1}
             style={
               {
-                "color": "#3390EC",
+                "color": "#229AF0",
                 "fontSize": 13,
                 "fontWeight": "600",
                 "marginBottom": 2,
@@ -455,7 +455,7 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
         <View
           style={
             {
-              "backgroundColor": "#8E8E93",
+              "backgroundColor": "#858A84",
               "borderRadius": 1,
               "height": 2,
               "position": "absolute",
@@ -471,7 +471,7 @@ exports[`should render <ReplyPreview /> with image and compare with snapshot 1`]
         <View
           style={
             {
-              "backgroundColor": "#8E8E93",
+              "backgroundColor": "#858A84",
               "borderRadius": 1,
               "height": 2,
               "position": "absolute",

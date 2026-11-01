@@ -36,56 +36,77 @@ exports[`should render <MessageReply /> and compare with snapshot 1`] = `
     style={
       [
         {
-          "borderRadius": 8,
-          "marginBottom": 4,
-          "paddingHorizontal": 10,
-          "paddingVertical": 6,
+          "alignItems": "center",
+          "borderBottomLeftRadius": 5,
+          "borderBottomRightRadius": 5,
+          "borderLeftWidth": 3,
+          "borderTopLeftRadius": 5,
+          "borderTopRightRadius": 10,
+          "flexDirection": "row",
+          "marginBottom": 1,
+          "marginHorizontal": 6,
+          "marginTop": 6,
+          "overflow": "hidden",
+          "paddingBottom": 4,
+          "paddingLeft": 8,
+          "paddingRight": 8,
+          "paddingTop": 3,
         },
         {
-          "backgroundColor": "rgba(0, 0, 0, 0.06)",
-          "borderLeftColor": "#3390EC",
-          "borderLeftWidth": 3,
+          "backgroundColor": "rgba(149, 92, 219, 0.1)",
+          "borderLeftColor": "#955CDB",
         },
         undefined,
         undefined,
       ]
     }
   >
-    <Text
-      numberOfLines={1}
+    <View
       style={
-        [
-          {
-            "fontWeight": "600",
-            "marginBottom": 2,
-          },
-          {
-            "color": "#3390EC",
-          },
-          undefined,
-          undefined,
-        ]
+        {
+          "flexShrink": 1,
+        }
       }
     >
-      John Doe
-    </Text>
-    <Text
-      numberOfLines={2}
-      style={
-        [
-          {
-            "fontSize": 13,
-          },
-          {
-            "color": "#000000",
-          },
-          undefined,
-          undefined,
-        ]
-      }
-    >
-      Original message text
-    </Text>
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontSize": 14,
+              "fontWeight": "500",
+              "lineHeight": 17,
+            },
+            {
+              "color": "#955CDB",
+            },
+            undefined,
+            undefined,
+          ]
+        }
+      >
+        John Doe
+      </Text>
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontSize": 14,
+              "fontWeight": "400",
+              "lineHeight": 17,
+            },
+            {
+              "color": "#000000",
+            },
+            undefined,
+            undefined,
+          ]
+        }
+      >
+        Original message text
+      </Text>
+    </View>
   </View>
 </View>
 `;
@@ -126,56 +147,77 @@ exports[`should render <MessageReply /> on right position and compare with snaps
     style={
       [
         {
-          "borderRadius": 8,
-          "marginBottom": 4,
-          "paddingHorizontal": 10,
-          "paddingVertical": 6,
+          "alignItems": "center",
+          "borderBottomLeftRadius": 5,
+          "borderBottomRightRadius": 5,
+          "borderLeftWidth": 3,
+          "borderTopLeftRadius": 5,
+          "borderTopRightRadius": 10,
+          "flexDirection": "row",
+          "marginBottom": 1,
+          "marginHorizontal": 6,
+          "marginTop": 6,
+          "overflow": "hidden",
+          "paddingBottom": 4,
+          "paddingLeft": 8,
+          "paddingRight": 8,
+          "paddingTop": 3,
         },
         {
-          "backgroundColor": "rgba(255, 255, 255, 0.15)",
-          "borderLeftColor": "rgba(255, 255, 255, 0.7)",
-          "borderLeftWidth": 3,
+          "backgroundColor": "rgba(110, 185, 105, 0.1)",
+          "borderLeftColor": "#6EB969",
         },
         undefined,
         undefined,
       ]
     }
   >
-    <Text
-      numberOfLines={1}
+    <View
       style={
-        [
-          {
-            "fontWeight": "600",
-            "marginBottom": 2,
-          },
-          {
-            "color": "#FFFFFF",
-          },
-          undefined,
-          undefined,
-        ]
+        {
+          "flexShrink": 1,
+        }
       }
     >
-      You
-    </Text>
-    <Text
-      numberOfLines={2}
-      style={
-        [
-          {
-            "fontSize": 13,
-          },
-          {
-            "color": "#FFFFFF",
-          },
-          undefined,
-          undefined,
-        ]
-      }
-    >
-      Original message text
-    </Text>
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontSize": 14,
+              "fontWeight": "500",
+              "lineHeight": 17,
+            },
+            {
+              "color": "#55AB4F",
+            },
+            undefined,
+            undefined,
+          ]
+        }
+      >
+        You
+      </Text>
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontSize": 14,
+              "fontWeight": "400",
+              "lineHeight": 17,
+            },
+            {
+              "color": "#000000",
+            },
+            undefined,
+            undefined,
+          ]
+        }
+      >
+        Original message text
+      </Text>
+    </View>
   </View>
 </View>
 `;

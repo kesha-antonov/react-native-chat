@@ -5,6 +5,7 @@ import Animated, {
   Easing,
   runOnJS,
   SharedValue,
+  useAnimatedProps,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
@@ -16,7 +17,13 @@ import { impactHaptic } from '../components/haptics'
 import { Icon } from '../components/Icon'
 import { ReplyArrowIcon } from '../components/MediaControls'
 import { useThemedStyles } from '../hooks/useTheme'
+import { getSvg } from '../optional'
 import { ChatTheme } from '../Theme'
+
+const svg = getSvg()
+const Svg: any = svg ? svg.default ?? svg.Svg : null
+const SvgCircle: any = svg?.Circle
+const AnimatedSvgCircle: any = SvgCircle ? Animated.createAnimatedComponent(SvgCircle) : null
 
 // Every value below is Telegram Android's, from `ChatActivity`'s `ChatListView`
 // (`processTouchEvent`, `onDraw`, `drawReplyButton`).
@@ -46,6 +53,16 @@ const androidSpring = (stiffness: number, dampingRatio: number) => ({
 const APPEAR_SPRING = androidSpring(1500, 1)
 /** `slidingFillProgressSpring`: stiffness 400, `DAMPING_RATIO_MEDIUM_BOUNCY` (0.5). */
 const FILL_SPRING = androidSpring(400, 0.5)
+/** `slidingOuterRingProgressSpring`: stiffness 200, `DAMPING_RATIO_NO_BOUNCY`. */
+const OUTER_RING_SPRING = androidSpring(200, 1)
+/** Before the threshold the circle shows the service color at 60% of the fill. */
+const PRE_FILL_ALPHA = 0.6
+/** The 2pt ring that draws itself round the circle as the row moves (`CA:4914-4949`). */
+const RING_WIDTH = 2
+const RING_RADIUS = (ICON_SIZE - RING_WIDTH) / 2
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS
+/** How far the outer ring grows as it fades, at the threshold. */
+const OUTER_RING_GROWTH = 0.6
 
 export interface SwipeToReplyRowProps {
   direction: 'left' | 'right'
@@ -83,6 +100,9 @@ export const SwipeToReplyRow = ({
   const isPastThreshold = useSharedValue(false)
   const iconScale = useSharedValue(0)
   const isIconShown = useSharedValue(false)
+  // 1 once past the threshold: the circle fills, and an outer ring grows away and fades.
+  const filled = useSharedValue(0)
+  const outerRing = useSharedValue(0)
 
   const pan = usePanGesture({
     testID: 'swipe-to-reply',
@@ -108,10 +128,14 @@ export const SwipeToReplyRow = ({
           // The full circle pops, bouncing back to size.
           iconScale.value = 1.25
           iconScale.value = withSpring(1, FILL_SPRING)
+          filled.value = withSpring(1, FILL_SPRING)
+          outerRing.value = 0
+          outerRing.value = withSpring(1, OUTER_RING_SPRING)
           runOnJS(impactHaptic)('Light')
         }
-      } else {
+      } else if (isPastThreshold.value) {
         isPastThreshold.value = false
+        filled.value = withTiming(0, RETURN)
       }
     },
     onDeactivate: event => {
@@ -123,6 +147,7 @@ export const SwipeToReplyRow = ({
       isIconShown.value = false
       offset.value = withTiming(0, RETURN)
       iconScale.value = withTiming(0, RETURN)
+      filled.value = withTiming(0, RETURN)
     },
   })
 
@@ -132,13 +157,21 @@ export const SwipeToReplyRow = ({
 
   // Beside an outgoing message the arrow travels half as far (`translationX * 0.5f`).
   const travel = position === 'right' ? 0.5 : 1
-  const iconStyle = useAnimatedStyle(() => {
-    const fill = Math.min(1, Math.max(0, (Math.abs(offset.value) - ICON_APPEAR) / ICON_FILL))
-    return {
-      opacity: 0.4 + 0.6 * fill,
-      transform: [{ translateX: offset.value * travel }, { scale: iconScale.value }],
-    }
-  })
+  const fillProgress = useDerivedValue(() =>
+    Math.min(1, Math.max(0, (Math.abs(offset.value) - ICON_APPEAR) / ICON_FILL)))
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: offset.value * travel }, { scale: iconScale.value }],
+  }))
+  const circleStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, PRE_FILL_ALPHA * fillProgress.value + (1 - PRE_FILL_ALPHA) * filled.value),
+  }))
+  const outerRingStyle = useAnimatedStyle(() => ({
+    opacity: outerRing.value > 0 && outerRing.value < 1 ? 1 - outerRing.value : 0,
+    transform: [{ scale: 1 + OUTER_RING_GROWTH * outerRing.value }],
+  }))
+  const ringProps = useAnimatedProps(() => ({
+    strokeDashoffset: RING_LENGTH * (1 - fillProgress.value),
+  }))
 
   const progress = useDerivedValue(() => Math.abs(offset.value) / SWIPE_REPLY_THRESHOLD)
 
@@ -164,6 +197,23 @@ export const SwipeToReplyRow = ({
                 actionContainerStyle,
               ]}
             >
+              <Animated.View style={[styles.circle, circleStyle]} />
+              <Animated.View style={[styles.outerRing, outerRingStyle]} />
+              {AnimatedSvgCircle && (
+                <Svg width={ICON_SIZE} height={ICON_SIZE} style={styles.ring}>
+                  <AnimatedSvgCircle
+                    cx={ICON_SIZE / 2}
+                    cy={ICON_SIZE / 2}
+                    r={RING_RADIUS}
+                    fill='none'
+                    stroke={styles.iconGlyph.color}
+                    strokeWidth={RING_WIDTH}
+                    strokeDasharray={`${RING_LENGTH} ${RING_LENGTH}`}
+                    strokeLinecap='round'
+                    animatedProps={ringProps}
+                  />
+                </Svg>
+              )}
               <Icon
                 name='reply'
                 color={styles.iconGlyph.color}
@@ -188,10 +238,24 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     width: ICON_SIZE,
     height: ICON_SIZE,
     marginTop: -ICON_SIZE / 2,
-    borderRadius: ICON_SIZE / 2,
-    backgroundColor: theme.colors.dayPillBackground,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  circle: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: ICON_SIZE / 2,
+    backgroundColor: theme.colors.dayPillBackground,
+  },
+  outerRing: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: ICON_SIZE / 2,
+    borderWidth: RING_WIDTH,
+    borderColor: theme.colors.dayPillText,
+  },
+  // Drawn from the top, clockwise.
+  ring: {
+    position: 'absolute',
+    transform: [{ rotate: '-90deg' }],
   },
   // Centred on the row's trailing edge, so it comes in with the row.
   iconRight: {

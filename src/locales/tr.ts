@@ -14,6 +14,7 @@ export const tr: Partial<ChatLabels> = {
   slideToCancel: 'İptal etmek için sola kaydırın...',
   replyingTo: '{name} adlı kişiye yanıt',
   editing: 'Düzenleniyor',
+  edited: 'düzenlendi',
   cameraPermission: 'Kamera izni gerekli',
   noCamera: 'Kullanılabilir kamera yok',
   stopAndSend: 'Durdurmak ve göndermek için dokunun',

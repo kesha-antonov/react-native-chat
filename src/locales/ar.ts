@@ -14,6 +14,7 @@ export const ar: Partial<ChatLabels> = {
   slideToCancel: 'اسحب لليمين للإلغاء...',
   replyingTo: 'الرد على {name}',
   editing: 'تعديل',
+  edited: 'معدلة',
   cameraPermission: 'مطلوب إذن الكاميرا',
   noCamera: 'لا توجد كاميرا متاحة',
   stopAndSend: 'اضغط للإيقاف والإرسال',

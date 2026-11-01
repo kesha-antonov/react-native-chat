@@ -12,7 +12,7 @@ export const DAY_PIN_OFFSET = 10
 
 // Vertical margin baked into the inline separator's pill position (Day's container
 // marginTop). The inline pill renders this far below its separatorScreenTop.
-export const DAY_MARGIN_TOP = 5
+export const DAY_MARGIN_TOP = 1
 
 // Vertical gap kept between the outgoing floating header and the incoming
 // separator's pill during the push, so the two dates don't touch.

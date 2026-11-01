@@ -45,6 +45,7 @@ export function SystemMessage<TMessage extends IMessage> ({
               customTextStyle={[styles.text, textStyle]}
               position='left'
               containerStyle={{ left: [styles.messageContainer, messageContainerStyle] }}
+              linkStyle={{ left: styles.link }}
               {...messageTextProps}
             />
           )
@@ -55,30 +56,38 @@ export function SystemMessage<TMessage extends IMessage> ({
   )
 }
 
+// Telegram's service messages share the date pill (`ChatActionCell`): 14 Medium white text
+// on the service color, radius 11, 8 either side and 3 above and below, at most 30 narrower
+// than the list.
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
   wrapper: {
     alignItems: 'center',
-    marginVertical: 5,
-    marginHorizontal: 10,
+    marginTop: 1,
+    marginBottom: 7,
+    marginHorizontal: 15,
   },
   container: {
-    maxWidth: '70%',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: theme.colors.separator,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    backgroundColor: theme.colors.reactionBackground,
+    borderRadius: theme.radii.dayPill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: theme.colors.dayPillBackground,
   },
   messageContainer: {
+    marginTop: 0,
+    marginBottom: 0,
     marginVertical: 0,
     marginHorizontal: 0,
   },
   text: {
     backgroundColor: Color.backgroundTransparent,
-    color: theme.colors.incomingMeta,
+    color: theme.colors.dayPillText,
     fontSize: theme.typography.system.fontSize,
+    lineHeight: theme.typography.system.lineHeight,
     fontWeight: theme.typography.system.fontWeight,
     textAlign: 'center',
+  },
+  link: {
+    color: theme.colors.dayPillText,
+    fontWeight: '500',
   },
 })

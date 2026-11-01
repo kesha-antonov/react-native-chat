@@ -123,8 +123,8 @@ describe('ContextMenu (Telegram details)', () => {
     })
 
     expect(getByText('icon #000000')).toBeTruthy()
-    expect(getByText('icon #E74C3C')).toBeTruthy()
-    expect(icon).toHaveBeenCalledWith({ color: '#E74C3C', size: 24 })
+    expect(getByText('icon #DB3535')).toBeTruthy()
+    expect(icon).toHaveBeenCalledWith({ color: '#DB3535', size: 24 })
   })
 })
 

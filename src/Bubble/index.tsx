@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ImageStyle,
   Keyboard,
   LayoutChangeEvent,
   View,
@@ -8,7 +9,8 @@ import {
   StyleSheet,
   TextStyle,
   Text,
-  ViewStyle } from 'react-native'
+  ViewStyle,
+  useWindowDimensions } from 'react-native'
 import { GestureDetector, useExclusiveGestures, useLongPressGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
@@ -21,32 +23,38 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { useChatContext } from '../ChatContext'
+import { BubbleTail, GradientBubbleBackground } from '../components/BubbleBackground'
 import { ContextMenu } from '../components/ContextMenu'
 import { impactHaptic } from '../components/haptics'
-import { Icon } from '../components/Icon'
 import { MediaPlaybackContext, useNoteTimeShift } from '../components/mediaPlayback'
+import { BubbleHighlightTint, useMessageHighlightToken } from '../components/messageHighlight'
 import { PRESS_DELAY_MS, PRESS_HOLD_MS, PRESS_RELEASE_MS, PRESS_SHRINK_MS } from '../components/messagePress'
 import { MessageReply } from '../components/MessageReply'
+import { MessageStatus, MessageStatusKind } from '../components/MessageStatus'
 import { NOTE_GROW_MS, noteGrowEasing } from '../components/roundNoteChrome'
-import { PendingClock, Ticks } from '../components/Ticks'
+import { TIME_FORMAT } from '../Constant'
 import { useIsRTL } from '../hooks/useIsRTL'
+import { useLabels } from '../hooks/useLabels'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { MessageAudio } from '../MessageAudio'
 import { MessageImage } from '../MessageImage'
 import { MessageLocation } from '../MessageLocation'
 import { MessageText } from '../MessageText'
 import { MessageVideo } from '../MessageVideo'
-import { IMessage } from '../Models'
+import { IMessage, LeftRightStyle } from '../Models'
 import { QuickReplies } from '../QuickReplies'
 import { DEFAULT_REACTION_EMOJIS, MessageReactions, ReactionPicker } from '../Reactions'
 import { mirrorPosition } from '../rtl'
 import { getStyleWithPosition } from '../styles'
-import { Time } from '../Time'
-import { isSameUser, isSameDay, renderComponentOrElement } from '../utils'
+import { getNameColor } from '../Theme'
+import { formatMessageTime, Time } from '../Time'
+import { isSameGroup, renderComponentOrElement } from '../utils'
 import { createBubbleStyles } from './styles'
 import { BubbleProps, RenderMessageTextProps } from './types'
 
 export * from './types'
+
+const hiddenStyle: ViewStyle = { opacity: 0 }
 
 interface PickerAnchor {
   pageX: number
@@ -250,7 +258,30 @@ const PressableBubbleRow = <TMessage extends IMessage>({
   )
 }
 
-const hiddenStyle: ViewStyle = { opacity: 0 }
+
+// Telegram's time is `timeWidth + 6dp` wide on the last line, and `+ 20.5dp` with the checks
+// (`ChatMessageCell:7411`). The reserved copy of the time is padded with no-break spaces to
+// that width: two for the gap, nine with the checks.
+const NBSP = ' '
+const GAP_SPACES = NBSP.repeat(2)
+const STATUS_SPACES = NBSP.repeat(9)
+// A break opportunity before the reserved time, so it wraps alone instead of taking the last word.
+const ZERO_WIDTH_SPACE = '​'
+
+// First strong character decides a paragraph's direction (Hebrew, Arabic and friends are RTL).
+const RTL_CHAR = /[֐-ࣿיִ-﷿ﹰ-﻿]/
+const LTR_CHAR = /[A-Za-zÀ-ɏͰ-ϿЀ-ӿ԰-֏ऀ-෿฀-࿿ᄀ-ᇿ぀-ヿ㐀-鿿가-힯]/
+const isTextRTL = (text: string) => {
+  for (const char of text) {
+    if (RTL_CHAR.test(char))
+      return true
+    if (LTR_CHAR.test(char))
+      return false
+  }
+  return false
+}
+
+type MetaMode = 'inline' | 'reactions' | 'overlay' | 'row' | 'voice' | 'note'
 
 export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<TMessage>): React.ReactElement => {
   const {
@@ -277,8 +308,10 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
 
   const context = useChatContext()
   const theme = useTheme()
+  const labels = useLabels()
   const styles = useThemedStyles(createBubbleStyles)
   const isRTL = useIsRTL()
+  const windowSize = useWindowDimensions()
   // Only for physical layout (alignment, corner radii) - `wrapper`'s background
   // color and every `xStyle?.[position]` consumer override below stay keyed by
   // the real, unmirrored `position` ("my bubble vs. theirs"), not screen side.
@@ -315,6 +348,16 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const isVoiceNote = !!currentMessage?.audio && !currentMessage?.text && !isVideoNote &&
     !currentMessage?.image && !currentMessage?.video && !currentMessage?.location &&
     !props.renderMessageAudio
+
+  // Telegram's runs: the same sender within five minutes. A run shares one tail, one name.
+  const isGroupedWithPrevious = isSameGroup(currentMessage, previousMessage)
+  const isGroupedWithNext = isSameGroup(currentMessage, nextMessage)
+
+  // Photos, videos and maps without a caption are media bubbles: Telegram draws them with all
+  // four corners rounded and no tail (`TYPE_MEDIA`).
+  const isMediaBubble = !currentMessage?.text &&
+    (!!currentMessage?.image || !!currentMessage?.video || !!currentMessage?.location)
+  const hasTail = theme.bubble.hasTail && !isGroupedWithNext && !isVideoNote && !isMediaBubble
 
   // Consumers can hand the touches back to natively interactive content
   // (video controls, maps, WebViews) on a per-message basis.
@@ -368,51 +411,114 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     })
   }, [])
 
+  // The flash after a quote jump tints the bubble too, not just the row behind it.
+  const highlightToken = useMessageHighlightToken(currentMessage?._id)
+
+  // Telegram's corners (`MessageDrawable.generatePath`): 17 everywhere, 6 on the tail side
+  // facing a grouped neighbour, and none at the bottom where the tail grows out.
+  const cornerStyle = useMemo((): ViewStyle => {
+    const outer = theme.radii.bubble
+    const near = theme.radii.bubbleGrouped
+    const top = isGroupedWithPrevious ? near : outer
+    const bottom = hasTail ? 0 : (isGroupedWithNext ? near : outer)
+
+    return visualPosition === 'right'
+      ? { borderTopLeftRadius: outer, borderBottomLeftRadius: outer, borderTopRightRadius: top, borderBottomRightRadius: bottom }
+      : { borderTopRightRadius: outer, borderBottomRightRadius: outer, borderTopLeftRadius: top, borderBottomLeftRadius: bottom }
+  }, [theme, isGroupedWithPrevious, isGroupedWithNext, hasTail, visualPosition])
+
   const styledBubbleToNext = useMemo(() => {
-    if (
-      currentMessage &&
-      nextMessage &&
-      position &&
-      isSameUser(currentMessage, nextMessage) &&
-      isSameDay(currentMessage, nextMessage)
-    )
-      return [
-        getStyleWithPosition(styles, 'containerToNext', visualPosition),
-        containerToNextStyle?.[position],
-      ]
+    if (position && isGroupedWithNext)
+      return containerToNextStyle?.[position]
 
     return null
-  }, [
-    currentMessage,
-    nextMessage,
-    position,
-    visualPosition,
-    containerToNextStyle,
-    styles,
-  ])
+  }, [position, isGroupedWithNext, containerToNextStyle])
 
   const styledBubbleToPrevious = useMemo(() => {
-    if (
-      currentMessage &&
-      previousMessage &&
-      position &&
-      isSameUser(currentMessage, previousMessage) &&
-      isSameDay(currentMessage, previousMessage)
-    )
-      return [
-        getStyleWithPosition(styles, 'containerToPrevious', visualPosition),
-        containerToPreviousStyle?.[position],
-      ]
+    if (position && isGroupedWithPrevious)
+      return containerToPreviousStyle?.[position]
 
     return null
-  }, [
-    currentMessage,
-    previousMessage,
-    position,
-    visualPosition,
-    containerToPreviousStyle,
-    styles,
-  ])
+  }, [position, isGroupedWithPrevious, containerToPreviousStyle])
+
+  // The color the body actually has, so the tail matches a `wrapperStyle` override.
+  const customBodyColor = useMemo(
+    () => (StyleSheet.flatten(wrapperStyle?.[position]) as ViewStyle | undefined)?.backgroundColor as string | undefined,
+    [wrapperStyle, position]
+  )
+  const bodyColor = customBodyColor ?? (position === 'right' ? theme.colors.outgoingBubble : theme.colors.incomingBubble)
+  const gradientStops = position === 'right' && !customBodyColor && !isVideoNote
+    ? theme.bubble.outgoingGradient
+    : null
+  const hasGradient = !!gradientStops && gradientStops.length > 1
+  const shadowColor = position === 'right' ? theme.colors.outgoingBubbleShadow : theme.colors.incomingBubbleShadow
+  const hasShadow = !isVideoNote && !hasGradient && !!shadowColor && shadowColor !== 'transparent'
+
+  // Telegram's text column: `min(width, height) - 80dp`, minus the avatar column beside it.
+  const isAvatarShown = position === 'left' && (props as { isAvatarVisible?: boolean }).isAvatarVisible === true
+  const maxWidth = Math.min(windowSize.width, windowSize.height) -
+    theme.bubble.maxWidthInset -
+    (isAvatarShown ? theme.avatar.size : 0) +
+    theme.spacing.bubblePaddingH * 2
+
+  const isOwnMessage = !(props.user && currentMessage?.user && currentMessage.user._id !== props.user._id)
+  const statusKind: MessageStatusKind | null = !currentMessage || !isOwnMessage
+    ? null
+    : currentMessage.isFailed
+      ? 'failed'
+      : currentMessage.pending
+        ? 'pending'
+        : currentMessage.received
+          ? 'read'
+          : currentMessage.sent
+            ? 'sent'
+            : null
+  const hasStatus = !!props.renderTicks || !!statusKind
+
+  const hasDefaultReactions = !!currentMessage?.reactions?.length && !reactions?.renderReactions
+
+  // Where the time goes: on the last line of text, on the last row of reaction pills, in a
+  // pill over a photo, or - for anything custom - on a row of its own.
+  const metaMode: MetaMode = useMemo(() => {
+    if (isVideoNote)
+      return 'note'
+    if (isVoiceNote)
+      return 'voice'
+    if (!theme.bubble.isTimeInline || props.renderTime || (props.isCustomViewBottom && props.renderCustomView))
+      return 'row'
+    if (hasDefaultReactions)
+      return 'reactions'
+    if (currentMessage?.text)
+      return props.renderMessageText ? 'row' : 'inline'
+    if (currentMessage?.image && !currentMessage.video && !currentMessage.location && !currentMessage.audio && !props.renderMessageImage)
+      return 'overlay'
+    return 'row'
+  }, [isVideoNote, isVoiceNote, theme, props.renderTime, props.isCustomViewBottom, props.renderCustomView, props.renderMessageText, props.renderMessageImage, hasDefaultReactions, currentMessage])
+
+  const timeFormat = (props as { timeFormat?: string }).timeFormat ?? TIME_FORMAT
+  const timeTextStyle = (props as { timeTextStyle?: LeftRightStyle<TextStyle> }).timeTextStyle
+
+  // The invisible copy of the time that holds its place at the end of the text. When the
+  // text's direction differs from the layout's, the last line ends on the wrong side for the
+  // time, so it always takes a line of its own (Telegram does the same for RTL lines).
+  const timeSpacer = useMemo(() => {
+    if (metaMode !== 'inline' && metaMode !== 'reactions')
+      return null
+    if (!currentMessage?.createdAt)
+      return null
+
+    const label = formatMessageTime(currentMessage, context.getLocale(), timeFormat, labels.edited)
+    const padding = hasStatus ? STATUS_SPACES : GAP_SPACES
+    const breakBefore = metaMode === 'inline' && !!currentMessage.text && isTextRTL(currentMessage.text) !== isRTL
+      ? '\n'
+      : ZERO_WIDTH_SPACE
+
+    return (
+      <Text style={[styles.metaSpacer, timeTextStyle?.[position], styles.metaSpacerHidden]}>
+        {(metaMode === 'inline' ? breakBefore : '') + padding + label}
+      </Text>
+    )
+  }, [metaMode, currentMessage, context, timeFormat, labels.edited, hasStatus, isRTL, styles, timeTextStyle, position])
 
   const renderQuickReplies = useCallback(() => {
     if (currentMessage?.quickReplies) {
@@ -471,11 +577,45 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       if (props.renderMessageText)
         return renderComponentOrElement(props.renderMessageText, combinedProps)
 
-      return <MessageText {...combinedProps as any} />
+      // Pills and a time row sit closer to the text than the bubble's own bottom edge does.
+      const spacing = metaMode === 'reactions'
+        ? styles.textAboveReactions
+        : metaMode === 'row'
+          ? styles.textAboveMetaRow
+          : null
+      const userContainerStyle = messageTextProps?.containerStyle
+
+      return (
+        <MessageText
+          {...combinedProps as any}
+          containerStyle={spacing
+            ? { left: [spacing, userContainerStyle?.left], right: [spacing, userContainerStyle?.right] }
+            : userContainerStyle}
+          trailing={metaMode === 'inline' ? timeSpacer : undefined}
+        />
+      )
     }
 
     return null
-  }, [props, currentMessage])
+  }, [props, currentMessage, metaMode, styles, timeSpacer])
+
+  // Photo corners (`ChatMessageCell:10997`): 2 less than the bubble's, 4 next to other
+  // content, 3 on the tail side next to a grouped neighbour.
+  const mediaCornerStyle = useMemo((): ImageStyle => {
+    const outer = theme.radii.media
+    const inner = theme.radii.mediaInner
+    const near = Math.max(2, theme.radii.bubbleGrouped - 3)
+    const hasAbove = !!props.isUsernameVisible || !!currentMessage?.replyMessage
+    const hasBelow = !!currentMessage?.text || hasDefaultReactions || !!currentMessage?.audio || !!currentMessage?.location || !!currentMessage?.video
+    const tailTop = hasAbove ? inner : (isGroupedWithPrevious ? near : outer)
+    const otherTop = hasAbove ? inner : outer
+    const tailBottom = hasBelow ? inner : (isGroupedWithNext ? near : outer)
+    const otherBottom = hasBelow ? inner : outer
+
+    return visualPosition === 'right'
+      ? { borderTopLeftRadius: otherTop, borderTopRightRadius: tailTop, borderBottomLeftRadius: otherBottom, borderBottomRightRadius: tailBottom }
+      : { borderTopLeftRadius: tailTop, borderTopRightRadius: otherTop, borderBottomLeftRadius: tailBottom, borderBottomRightRadius: otherBottom }
+  }, [theme, props.isUsernameVisible, currentMessage, hasDefaultReactions, isGroupedWithPrevious, isGroupedWithNext, visualPosition])
 
   const renderMessageImage = useCallback(() => {
     if (currentMessage?.image) {
@@ -490,11 +630,17 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       if (props.renderMessageImage)
         return renderComponentOrElement(props.renderMessageImage, messageImageProps)
 
-      return <MessageImage {...messageImageProps} />
+      return (
+        <MessageImage
+          {...messageImageProps}
+          containerStyle={styles.mediaFrame}
+          imageStyle={[mediaCornerStyle, (messageImageProps as { imageStyle?: StyleProp<ImageStyle> }).imageStyle]}
+        />
+      )
     }
 
     return null
-  }, [props, currentMessage])
+  }, [props, currentMessage, styles, mediaCornerStyle])
 
   const renderMessageVideo = useCallback(() => {
     if (!currentMessage?.video)
@@ -550,60 +696,47 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return <MessageLocation {...messageLocationProps} />
   }, [props, currentMessage])
 
-  const renderTicks = useCallback(() => {
-    const {
-      renderTicks,
-      user,
-    } = props
+  // `tone` picks the colors: in the bubble, on a photo's dark pill, or on a round note's pill.
+  const renderTicks = useCallback((tone: 'bubble' | 'media' | 'note') => {
+    const { renderTicks } = props
 
     if (renderTicks && currentMessage)
       return renderComponentOrElement(renderTicks, currentMessage)
 
-    if (
-      user &&
-      currentMessage?.user &&
-      currentMessage.user._id !== user._id
-    )
+    if (!statusKind)
       return null
 
-    if (
-      currentMessage &&
-      (currentMessage.sent || currentMessage.received || currentMessage.pending)
-    ) {
-      // Allow a color override via the (legacy) tickStyle prop.
-      const overrideColor = (StyleSheet.flatten(props.tickStyle) as TextStyle | undefined)?.color as
-        | string
-        | undefined
-      // A note's ticks sit on a dark pill over the video, so they are white for
-      // both positions unless the consumer overrode the color.
-      const noteColor = isVideoNote ? styles.noteMetaText.color : undefined
-      const sentColor = overrideColor ?? noteColor ?? (position === 'right' ? theme.colors.ticksSent : theme.colors.incomingMeta)
-      const readColor = overrideColor ?? noteColor ?? (position === 'right' ? theme.colors.ticksRead : theme.colors.accent)
+    // Allow a color override via the (legacy) tickStyle prop.
+    const overrideColor = (StyleSheet.flatten(props.tickStyle) as TextStyle | undefined)?.color as
+      | string
+      | undefined
+    // On a photo or a note the ticks sit on a dark pill, so they are white for both
+    // positions unless the consumer overrode the color.
+    const pillColor = tone === 'media'
+      ? theme.colors.mediaTimeText
+      : tone === 'note'
+        ? styles.noteMetaText.color as string
+        : undefined
+    const sentColor = overrideColor ?? pillColor ?? (position === 'right' ? theme.colors.ticksSent : theme.colors.incomingMeta)
+    const readColor = overrideColor ?? pillColor ?? (position === 'right' ? theme.colors.ticksRead : theme.colors.accent)
 
-      return (
-        <View style={styles.messageStatusContainer}>
-          {currentMessage.pending
-            ? <Icon name='clock' color={sentColor} size={11} fallback={<PendingClock color={sentColor} />} />
-            : currentMessage.received
-              ? <Icon name='checkAll' color={readColor} size={14} fallback={<Ticks double color={readColor} />} />
-              : currentMessage.sent
-                ? <Icon name='check' color={sentColor} size={14} fallback={<Ticks color={sentColor} />} />
-                : null}
-        </View>
-      )
-    }
-
-    return null
+    return (
+      <MessageStatus
+        status={statusKind}
+        color={statusKind === 'read' ? readColor : sentColor}
+        errorColor={theme.colors.error}
+      />
+    )
   }, [
     props,
     currentMessage,
+    statusKind,
     position,
-    isVideoNote,
     theme,
     styles,
   ])
 
-  const renderTime = useCallback(() => {
+  const renderTime = useCallback((tone: 'bubble' | 'media' | 'note') => {
     if (currentMessage?.createdAt) {
       const {
         /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -617,21 +750,23 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       if (props.renderTime)
         return renderComponentOrElement(props.renderTime, timeProps)
 
-      // On a note the meta sits on a dark pill over the video, so it is white
-      // for both positions - the incoming gray would be unreadable there.
-      if (isVideoNote)
+      // On a note or a photo the meta sits on a dark pill, so it is white for both
+      // positions - the incoming gray would be unreadable there.
+      if (tone !== 'bubble') {
+        const pillText = tone === 'media' ? styles.mediaMetaText : styles.noteMetaText
         return (
           <Time
             {...timeProps}
-            timeTextStyle={{ left: styles.noteMetaText, right: styles.noteMetaText }}
+            timeTextStyle={{ left: [pillText, timeTextStyle?.left], right: [pillText, timeTextStyle?.right] }}
           />
         )
+      }
 
       return <Time {...timeProps} />
     }
 
     return null
-  }, [props, currentMessage, isVideoNote, styles])
+  }, [props, currentMessage, styles, timeTextStyle])
 
   const renderUsername = useCallback(() => {
     const {
@@ -644,11 +779,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         return null
 
       // Telegram names the sender once, on the first message of their run.
-      if (
-        previousMessage &&
-        isSameUser(currentMessage, previousMessage) &&
-        isSameDay(currentMessage, previousMessage)
-      )
+      if (isGroupedWithPrevious)
         return null
 
       if (renderUsername)
@@ -657,7 +788,8 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       return (
         <View style={styles.usernameContainer}>
           <Text
-            style={[styles.username, props.usernameStyle]}
+            style={[styles.username, { color: getNameColor(theme, currentMessage.user._id) }, props.usernameStyle]}
+            numberOfLines={1}
           >
             {currentMessage.user.name}
           </Text>
@@ -668,9 +800,10 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return null
   }, [
     currentMessage,
-    previousMessage,
+    isGroupedWithPrevious,
     props,
     styles,
+    theme,
   ])
 
   const renderCustomView = useCallback(() => {
@@ -710,6 +843,40 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     position,
   ])
 
+  const reactionsDisplayProps = useMemo(() => {
+    const currentReactions = currentMessage?.reactions
+    if (!currentReactions || currentReactions.length === 0)
+      return null
+
+    return {
+      message: currentMessage,
+      reactions: currentReactions,
+      currentUserId: props.user?._id,
+      position,
+      onReactionPress: (emoji: string) => reactions?.onReactionPress?.(currentMessage, emoji),
+      containerStyle: reactions?.containerStyle,
+      reactionStyle: reactions?.reactionStyle,
+      reactionActiveStyle: reactions?.reactionActiveStyle,
+      reactionTextStyle: reactions?.reactionTextStyle,
+      reactionCountStyle: reactions?.reactionCountStyle,
+    }
+  }, [currentMessage, position, props.user, reactions])
+
+  // Telegram draws the pills inside the bubble, under the text, with the time on their last
+  // row when it fits.
+  const renderReactionsInside = useCallback(() => {
+    if (!hasDefaultReactions || !reactionsDisplayProps)
+      return null
+
+    return (
+      <MessageReactions
+        {...reactionsDisplayProps}
+        trailing={metaMode === 'reactions' ? timeSpacer : undefined}
+        hasContentAbove={!!currentMessage?.text}
+      />
+    )
+  }, [hasDefaultReactions, reactionsDisplayProps, metaMode, timeSpacer, currentMessage])
+
   const renderBubbleContent = useCallback(() => {
     return (
       <>
@@ -721,6 +888,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         {renderMessageLocation()}
         {renderMessageText()}
         {props.isCustomViewBottom && renderCustomView()}
+        {renderReactionsInside()}
       </>
     )
   }, [
@@ -731,13 +899,76 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     renderMessageAudio,
     renderMessageLocation,
     renderMessageText,
+    renderReactionsInside,
     props.isCustomViewBottom,
   ])
 
-  const renderBubbleBody = useCallback(() => (
-    <>
-      {renderUsername()}
-      {renderBubbleContent()}
+  const renderBackground = useCallback(() => {
+    if (isVideoNote)
+      return null
+
+    const tailSide = hasTail ? visualPosition : undefined
+
+    return (
+      <>
+        {hasGradient && currentMessage
+          ? (
+            <GradientBubbleBackground
+              stops={gradientStops!}
+              mode={theme.bubble.outgoingGradientMode}
+              messageId={currentMessage._id}
+              bottomGap={isGroupedWithNext ? theme.spacing.withinGroup : theme.spacing.betweenGroups}
+              cornerStyle={cornerStyle}
+              tailSide={tailSide}
+            />
+          )
+          : tailSide && <BubbleTail side={tailSide} color={bodyColor} shadowColor={hasShadow ? shadowColor : undefined} />}
+        {!!highlightToken && (
+          <BubbleHighlightTint
+            token={highlightToken}
+            color={position === 'right' ? theme.colors.outgoingBubbleSelected : theme.colors.incomingBubbleSelected}
+            cornerStyle={cornerStyle}
+          />
+        )}
+      </>
+    )
+  }, [isVideoNote, hasTail, visualPosition, hasGradient, currentMessage, gradientStops, theme, isGroupedWithNext, cornerStyle, bodyColor, hasShadow, shadowColor, highlightToken, position])
+
+  const renderMeta = useCallback(() => {
+    if (metaMode === 'inline' || metaMode === 'reactions') {
+      const ticks = renderTicks('bubble')
+      return (
+        <View
+          style={[
+            styles.meta,
+            position === 'right'
+              ? (isRTL ? styles.metaOutgoingStart : styles.metaOutgoingEnd)
+              : (isRTL ? styles.metaIncomingStart : styles.metaIncomingEnd),
+            bottomContainerStyle?.[position],
+          ]}
+          pointerEvents='none'
+          // The reserved copy inside the text already reads the time out.
+          accessibilityElementsHidden
+          importantForAccessibility='no-hide-descendants'
+        >
+          {renderTime('bubble')}
+          {ticks}
+        </View>
+      )
+    }
+
+    if (metaMode === 'overlay')
+      return (
+        <View
+          style={[styles.mediaMeta, isRTL ? styles.mediaMetaStart : styles.mediaMetaEnd, bottomContainerStyle?.[position]]}
+          pointerEvents='none'
+        >
+          {renderTime('media')}
+          {renderTicks('media')}
+        </View>
+      )
+
+    return (
       <Animated.View
         style={[
           styles.bottom,
@@ -750,31 +981,38 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         {/* Faded on its own layer so the time keeps full strength. */}
         {isVideoNote && <View style={styles.noteMetaBackground} />}
         <View style={[styles.messageTimeAndStatusContainer, isVideoNote && styles.noteMetaInner]}>
-          {renderTime()}
-          {renderTicks()}
+          {renderTime(isVideoNote ? 'note' : 'bubble')}
+          {renderTicks(isVideoNote ? 'note' : 'bubble')}
         </View>
       </Animated.View>
+    )
+  }, [metaMode, renderTicks, renderTime, styles, isRTL, position, bottomContainerStyle, isVideoNote, isVoiceNote, noteTimeStyle])
+
+  const renderBubbleBody = useCallback(() => (
+    <>
+      {renderBackground()}
+      {renderUsername()}
+      {renderBubbleContent()}
+      {renderMeta()}
     </>
   ), [
-    position,
-    bottomContainerStyle,
+    renderBackground,
     renderBubbleContent,
     renderUsername,
-    renderTime,
-    renderTicks,
-    styles,
-    isVideoNote,
-    isVoiceNote,
-    noteTimeStyle,
+    renderMeta,
   ])
 
   const wrapperStyleList = useMemo(() => [
     getStyleWithPosition(styles, 'wrapper', position),
+    { maxWidth },
+    cornerStyle,
+    hasShadow && { boxShadow: [{ offsetX: 0, offsetY: 1, blurRadius: 0.5, color: shadowColor }] },
     styledBubbleToNext,
     styledBubbleToPrevious,
     wrapperStyle?.[position],
+    hasGradient && styles.gradientWrapper,
     isVideoNote && styles.noteWrapper,
-  ], [position, styledBubbleToNext, styledBubbleToPrevious, wrapperStyle, styles, isVideoNote])
+  ] as StyleProp<ViewStyle>, [position, maxWidth, cornerStyle, hasShadow, shadowColor, styledBubbleToNext, styledBubbleToPrevious, wrapperStyle, styles, hasGradient, isVideoNote])
 
   const containerStyleList = useMemo(() => [
     getStyleWithPosition(styles, 'container', visualPosition),
@@ -787,6 +1025,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   )
 
   const isPreviewNeeded = isPickerVisible || isLifted
+  const liftedWidth = Math.ceil(pickerAnchor.bubbleWidth + 0.5)
   const messagePreview = useMemo(() => {
     if (!isPreviewNeeded)
       return undefined
@@ -798,43 +1037,28 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         style={[
           wrapperStyleList,
           LIFTED_RESET,
-          { width: pickerAnchor.bubbleWidth, maxWidth: pickerAnchor.bubbleWidth },
+          // Rounded up: with the time sharing the last line, a copy a fraction of a point
+          // narrower than the original would wrap the time onto a line of its own.
+          { width: liftedWidth, maxWidth: liftedWidth },
         ]}
       >
         {renderBubbleBody()}
       </LiftedBubble>
     )
-  }, [isPreviewNeeded, wrapperStyleList, pickerAnchor.bubbleWidth, renderBubbleBody, measureBubble])
+  }, [isPreviewNeeded, wrapperStyleList, liftedWidth, renderBubbleBody, measureBubble])
 
-  const renderReactionsDisplay = useCallback(() => {
-    const currentReactions = currentMessage?.reactions
-    if (!currentReactions || currentReactions.length === 0)
+  // A custom reactions display keeps its old place under the bubble.
+  const renderReactionsBelow = useCallback(() => {
+    if (!reactions?.renderReactions || !reactionsDisplayProps)
       return null
 
-    const displayProps = {
-      message: currentMessage,
-      reactions: currentReactions,
-      currentUserId: props.user?._id,
-      position,
-      onReactionPress: (emoji: string) => reactions?.onReactionPress?.(currentMessage, emoji),
-      containerStyle: reactions?.containerStyle,
-      reactionStyle: reactions?.reactionStyle,
-      reactionActiveStyle: reactions?.reactionActiveStyle,
-      reactionTextStyle: reactions?.reactionTextStyle,
-      reactionCountStyle: reactions?.reactionCountStyle,
-    }
+    const display = renderComponentOrElement(reactions.renderReactions, reactionsDisplayProps)
 
-    const display = reactions?.renderReactions
-      ? renderComponentOrElement(reactions.renderReactions, displayProps)
-      : <MessageReactions {...displayProps} />
-
-    // Under the overlay the pills stay hidden, so a picked reaction's pill
-    // appears as its emoji lands rather than before it.
     if (isLifted)
       return <View style={hiddenStyle}>{display}</View>
 
     return display
-  }, [currentMessage, position, props.user, reactions, isLifted])
+  }, [reactions, reactionsDisplayProps, isLifted])
 
   // A pick is applied at once; the overlay's flight then needs the bubble's
   // new spot, as a first reaction grows the row and the list may move it.
@@ -895,7 +1119,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   // Overlay path: a long-press opens either the Telegram-style context menu
   // (when messageActions are provided, optionally with a reactions row) or the
   // reactions quick-picker. The Animated.View carries only the scale transform.
-  if (reactions?.isEnabled || hasMenu) 
+  if (reactions?.isEnabled || hasMenu)
     // `rowSurface` spans the whole message row, so a long-press in the empty
     // space beside the bubble opens the picker too - the way Telegram behaves.
     return (
@@ -915,11 +1139,10 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
           {renderBubbleBody()}
         </PressableBubbleRow>
         {renderQuickReplies()}
-        {renderReactionsDisplay()}
+        {renderReactionsBelow()}
         {hasMenu ? renderContextMenu() : renderReactionPickerModal()}
       </Animated.View>
     )
-  
 
   // Default path: unchanged behaviour for existing users, preserving
   // touchableProps, native press feedback, and the onLongPressMessage callback.
@@ -939,6 +1162,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
           : renderBubbleBody()}
       </View>
       {renderQuickReplies()}
+      {renderReactionsBelow()}
     </View>
   )
 }

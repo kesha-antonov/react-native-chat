@@ -1,18 +1,45 @@
-import React, { useMemo, useCallback } from 'react'
+import React, { useMemo, useCallback, useEffect } from 'react'
 import {
   StyleSheet,
   StyleProp,
   ViewStyle,
   TextStyle,
   View } from 'react-native'
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { Icon } from './components/Icon'
 import { SendIcon } from './components/SendIcon'
 import { TouchableOpacity, TouchableOpacityProps } from './components/TouchableOpacity'
 import { TEST_ID } from './Constant'
+import { useIcons } from './hooks/useIcons'
 import { useTheme, useThemedStyles } from './hooks/useTheme'
 import { IMessage } from './Models'
+import { getSvg } from './optional'
 import { ChatTheme } from './Theme'
+
+const svg = getSvg()
+const Svg: any = svg ? svg.default ?? svg.Svg : null
+const Path: any = svg?.Path
+
+// Telegram's `send_plane_24`: a solid paper plane pointing right.
+const PLANE = 'M3.4 20.3 L21.2 12.6 a0.65 0.65 0 0 0 0 -1.2 L3.4 3.7 a0.7 0.7 0 0 0 -1 0.75 L3.9 10.6 L14.5 12 L3.9 13.4 L2.4 19.55 a0.7 0.7 0 0 0 1 0.75 Z'
+
+// The send button grows in from 0.1 as text appears and shrinks away with it, over 220ms
+// on EASE_OUT_QUINT (`ChatActivityEnterView.animateSendButton`).
+const MORPH = { duration: 220, easing: Easing.bezier(0.23, 1, 0.32, 1) }
+
+const PlaneIcon = ({ color, size }: { color: string, size: number }) => {
+  const icons = useIcons()
+
+  if (icons.send || !(Svg && Path))
+    return <Icon name='send' color={color} size={size} fallback={<SendIcon color={color} size={size} />} />
+
+  return (
+    <Svg width={size} height={size} viewBox='0 0 24 24'>
+      <Path d={PLANE} fill={color} />
+    </Svg>
+  )
+}
 
 export interface SendProps<TMessage extends IMessage> {
   text?: string
@@ -20,7 +47,7 @@ export interface SendProps<TMessage extends IMessage> {
   containerStyle?: StyleProp<ViewStyle>
   textStyle?: StyleProp<TextStyle>
   children?: React.ReactNode
-  /** Kept for API compatibility; the send button is always visible now. */
+  /** Keep the send button showing even when there is nothing to send. */
   isSendButtonAlwaysVisible?: boolean
   /** Text is optional, allow sending empty messages (useful for media-only messages) */
   isTextOptional?: boolean
@@ -36,19 +63,28 @@ export const Send = <TMessage extends IMessage = IMessage>({
   containerStyle,
   children,
   isTextOptional = false,
+  isSendButtonAlwaysVisible = false,
   sendButtonProps,
   onSend,
 }: SendProps<TMessage>) => {
   const theme = useTheme()
   const styles = useThemedStyles(createStyles)
 
-  // The button is always visible. It's "active" (accent) when there's something
-  // to send, and "inactive" (gray, non-functional) otherwise - so the right
-  // slot is never empty when no voice/video/stop control takes its place.
   const canSend = useMemo(
     () => !!text?.trim().length || isTextOptional,
     [text, isTextOptional]
   )
+
+  // Telegram has no greyed-out send button: it is only there while there is something to send.
+  const isShown = canSend || isSendButtonAlwaysVisible
+  const shown = useSharedValue(isShown ? 1 : 0)
+  useEffect(() => {
+    shown.value = withTiming(isShown ? 1 : 0, MORPH)
+  }, [isShown, shown])
+  const circleStyle = useAnimatedStyle(() => ({
+    opacity: shown.value,
+    transform: [{ scale: 0.1 + 0.9 * shown.value }],
+  }))
 
   const handleOnPress = useCallback(() => {
     const trimmedText = text?.trim() ?? ''
@@ -75,9 +111,9 @@ export const Send = <TMessage extends IMessage = IMessage>({
       >
         {
           children ||
-          <View style={[styles.circle, !canSend && styles.circleInactive]}>
-            <Icon name='send' color='#fff' size={size * 0.5} fallback={<SendIcon color='#fff' size={size * 0.5} />} />
-          </View>
+          <Animated.View style={[styles.circle, !canSend && styles.circleInactive, circleStyle]}>
+            <PlaneIcon color='#fff' size={Math.round(size * 0.62)} />
+          </Animated.View>
         }
       </TouchableOpacity>
     </View>
@@ -85,17 +121,17 @@ export const Send = <TMessage extends IMessage = IMessage>({
 }
 
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
-  // Center the button against the single-line field height. The toolbar row is
-  // bottom-aligned, so giving the button the field's min-height keeps it centered
-  // when the field is one line and aligned with the last line when it grows.
+  // A 44 cell at the island's end; the button is bottom-aligned with the last line of text.
   container: {
     minHeight: theme.composer.minHeight,
+    minWidth: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
   touchable: {
     justifyContent: 'center',
   },
+  // A solid 36 circle in `chat_messagePanelSend` (`CAEV:14999`).
   circle: {
     width: theme.sendButton.size,
     height: theme.sendButton.size,
@@ -104,8 +140,8 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Muted, non-functional state shown when there's nothing to send.
+  // Shown (by `isSendButtonAlwaysVisible`) with nothing to send.
   circleInactive: {
-    backgroundColor: theme.colors.incomingMeta,
+    backgroundColor: theme.colors.placeholder,
   },
 })
