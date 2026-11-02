@@ -69,7 +69,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
-- **Chat list rows clipped their text on Android**: the name and the preview line had a fixed height but no line height, and Roboto with its font padding is taller, so descenders and emoji were cut and the typing / recording icon sat above the text's middle. Both lines now set a 20pt line height
+- **Chat list rows clipped their text on Android**: the name and the preview line had a fixed height but no line height, and Roboto with its font padding is taller, so descenders and emoji were cut and the typing / recording icon sat above the text's middle. Both lines now take a fixed 20pt; on Android the text draws in a 24pt line box with the extra given back as margins, so glyphs are never clipped
 - The scroll-to-bottom button no longer remounts (dropping a press in progress) when its unread count changes
 - **Emoji categories answer a tap mid-scroll**: in the reactions panel a category tapped while the grid was still flinging only stopped the fling. The category strip is now one native gesture, so it fires either way. `EmojiGrid` rendered outside `Chat` needs a `GestureHandlerRootView` above it
 - **Gradient bubbles were all one colour on iOS**: the list's row height was read only on change, and on iOS it settles before the list subscribes, so every bubble sampled the gradient a content height off. It is now read when the list subscribes too

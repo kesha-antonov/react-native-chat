@@ -1,5 +1,5 @@
 import React, { memo, useEffect } from 'react'
-import { I18nManager, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { I18nManager, Image, Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { GestureDetector, Touchable, useCompetingGestures, usePanGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
@@ -373,6 +373,15 @@ const arePropsEqual = (previous: ChatListCellProps, next: ChatListCellProps) =>
  */
 export const ChatListCell = memo(ChatListCellInner, arePropsEqual as never) as typeof ChatListCellInner
 
+// Each line takes 20pt of the row, set rather than left to the font. On Android a text view
+// clips its glyphs to its line box, and Roboto's descenders and colour emoji reach past 20, so
+// there the box is 24 and gives the 4 back as negative margins: the glyphs draw whole, the row
+// lays out as before, and the typing icon still centres on the text's middle.
+const lineBox = Platform.select({
+  android: { lineHeight: 24, marginVertical: -2, includeFontPadding: false },
+  default: { lineHeight: 20 },
+})
+
 const styles = StyleSheet.create({
   row: {
     height: ROW_HEIGHT,
@@ -427,14 +436,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  // Each line's height is set rather than left to the font: Android's Roboto, with its font
-  // padding, is taller than the 20pt box, which clipped descenders and emoji, and threw the
-  // typing indicator's icon off the text's middle.
   name: {
     flexShrink: 1,
     fontSize: 16,
-    lineHeight: 20,
-    includeFontPadding: false,
+    ...lineBox,
     fontWeight: '500',
     textAlign: 'left',
   },
@@ -468,8 +473,7 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 15,
-    lineHeight: 20,
-    includeFontPadding: false,
+    ...lineBox,
     textAlign: 'left',
   },
   noShrink: {
