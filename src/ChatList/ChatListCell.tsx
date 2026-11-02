@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   // The name's box starts 14 down and the time's 16: both centre on the same line.
   topLine: {
     marginTop: 14,
-    height: 19,
+    height: 20,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -427,9 +427,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  // Each line's height is set rather than left to the font: Android's Roboto, with its font
+  // padding, is taller than the 20pt box, which clipped descenders and emoji, and threw the
+  // typing indicator's icon off the text's middle.
   name: {
     flexShrink: 1,
     fontSize: 16,
+    lineHeight: 20,
+    includeFontPadding: false,
     fontWeight: '500',
     textAlign: 'left',
   },
@@ -446,7 +451,7 @@ const styles = StyleSheet.create({
     marginStart: 6,
   },
   bottomLine: {
-    marginTop: 5,
+    marginTop: 4,
     height: 20.666,
     flexDirection: 'row',
     alignItems: 'center',
@@ -463,6 +468,8 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 15,
+    lineHeight: 20,
+    includeFontPadding: false,
     textAlign: 'left',
   },
   noShrink: {
