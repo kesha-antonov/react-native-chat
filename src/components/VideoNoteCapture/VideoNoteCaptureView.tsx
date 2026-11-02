@@ -11,7 +11,7 @@ import Animated, {
 
 import { useLabels } from '../../hooks/useLabels'
 import { FlashIcon, FlipCameraIcon } from '../MediaControls'
-import { VideoNoteRecorderController, createVideoNoteRecorder, getVisionCamera } from '../visionCamera'
+import { VideoNoteRecorderController, createVideoNoteRecorder, getVisionCamera, isCameraControlError } from '../visionCamera'
 import { EASE_OUT_QUINT, FLIP_MS, NO_CAMERA_TIMEOUT_MS, ZOOM_RESET_MS } from './constants'
 import { SvgCircle } from './optional'
 import { ProgressRing } from './ProgressRing'
@@ -159,6 +159,16 @@ export function VideoNoteCaptureView ({
     return () => clearTimeout(timer)
   }, [hasDevice, labelNoCamera])
 
+  // vision-camera reports failed control calls (a zoom set while CameraX is still binding, a
+  // torch the lens does not have) through the same `onError` as a dead session. Those leave the
+  // camera running, so they must not end the take: on a Pixel 7 the first zoom update alone
+  // closed every round note a moment after the preview came up.
+  const onSessionError = useCallback((error: unknown) => {
+    if (isCameraControlError(error))
+      return
+    onErrorRef.current(error)
+  }, [])
+
   // Pinch to zoom while recording, springing back when the fingers lift.
   // vision-camera 5 measures zoom against the wide-angle lens, so 1 is neutral
   // even on a multi-lens device that can zoom out below it.
@@ -249,9 +259,11 @@ export function VideoNoteCaptureView ({
                     isActive
                     outputs={outputs}
                     zoom={zoom}
-                    torchMode={isTorchOn ? 'on' : 'off'}
+                    // Only a camera with a torch takes a torch mode: on Android, even 'off' on the
+                    // front camera fails with "No flash unit".
+                    torchMode={device.hasTorch ? (isTorchOn ? 'on' : 'off') : undefined}
                     onStarted={onReady}
-                    onError={onError}
+                    onError={onSessionError}
                   />
                 )
                 : <Text style={styles.placeholderText}>{labels.noCamera}</Text>}

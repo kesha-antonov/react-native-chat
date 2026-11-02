@@ -60,3 +60,19 @@ describe('round note chrome geometry', () => {
     expect(isWrap(0.4, 0.5)).toBe(false)
   })
 })
+
+describe('isCameraControlError', () => {
+   
+  const { isCameraControlError } = require('../components/visionCamera')
+
+  it('treats a failed zoom or torch call as non-fatal', () => {
+    expect(isCameraControlError(new Error('androidx.camera.core.CameraControl$OperationCanceledException: Camera is not active.'))).toBe(true)
+    expect(isCameraControlError(new Error('java.lang.IllegalStateException: No flash unit'))).toBe(true)
+  })
+
+  it('keeps a real camera failure fatal', () => {
+    expect(isCameraControlError(new Error('No camera available'))).toBe(false)
+    expect(isCameraControlError(new Error('Camera session failed to configure'))).toBe(false)
+    expect(isCameraControlError(undefined)).toBe(false)
+  })
+})

@@ -119,7 +119,8 @@ export function LiveVideoNote<TMessage extends IMessage = IMessage> ({
                 device={device}
                 isActive
                 outputs={outputs}
-                torchMode={isTorchOn ? 'on' : 'off'}
+                // Even 'off' fails on a lens without a torch (Android: "No flash unit").
+                torchMode={device.hasTorch ? (isTorchOn ? 'on' : 'off') : undefined}
               />
             )
             : <Text style={styles.placeholderText}>{labels.cameraPermission}</Text>

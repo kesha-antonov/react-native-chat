@@ -123,3 +123,16 @@ export function createVideoNoteRecorder (videoOutput: any): VideoNoteRecorderCon
     },
   }
 }
+
+// CameraX's own failures of a single control call, as vision-camera's Android side reports them
+// (the Java exception text travels in the message).
+const CAMERA_CONTROL_FAILURE = /CameraControl\$OperationCanceledException|Camera is not active|No flash unit/
+
+/**
+ * A failed zoom, torch or focus call, which leaves the camera session running, as opposed to a
+ * failure of the camera itself. vision-camera reports both through `<Camera onError>`.
+ */
+export function isCameraControlError (error: unknown): boolean {
+  const message = error instanceof Error ? error.message : typeof error === 'string' ? error : ''
+  return CAMERA_CONTROL_FAILURE.test(message)
+}
