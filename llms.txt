@@ -1,9 +1,11 @@
 # @kesha-antonov/react-native-chat
 
 > Chat UI for React Native, Expo and Web. A maintained continuation of
-> `react-native-gifted-chat` with the same `IMessage` model and prop names, plus dark mode
-> and theming, streaming (AI) messages, emoji reactions, swipe-to-reply, and inline
-> video/audio/location messages. TypeScript-first; no native code of its own.
+> `react-native-gifted-chat` with the same `IMessage` model and prop names. `<Chat messages
+> onSend user />` alone gives a Telegram-style messenger: long-press menu, reactions, reply,
+> emoji keyboard, attachment menu, voice and round video notes, photo viewer, multi-select,
+> streaming (AI) replies, dark mode and theming. Also ships `ChatList`. TypeScript-first; no
+> native code of its own. Compiled with the React Compiler.
 
 This file is a condensed integration guide for AI agents. Full docs: [README](https://github.com/kesha-antonov/react-native-chat#readme).
 
@@ -25,7 +27,7 @@ read the first error in the log; it is usually a native peer installed without r
 or (in Expo) installed with `npm install` instead of `npx expo install`.
 
 Requires React Native >= 0.82, React 19, `react-native-gesture-handler` >= 3, iOS >= 15.1, Android API 24+,
-Expo SDK 55+.
+Expo SDK 55+ (the example app runs SDK 58 / React Native 0.88).
 
 ## Minimal working example
 
@@ -62,10 +64,19 @@ interface IMessage {
   text: string
   createdAt: Date | number
   user: { _id: string | number, name?: string, avatar?: string | number | (() => React.ReactNode) }
-  image?: string
+  image?: string            // tap opens the viewer, which pages through every photo in the chat
   video?: string
-  audio?: string
+  videoNote?: boolean       // with `video`: a round video note
+  audio?: string            // voice note
+  duration?: number         // seconds, for voice / round notes
+  waveform?: number[]       // server waveform for a voice note (0..1 or 0..31)
+  isMediaUnread?: boolean   // unplayed dot on a voice / round note
+  isViewOnce?: boolean
+  transcription?: string
+  transfer?: { type: 'upload' | 'download', progress?: number, totalBytes?: number } // progress ring + cancel
+  isDownloadRequired?: boolean // download arrow (`mediaTransfer.onDownload`)
   system?: boolean          // renders as a centered system notice
+  isPinned?: boolean
   sent?: boolean            // ✓
   received?: boolean        // ✓✓
   pending?: boolean         // 🕓
@@ -77,16 +88,22 @@ interface IMessage {
   reactions?: { emoji: string, userIds: (string | number)[] }[]
   location?: { latitude: number, longitude: number }
   file?: { uri: string, name: string, size?: number, mimeType?: string } // document bubble
+  linkPreview?: { url?, siteName?, title?, description?, image?, … } | null
 }
 ```
 
 Messages are newest-first by default (`isInverted` defaults to `true`). `Chat.append(previous, newMessages)`
-prepends correctly for that ordering.
+prepends correctly for that ordering. The list itself (Legend List) renders oldest first, so list
+indexes count from the oldest message; scroll to a message with `scrollToKey({ key: String(_id) })`.
+
+Status is app-owned: send a message with `pending: true`, then set `sent`, then `received` as your
+backend confirms. Voice notes, files and media show the same clock / ✓ / ✓✓.
 
 ## Props you will reach for first
 
 - `messages`, `user`, `onSend` - required
 - `text` + `textInputProps.onChangeText` - only if you control the composer text externally (the built-in emoji keyboard inserts either way)
+- `initialText` + `onDraftChange` - restore and save the unsent draft per chat
 - `theme` / `darkTheme` - deep-merged token overrides (`colors`, `radii`, `spacing`, `typography`, `bubble`, `wallpaper`, `nameColors`, …). The default look is a modern messenger style: swirl wallpaper, tails, the time on the last line; `wallpaper: { isEnabled: false }`, `bubble: { hasTail: false, isTimeInline: false }` turn those off
 - `renderWallpaper` - replace the background (`null` = plain `colors.background`)
 - `colorScheme` - `'light' | 'dark'` to force a scheme; omit to follow the system
@@ -97,6 +114,9 @@ prepends correctly for that ordering.
 - `isScrollToBottomEnabled` (default on, with an unread badge), `listProps` (props for the underlying [Legend List](https://legendapp.com/open-source/list/), which renders oldest first)
 - `onEditMessage`, `onDeleteMessage`, `onForwardMessage`, `onPinMessage` - add Edit / Delete / Forward / Pin to the long-press menu
 - `isGroupChat` (auto), `isAvatarVisible`, `isUsernameVisible` - avatars and names show in group chats only by default
+- `firstUnreadMessageId` - opens on an "Unread Messages" bar
+- `isLoading` - a spinner over an empty chat while history loads
+- `mediaTransfer={{ onCancel, onDownload }}` - handlers for `transfer` / `isDownloadRequired`
 
 ## On by default
 
@@ -150,7 +170,7 @@ Each is inert until you install its peer; most then turn on by themselves, and e
 ```tsx
 import { Chat, IMessage, useStreamingMessages } from '@kesha-antonov/react-native-chat'
 
-const { messages, append, startStream, isStreaming, stop } = useStreamingMessages<IMessage>()
+const { messages, append, startStream, isStreaming, stop } = useStreamingMessages<IMessage>({ initialMessages })
 
 const onSend = useCallback((newMessages: IMessage[] = []) => {
   append(newMessages[0])
@@ -165,7 +185,9 @@ const onSend = useCallback((newMessages: IMessage[] = []) => {
 ```
 
 Tokens are batched with `requestAnimationFrame`, and only the streaming bubble re-renders.
-The send button becomes a Stop control while `isStreaming`.
+For a Stop button, swap the send button while streaming:
+`renderSend={props => isStreaming ? <MyStopButton onPress={stop} /> : <Send {...props} />}`
+(wrap it in `useCallback`). `messageTextProps={{ markdown: true }}` renders the reply as markdown.
 
 ## Emoji reactions
 
@@ -181,6 +203,9 @@ reactions on; it fires for both the picker and a pill tap, and `Chat.toggleReact
   {...props}
 />
 ```
+
+A person can hold up to three reactions on a message (the oldest is replaced past that); pass
+`{ maxPerUser: 1 }` as the fifth argument for one each. Pills show who reacted (`reactions.getUser`).
 
 For a quick prototype, `const { chatProps } = useChatMessages({ initialMessages, user })` then
 `<Chat {...chatProps} />` wires sending, reactions, editing and deleting to local state.
@@ -202,8 +227,12 @@ Map your conversations to `ChatListItem` and pass a callback per action you supp
 />
 ```
 
-`useChatList(initialChats)` returns `{ chats, handlers, receiveMessage, markRead, upsertChat }` for
-local state: `<ChatList chats={list.chats} {...list.handlers} />`.
+Also `onPinChats`, `onMuteChats`, `onDeleteChats`, `onPressNewChat`, `onSearchChange`, and a
+controlled archive folder (`isArchiveOpen` + `onArchiveOpenChange`). `TypingStatus` draws "Anna is
+typing…" (or recording, sending media) for a header or row.
+
+`useChatList(initialChats)` returns `{ chats, setChats, handlers, upsertChat, updateChat, receiveMessage,
+markRead }` for local state: `<ChatList chats={list.chats} {...list.handlers} />`.
 
 ## Coming from react-native-gifted-chat
 
@@ -218,6 +247,8 @@ Same props, same `IMessage`. Swap the package and rename: `GiftedChat` → `Chat
   renders: inline handlers (`onPressMessage={() => …}`) and inline style/config objects are free,
   but a new render function (`renderBubble={props => …}`) re-renders every row - wrap render
   functions in `useCallback`.
+- **Drawing a date in `renderMessage`.** The list draws the day separator around each row; a
+  custom `renderMessage` that renders its own `<Day>` prints a date above every message.
 - **Mutating messages in place.** Each row subscribes to its own message and notices a change
   when the message object is replaced, so always build new arrays and objects.
 - **Drawing a neighbour's content.** `previousMessage` / `nextMessage` are kept current only for
@@ -229,6 +260,9 @@ Same props, same `IMessage`. Swap the package and rename: `GiftedChat` → `Chat
 - **Nesting a second `GestureHandlerRootView`.** If the app already mounts one (directly or via
   a bottom-sheet library), set `enableGestureHandlerRootView={false}` - it cannot be
   auto-detected. An existing `KeyboardProvider` *is* detected and reused automatically.
+- **Setting `FlatList` props.** The list is Legend List: `listProps` takes its props, and
+  `inverted`, `windowSize` or `initialNumToRender` do nothing. `messagesContainerRef` is a
+  `LegendListRef`.
 - **Expecting `actionSheet()` to work out of the box.** The bundled
   `@expo/react-native-action-sheet` dependency was removed; prefer `messageActions`, or supply
   your own `actionSheet` implementation.
