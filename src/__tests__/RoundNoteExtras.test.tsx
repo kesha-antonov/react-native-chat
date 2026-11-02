@@ -1,5 +1,7 @@
 import React from 'react'
-import { act, fireEvent } from '@testing-library/react-native'
+import { act , fireEvent } from '@testing-library/react-native'
+import { State } from 'react-native-gesture-handler'
+import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils'
 
 import {
   MediaPlaybackContext,
@@ -15,6 +17,11 @@ import {
 import { MessageVideo } from '../MessageVideo'
 import { IMessage } from '../Models'
 import { render } from './renderWithGestureRoot'
+
+/** A tap on the note: it plays through a gesture-handler tap, not a `Pressable`. */
+const tapNote = () => act(() => {
+  fireGestureHandler(getByGestureTestId('video-note-tap'), [{ state: State.BEGAN }, { state: State.ACTIVE }, { state: State.END }])
+})
 
 const mockPlayers: any[] = []
 const mockSessionOptions: any[] = []
@@ -134,7 +141,7 @@ describe('round note extras', () => {
     expect(getByTestId('view-once-badge')).toBeTruthy()
     const player = mockPlayers[0]
 
-    await fireEvent.press(getByLabelText('play video note'))
+    await tapNote()
     expect(player.play).toHaveBeenCalledTimes(1)
     expect(onViewOnceEnd).not.toHaveBeenCalled()
 
@@ -146,7 +153,7 @@ describe('round note extras', () => {
     // Spent: the note cannot be started again.
     const button = getByLabelText('play video note')
     expect(button.props.accessibilityState).toMatchObject({ disabled: true })
-    await fireEvent.press(button)
+    await tapNote()
     expect(player.play).toHaveBeenCalledTimes(1)
     expect(onViewOnceEnd).toHaveBeenCalledTimes(1)
   })
@@ -156,9 +163,9 @@ describe('round note extras', () => {
     const controller = createMediaPlaybackController()
     controller.notePlayers.setActive(true)
     controller.setOptions({ ...baseOptions, onViewOnceEnd })
-    const { getByLabelText, unmount } = await renderNote(controller, makeMessage({ isViewOnce: true }))
+    const { unmount } = await renderNote(controller, makeMessage({ isViewOnce: true }))
 
-    await fireEvent.press(getByLabelText('play video note'))
+    await tapNote()
     await unmount()
     expect(onViewOnceEnd).toHaveBeenCalledTimes(1)
     expect(mockPlayers[0].pause).toHaveBeenCalled()
@@ -178,10 +185,10 @@ describe('round note extras', () => {
     jest.useFakeTimers()
     const controller = createMediaPlaybackController()
     controller.setOptions(baseOptions)
-    const { getByLabelText } = await renderNote(controller, makeMessage())
+    await renderNote(controller, makeMessage())
     const player = mockPlayers[0]
 
-    await fireEvent.press(getByLabelText('play video note'))
+    await tapNote()
     player.currentTime = 0.4
     await act(async () => {
       controller.setOptions({ ...baseOptions, isNearEar: true })
@@ -204,11 +211,11 @@ describe('round note extras', () => {
   it('raise to listen resumes a paused note past a second without rewinding', async () => {
     const controller = createMediaPlaybackController()
     controller.setOptions(baseOptions)
-    const { getByLabelText } = await renderNote(controller, makeMessage())
+    await renderNote(controller, makeMessage())
     const player = mockPlayers[0]
 
-    await fireEvent.press(getByLabelText('play video note'))
-    await fireEvent.press(getByLabelText('pause video note'))
+    await tapNote()
+    await tapNote()
     player.currentTime = 4
     await act(async () => {
       controller.setOptions({ ...baseOptions, isNearEar: true })

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Platform, Pressable, StyleSheet, View } from 'react-native'
-import { GestureDetector } from 'react-native-gesture-handler'
-import Animated from 'react-native-reanimated'
+import { Platform, StyleSheet, View } from 'react-native'
+import { GestureDetector, useExclusiveGestures, useTapGesture } from 'react-native-gesture-handler'
+import Animated, { runOnJS } from 'react-native-reanimated'
 import { useRaiseToListen } from '../components/earpiece'
 import { isRemoteUri } from '../components/mediaDownload'
 import { MEDIA_LOADER_BACKGROUND, MEDIA_LOADER_ICON, ROUND_BUTTON_SIZE } from '../components/MediaLoader'
@@ -14,7 +14,7 @@ import {
   useReportNowPlaying,
 } from '../components/mediaPlayback'
 import { transferState, useMediaTransfer } from '../components/mediaTransfer'
-import { suppressPressAfterHold } from '../components/messagePress'
+import { PRESS_HOLD_MS } from '../components/messagePress'
 import { MediaActionIcon, RadialProgress } from '../components/RadialProgress'
 import { useTranscription } from '../components/TranscribeButton'
 import { VideoNoteMeta, VideoNoteOverlay } from '../components/VideoNoteOverlay'
@@ -37,6 +37,8 @@ import { expoVideo, playerTime } from './videoPlayers'
  * note can be scrubbed by dragging along its ring. When it ends, or another
  * note starts, it shrinks back to the silent loop.
  */
+const ACTIVATE = [{ name: 'activate' as const }]
+
 export const RoundNotePlayer = ({
   uri,
   videoProps,
@@ -214,15 +216,34 @@ export const RoundNotePlayer = ({
     onPress()
   }
 
+  // The note's tap is a gesture-handler tap, not a `Pressable`: on Android a real finger's touch
+  // was taken from React Native's responder before release (press-in and press-out fired, never
+  // the press), so a note ignored taps; injected test taps did not show it. It also fails past the
+  // message long-press hold, so a long-press opens the menu without starting playback. The ring
+  // seek goes first: it only takes a touch that lands on its knob.
+  const tapGesture = useTapGesture({
+    enabled: !isPlayDisabled,
+    maxDuration: PRESS_HOLD_MS,
+    cancelsTouchesInView: false,
+    testID: 'video-note-tap',
+    onDeactivate: event => {
+      if (!event.canceled)
+        runOnJS(onPressNote)()
+    },
+  })
+  const noteGesture = useExclusiveGestures(seekGesture, tapGesture)
+
   return (
     <View style={isIncoming ? styles.noteColumnLeft : styles.noteColumnRight}>
       <Animated.View style={[styles.noteWrapper, shiftStyle, flightRevealStyle]}>
-        <GestureDetector gesture={seekGesture}>
+        <GestureDetector gesture={noteGesture}>
           <Animated.View ref={noteRef} onLayout={onNoteLayout} style={[styles.note, sizeStyle, videoStyle]}>
-            <Pressable
-              onPress={onPressNote}
-              {...suppressPressAfterHold}
-              disabled={isPlayDisabled}
+            <View
+              // Screen readers activate it here; touches go through `tapGesture`.
+              accessible
+              onAccessibilityTap={isPlayDisabled ? undefined : onPressNote}
+              accessibilityActions={ACTIVATE}
+              onAccessibilityAction={isPlayDisabled ? undefined : onPressNote}
               accessibilityRole='button'
               accessibilityState={{ disabled: isPlayDisabled }}
               accessibilityLabel={isPlaying ? 'pause video note' : 'play video note'}
@@ -261,7 +282,7 @@ export const RoundNotePlayer = ({
                   />
                 </View>
               )}
-            </Pressable>
+            </View>
           </Animated.View>
         </GestureDetector>
         {/* The length pill, counting down while it plays. */}

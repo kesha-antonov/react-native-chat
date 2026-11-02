@@ -75,6 +75,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- **Round video notes play on a finger tap on Android.** A real tap reached the note (press-in and press-out fired) but React Native's responder was taken before release, so `onPress` never ran and the note ignored taps; injected test taps did not show it. The note now plays through a gesture-handler tap, run after the ring seek fails and only for taps shorter than the message long-press; screen readers still activate it
 - **Round video notes record on Android again.** A held take closed a moment after the camera came up and nothing was recorded. vision-camera reports a failed zoom call ("Camera is not active", while CameraX is still binding) and a torch call on a lens with no flash ("No flash unit") through `<Camera onError>`, and the take treated both as a dead camera. Those control failures are now ignored, and no torch mode is passed to a lens without a torch. Seen on a Pixel 7
 - A round video note's time pill lost its first digit once the time grew wider than "9:55 PM": the circle, raised to pass over the avatar while it plays, was drawn over the pill. The time is now drawn on top, as in Telegram
 - Reanimated no longer warns "Reading from `value` during component render" while scrolling a chat or recording a round note in an app that uses the React Compiler: three callbacks read shared values with `.value`, which the compiler turns into render-time reads
