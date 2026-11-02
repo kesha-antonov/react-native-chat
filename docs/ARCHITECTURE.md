@@ -63,6 +63,11 @@ Each phase lands as its own commits with the gate green, benchmarked where it to
    meter only the timer, halo and ring read; the composer stays mounted under the selection bar.
 5. **Row settings by selector.** Replace the spread row config with `useRowSettings(selector)`;
    split `Bubble` into parts (layout, content, meta, menu, reactions).
+   *Done*: settings that concern only some rows (`firstUnreadMessageId`) are read per row through
+   `useRowSettings(selector)`; the rest stays in the shared config, which profiling showed rarely
+   changes (a streamed token or a reaction already renders one row). `Bubble` is now
+   `useBubbleLayout` plus `BubbleBody` (surface, name, `BubbleContent`, `BubbleMeta`),
+   `BubbleMenu`, `LiftedBubble` and `PressableBubbleRow`.
 6. **Decompose the remaining large files** (`MessageVideo`, `InputToolbar`, `RecordButton`,
    `ContextMenu`, `WaveformPlayer`, `VideoNoteCapture`) and share the gesture primitives with
    `ChatList`.
