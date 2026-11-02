@@ -1,4 +1,5 @@
 import { IMessage } from '@kesha-antonov/react-native-chat'
+import { face, photo } from '@/constants/photos'
 
 const baseMessages: Omit<IMessage, '_id'>[] = [
   {
@@ -10,7 +11,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 1,
       name: 'John Doe',
-      avatar: 'https://picsum.photos/140/140',
+      avatar: face(5, 140),
     },
   },
   {
@@ -19,7 +20,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 2,
       name: 'John Doe',
-      avatar: 'https://picsum.photos/140/140',
+      avatar: face(5, 140),
     },
   },
   {
@@ -28,7 +29,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 2,
       name: 'John Doe',
-      avatar: 'https://picsum.photos/140/140',
+      avatar: face(5, 140),
     },
     quickReplies: {
       type: 'checkbox', // or 'radio',
@@ -54,7 +55,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 2,
       name: 'John Doe',
-      avatar: 'https://picsum.photos/140/140',
+      avatar: face(5, 140),
     },
     quickReplies: {
       type: 'radio', // or 'checkbox',
@@ -81,9 +82,9 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 1,
       name: 'John Doe',
-      avatar: 'https://picsum.photos/140/140',
+      avatar: face(5, 140),
     },
-    image: 'https://picsum.photos/960/540',
+    image: photo('lake', 960, 540),
   },
   {
     text: 'Hello developer',
@@ -91,7 +92,7 @@ const baseMessages: Omit<IMessage, '_id'>[] = [
     user: {
       _id: 2,
       name: 'John Doe',
-      avatar: 'https://picsum.photos/140/140',
+      avatar: face(5, 140),
     },
   },
   {

@@ -4,6 +4,7 @@ import { ActionSheetProvider, useActionSheet } from '@expo/react-native-action-s
 import { Chat, FetchLinkPreview, IMessage, LinkMatcher, LinkPreview } from '@kesha-antonov/react-native-chat'
 import { setStringAsync } from 'expo-clipboard'
 import { isValidPhoneNumber, parsePhoneNumberWithError } from 'libphonenumber-js'
+import { photo } from '@/constants/photos'
 
 // A stand-in for a server that reads a page's Open Graph tags; a real app would call its backend
 // here (fetching pages straight from the device runs into CORS on web and leaks the user's IP).
@@ -12,7 +13,7 @@ const KNOWN_PAGES: Record<string, LinkPreview> = {
     siteName: 'Expo',
     title: 'Expo',
     description: 'An open-source platform for making universal native apps for Android, iOS, and the web.',
-    image: 'https://picsum.photos/seed/expo-og/1200/630',
+    image: photo('night', 1200, 630),
     imageWidth: 1200,
     imageHeight: 630,
   },
@@ -20,7 +21,7 @@ const KNOWN_PAGES: Record<string, LinkPreview> = {
     siteName: 'React Native',
     title: 'React Native · Learn once, write anywhere',
     description: 'A framework for building native applications using React.',
-    image: 'https://picsum.photos/seed/rn-og/400/400',
+    image: photo('mountains', 400, 400),
     imageWidth: 400,
     imageHeight: 400,
   },
@@ -81,7 +82,7 @@ const LinksExample: React.FC = () => {
         siteName: 'GitHub',
         title: 'kesha-antonov/react-native-chat',
         description: 'A complete, modern messenger-style chat UI for React Native and Web.',
-        image: 'https://picsum.photos/seed/rn-chat-og/1200/600',
+        image: photo('beach', 1200, 600),
         imageWidth: 1200,
         imageHeight: 600,
       },

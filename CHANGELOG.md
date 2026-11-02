@@ -69,6 +69,8 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- **A photo grouped under its sender's previous message poked past the bubble's corner**: in a group chat its top corners took the 4pt radius meant for a photo under the sender's name, though no name is drawn there, so the photo's corner showed outside the bubble's 17pt curve. The corners now follow whether a name is actually shown
+- **`ChatList` avatars and photo thumbnails that fail to load** no longer leave a blank circle or an empty gap before "Photo": the avatar falls back to the initials and the thumbnail is dropped. `getInitials` no longer throws on a chat without a title
 - **Chat list rows clipped their text on Android**: the name and the preview line had a fixed height but no line height, and Roboto with its font padding is taller, so descenders and emoji were cut and the typing / recording icon sat above the text's middle. Both lines now take a fixed 20pt; on Android the text draws in a 24pt line box with the extra given back as margins, so glyphs are never clipped
 - The scroll-to-bottom button no longer remounts (dropping a press in progress) when its unread count changes
 - **Emoji categories answer a tap mid-scroll**: in the reactions panel a category tapped while the grid was still flinging only stopped the fling. The category strip is now one native gesture, so it fires either way. `EmojiGrid` rendered outside `Chat` needs a `GestureHandlerRootView` above it
@@ -112,6 +114,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10; TypeScript stays on 6.0 and Babel on 7 (see AGENTS.md)
 
 ### 📲 Example app
+- Demo photos come from Unsplash's image CDN instead of picsum.photos, which answers "Geoblocked" in some regions and left the demo's photos, link previews and photo avatars blank there
 - Chats: tapping a chat's avatar or name opens its profile, as in Telegram: the photo, name and status, Message / Mute / Call, a username, a bot's description or a group's members, and the media, files and links shared in the chat
 - Archived Chats opens as a screen of its own, as in Telegram, through `ChatList`'s controlled `isArchiveOpen`
 - Native tabs (Expo Router 58): the platform tab bar, Liquid Glass on iOS 26+, instead of the JS one

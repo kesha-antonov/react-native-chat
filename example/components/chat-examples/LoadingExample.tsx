@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Chat, IMessage, MediaTransferProps } from '@kesha-antonov/react-native-chat'
 import { File, Paths } from 'expo-file-system'
+import { photo } from '@/constants/photos'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Loader Bot' }
@@ -9,7 +10,6 @@ const BOT = { _id: 2, name: 'Loader Bot' }
 const VOICE_LONG = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
 const VOICE_SHORT = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'
 const ROUND_VIDEO = 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4'
-const photo = (seed: string) => `https://picsum.photos/seed/${seed}/1600/1200`
 const BROKEN_PHOTO = 'https://example.com/missing-photo.jpg'
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60 * 1000)
@@ -24,13 +24,13 @@ const LATEST: IMessage[] = [
     text: '',
     createdAt: minutesAgo(2),
     user: USER,
-    image: photo('upload'),
+    image: photo('mountain', 1600, 1200),
     pending: true,
     transfer: { type: 'upload', progress: 0, totalBytes: 1_450_000 },
   },
   { _id: 'photo-broken', text: '', createdAt: minutesAgo(3), user: BOT, image: BROKEN_PHOTO },
-  { _id: 'photo-manual', text: '', createdAt: minutesAgo(3), user: BOT, image: photo('manual'), isDownloadRequired: true },
-  { _id: 'photo-remote', text: 'A photo loading from the web', createdAt: minutesAgo(4), user: BOT, image: photo(`remote-${Date.now()}`) },
+  { _id: 'photo-manual', text: '', createdAt: minutesAgo(3), user: BOT, image: photo('mountains', 1600, 1200), isDownloadRequired: true },
+  { _id: 'photo-remote', text: 'A photo loading from the web', createdAt: minutesAgo(4), user: BOT, image: `${photo('fog', 1600, 1200)}&v=${Date.now()}` },
   {
     _id: 'file-manual',
     text: '',

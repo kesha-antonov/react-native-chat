@@ -11,6 +11,7 @@ import {
   ComposerProps,
   SendProps,
 } from '@kesha-antonov/react-native-chat'
+import { photo } from '@/constants/photos'
 
 // These are React components (not render functions) so they can use hooks
 export const RenderInputToolbar = React.memo((props: InputToolbarProps<IMessage>) => {
@@ -49,7 +50,7 @@ export const RenderActions = React.memo((props: ActionsProps) => {
         <Image
           style={{ width: 32, height: 32 }}
           source={{
-            uri: 'https://picsum.photos/32/32',
+            uri: photo('abstract', 64, 64),
           }}
         />
       )}
@@ -110,7 +111,7 @@ export const RenderSend = React.memo((props: SendProps<IMessage>) => (
     <Image
       style={{ width: 32, height: 32 }}
       source={{
-        uri: 'https://picsum.photos/32/32',
+        uri: photo('abstract', 64, 64),
       }}
     />
   </Send>

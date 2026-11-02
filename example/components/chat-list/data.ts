@@ -1,4 +1,5 @@
 import { IMessage, User } from '@kesha-antonov/react-native-chat'
+import { face, photo } from '@/constants/photos'
 
 export type DialogKind = 'user' | 'group' | 'channel'
 
@@ -30,8 +31,6 @@ export interface Dialog {
 
 export const ME: User = { _id: 'me', name: 'Alex Morgan' }
 
-const photo = (seed: string, width = 800, height = 600) => `https://picsum.photos/seed/${seed}/${width}/${height}`
-const face = (index: number) => `https://i.pravatar.cc/200?img=${index}`
 
 const ANNA: User = { _id: 'anna', name: 'Anna Petrova', avatar: face(47) }
 const MAX: User = { _id: 'max', name: 'Max Ivanov' }
@@ -110,7 +109,7 @@ export const DIALOGS: Dialog[] = [
     id: 'design-digest',
     title: 'Design Digest',
     kind: 'channel',
-    avatar: photo('digest-logo', 200, 200),
+    avatar: photo('abstract', 200, 200),
     isVerified: true,
     isMuted: true,
     unreadCount: 12,
@@ -153,7 +152,7 @@ export const DIALOGS: Dialog[] = [
     id: 'hike',
     title: 'Weekend Hike',
     kind: 'group',
-    avatar: photo('hike-group', 200, 200),
+    avatar: photo('hiking', 200, 200),
     unreadCount: 0,
     members: [EMMA, NOAH, OLIVIA],
   },
@@ -236,7 +235,7 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
     { ago: 2 * DAY - 5 * MINUTE, user: LIAM, text: 'On it. Looks like the inverted list loses its scroll position after a prepend.' },
     { ago: 2 * DAY - 6 * MINUTE, user: ME, text: 'I can reproduce it on Android too. Pushing a test case.', ...read },
     { ago: 3 * HOUR, user: SOFIA, text: 'The new emoji keyboard is in. Tap the smiley in the composer 😍', reactions: [{ emoji: '🔥', userIds: ['max', 'liam'] }, { emoji: '❤️', userIds: ['me'] }] },
-    { ago: 3 * HOUR - MINUTE, user: SOFIA, image: photo('rn-keyboard'), text: 'Screenshot from the iPhone build' },
+    { ago: 3 * HOUR - MINUTE, user: SOFIA, image: photo('phone'), text: 'Screenshot from the iPhone build' },
     { ago: 2 * HOUR, user: ME, text: 'Looks great! The swipe-to-reply feels just right now.', ...read },
     { ago: 40 * MINUTE, user: LIAM, file: { uri: SAMPLE_PDF, name: 'release-checklist.pdf', size: 13264, mimeType: 'application/pdf' } },
     { ago: 12 * MINUTE, user: MAX, text: 'Checklist is green on my side', replyMessage: { _id: 'rn-chat-7', text: 'release-checklist.pdf', user: LIAM } },
@@ -247,7 +246,7 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
     { ago: DAY + 3 * HOUR - MINUTE, user: ME, text: 'Of course! Found a new place near the river', ...read },
     { ago: DAY + 3 * HOUR - 2 * MINUTE, user: ME, location: { latitude: 59.9343, longitude: 30.3351 }, ...read },
     { ago: DAY + 2 * HOUR, user: ANNA, text: 'Ooh, I walked past it last week. The terrace is lovely', reactions: [{ emoji: '👍', userIds: ['me'] }] },
-    { ago: 5 * HOUR, user: ANNA, image: photo('terrace-sunset') },
+    { ago: 5 * HOUR, user: ANNA, image: photo('sunset') },
     { ago: 5 * HOUR - MINUTE, user: ANNA, audio: SAMPLE_AUDIO, duration: 14 },
     { ago: 4 * HOUR, user: ME, text: 'Perfect, booked a table for two 🍝', ...read, reactions: [{ emoji: '❤️', userIds: ['anna'] }] },
     { ago: 25 * MINUTE, user: ME, text: 'See you at 7!', ...read },
@@ -255,7 +254,7 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
   ]),
   'design-digest': history('design-digest', [
     { ago: 3 * DAY, user: DESIGN, text: 'Welcome to Design Digest: one good interface idea a day.' },
-    { ago: 2 * DAY, user: DESIGN, image: photo('digest-1'), text: 'Motion with purpose: every animation should answer "where did this come from?"', reactions: [{ emoji: '👍', userIds: ['a', 'b', 'c', 'd'] }, { emoji: '🔥', userIds: ['e', 'f'] }] },
+    { ago: 2 * DAY, user: DESIGN, image: photo('designTools'), text: 'Motion with purpose: every animation should answer "where did this come from?"', reactions: [{ emoji: '👍', userIds: ['a', 'b', 'c', 'd'] }, { emoji: '🔥', userIds: ['e', 'f'] }] },
     {
       ago: DAY,
       user: DESIGN,
@@ -264,13 +263,13 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
         siteName: 'Material Design',
         title: 'Structure - Material Design 3',
         description: 'Touch targets should be at least 48x48dp, with 8dp of space between them.',
-        image: photo('material-touch', 400, 400),
+        image: photo('designSketch', 400, 400),
         imageWidth: 400,
         imageHeight: 400,
       },
     },
-    { ago: 6 * HOUR, user: DESIGN, image: photo('digest-2'), text: 'Today\'s pick: a chat list that fits 70dp rows without feeling cramped.' },
-    { ago: 50 * MINUTE, user: DESIGN, image: photo('digest-3') },
+    { ago: 6 * HOUR, user: DESIGN, image: photo('phoneApps'), text: 'Today\'s pick: a chat list that fits 70dp rows without feeling cramped.' },
+    { ago: 50 * MINUTE, user: DESIGN, image: photo('fog') },
   ]),
   'max': history('max', [
     { ago: 3 * DAY, user: MAX, text: 'Did you see the talk about Fabric?' },
@@ -285,7 +284,7 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
         siteName: 'React Native',
         title: 'About the New Architecture',
         description: 'Since 2018, the React Native team has been redesigning the core internals of React Native to enable developers to create higher-quality experiences.',
-        image: photo('new-architecture', 1200, 630),
+        image: photo('code', 1200, 630),
         imageWidth: 1200,
         imageHeight: 630,
       },
@@ -296,7 +295,7 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
   'family': history('family', [
     { ago: DAY, user: MOM, text: 'Dinner on Sunday at ours?' },
     { ago: DAY - 10 * MINUTE, user: ME, text: 'Count me in!', ...read },
-    { ago: 6 * HOUR, user: KATE, image: photo('family-cat') },
+    { ago: 6 * HOUR, user: KATE, image: photo('cat') },
     { ago: 6 * HOUR - MINUTE, user: KATE, text: 'Look who learned to open the fridge 😂', reactions: [{ emoji: '😂', userIds: ['mom', 'dad', 'me'] }] },
     { ago: 2 * HOUR, user: MOM, text: 'Bring a jacket, it will be chilly' },
     { ago: HOUR, user: DAD, audio: SAMPLE_AUDIO, duration: 9 },
@@ -318,7 +317,7 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
     { ago: 5 * DAY - MINUTE, user: EMMA, location: { latitude: 46.5586, longitude: 7.9792 } },
     { ago: 5 * DAY - 30 * MINUTE, user: NOAH, text: 'The lake one! Less climbing, more views' },
     { ago: 4 * DAY, user: OLIVIA, text: 'I am in. Bringing sandwiches 🥪' },
-    { ago: 3 * DAY, user: ME, image: photo('mountain-lake'), text: 'From last year', ...read, reactions: [{ emoji: '😍', userIds: ['emma', 'olivia'] }] },
+    { ago: 3 * DAY, user: ME, image: photo('lake'), text: 'From last year', ...read, reactions: [{ emoji: '😍', userIds: ['emma', 'olivia'] }] },
   ]),
   'emma': history('emma', [
     { ago: 2 * DAY, user: ME, text: 'Happy birthday!! 🎉', ...read },
@@ -348,7 +347,7 @@ export const INITIAL_MESSAGES: Record<string, IMessage[]> = {
         siteName: 'React Native',
         title: 'Blog - React Native',
         description: 'Release notes, deep dives and announcements from the React Native team.',
-        image: photo('rn-blog', 1200, 630),
+        image: photo('laptop', 1200, 630),
         imageWidth: 1200,
         imageHeight: 630,
       },

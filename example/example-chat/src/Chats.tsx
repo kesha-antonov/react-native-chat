@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useColorScheme } from 'react-native'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { face } from '@/constants/photos'
 import {
   renderAvatar,
   renderBubble,
@@ -32,7 +33,7 @@ const Chats = () => {
       user={{
         _id: 1,
         name: 'Aaron',
-        avatar: 'https://picsum.photos/150/150',
+        avatar: face(12, 150),
       }}
       isAlignedTop
       isSendButtonAlwaysVisible
