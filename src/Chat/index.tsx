@@ -54,7 +54,7 @@ import { normalizeColorScheme } from '../hooks/useColorScheme'
 import { useHasKeyboardProvider } from '../hooks/useHasKeyboardProvider'
 import { useKeyboardVerticalOffset } from '../hooks/useKeyboardVerticalOffset'
 import { resolveLabels } from '../i18n'
-import { InputToolbar } from '../InputToolbar'
+import { InputToolbar, InputToolbarProps } from '../InputToolbar'
 import { devHint } from '../logging'
 import { MessagesContainer, AnimatedList } from '../MessagesContainer'
 import { PageDownReturn, PageDownReturnContext } from '../MessagesContainer/pageDownReturn'
@@ -62,6 +62,7 @@ import { appendMessages, prependMessages, toggleReaction } from '../messageUtils
 import { IMessage, MessageMenuItem, ReplyMessage, User } from '../Models'
 import { getClipboard, hasRoundVideoCapture, hasVoiceRecording, getExpoImagePicker } from '../optional'
 import { isRTLLocale } from '../rtl'
+import { createStore, Store, useStore } from '../store'
 import stylesCommon from '../styles'
 import { ChatTheme, resolveTheme } from '../Theme'
 import { renderComponentOrElement } from '../utils'
@@ -166,6 +167,32 @@ function CustomInputToolbar<TProps extends Record<string, any>> ({ render, props
   props: TProps
 }) {
   return <>{renderComponentOrElement(render, props)}</>
+}
+
+const sameText = (text: string) => text
+
+/**
+ * The composer, and the only part of the chat a keystroke re-renders: the typed text lives in a
+ * store this host reads, not in `Chat`'s state, so typing leaves `Chat`, the keyboard-avoiding
+ * view and the overlay provider alone. A controlled `text` prop still wins over the store.
+ */
+function ComposerHost<TProps extends Record<string, any>> ({ textStore, controlledText, render, props }: {
+  textStore: Store<string>
+  controlledText: string | undefined
+  render: Parameters<typeof renderComponentOrElement<TProps>>[0] | undefined
+  props: TProps
+}) {
+  const storedText = useStore(textStore, sameText, '')
+  const text = controlledText === undefined ? storedText : controlledText
+
+  if (render)
+    return <CustomInputToolbar render={render} props={{ ...props, text }} />
+
+  // The built-in composer has no use for the messages, and leaving them out lets its memo
+  // skip the render a new message would otherwise cost it.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { messages: _messages, ...composerProps } = props
+  return <MemoInputToolbar {...(composerProps as unknown as InputToolbarProps<IMessage>)} text={text} />
 }
 
 // The input's ref may be the app's (a prop), so the compiler cannot tell a `.current` read inside
@@ -317,7 +344,8 @@ function Chat<TMessage extends IMessage = IMessage> (
   ) as RefObject<React.ComponentRef<typeof TextInput>>
 
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
-  const [text, setText] = useState<string | undefined>(() => props.text || props.initialText || '')
+  // The typed text, read by `ComposerHost` alone: a keystroke must not re-render `Chat`.
+  const [textStore] = useState(() => createStore<string>(props.text || props.initialText || ''))
   const [internalReplyMessage, setInternalReplyMessage] = useState<ReplyMessage | null>(null)
   // The message being edited in the composer (edit mode), or null.
   const [editingMessage, setEditingMessage] = useState<TMessage | null>(null)
@@ -489,12 +517,10 @@ function Chat<TMessage extends IMessage = IMessage> (
   // put back when the edit is saved or cancelled, and reported through `onDraftChange`.
   const isEditingRef = useRef(false)
   const stashedDraftRef = useRef('')
-  const textValueRef = useRef(text ?? '')
   const draftRef = useRef(props.initialText ?? '')
   const onDraftChange = props.onDraftChange
   const onDraftChangeRef = useRef(onDraftChange)
   useInsertionEffect(() => {
-    textValueRef.current = text ?? ''
     onDraftChangeRef.current = onDraftChange
   })
   const notifyDraft = useCallback((draft: string) => {
@@ -507,12 +533,12 @@ function Chat<TMessage extends IMessage = IMessage> (
   const startEdit = useCallback((message: TMessage) => {
     clearReplyRef.current()
     if (!isEditingRef.current)
-      stashedDraftRef.current = textValueRef.current
+      stashedDraftRef.current = textStore.get()
     isEditingRef.current = true
     setEditingMessage(message)
     changeTextRef.current(message.text ?? '')
     focusComposer()
-  }, [focusComposer])
+  }, [focusComposer, textStore])
 
   /** Leaves edit mode and gives the composer back the draft from before it. */
   const restoreDraft = useCallback(() => {
@@ -810,9 +836,10 @@ function Chat<TMessage extends IMessage = IMessage> (
 
     notifyInputTextReset()
 
-    setText(getTextFromProp(''))
+    textStore.set(getTextFromProp(''))
     notifyDraft('')
   }, [
+    textStore,
     getTextFromProp,
     textInputRef,
     notifyInputTextReset,
@@ -875,10 +902,10 @@ function Chat<TMessage extends IMessage = IMessage> (
 
       // Only set state if it's not being overridden by a prop.
       if (props.text === undefined)
-        setText(text)
+        textStore.set(text)
       notifyDraft(text)
     },
-    [props.text, props.textInputProps, notifyDraft]
+    [props.text, props.textInputProps, notifyDraft, textStore]
   )
   useInsertionEffect(() => {
     changeTextRef.current = _onChangeText
@@ -935,9 +962,9 @@ function Chat<TMessage extends IMessage = IMessage> (
       notifyInputTextReset()
 
       setIsInitialized(true)
-      setText(getTextFromProp(initialText))
+      textStore.set(getTextFromProp(initialText ?? ''))
     },
-    [isInitialized, initialText, notifyInputTextReset, getTextFromProp, measureKeyboardOffset]
+    [isInitialized, initialText, notifyInputTextReset, getTextFromProp, measureKeyboardOffset, textStore]
   )
 
   const copySelection = useCallback((selected: TMessage[]) => {
@@ -1000,7 +1027,6 @@ function Chat<TMessage extends IMessage = IMessage> (
 
     const inputToolbarProps = {
       ...props,
-      text: getTextFromProp(text!),
       onSend: composerOnSend,
       textInputProps: composerTextInputProps,
       // Reply preview props
@@ -1013,19 +1039,18 @@ function Chat<TMessage extends IMessage = IMessage> (
       replyPreviewTextStyle,
     }
 
-    if (renderInputToolbar)
-      return <CustomInputToolbar render={renderInputToolbar} props={inputToolbarProps} />
-
-    // The built-in composer has no use for the messages, and leaving them out lets its memo
-    // skip the render a new message would otherwise cost it.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { messages: _messages, ...composerProps } = inputToolbarProps
-    return <MemoInputToolbar {...composerProps} />
+    return (
+      <ComposerHost
+        textStore={textStore}
+        controlledText={props.text}
+        render={renderInputToolbar}
+        props={inputToolbarProps}
+      />
+    )
   }, [
     composerOnSend,
-    getTextFromProp,
+    textStore,
     props,
-    text,
     renderInputToolbar,
     composerTextInputProps,
     replyMessage,
@@ -1060,8 +1085,8 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   useEffect(() => {
     if (props.text != null)
-      setText(props.text)
-  }, [props.text])
+      textStore.set(props.text)
+  }, [props.text, textStore])
 
   return (
     <ChatContext.Provider value={contextValues}>
