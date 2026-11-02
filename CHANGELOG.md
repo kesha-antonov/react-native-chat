@@ -5,146 +5,86 @@
 A new default look and built-in messenger features: emoji keyboard, attachment menu, link previews, multi-select, media transfer states, and reworked voice and round video notes.
 
 ### 💥 Breaking
-- **FlashList support is removed**: the `isFlashListEnabled` prop, the optional `@shopify/flash-list` peer, and the `flashList` key of the optional-features report. With the chat's message rows it stopped drawing after fast flings on Android, and recycling cells breaks the rows' arrival and slide animations and the floating date header. Drop the prop
-- **The message list is [Legend List](https://legendapp.com/open-source/list/) (`@legendapp/list`, a dependency) instead of `FlatList`**. On a long history FlatList dropped 33-47% of frames during flings on a Pixel 7 (release build), Legend List 20-22%, with the 99th-percentile frame down from 129-150ms to 81-89ms. `listProps` now takes Legend List props (`FlatList`-only ones such as `windowSize`, `initialNumToRender` or `inverted` do nothing), and `messagesContainerRef` is a `LegendListRef` (`scrollToEnd`, `scrollToKey`, `scrollToIndex`, `getState`; `scrollToOffset` no longer means distance from the newest message). The list is no longer inverted: it renders oldest first, so indexes count from the oldest message and `onEndReached` fires at the newest. `maintainVisibleContentPosition` is on by default, so the reading position holds while content streams in
-- **New default look**: pale green day / purple-blue gradient night outgoing bubbles, a swirl wallpaper, bubble tails, inline time, in-bubble reactions, seven per-user name colors and a floating composer island. Restore any of it through `theme` / `darkTheme` (e.g. `colors.outgoingBubble`, `wallpaper.isEnabled: false`, `bubble.hasTail: false`, `bubble.isTimeInline: false`, `colors.senderName`)
-- **Requires `react-native-gesture-handler` 3, React Native 0.82+ and React 19.** Lower-level components rendered outside `Chat` (or with `enableGestureHandlerRootView={false}`) now need a `GestureHandlerRootView` above them
-- **Round video notes require `react-native-vision-camera` 5** (plus `react-native-nitro-modules` / `react-native-nitro-image`); add the camera and microphone permission keys yourself. Round notes also need expo-video's `createVideoPlayer`
-- **The native attachment sheet requires `@lodev09/react-native-true-sheet` 3+**
-- **Voice and round video notes are on once their peers are installed**; turn off with `audioRecording={false}` / `videoRecording={false}`. The system-camera fallback still needs `videoRecording={{ isEnabled: true }}`
-- **The composer shows an emoji button and a paperclip by default**; hide them with `emojiKeyboard={false}` / `attachments={false}`
-- **The send / record button sits outside the composer's capsule**, in its own cell to the right; a custom `renderSend` is placed there too
-- **Long-press opens the context menu by default** (Reply, Copy, Select, plus actions whose callbacks are set); opt out with `defaultMessageActions={false}`. An app setting `onLongPressMessage` keeps its own long-press
-- **The long-press menu was redesigned**: it opens beside the finger after 0.4s over a dimmed chat, the message no longer shrinks, and the built-in Delete is no longer red. Actions run after the close animation
-- **Swipe-to-reply is on by default** and no longer uses `ReanimatedSwipeable`; a custom `reply.swipe.renderAction` gets `progress` as distance over 50pt. Opt out with `reply={{ swipe: { isEnabled: false } }}`
-- **The scroll-to-bottom button is on by default** with an unread badge, and `scrollToBottomOffset` defaults to `100` (was `200`). Opt out with `isScrollToBottomEnabled={false}`
-- **Avatars and sender names show in group chats only**; restore avatars with `isAvatarVisible` (or `isGroupChat`)
-- **An empty chat shows a greeting card**; replace it with `renderChatEmpty` (`null` for nothing)
-- **Emoji-only messages drop the bubble and draw large**; turn off with `theme.bubble.bigEmojiMaxCount: 0`
-- **`isInfiniteScrollEnabled` shows a loading cell instead of the "Load earlier messages" button**; `activityIndicatorSize` is ignored
-- **The reactions bar has an expand button by default**; drop it with `reactions.renderExpandedPicker={null}`. `reactions.isEnabled` now defaults to on when `onReactionPress` is passed
-- **Tapping a reply quote jumps to the quoted message** unless `reply.onPress` is set
-- **Voice notes**: round notes no longer autoplay (`mediaPlayback.isRoundVideoAutoplayEnabled` restores it), the unread dot reads `IMessage.isMediaUnread`, takes of 700ms or less are dropped, `theme.voice` thresholds changed (`cancelThreshold` 140, `lockThreshold` 57), and speed control moved into the "now playing" bar
-- **`textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`**
+- FlashList support removed (`isFlashListEnabled`, the `@shopify/flash-list` peer): it stopped drawing after fast flings on Android
+- The message list is [Legend List](https://legendapp.com/open-source/list/) instead of `FlatList` (far fewer dropped frames). `listProps` takes Legend List props, `messagesContainerRef` is a `LegendListRef`, and the list renders oldest first (indexes count from the oldest; `onEndReached` fires at the newest)
+- New default look (gradient outgoing bubbles, wallpaper, tails, inline time, in-bubble reactions, name colors, floating composer); restore any of it through `theme` / `darkTheme`
+- Requires `react-native-gesture-handler` 3, React Native 0.82+ and React 19; components rendered outside `Chat` need a `GestureHandlerRootView`
+- Round video notes require `react-native-vision-camera` 5 (with nitro modules / image) and expo-video's `createVideoPlayer`; add the camera and microphone permission keys
+- The native attachment sheet requires `@lodev09/react-native-true-sheet` 3+
+- On by default (with an opt-out): voice and round notes once their peers are installed (`audioRecording` / `videoRecording={false}`), emoji button and paperclip (`emojiKeyboard` / `attachments={false}`), long-press menu (`defaultMessageActions={false}`), swipe-to-reply (`reply.swipe.isEnabled: false`), scroll-to-bottom button (`isScrollToBottomEnabled={false}`), reactions expand button (`reactions.renderExpandedPicker={null}`), big emoji (`theme.bubble.bigEmojiMaxCount: 0`), empty-chat greeting (`renderChatEmpty`)
+- The send / record button sits outside the composer's capsule; a custom `renderSend` goes there too
+- The long-press menu opens beside the finger after 0.4s; Delete is no longer red; actions run after it closes
+- `reply.swipe.renderAction` gets `progress` as distance over 50pt
+- `scrollToBottomOffset` defaults to `100`
+- Avatars and sender names show in group chats only (`isAvatarVisible`, `isGroupChat`)
+- `isInfiniteScrollEnabled` shows a loading cell; `activityIndicatorSize` is ignored
+- `reactions.isEnabled` defaults to on when `onReactionPress` is passed; tapping a reply quote jumps to it unless `reply.onPress` is set
+- Voice notes: round notes don't autoplay (`mediaPlayback.isRoundVideoAutoplayEnabled`), the unread dot reads `isMediaUnread`, takes of 700ms or less are dropped, `theme.voice` thresholds changed, speed control moved to the "now playing" bar
+- `textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`
 
 ### ✨ Features
-- **Round video notes resume after a pause**, as voice notes do. Pausing a locked take now holds the camera's recording open (vision-camera pauses natively), the circle holds the frame it paused on (Android; iOS keeps the live camera, dimmed, since vision-camera snapshots the preview on Android only), and the bar offers Delete, Send and Resume; Resume carries on in the same video, so the paused stretch is not in it. A paused take is no longer replayed before sending: nothing available can join two video files afterwards. Reaching the time limit still stops into a looping preview
-- **Swipe between a chat's photos**, as in Telegram: tapping a photo opens the viewer on it, and swiping left and right pages through every photo in the conversation (left for newer, right for older) with a "3 of 12" counter, the caption, the sender and when it was sent. Pinch or double-tap to zoom, panning a zoomed photo to its edge carries on to the next, and dragging up or down puts the viewer away. New labels `mediaViewerCounter` and `mediaViewerDate` in all 15 locales
-- **Slide along the emoji categories**: press the category strip and slide the finger across it to move through the categories, a haptic tick on each
-- **Reaction pills show who reacted**: up to three avatars in place of the count, as in Telegram - in one-to-one chats, and in groups while a message has three reactions or fewer. `reactions.getUser` resolves reactors (by default from the loaded messages); a count now shows even when it is 1
-- **A message can carry up to three reactions from one person** (Telegram's limit): `Chat.toggleReaction` keeps up to three of a user's reactions and replaces the oldest past that. Pass `{ maxPerUser: 1 }` for the previous one-each behaviour
-- **A round note keeps playing through a long-press**: the lifted message shows the note grown and playing, from the same player, instead of a stopped copy; the same goes for an inline video
-- **`TypingStatus`**: who is typing, for a chat header or list row: animated dots before "typing" / "Anna is typing" / "Anna and Max are typing", and its own animation and text for recording a note, sending media or choosing a sticker (`TypingAction`, `getTypingText`, `ChatListItem.typingAction`)
-- **Drafts**: `onDraftChange` reports the unsent text; editing a message sets the draft aside and restores it after saving or cancelling
-- **`ChatList`**: a ready chat list (search, selection actions, archive folder, swipe to archive, draggable pinned chats, unread counters, typing, drafts, loading placeholder) for your backend's chats (`ChatListItem`), plus `useChatList` for local state, `ChatListCell`, `ChatListAvatar`, `ChatListShimmer`, `theme.chatList` and new labels
-- **Built-in emoji keyboard** in the system keyboard's place, with search, recents and skin tones (`emojiKeyboard`, `theme.emojiKeyboard`, `EmojiGrid`)
-- **Built-in attachment menu**: photo grid, File, Location and camera, sending through `onSend` (`attachments`, `theme.attachments`, `AttachmentMenu`)
-- **File messages** (`IMessage.file`, `renderMessageFile`, `MessageFile`)
-- **Link previews** (`IMessage.linkPreview`, `fetchLinkPreview`, `renderLinkPreview`, `LinkPreviewCard`)
-- **Media transfer states**: progress ring, cancel and download buttons, size pill (`IMessage.transfer`, `isDownloadRequired`, `mediaTransfer`); remote voice notes and photos load with progress
-- **`isLoading`** spinner over an empty chat while history loads
-- **Multi-select** from the "Select" action (`onSelectionChange`, `onForwardMessages`, `onDeleteMessages`, `renderSelectionBar`)
-- **"Unread Messages" bar** (`firstUnreadMessageId`, `renderUnreadSeparator`, `UnreadSeparator`)
-- **Default message actions** Reply, Copy, Forward, Pin, Edit, Select, Delete (`defaultMessageActions`, `onForwardMessage`, `onPinMessage`, `onEditMessage`, `onDeleteMessage`); a `messageActions` function receives the built-ins
-- **Edit mode**, `isEdited` / `editedAt` "edited" mark, and `isFailed` status badge
-- **Voice and round notes**: hold-to-record with lock, pause, resume and trim; send animations; waveform bubbles; floating round note; "now playing" bar; auto-play next; shared playback speed; view once; transcription; raise to listen; server waveforms (`IMessage.waveform`)
-- **Reactions**: `Chat.toggleReaction` / `toggleReaction`, `reactions.renderExpandedPicker`, more `ContextMenu` / `ReactionPickerProps` props for custom pickers
-- **`useChatMessages`** for local message state in prototypes
-- **`reply.isEnabled`**, **`reply.onReply`**, and back-to-quote via the scroll-to-bottom button
-- **`isGroupChat`**, **`isAvatarVisible`**, `utils.isSameGroup`, and **`getChatCapabilities()`** for installed optional features
-- **Wallpaper** (`theme.wallpaper`, `renderWallpaper`, `ChatWallpaper`) and screen-fixed outgoing gradient (`bubble.outgoingGradientMode`)
-- New theme tokens, icons, exports (`ChatEmpty`, `countEmojiOnly`, `findFirstUrl`, `formatFileSize`...) and labels in all 15 locales
+- Round video notes pause and resume into the same video; the paused circle holds its last frame (Android)
+- Swipe between all of a chat's photos in the viewer, with counter, caption, sender and date; pinch / double-tap to zoom (`mediaViewerCounter`, `mediaViewerDate` labels)
+- Slide along the emoji category strip
+- Reaction pills show who reacted (`reactions.getUser`); up to three reactions per person (`Chat.toggleReaction`, `{ maxPerUser }`)
+- A round note keeps playing in the long-press menu
+- `TypingStatus` for headers and list rows (`TypingAction`, `getTypingText`)
+- Drafts (`onDraftChange`), kept aside while editing
+- `ChatList` and `useChatList`: search, selection, archive, swipe to archive, pinned chats, unread, typing, drafts
+- Built-in emoji keyboard (`emojiKeyboard`, `EmojiGrid`) and attachment menu (`attachments`, `AttachmentMenu`)
+- File messages (`IMessage.file`, `MessageFile`) and link previews (`IMessage.linkPreview`, `fetchLinkPreview`, `LinkPreviewCard`)
+- Media transfer states: progress, cancel, download (`IMessage.transfer`, `isDownloadRequired`, `mediaTransfer`)
+- `isLoading` spinner over an empty chat
+- Multi-select (`onSelectionChange`, `onForwardMessages`, `onDeleteMessages`, `renderSelectionBar`)
+- "Unread Messages" bar (`firstUnreadMessageId`, `UnreadSeparator`)
+- Default message actions Reply, Copy, Forward, Pin, Edit, Select, Delete (`defaultMessageActions`); a `messageActions` function receives them
+- Edit mode, "edited" mark, failed status badge
+- Voice and round notes: lock, pause, resume, trim, send animations, waveform bubbles, floating round note, "now playing" bar, auto-play next, playback speed, view once, transcription, raise to listen, server waveforms
+- `useChatMessages`, `reply.isEnabled`, `reply.onReply`, `isGroupChat`, `isAvatarVisible`, `getChatCapabilities()`
+- Wallpaper (`theme.wallpaper`, `renderWallpaper`) and screen-fixed outgoing gradient
+- New theme tokens, icons, exports and labels in all 15 locales
 
 ### ⚡ Performance
-- **Rows render only what changed.** Each row subscribes to its own message by id: a send, a status tick, a reaction or a streamed token re-renders that row (plus a neighbour only when grouping changes), while the list and the composer stay put. Shared row props reach rows through a context kept stable between renders: inline event handlers go through stable proxies and inline style/config objects are compared by content, so only a new render function re-renders every row. On a Pixel 7 debug build a send went from three ~220ms commits re-rendering all 17 visible rows to ~60–110ms commits touching only the new row; a status change is a ~30ms commit of one row
-- **The screen gradient costs less per frame**: each outgoing bubble now slides its gradient with one worklet (a derived value in between doubled the work), and its tail's colour is snapped to 20 steps so the SVG only redraws when the colour changes. Fling jank in a 60-day chat on a Pixel 7: 19-21% (FlatList with the same gradient: 33-47%)
-- The composer is memoized and no longer receives `messages`, so incoming messages and status changes no longer re-render it
-- **Typing re-renders only the composer.** The typed text lives in a store the composer reads instead of in `Chat`'s state, so a keystroke no longer re-renders `Chat`, its keyboard-avoiding view and its overlay provider. A controlled `text` prop works as before
-- **A recording tick re-renders only its timer.** The running time and loudness of a voice or round-video take (ten updates a second) go to a store the timer, the record button's halo and the camera's progress ring read directly, instead of re-rendering the whole composer and, for video, the camera overlay. `VoiceMessageInput`'s `onStateChange` still reports every tick
-- **Reply, edit and selection leave `Chat` alone.** Starting or dropping a reply, and starting or saving an edit, re-render only the composer; the row menu no longer depends on the message being edited, so an edit no longer re-renders every row. Selection mode keeps the composer mounted under the selection bar instead of rebuilding it on the way out
-- Moving the unread bar (`firstUnreadMessageId`) re-renders the two rows it leaves and reaches instead of every row: rows read it through a per-row selector rather than the shared row config
-- Voice and round-note progress runs on the UI thread between four-times-a-second syncs, instead of a JS callback every frame
-- **Chats open much faster.** Voice notes share one audio context made on first play (each one used to start its own worklet runtime, a few hundred ms of blocked JS per bubble); the long-press menu and the swipe-to-reply arrow mount on first use instead of with every row; the list and composer no longer wait a layout pass; the wallpaper and composer paint first and the messages follow a frame later
-- `ChatList` rows re-render only when their own chat changes
-- **Less work per message row.** The day check compares calendar-day numbers instead of parsing two dates through dayjs per row; formatted times are cached by timestamp, locale and format; themed styles are built once per theme and shared by every row; status ticks are plain views except during the sent-to-read slide; the swipe-to-reply progress and the round-note time shift are computed only in the rows that use them; the transfer ring derives its geometry once per frame instead of three times
-- **The published code is compiled with the React Compiler.** `lib/` now carries the compiler's memoization for every app, including apps that do not compile `node_modules`; before, only an app that happened to compile the package got it. Every component compiles (the build fails otherwise), and the test suite runs the compiled code
-- **Selection, the quote-jump highlight and link previews wake only the rows they concern.** Checking a message, flashing one or a preview landing used to run a check in every mounted row; each row now listens to its own message id
-- Components inside a `Chat` no longer each subscribe to the system colour scheme (several per row); the chat reads it once
-- Day separators cache their label instead of building and formatting two dates per separator on every mount
-- **Opening a chat no longer builds a native audio recorder** (about 30ms on an iPhone simulator): it is made on the first voice take. The built-in attachment menu mounts on its first open, and the action sheet behind `actions` is no longer mounted when the built-in menu replaces it
-- The expanded reactions panel lays out once instead of on every frame
+- `lib/` is compiled with the React Compiler, so every app gets its memoization
+- Rows render only what changed: a send, status tick, reaction or streamed token re-renders one row
+- A keystroke, reply, edit or recording tick re-renders only the composer (or just the timer), not `Chat` or the rows
+- Selection, highlights, link previews and the unread bar wake only the rows they concern
+- Chats open faster: menus, recorders, the attachment menu and swipe arrows mount on first use; messages paint a frame after the composer
+- Cheaper rows and gradient: cached day labels and times, shared themed styles, one colour-scheme subscription
+- Voice and round-note progress runs on the UI thread
 
 ### 🐛 Fixes
-- **Round video notes play on a finger tap on Android.** A real tap reached the note (press-in and press-out fired) but React Native's responder was taken before release, so `onPress` never ran and the note ignored taps; injected test taps did not show it. The note now plays through a gesture-handler tap, run after the ring seek fails and only for taps shorter than the message long-press; screen readers still activate it
-- **Round video notes record on Android again.** A held take closed a moment after the camera came up and nothing was recorded. vision-camera reports a failed zoom call ("Camera is not active", while CameraX is still binding) and a torch call on a lens with no flash ("No flash unit") through `<Camera onError>`, and the take treated both as a dead camera. Those control failures are now ignored, and no torch mode is passed to a lens without a torch. Seen on a Pixel 7
-- A round video note's time pill lost its first digit once the time grew wider than "9:55 PM": the circle, raised to pass over the avatar while it plays, was drawn over the pill. The time is now drawn on top, as in Telegram
-- Reanimated no longer warns "Reading from `value` during component render" while scrolling a chat or recording a round note in an app that uses the React Compiler: three callbacks read shared values with `.value`, which the compiler turns into render-time reads
-- A shown photo no longer announces "cancel download" to screen readers on Android
-- **A photo grouped under its sender's previous message poked past the bubble's corner**: in a group chat its top corners took the 4pt radius meant for a photo under the sender's name, though no name is drawn there, so the photo's corner showed outside the bubble's 17pt curve. The corners now follow whether a name is actually shown
-- **`ChatList` avatars and photo thumbnails that fail to load** no longer leave a blank circle or an empty gap before "Photo": the avatar falls back to the initials and the thumbnail is dropped. `getInitials` no longer throws on a chat without a title
-- **Chat list rows clipped their text on Android**: the name and the preview line had a fixed height but no line height, and Roboto with its font padding is taller, so descenders and emoji were cut and the typing / recording icon sat above the text's middle. Both lines now take a fixed 20pt; on Android the text draws in a 24pt line box with the extra given back as margins, so glyphs are never clipped
-- The scroll-to-bottom button no longer remounts (dropping a press in progress) when its unread count changes
-- **Emoji categories answer a tap mid-scroll**: in the reactions panel a category tapped while the grid was still flinging only stopped the fling. The category strip is now one native gesture, so it fires either way. `EmojiGrid` rendered outside `Chat` needs a `GestureHandlerRootView` above it
-- **Gradient bubbles were all one colour on iOS**: the list's row height was read only on change, and on iOS it settles before the list subscribes, so every bubble sampled the gradient a content height off. It is now read when the list subscribes too
-- A tap outside the expanded emoji picker (or Android's back) folds it back into the reactions bar and leaves the menu open, as in Telegram for Android, instead of closing the menu
-- A chat opens with its messages already in place: on Android the rows used to slide into position each time a chat opened, as the list corrected its estimated row heights
-- **A custom `renderChatEmpty` was drawn upside down** in the default inverted list (and mirrored on Android); it is flipped back the way the list flips its rows
-- **Streamed markdown replies show their words as they arrive.** With `react-native-streamdown`, a reply that grew every few milliseconds showed only the cursor until it ended (each new text dropped the previous one's rendering); the text now reaches it at most every 250ms
-- Chat list previews show markdown as plain text
-- The message menu's Pin action shows a pushpin instead of a map marker (new `pushpin` icon)
-- Scroll-to-bottom button press feedback and animated unread counter
-- Media progress ring, arrow and ✕ draw without `react-native-svg`
-- The attachment menu's File tab opens the document picker on iOS
-- The sending clock and status changes animate
-- No composer jump by the bottom safe area as a chat opens
-- New messages, the typing bubble and growing rows slide into place instead of jumping
-- The typing bubble lines up with incoming bubbles and its dots pulse in place
-- A caption wider than its photo no longer leaves a strip beside it
-- Switching light / dark no longer scrolls the chat to the newest message
-- The inline date pill no longer goes missing at rest
-- The long-press menu follows its message when the keyboard closes and no longer covers the message, neighbours or the home indicator
-- The voice recording timer no longer shakes; cancelling a locked take keeps the locked look
-- The photo viewer's close button is an icon and the status bar is light
-- Android: no doubled time in bubbles, no composer drop with a floating keyboard, emoji search opens the keyboard
-- Emoji search ranks exact matches first
-- The attachment caption field is readable over the photo grid
-- `react-native-streamdown` 0.3 renders again (needs worklets Bundle Mode)
-- With markdown on, the time shares the last line when it fits
-- A short message's text no longer slides out of its bubble when it gets a reaction
-- No "Deep imports from the 'react-native' package" warning on start
-- A long-press on a photo, location, play button or media card no longer also fires it on release
-- Overlays animate with Reanimated and play their exit before unmounting
-- The context menu and reaction picker follow RTL
-- The native attachment sheet reports its dismissal with true-sheet 3
-- Types compile against React Native 0.88's strict TypeScript API
-- No Reanimated "dependencies" warning from the message list
-- Recording pauses playback; one note plays at a time; cancelling a video note closes the recorder; resuming a voice take on iOS keeps the earlier audio
+- Round video notes play on a finger tap on Android
+- Round video notes record on Android again (a zoom or torch error no longer ends the take)
+- A round note's time pill is no longer cut under the circle
+- No Reanimated "Reading from `value` during component render" warning with the React Compiler
+- A photo grouped under its sender's previous message no longer pokes past the bubble's corner
+- `ChatList`: failed avatars fall back to initials, failed thumbnails are dropped, Android rows no longer clip text
+- Emoji categories answer a tap mid-scroll
+- Gradient bubbles are no longer one colour on iOS
+- A chat opens with its rows in place on Android
+- A custom `renderChatEmpty` is no longer upside down
+- Streamed markdown replies show text as it arrives
+- Switching light / dark no longer scrolls the chat
+- The long-press menu follows its message and no longer covers it
+- A long-press on media no longer also opens it on release
+- RTL for the context menu and reaction picker
+- Many smaller animation, layout and Android fixes
 
 ### 📦 Dependencies
 - New optional peers: `@react-native-async-storage/async-storage`, `expo-media-library`, `expo-document-picker`, `expo-location`, `expo-sharing`, `expo-image`, `expo-clipboard`, `@react-native-clipboard/clipboard`
-- Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10; TypeScript stays on 6.0 and Babel on 7 (see AGENTS.md)
+- Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10
 
 ### 📲 Example app
-- Messages you send in the demo screens go through Telegram's states, voice notes and files included: a clock while sending, one check once sent, two once read (`useDemoSend`). Before, only the Chats tab did, so most demos showed sent messages with no status at all
-- Demo photos come from Unsplash's image CDN instead of picsum.photos, which answers "Geoblocked" in some regions and left the demo's photos, link previews and photo avatars blank there
-- Chats: tapping a chat's avatar or name opens its profile, as in Telegram: the photo, name and status, Message / Mute / Call, a username, a bot's description or a group's members, and the media, files and links shared in the chat
-- Archived Chats opens as a screen of its own, as in Telegram, through `ChatList`'s controlled `isArchiveOpen`
-- Native tabs (Expo Router 58): the platform tab bar, Liquid Glass on iOS 26+, instead of the JS one
-- Screens covered by another one stop rendering and keep their state (`activityEnabled` on the stacks and tabs), so the chat list does no work while a chat is open on top of it
-- `RCT_METRO_PORT` at prebuild bakes Metro's port into the iOS debug build (`RCTMetroPort`)
-- Chats: an AI Assistant bot whose replies stream in ("bot" in the header, typing while it thinks, markdown, tappable suggestions, an intro card with START after clearing the history)
-- Chats: who is typing shows in the chat header and the list (with a voice-note recording in the demo), not as a bubble in the chat
-- The Chats tab is built on `ChatList`, with its store as the backend
-- New Chats tab: a small messenger built on the defaults
-- New Loading States screen
-- Examples slimmed to defaults plus what each demonstrates; dark mode follows the theme everywhere
-- Runs on Android; Expo SDK 58; opaque chat headers fix iOS 26 blur
-- Fixes in Slack Style, Links & Patterns, Top Aligned, Theming & Icons, Reactions and Context Menu
+- New Chats tab: a small messenger on `ChatList` with profiles, archive, typing and an AI bot
+- Demo messages go through sending, sent and read
+- Native tabs; Expo SDK 58; runs on Android
+- Demo photos from Unsplash
+- Examples slimmed to defaults plus what each shows
 
 ### 📝 Docs
-- New README screenshots
-- README covers the emoji keyboard, attachment menu, new peers and permissions, every recording and playback option, streamdown 0.3 setup, and updated requirements
-- Troubleshooting: iOS 26 blurred list, "Cannot read property 'Chat' of undefined" ([#28](https://github.com/kesha-antonov/react-native-chat/issues/28)), and complete bare React Native install steps
+- New README screenshots; README covers the new features, peers and permissions
+- Troubleshooting: iOS 26 blur, "Cannot read property 'Chat' of undefined", bare React Native setup
 
 ## [5.0.1] - 2026-09-15
 

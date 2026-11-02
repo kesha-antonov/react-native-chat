@@ -301,7 +301,8 @@ Land the content first as normal commits, then cut the release as its own commit
 1. Move `CHANGELOG.md`'s `## [Unreleased]` heading to `## [X.Y.Z] - YYYY-MM-DD`. Entries are
    grouped under the emoji headings already in the file (`💥 Breaking`, `✨ Features`,
    `🐛 Fixes`, `⚡ Performance`, `🔧 Deprecations`, `📦 Dependencies`, `📝 Docs`,
-   `📲 Example app`), and each says what broke, why, and what it is now
+   `📲 Example app`). Keep entries concise: one line each, what changed for the user and the
+   prop or opt-out involved. Causes, measurements and investigation go in the commit message
 2. Bump `version` in `package.json`. On a **major**, also bump the range in
    `expoSnack/package.json` - it is a caret on the library, so `^4.x` will not resolve `5.0.0`
    and the Snack would silently keep installing the old major
