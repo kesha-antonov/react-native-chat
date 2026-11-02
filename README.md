@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/streaming-demo.gif" alt="Streaming AI reply rendering markdown token by token" />
+  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/showcase.gif" alt="Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive" />
 </p>
 
 <p align="center">
