@@ -142,12 +142,13 @@ const ExpoVideoPlayer = ({ uri, style, videoProps, playerKey }: InlinePlayerProp
         inlineVideoPlayers.delete(playerKey)
     }
   }, [playerKey, player])
-  const isLifted = useIsMediaLifted(playerKey ?? '')
+  const liftEpoch = useReattachAfterLift(playerKey ?? '')
 
   return (
     <VideoView
+      key={liftEpoch}
       style={style}
-      player={isLifted && Platform.OS === 'android' ? null : player}
+      player={player}
       fullscreenOptions={{ enable: true }}
       allowsPictureInPicture
       nativeControls
@@ -669,9 +670,9 @@ const RoundNotePlayer = ({
   // it - even when it mounts again off screen - so the floating circle keeps
   // the picture; once that is gone the row attaches it again.
   const isFloating = useIsNoteFloating(messageId)
-  // The same while a long-press copy of this message shows the note over this (hidden) row.
-  const isLifted = useIsMediaLifted(playerKey)
-  const viewPlayer = (isFloating || isLifted) && Platform.OS === 'android' ? null : player
+  const viewPlayer = isFloating && Platform.OS === 'android' ? null : player
+  // A long-press copy of this message takes the picture while it is up (see the hook).
+  const liftEpoch = useReattachAfterLift(playerKey)
   // Where the grown circle sits, for that copy to sit exactly over it.
   useEffect(() => {
     if (growShift)
@@ -738,6 +739,7 @@ const RoundNotePlayer = ({
               style={StyleSheet.absoluteFill}
             >
               <VideoView
+                key={liftEpoch}
                 style={StyleSheet.absoluteFill}
                 player={viewPlayer}
                 fullscreenOptions={{ enable: false }}
@@ -920,6 +922,35 @@ const VideoTransferOverlay = ({ message }: { message: IMessage }) => {
   )
 }
 
+/** A lifted copy marks its media as shown while it is up (see `useReattachAfterLift`). */
+const useMarkLifted = (playerKey: string, isEnabled: boolean) => {
+  useEffect(() => {
+    if (!isEnabled)
+      return
+    setMediaLifted(playerKey, true)
+    return () => setMediaLifted(playerKey, false)
+  }, [playerKey, isEnabled])
+}
+
+/**
+ * On Android a player draws into one view at a time, the last one attached: the lifted copy takes
+ * the picture from the hidden original simply by attaching. The original must not let go of it by
+ * setting its player to null - expo-video then throws, as the player still reports a view - so it
+ * keeps its prop, and once the copy is gone it mounts its video view again (a new key), which
+ * attaches the player back. iOS shows one player in several views and needs none of this.
+ */
+const useReattachAfterLift = (playerKey: string) => {
+  const isLifted = useIsMediaLifted(playerKey)
+  const [epoch, setEpoch] = useState(0)
+  const wasLiftedRef = useRef(false)
+  useEffect(() => {
+    if (wasLiftedRef.current && !isLifted && Platform.OS === 'android')
+      setEpoch(value => value + 1)
+    wasLiftedRef.current = isLifted
+  }, [isLifted])
+  return epoch
+}
+
 /**
  * A round note inside the long-press copy of its message: the original's own player, at the size
  * and place the original has, still playing - as Telegram's lifted message is. It only shows the
@@ -947,12 +978,9 @@ const MirroredRoundNote = ({
   }))
   useEffect(() => {
     cache.retain(playerKey)
-    setMediaLifted(playerKey, true)
-    return () => {
-      setMediaLifted(playerKey, false)
-      cache.release(playerKey)
-    }
+    return () => cache.release(playerKey)
   }, [cache, playerKey])
+  useMarkLifted(playerKey, true)
 
   const isGrown = useIsNoteGrown(messageId)
   const size = isGrown ? playingNoteSize : noteSize
@@ -981,12 +1009,7 @@ const MirroredRoundNote = ({
 /** An inline video inside the long-press copy of its message: the original's player, if mounted. */
 const MirroredInlineVideo = ({ uri, style, videoProps, playerKey }: InlinePlayerProps & { playerKey: string }) => {
   const player = inlineVideoPlayers.get(playerKey)
-  useEffect(() => {
-    if (!player)
-      return
-    setMediaLifted(playerKey, true)
-    return () => setMediaLifted(playerKey, false)
-  }, [player, playerKey])
+  useMarkLifted(playerKey, !!player)
 
   if (!player)
     return <ExpoVideoPlayer uri={uri} style={style} videoProps={videoProps} />
