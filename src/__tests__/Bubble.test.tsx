@@ -171,3 +171,29 @@ describe('bubble gestures', () => {
     expect(lastGestureOfType('TapGestureHandler').config.enabled).toBe(true)
   })
 })
+
+describe('photo corners in a group chat', () => {
+  const ME = { _id: 1, name: 'Me' }
+  const ALICE = { _id: 2, name: 'Alice' }
+  const at = (minute: number) => new Date(2024, 0, 1, 12, minute)
+  const photo = { _id: 'p', text: 'Caption', image: 'https://example.com/a.jpg', createdAt: at(1), user: ALICE }
+
+  const topCorners = async (previousMessage?: typeof photo) => {
+    const { getByTestId } = await render(
+      <Bubble currentMessage={photo} previousMessage={previousMessage} user={ME} position='left' isUsernameVisible />
+    )
+    const style = Object.assign({}, ...[getByTestId('message-image').props.style].flat(Infinity).filter(Boolean))
+    return { left: style.borderTopLeftRadius, right: style.borderTopRightRadius }
+  }
+
+  it('squares the top corners under the sender\'s name', async () => {
+    expect(await topCorners()).toEqual({ left: 4, right: 4 })
+  })
+
+  // Grouped under the sender's previous message there is no name above the photo, so it keeps
+  // the bubble's curve; it took the 4pt corners anyway and poked past the bubble's 17pt corner.
+  it('rounds the top corners with the bubble when no name is drawn', async () => {
+    const previous = { ...photo, _id: 'prev', image: undefined as unknown as string, createdAt: at(0) }
+    expect(await topCorners(previous)).toEqual({ left: 3, right: 15 })
+  })
+})

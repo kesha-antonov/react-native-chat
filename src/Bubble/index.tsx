@@ -684,13 +684,21 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return <LinkPreviewCard {...previewProps} />
   }, [hasLinkPreview, linkPreview, currentMessage, position, maxWidth, theme, props.onPressLinkPreview, props.renderLinkPreview])
 
+  // The sender's name shows on the first message of someone else's run, in chats that name
+  // senders; like a sticker, big emoji go without it.
+  const isUsernameShown = !!props.isUsernameVisible && !!currentMessage && !isBigEmoji &&
+    !(props.user && currentMessage.user._id === props.user._id) && !isGroupedWithPrevious
+
   // Photo corners: 2 less than the bubble's, 4 next to other
   // content, 3 on the tail side next to a grouped neighbour.
   const mediaCornerStyle = useMemo((): ImageStyle => {
     const outer = theme.radii.media
     const inner = theme.radii.mediaInner
     const near = Math.max(2, theme.radii.bubbleGrouped - 3)
-    const hasAbove = !!props.isUsernameVisible || !!currentMessage?.replyMessage
+    // Only a name actually drawn above the photo squares its top corners: in a group, a photo
+    // grouped under the sender's previous message has none, and took the 4pt corners anyway,
+    // poking past the bubble's 17pt curve.
+    const hasAbove = isUsernameShown || !!currentMessage?.replyMessage
     const hasBelow = !!currentMessage?.text || hasDefaultReactions || !!currentMessage?.audio || !!currentMessage?.location || !!currentMessage?.video
     const tailTop = hasAbove ? inner : (isGroupedWithPrevious ? near : outer)
     const otherTop = hasAbove ? inner : outer
@@ -700,7 +708,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return visualPosition === 'right'
       ? { borderTopLeftRadius: otherTop, borderTopRightRadius: tailTop, borderBottomLeftRadius: otherBottom, borderBottomRightRadius: tailBottom }
       : { borderTopLeftRadius: tailTop, borderTopRightRadius: otherTop, borderBottomLeftRadius: tailBottom, borderBottomRightRadius: otherBottom }
-  }, [theme, props.isUsernameVisible, currentMessage, hasDefaultReactions, isGroupedWithPrevious, isGroupedWithNext, visualPosition])
+  }, [theme, isUsernameShown, currentMessage, hasDefaultReactions, isGroupedWithPrevious, isGroupedWithNext, visualPosition])
 
   const renderMessageImage = useCallback(() => {
     if (currentMessage?.image) {
@@ -872,20 +880,9 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   }, [props, currentMessage, styles, timeTextStyle])
 
   const renderUsername = useCallback(() => {
-    const {
-      user,
-      renderUsername,
-    } = props
+    const { renderUsername } = props
 
-    // Like a sticker, big emoji go without the name.
-    if (props.isUsernameVisible && currentMessage && !isBigEmoji) {
-      if (user && currentMessage.user._id === user._id)
-        return null
-
-      // The sender is named once, on the first message of their run.
-      if (isGroupedWithPrevious)
-        return null
-
+    if (isUsernameShown && currentMessage) {
       if (renderUsername)
         return renderComponentOrElement(renderUsername, currentMessage.user)
 
@@ -904,8 +901,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
     return null
   }, [
     currentMessage,
-    isGroupedWithPrevious,
-    isBigEmoji,
+    isUsernameShown,
     props,
     styles,
     theme,
