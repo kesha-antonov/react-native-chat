@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useSyncExternalStore } from 'react'
 
+import { createKeyedStore, createStore, KeyedStore, useKeyedValue } from '../store'
+
 /**
- * Multi-select mode: which messages are checked. Rows read it through
- * `useSyncExternalStore` with a per-row snapshot, so checking one message re-renders that row
- * only, and entering or leaving the mode re-renders each row once.
+ * Multi-select mode: which messages are checked. A row reads the mode flag and its own checked
+ * state, so checking a message wakes that row alone, and entering or leaving the mode
+ * re-renders each row once.
  */
 export interface MessageSelectionStore {
   subscribe: (listener: () => void) => () => void
@@ -18,67 +20,60 @@ export interface MessageSelectionStore {
   /** Drops ids that are no longer in the chat (deleted messages). */
   retain: (messageIds: Set<string | number>) => void
   clear: () => void
+  /** @internal Per-message checked flags, read by each row. */
+  checked: KeyedStore<string | number, true>
 }
 
+interface SelectionState {
+  active: boolean
+  ids: (string | number)[]
+}
+
+const IDLE: SelectionState = { active: false, ids: [] }
+
 export function createMessageSelectionStore (): MessageSelectionStore {
-  let selected: (string | number)[] = []
-  let active = false
-  const listeners = new Set<() => void>()
-  const emit = () => listeners.forEach(listener => listener())
+  const state = createStore<SelectionState>(IDLE)
+  const checked = createKeyedStore<string | number, true>()
+
+  // The per-message flags change before the mode flag, so a row woken by either sees both new.
+  const apply = (ids: (string | number)[]) => {
+    const next = new Set(ids)
+    checked.keys().forEach(id => {
+      if (!next.has(id))
+        checked.delete(id)
+    })
+    ids.forEach(id => checked.set(id, true))
+    state.set(ids.length ? { active: true, ids } : IDLE)
+  }
 
   return {
-    subscribe: listener => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
-    isActive: () => active,
-    isSelected: messageId => active && selected.includes(messageId),
-    getSelectedIds: () => selected,
-    start: messageId => {
-      active = true
-      selected = [messageId]
-      emit()
-    },
+    subscribe: state.subscribe,
+    isActive: () => state.get().active,
+    isSelected: messageId => checked.has(messageId),
+    getSelectedIds: () => state.get().ids,
+    start: messageId => apply([messageId]),
     toggle: messageId => {
+      const { active, ids } = state.get()
       if (!active)
         return
-      selected = selected.includes(messageId)
-        ? selected.filter(id => id !== messageId)
-        : [...selected, messageId]
-      if (selected.length === 0)
-        active = false
-      emit()
+      apply(ids.includes(messageId) ? ids.filter(id => id !== messageId) : [...ids, messageId])
     },
     retain: messageIds => {
+      const { active, ids } = state.get()
       if (!active)
         return
-      const next = selected.filter(id => messageIds.has(id))
-      if (next.length === selected.length)
-        return
-      selected = next
-      if (selected.length === 0)
-        active = false
-      emit()
+      const next = ids.filter(id => messageIds.has(id))
+      if (next.length !== ids.length)
+        apply(next)
     },
-    clear: () => {
-      if (!active && selected.length === 0)
-        return
-      active = false
-      selected = []
-      emit()
-    },
+    clear: () => apply([]),
+    checked,
   }
 }
 
 export const MessageSelectionContext = createContext<MessageSelectionStore | null>(null)
 
 const noopSubscribe = () => () => {}
-const inactive = () => 0
-
-/** 0 outside the mode, 1 in it, 2 when this message is checked. */
-const NOT_ACTIVE = 0
-const ACTIVE = 1
-const SELECTED = 2
 
 export interface MessageSelectionState {
   isActive: boolean
@@ -89,19 +84,14 @@ export interface MessageSelectionState {
 /** Whether the chat is selecting messages and whether this one is checked. */
 export function useMessageSelection (messageId: string | number | undefined): MessageSelectionState {
   const store = useContext(MessageSelectionContext)
-  const state = useSyncExternalStore(
-    store?.subscribe ?? noopSubscribe,
-    store && messageId != null
-      ? () => (store.isActive() ? (store.isSelected(messageId) ? SELECTED : ACTIVE) : NOT_ACTIVE)
-      : inactive,
-    inactive
-  )
+  const isActive = useIsSelectionActive(store)
+  const isChecked = useKeyedValue(store?.checked, messageId) === true
   const toggle = useCallback(() => {
     if (store && messageId != null)
       store.toggle(messageId)
   }, [store, messageId])
 
-  return { isActive: state !== NOT_ACTIVE, isSelected: state === SELECTED, toggle }
+  return { isActive, isSelected: isActive && isChecked, toggle }
 }
 
 /** Whether the chat is selecting messages; re-renders only when that flips. */

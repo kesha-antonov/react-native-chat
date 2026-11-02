@@ -1,9 +1,10 @@
-import React, { useEffect, useSyncExternalStore } from 'react'
+import React, { useEffect } from 'react'
 import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { multiplyAlpha } from '../colorUtils'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { IMessage, LinkPreview } from '../Models'
+import { createKeyedStore, useKeyedValue } from '../store'
 import { ChatTheme, getNameColor } from '../Theme'
 
 /** What a custom `renderLinkPreview` receives. */
@@ -41,16 +42,10 @@ export function findFirstUrl (text: string | undefined): string | undefined {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`
 }
 
-// One request per URL for the app's lifetime; the rows that show it share the answer.
-const fetched = new Map<string, LinkPreview | null>()
+// One request per URL for the app's lifetime; the rows that show it share the answer, and a
+// landed fetch wakes only the rows showing that URL.
+const fetched = createKeyedStore<string, LinkPreview | null>()
 const pending = new Map<string, Promise<LinkPreview | null>>()
-const listeners = new Set<() => void>()
-const subscribe = (listener: () => void) => {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
 
 /** @internal Only for tests. */
 export const resetLinkPreviewCache = () => {
@@ -65,9 +60,8 @@ const fetchOnce = (url: string, fetchPreview: FetchLinkPreview): Promise<LinkPre
       .then(() => fetchPreview(url))
       .then(result => result ?? null, () => null)
       .then(result => {
-        fetched.set(url, result)
         pending.delete(url)
-        listeners.forEach(listener => listener())
+        fetched.set(url, result)
         return result
       })
     pending.set(url, request)
@@ -87,12 +81,8 @@ export function useLinkPreview (
   const firstUrl = own === null ? undefined : findFirstUrl(message?.text)
   const fetchUrl = own === undefined && fetchPreview ? firstUrl : undefined
 
-  // Read through `useSyncExternalStore`, so the row re-renders when its fetch lands.
-  const fetchedPreview = useSyncExternalStore(
-    subscribe,
-    () => (fetchUrl ? fetched.get(fetchUrl) : undefined),
-    () => undefined
-  )
+  // The row re-renders when its own fetch lands.
+  const fetchedPreview = useKeyedValue(fetched, fetchUrl)
   useEffect(() => {
     if (fetchUrl && fetchPreview && !fetched.has(fetchUrl))
       fetchOnce(fetchUrl, fetchPreview)

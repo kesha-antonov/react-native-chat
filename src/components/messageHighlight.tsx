@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useSyncExternalStore } from 'react'
+import React, { createContext, useContext, useEffect } from 'react'
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native'
 import Animated, {
   Easing,
@@ -8,9 +8,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
+import { createKeyedStore, KeyedStore, useKeyedValue } from '../store'
+
 /**
- * Which message is flashing, the highlight after jumping to a quoted message. Rows read
- * it through `useSyncExternalStore`, so a flash re-renders only the row it lands on.
+ * Which message is flashing, the highlight after jumping to a quoted message. Each row reads
+ * its own token, so a flash wakes the row it lands on and the one it leaves.
  */
 export interface MessageHighlightStore {
   subscribe: (listener: () => void) => () => void
@@ -18,55 +20,45 @@ export interface MessageHighlightStore {
   getToken: (messageId: string | number) => number
   highlight: (messageId: string | number) => void
   dispose: () => void
+  /** @internal The flash token by message id, read by each row. */
+  tokens: KeyedStore<string | number, number>
 }
 
 /** Covers the jump to the message plus the flash itself. */
 const HIGHLIGHT_LIFETIME_MS = 2000
 
 export function createMessageHighlightStore (): MessageHighlightStore {
-  let current: { id: string | number, token: number } | null = null
+  const tokens = createKeyedStore<string | number, number>()
   let counter = 0
   let timer: ReturnType<typeof setTimeout> | undefined
-  const listeners = new Set<() => void>()
-  const emit = () => listeners.forEach(listener => listener())
 
   return {
-    subscribe: listener => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
-    getToken: messageId => (current && current.id === messageId ? current.token : 0),
+    subscribe: tokens.subscribe,
+    getToken: messageId => tokens.get(messageId) ?? 0,
     highlight: messageId => {
       counter += 1
-      current = { id: messageId, token: counter }
-      emit()
+      tokens.keys().forEach(id => {
+        if (id !== messageId)
+          tokens.delete(id)
+      })
+      tokens.set(messageId, counter)
       // Kept a while, so a row that only mounts once the list has scrolled to it still flashes.
       clearTimeout(timer)
-      timer = setTimeout(() => {
-        current = null
-        emit()
-      }, HIGHLIGHT_LIFETIME_MS)
+      timer = setTimeout(tokens.clear, HIGHLIGHT_LIFETIME_MS)
     },
     dispose: () => {
       clearTimeout(timer)
-      listeners.clear()
     },
+    tokens,
   }
 }
 
 export const MessageHighlightContext = createContext<MessageHighlightStore | null>(null)
 
-const noopSubscribe = () => () => {}
-const zero = () => 0
-
 /** The flash count for this message (0 when it is not flashing, or outside a `Chat`). */
 export function useMessageHighlightToken (messageId: string | number | undefined): number {
   const store = useContext(MessageHighlightContext)
-  return useSyncExternalStore(
-    store?.subscribe ?? noopSubscribe,
-    store && messageId != null ? () => store.getToken(messageId) : zero,
-    zero
-  )
+  return useKeyedValue(store?.tokens, messageId) ?? 0
 }
 
 // A jumped-to message stays highlighted for 1000ms, then fades out over 300ms.
