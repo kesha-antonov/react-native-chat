@@ -54,7 +54,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 
 ### ⚡ Performance
 - **Rows render only what changed.** Each row subscribes to its own message by id: a send, a status tick, a reaction or a streamed token re-renders that row (plus a neighbour only when grouping changes), while the list and the composer stay put. Shared row props reach rows through a context kept stable between renders: inline event handlers go through stable proxies and inline style/config objects are compared by content, so only a new render function re-renders every row. On a Pixel 7 debug build a send went from three ~220ms commits re-rendering all 17 visible rows to ~60–110ms commits touching only the new row; a status change is a ~30ms commit of one row
-- **The screen gradient holds still while you scroll.** Outgoing gradient bubbles (the dark theme) used to slide their gradient on every frame of a scroll, which roughly doubled the dropped frames during flings on a Pixel 7. The gradient now freezes for the length of a drag or fling and eases back to its screen-fixed place about 150ms after the list stops; scrolls the list makes itself, like following a new message, still track it
+- **The screen gradient costs less per frame**: each outgoing bubble now slides its gradient with one worklet (a derived value in between doubled the work), and its tail's colour is snapped to 20 steps so the SVG only redraws when the colour changes. Fling jank in a 60-day chat on a Pixel 7: 19-21% (FlatList with the same gradient: 33-47%)
 - The composer is memoized and no longer receives `messages`, so incoming messages and status changes no longer re-render it
 - Voice and round-note progress runs on the UI thread between four-times-a-second syncs, instead of a JS callback every frame
 - **Chats open much faster.** Voice notes share one audio context made on first play (each one used to start its own worklet runtime, a few hundred ms of blocked JS per bubble); the long-press menu and the swipe-to-reply arrow mount on first use instead of with every row; the list and composer no longer wait a layout pass; the wallpaper and composer paint first and the messages follow a frame later
@@ -62,6 +62,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- **Gradient bubbles were all one colour on iOS**: the list's row height was read only on change, and on iOS it settles before the list subscribes, so every bubble sampled the gradient a content height off. It is now read when the list subscribes too
 - A tap outside the expanded emoji picker (or Android's back) folds it back into the reactions bar and leaves the menu open, as in Telegram for Android, instead of closing the menu
 - A chat opens with its messages already in place: on Android the rows used to slide into position each time a chat opened, as the list corrected its estimated row heights
 - **A custom `renderChatEmpty` was drawn upside down** in the default inverted list (and mirrored on Android); it is flipped back the way the list flips its rows

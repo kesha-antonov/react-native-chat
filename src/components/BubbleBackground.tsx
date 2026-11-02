@@ -31,6 +31,7 @@ const TAIL_SHADOW_PATH = 'M0 1 L1 1 A6.5 10 0 0 0 6.708 10.925 L6.4 12 L0 12 Z'
 
 /** What a bubble needs to show its slice of a gradient fixed to the message list. */
 export interface BubbleGradientStore {
+  /** The list's scroll offset, live: the bubbles' gradient and tails follow it every frame. */
   scrolledY: SharedValue<number>
   listHeight: SharedValue<number>
   /**
@@ -153,6 +154,8 @@ interface GradientBackgroundProps {
   tailSide?: 'left' | 'right'
 }
 
+const TAIL_COLOR_STEPS = 20
+
 const evenStops = (count: number) => {
   const last = Math.max(1, count - 1)
   return Array.from({ length: count }, (_, i) => i / last)
@@ -170,29 +173,38 @@ const ScreenGradientBackground = ({ stops, messageId, bottomGap, cornerStyle, ta
   const cellLayout = useMemo(() => store.cellLayout(String(messageId)), [store, messageId])
   const positions = evenStops(stops.length)
 
-  // The bubble's bottom edge, in points from the top of the list.
-  const bubbleBottom = useDerivedValue(() => {
-    const layout = cellLayout.value
-    const height = listHeight.value
-    if (!layout || height <= 0)
-      return height > 0 ? height / 2 : 0
-
-    return isInverted
-      ? height + scrolledY.value - layout.y - bottomGap
-      : layout.y + layout.height - bottomGap - scrolledY.value
-  })
-
+  // The gradient slides with the scroll on every frame, so it is one worklet that computes the
+  // bubble's bottom edge (in points from the top of the list) and the layer's offset together:
+  // a derived value in between doubled the per-bubble, per-frame work, which on Android cost
+  // about a third more dropped frames in a fling.
   const layerStyle = useAnimatedStyle(() => {
+    const layout = cellLayout.value
     const height = listHeight.value > 0 ? listHeight.value : 800
+    const bottom = !layout
+      ? height / 2
+      : isInverted
+        ? height + scrolledY.value - layout.y - bottomGap
+        : layout.y + layout.height - bottomGap - scrolledY.value
     return {
       height,
-      transform: [{ translateY: height - bubbleBottom.value }],
+      transform: [{ translateY: height - bottom }],
     }
   })
 
+  // The tail samples the gradient at the bubble's bottom, live. Its colour snaps to one of
+  // TAIL_COLOR_STEPS along the gradient: the tail is an SVG path, and redrawing it on every frame
+  // of a fling cost Android more than the whole sliding gradient. Snapped, it is redrawn only when
+  // its colour actually changes (Reanimated skips unchanged props), and a 6pt tail does not show
+  // the steps.
   const tailColor = useDerivedValue(() => {
+    const layout = cellLayout.value
     const height = listHeight.value
-    const fraction = height > 0 ? Math.min(1, Math.max(0, bubbleBottom.value / height)) : 1
+    if (!layout || height <= 0)
+      return stops[stops.length - 1]
+    const bottom = isInverted
+      ? height + scrolledY.value - layout.y - bottomGap
+      : layout.y + layout.height - bottomGap - scrolledY.value
+    const fraction = Math.round(Math.min(1, Math.max(0, bottom / height)) * TAIL_COLOR_STEPS) / TAIL_COLOR_STEPS
     return interpolateColor(fraction, positions, stops) as string
   })
 
