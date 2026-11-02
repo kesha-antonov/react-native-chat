@@ -74,6 +74,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- A round video note's time pill lost its first digit once the time grew wider than "9:55 PM": the circle, raised to pass over the avatar while it plays, was drawn over the pill. The time is now drawn on top, as in Telegram
 - Reanimated no longer warns "Reading from `value` during component render" while scrolling a chat or recording a round note in an app that uses the React Compiler: three callbacks read shared values with `.value`, which the compiler turns into render-time reads
 - A shown photo no longer announces "cancel download" to screen readers on Android
 - **A photo grouped under its sender's previous message poked past the bubble's corner**: in a group chat its top corners took the 4pt radius meant for a photo under the sender's name, though no name is drawn there, so the photo's corner showed outside the bubble's 17pt curve. The corners now follow whether a name is actually shown

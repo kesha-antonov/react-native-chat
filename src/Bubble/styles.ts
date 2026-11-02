@@ -139,6 +139,10 @@ export const createBubbleStyles = (theme: ChatTheme) => {
       position: 'absolute',
       bottom: 2,
       right: 0,
+      // Over the circle: the note's wrapper is raised (zIndex 1) to pass over the avatar as it
+      // grows, and a time wider than "9:55 PM" reaches under the circle's curve, which hid its
+      // first digit.
+      zIndex: 2,
       height: 17,
       justifyContent: 'flex-end',
       // Overrides `bottom`'s padding, which would otherwise offset the pill.
