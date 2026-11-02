@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
@@ -246,7 +246,9 @@ export function RecordButton ({
   // Callbacks read through refs: the gesture must not be rebuilt mid-hold,
   // and the callers' identities change with every timer tick.
   const callbacksRef = useRef({ onStart, onFinish, onLock, onSlideProgress, onQuickRelease, onExit })
-  callbacksRef.current = { onStart, onFinish, onLock, onSlideProgress, onQuickRelease, onExit }
+  useLayoutEffect(() => {
+    callbacksRef.current = { onStart, onFinish, onLock, onSlideProgress, onQuickRelease, onExit }
+  })
   const startedAtRef = useRef(0)
   // How the take in progress ended, as far as this button saw it; anything
   // else (the bar's CANCEL, a time limit) leaves it null.
@@ -255,15 +257,15 @@ export function RecordButton ({
   // Mic <-> camera: a quick scale and fade cross-swap when the mode toggles.
   useEffect(() => {
     lastShownMode = mode
-    modeSV.value = withTiming(mode === 'video' ? 1 : 0, { duration: 150, reduceMotion: ReduceMotion.System })
+    modeSV.set(withTiming(mode === 'video' ? 1 : 0, { duration: 150, reduceMotion: ReduceMotion.System }))
   }, [mode, modeSV])
 
   useEffect(() => {
-    circle.amplitude.value = phase === 'recording' || phase === 'locked' ? levelToAmplitude(level) : 0
+    circle.amplitude.set(phase === 'recording' || phase === 'locked' ? levelToAmplitude(level) : 0)
   }, [phase, level, circle.amplitude])
 
   useEffect(() => {
-    showWaves.value = isCapturing ? 1 : 0
+    showWaves.set(isCapturing ? 1 : 0)
   }, [isCapturing, showWaves])
 
   const isLocked = phase === 'locked'
@@ -273,18 +275,6 @@ export function RecordButton ({
   const [isCircleMounted, setIsCircleMounted] = useState(false)
   const wasRecordingRef = useRef(false)
   const exitDoneRef = useRef(() => {})
-  exitDoneRef.current = () => {
-    setIsCircleMounted(false)
-    setFlightTarget(null)
-    // Back to the start, so the next take's first frame is not this one's last.
-    enter.value = 0
-    slideProgress.value = 1
-    fingerUp.value = 0
-    lockedSV.value = 0
-    flight.value = 0
-    buttonShown.value = withTiming(1, { duration: 150, reduceMotion: ReduceMotion.System })
-  }
-  const jsExitDone = () => exitDoneRef.current()
 
   // A sent voice take flies into the new message's play button
   // (`VoiceMessageEnterTransition`) instead of collapsing in place.
@@ -303,74 +293,90 @@ export function RecordButton ({
       exitDoneRef.current()
     }, SEND_FLIGHT_REVEAL_MS)
   }
-  const startFlightRef = useRef<(fallback: () => void) => void>(() => {})
-  startFlightRef.current = (fallback: () => void) => {
-    flightCleanupRef.current?.()
-    let isLanded = false
-    let isWaiting = true
-    let unsubscribe: (() => void) | undefined
-    const stopWaiting = () => {
-      isWaiting = false
-      clearTimeout(timer)
-      unsubscribe?.()
+
+  useLayoutEffect(() => {
+    exitDoneRef.current = () => {
+      setIsCircleMounted(false)
+      setFlightTarget(null)
+      // Back to the start, so the next take's first frame is not this one's last.
+      enter.set(0)
+      slideProgress.set(1)
+      fingerUp.set(0)
+      lockedSV.set(0)
+      flight.set(0)
+      buttonShown.set(withTiming(1, { duration: 150, reduceMotion: ReduceMotion.System }))
     }
-    // Nothing landed in time (a take too short to send, a list that renders
-    // elsewhere): give up and play the ordinary exit.
-    const timer = setTimeout(() => {
-      stopWaiting()
-      flightCleanupRef.current = null
-      abandonSendFlight('voice')
-      fallback()
-    }, SEND_FLIGHT_WAIT_MS)
-    const onTarget = (target: VoiceFlightTarget) => {
-      if (!isWaiting)
-        return
-
-      stopWaiting()
-      isLanded = true
-      const node = containerRef.current
-      if (!node) {
-        jsFlightLanded()
-        return
+  })
+  const startFlightRef = useRef<(fallback: () => void) => void>(() => {})
+  useLayoutEffect(() => {
+    startFlightRef.current = (fallback: () => void) => {
+      flightCleanupRef.current?.()
+      let isLanded = false
+      let isWaiting = true
+      let unsubscribe: (() => void) | undefined
+      const stopWaiting = () => {
+        isWaiting = false
+        clearTimeout(timer)
+        unsubscribe?.()
       }
-
-      node.measureInWindow((x, y, width, height) => {
-        if (!isLanded)
+      // Nothing landed in time (a take too short to send, a list that renders
+      // elsewhere): give up and play the ordinary exit.
+      const timer = setTimeout(() => {
+        stopWaiting()
+        flightCleanupRef.current = null
+        abandonSendFlight('voice')
+        fallback()
+      }, SEND_FLIGHT_WAIT_MS)
+      const onTarget = (target: VoiceFlightTarget) => {
+        if (!isWaiting)
           return
 
-        // The circle hangs off the button's centre, shifted by the cancel
-        // slide it was released at (`recordCircle.drawingCx`).
-        const fromX = x + width / 2 + cancelSign * slideDistance * (1 - slideProgress.value)
-        const fromY = y + height / 2
-        flightDX.value = target.x - fromX
-        flightDY.value = target.y - fromY
-        flightRadius.value = target.radius
-        setFlightTarget(target)
-        flight.value = 0
-        flight.value = withTiming(1, { duration: VOICE_FLIGHT_MS, easing: Easing.linear }, finished => {
-          if (finished)
-            runOnJS(jsFlightLanded)()
-        })
-      })
-    }
-    const off = onSendFlightTarget('voice', target => onTarget(target))
-    // The target may already have landed, which ran `onTarget` before the
-    // subscription was returned.
-    if (isWaiting)
-      unsubscribe = off
-    else
-      off()
-    flightCleanupRef.current = () => {
-      if (isWaiting) {
         stopWaiting()
-        abandonSendFlight('voice')
-      } else if (isLanded) {
-        isLanded = false
-        cancelAnimation(flight)
-        finishSendFlight('voice')
+        isLanded = true
+        const node = containerRef.current
+        if (!node) {
+          jsFlightLanded()
+          return
+        }
+
+        node.measureInWindow((x, y, width, height) => {
+          if (!isLanded)
+            return
+
+          // The circle hangs off the button's centre, shifted by the cancel
+          // slide it was released at (`recordCircle.drawingCx`).
+          const fromX = x + width / 2 + cancelSign * slideDistance * (1 - slideProgress.value)
+          const fromY = y + height / 2
+          flightDX.set(target.x - fromX)
+          flightDY.set(target.y - fromY)
+          flightRadius.set(target.radius)
+          setFlightTarget(target)
+          flight.set(0)
+          flight.set(withTiming(1, { duration: VOICE_FLIGHT_MS, easing: Easing.linear }, finished => {
+            if (finished)
+              runOnJS(jsFlightLanded)()
+          }))
+        })
+      }
+      const off = onSendFlightTarget('voice', target => onTarget(target))
+      // The target may already have landed, which ran `onTarget` before the
+      // subscription was returned.
+      if (isWaiting)
+        unsubscribe = off
+      else
+        off()
+      flightCleanupRef.current = () => {
+        if (isWaiting) {
+          stopWaiting()
+          abandonSendFlight('voice')
+        } else if (isLanded) {
+          isLanded = false
+          cancelAnimation(flight)
+          finishSendFlight('voice')
+        }
       }
     }
-  }
+  })
 
   useEffect(() => () => {
     flightCleanupRef.current?.()
@@ -393,32 +399,32 @@ export function RecordButton ({
       }
       setFlightTarget(null)
       cancelAnimation(flight)
-      flight.value = 0
+      flight.set(0)
       cancelAnimation(exit)
       cancelAnimation(slideProgress)
-      exit.value = 0
-      exitKind.value = EXIT_NONE
-      slideProgress.value = 1
-      lastReported.value = 1
+      exit.set(0)
+      exitKind.set(EXIT_NONE)
+      slideProgress.set(1)
+      lastReported.set(1)
       if (slideProgressValue)
-        slideProgressValue.value = 1
-      fingerUp.value = 0
-      lockedSV.value = 0
-      lockHide.value = 0
-      lockHideTarget.value = 0
-      lockTilt.value = 0
-      pauseMorph.value = 0
-      sendMorph.value = 0
-      circle.state.value = null
-      buttonShown.value = 0
-      enter.value = 0
-      enter.value = withTiming(1, { duration: 300, easing: DECELERATE })
-      bob.value = 0
-      bob.value = withRepeat(
+        slideProgressValue.set(1)
+      fingerUp.set(0)
+      lockedSV.set(0)
+      lockHide.set(0)
+      lockHideTarget.set(0)
+      lockTilt.set(0)
+      pauseMorph.set(0)
+      sendMorph.set(0)
+      circle.state.set(null)
+      buttonShown.set(0)
+      enter.set(0)
+      enter.set(withTiming(1, { duration: 300, easing: DECELERATE }))
+      bob.set(0)
+      bob.set(withRepeat(
         withTiming(1, { duration: LOCK_BOB_HALF_MS, easing: Easing.linear, reduceMotion: ReduceMotion.System }),
         -1,
         true
-      )
+      ))
       setIsCircleMounted(true)
       return
     }
@@ -428,9 +434,10 @@ export function RecordButton ({
 
     wasRecordingRef.current = false
     cancelAnimation(bob)
-    lockHide.value = withTiming(1, { duration: 140 })
+    lockHide.set(withTiming(1, { duration: 140 }))
     const reason = phase === 'preview' ? 'preview' : exitReasonRef.current ?? 'cancel'
     exitReasonRef.current = null
+    const jsExitDone = () => exitDoneRef.current()
     const onDone = (finished?: boolean) => {
       'worklet'
       if (finished)
@@ -439,22 +446,22 @@ export function RecordButton ({
 
     // Slid all the way: the circle springs back into the button, shrinking.
     if (reason === 'gesture') {
-      exitKind.value = EXIT_GESTURE
-      slideProgress.value = withTiming(1, { duration: 200 }, onDone)
+      exitKind.set(EXIT_GESTURE)
+      slideProgress.set(withTiming(1, { duration: 200 }, onDone))
       return
     }
 
     // Paused: swell, shrink to a dot, fade into the preview
     // (`transformToSeekbar`, 580ms voice / 490ms video).
     if (reason === 'preview') {
-      exitKind.value = EXIT_PREVIEW
-      exit.value = withTiming(1, { duration: isVoice ? 580 : 490, easing: Easing.linear }, onDone)
+      exitKind.set(EXIT_PREVIEW)
+      exit.set(withTiming(1, { duration: isVoice ? 580 : 490, easing: Easing.linear }, onDone))
       return
     }
 
     const playRelease = () => {
-      exitKind.value = EXIT_RELEASE
-      exit.value = withTiming(1, { duration: 360, easing: Easing.linear }, onDone)
+      exitKind.set(EXIT_RELEASE)
+      exit.set(withTiming(1, { duration: 360, easing: Easing.linear }, onDone))
     }
 
     // A sent voice take holds still until its message lands, then flies there.
@@ -464,9 +471,11 @@ export function RecordButton ({
     }
 
     playRelease()
-    // jsExitDone only reads refs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRecording, phase])
+  }, [
+    isRecording, phase, isVoice, circle.state, slideProgressValue,
+    bob, buttonShown, enter, exit, exitKind, fingerUp, flight, lastReported,
+    lockHide, lockHideTarget, lockTilt, lockedSV, pauseMorph, sendMorph, slideProgress,
+  ])
 
   // Locked: the mic turns into the send arrow, the lock into pause, and the
   // padlock snaps to -15deg and back.
@@ -474,14 +483,14 @@ export function RecordButton ({
     if (!isLocked)
       return
 
-    lockedSV.value = 1
-    sendMorph.value = withTiming(1, { duration: 150, easing: Easing.linear })
-    pauseMorph.value = withTiming(1, { duration: 250, easing: EASE_OUT_QUINT })
-    fingerUp.value = withTiming(0, { duration: 250, easing: EASE_OUT_QUINT })
-    lockTilt.value = withSequence(
+    lockedSV.set(1)
+    sendMorph.set(withTiming(1, { duration: 150, easing: Easing.linear }))
+    pauseMorph.set(withTiming(1, { duration: 250, easing: EASE_OUT_QUINT }))
+    fingerUp.set(withTiming(0, { duration: 250, easing: EASE_OUT_QUINT }))
+    lockTilt.set(withSequence(
       withTiming(-15, { duration: 250, easing: EASE_OUT_QUINT }),
       withDelay(100, withTiming(0, { duration: 350, easing: EASE_OUT_QUINT }))
-    )
+    ))
   }, [isLocked, lockedSV, sendMorph, pauseMorph, fingerUp, lockTilt])
 
   // "Slide up to lock" for the first few takes, once the finger has been down
@@ -536,16 +545,21 @@ export function RecordButton ({
       }, ONCE_HINT_MS)
   }
   const showOnceHintRef = useRef(showOnceHint)
-  showOnceHintRef.current = showOnceHint
+  // Read through refs so that only the lock itself shows the hint; the toggle handles the rest.
+  const isViewOnceRef = useRef(isViewOnce)
+  const viewOnceHintRef = useRef(labels.viewOnceHint)
+  useLayoutEffect(() => {
+    showOnceHintRef.current = showOnceHint
+    isViewOnceRef.current = isViewOnce
+    viewOnceHintRef.current = labels.viewOnceHint
+  })
   const hasOnceToggle = !!onToggleViewOnce
   useEffect(() => {
-    if (!isLocked || !hasOnceToggle || isViewOnce || onceHintCount >= ONCE_HINT_LIMIT)
+    if (!isLocked || !hasOnceToggle || isViewOnceRef.current || onceHintCount >= ONCE_HINT_LIMIT)
       return
 
-    onceHintCount++
-    showOnceHintRef.current(labels.viewOnceHint)
-    // Only the lock itself shows it; the toggle handles the rest.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    onceHintCount = onceHintCount + 1
+    showOnceHintRef.current(viewOnceHintRef.current)
   }, [isLocked, hasOnceToggle])
   useEffect(() => {
     if (!hasOnce)
@@ -596,7 +610,7 @@ export function RecordButton ({
   const panGesture = usePanGesture({
     activateAfterLongPress: onTap ? HOLD_DELAY_MS : 0,
     onActivate: () => {
-      isTakeSV.value = 1
+      isTakeSV.set(1)
       runOnJS(jsStart)()
     },
     onUpdate: event => {
@@ -610,17 +624,17 @@ export function RecordButton ({
       const up = Math.max(0, Math.min(lockDistance, -event.translationY))
 
       // The circle tracks every frame; JS only hears about real changes.
-      slideProgress.value = progress
+      slideProgress.set(progress)
       if (slideProgressValue)
-        slideProgressValue.value = progress
+        slideProgressValue.set(progress)
       if (Math.abs(progress - lastReported.value) > 0.01 || progress === 0) {
-        lastReported.value = progress
+        lastReported.set(progress)
         runOnJS(jsSlideProgress)(progress)
       }
 
       // All the way across: cancel now, before the finger lifts.
       if (progress <= 0) {
-        isTakeSV.value = 0
+        isTakeSV.set(0)
         runOnJS(jsFinish)(true, true)
         return
       }
@@ -628,14 +642,14 @@ export function RecordButton ({
       // Lock and cancel exclude each other: no lock once the slide is past 30%.
       const isBlocked = progress < LOCK_BLOCK_PROGRESS ? 1 : 0
       if (isBlocked !== lockHideTarget.value) {
-        lockHideTarget.value = isBlocked
-        lockHide.value = withTiming(isBlocked, { duration: 140 })
+        lockHideTarget.set(isBlocked)
+        lockHide.set(withTiming(isBlocked, { duration: 140 }))
       }
-      fingerUp.value = isBlocked ? 0 : up
+      fingerUp.set(isBlocked ? 0 : up)
 
       if (!isBlocked && up >= lockDistance) {
-        lockedSV.value = 1
-        isTakeSV.value = 0
+        lockedSV.set(1)
+        isTakeSV.set(0)
         runOnJS(jsLock)()
       }
     },
@@ -643,7 +657,7 @@ export function RecordButton ({
       if (isTakeSV.value === 0)
         return
 
-      isTakeSV.value = 0
+      isTakeSV.set(0)
 
       // Interrupted by the system rather than released: lock the
       // take unless the cancel slide was already well under way.
@@ -651,7 +665,7 @@ export function RecordButton ({
         if (slideProgress.value < LOCK_BLOCK_PROGRESS) {
           runOnJS(jsFinish)(true, false)
         } else {
-          lockedSV.value = 1
+          lockedSV.set(1)
           runOnJS(jsLock)()
         }
         return
@@ -662,7 +676,9 @@ export function RecordButton ({
   })
 
   const tapRef = useRef(onTap)
-  tapRef.current = onTap
+  useLayoutEffect(() => {
+    tapRef.current = onTap
+  })
   const jsTap = () => {
     recordingHaptic()
     tapRef.current?.()

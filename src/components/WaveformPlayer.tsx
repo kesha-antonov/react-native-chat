@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
 import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
@@ -83,6 +83,18 @@ const getAudioContext = () => {
 }
 
 /** Decodes without a context when the library can (`decodeAudioData` on the module). */
+// The compiler cannot yet lower `?.`, `??` or a ternary inside a `try`, so the
+// expressions that need one are kept out here.
+const stopSourceNode = (source: any) => {
+  try {
+    source?.stop?.()
+  } catch {
+    // already stopped
+  }
+}
+
+const bufferDuration = (buffer: any, fallback: number | undefined): number => buffer.duration ?? fallback ?? 0
+
 const decodeAudio = (source: string | ArrayBuffer): Promise<any> => {
   if (typeof audioApi?.decodeAudioData === 'function')
     return audioApi.decodeAudioData(source)
@@ -282,10 +294,14 @@ export function WaveformPlayer ({
   const tickTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const durationRef = useRef(durationProp ?? 0)
   const rateRef = useRef(rate)
-  rateRef.current = rate
+  useLayoutEffect(() => {
+    rateRef.current = rate
+  })
   // Latest exact progress, readable from callbacks that must not re-subscribe
   // on every frame (the resume offset).
   const progressRef = useRef(0)
+  // The latest `playFrom`, for the decode effect and the playlist, which are set up before it.
+  const playFromRef = useRef<(fraction: number) => void>(() => {})
 
   const progress = useSharedValue(0)
   const trackWidthSV = useSharedValue(0)
@@ -296,7 +312,7 @@ export function WaveformPlayer ({
   const sweep = useSharedValue(0)
   const [isSweepMounted, setIsSweepMounted] = useState(false)
 
-  const appearOnMount = useRef(!!animateAppear).current
+  const [appearOnMount] = useState(!!animateAppear)
   const appear = useSharedValue(appearOnMount ? 0 : 1)
   const [isAppearing, setIsAppearing] = useState(appearOnMount)
 
@@ -313,7 +329,9 @@ export function WaveformPlayer ({
   const transcribe = useTranscription(message, messageId, transcription, onTranscribe)
   const viewOnce = useViewOnce(message, messageId, isViewOnce, onViewOnceEnd)
   const viewOnceRef = useRef(viewOnce)
-  viewOnceRef.current = viewOnce
+  useLayoutEffect(() => {
+    viewOnceRef.current = viewOnce
+  })
 
   const fullDuration = decodedDuration || durationProp || 0
   const contentWidth = voiceContentWidth(fullDuration, position === 'right')
@@ -323,7 +341,9 @@ export function WaveformPlayer ({
   const expectedTrackWidth = voiceTrackWidth(contentWidth, ROW_PADDING_H, transcribe.isVisible)
   const barCount = barCountForWidth(trackWidth > 0 ? trackWidth : expectedTrackWidth)
   const barCountRef = useRef(barCount)
-  barCountRef.current = barCount
+  useLayoutEffect(() => {
+    barCountRef.current = barCount
+  })
   // The waveform the server sent with the note is drawn first, so
   // the bars are there before the file is; only without one is it decoded from the audio.
   const serverWaveform = message?.waveform
@@ -332,7 +352,7 @@ export function WaveformPlayer ({
 
   const setProgressValue = useCallback((next: number) => {
     progressRef.current = next
-    progress.value = next
+    progress.set(next)
   }, [progress])
 
   const stopRaf = useCallback(() => {
@@ -353,24 +373,24 @@ export function WaveformPlayer ({
     ;(async () => {
       let source: string | ArrayBuffer = uri
       if (isRemote) {
-        downloadProgress.value = 0
+        downloadProgress.set(0)
         setIsFetching(true)
         const download = downloadWithProgress(uri, fraction => {
-          downloadProgress.value = fraction
+          downloadProgress.set(fraction)
         })
         abortDownload = download.abort
         try {
           source = await download.promise
         } catch {
+          abortDownload = null
           // A failed fetch goes back to the download arrow, for a retry by tap.
           if (!cancelled) {
             setIsFetching(false)
             setIsCancelled(true)
           }
           return
-        } finally {
-          abortDownload = null
         }
+        abortDownload = null
         if (cancelled)
           return
 
@@ -385,7 +405,7 @@ export function WaveformPlayer ({
           return
 
         bufferRef.current = buffer
-        durationRef.current = buffer.duration ?? durationProp ?? 0
+        durationRef.current = bufferDuration(buffer, durationProp)
         setDecodedDuration(durationRef.current)
         setLevels(levelsFromSamples(buffer.getChannelData(0), barCountRef.current))
         setIsFetching(false)
@@ -406,11 +426,7 @@ export function WaveformPlayer ({
       abortDownload?.()
       stopRaf()
       releasePlayback(playerId)
-      try {
-        sourceRef.current?.stop?.()
-      } catch {
-        // already stopped
-      }
+      stopSourceNode(sourceRef.current)
     }
   }, [uri, isRemote, shouldLoad, downloadProgress, stopRaf, playerId, durationProp])
 
@@ -435,13 +451,13 @@ export function WaveformPlayer ({
     // A drag owns the visible progress, and the time, until it is released. Otherwise the
     // bars run to the end on the UI thread at the playback rate, and this check-in - four
     // times a second, not every frame - puts them back on the audio clock and moves the time.
-    if (!isDragging.value) {
-      progress.value = next
-      progress.value = withTiming(1, {
+    if (!isDragging.get()) {
+      progress.set(next)
+      progress.set(withTiming(1, {
         duration: (1 - next) * duration * 1000 / (rateRef.current || 1),
         easing: Easing.linear,
         reduceMotion: ReduceMotion.Never,
-      })
+      }))
       setShownProgress(prev =>
         Math.floor(prev * duration) === Math.floor(next * duration) ? prev : next
       )
@@ -458,7 +474,6 @@ export function WaveformPlayer ({
 
   // Lets the chat start this note when the previous one ends. `playFrom` is
   // declared below, so the entry reaches it through a ref.
-  const playFromRef = useRef<(fraction: number) => void>(() => {})
   const onEndedRef = usePlaylistEntry(messageId, () => playFromRef.current(0))
   // Heard here already, before the app has updated `isMediaUnread`.
   const [isHeard, setIsHeard] = useState(false)
@@ -471,20 +486,16 @@ export function WaveformPlayer ({
   const isFilledAlways = useSharedValue(isViewOnce)
   const burn = useSharedValue(BURN_NONE)
   useEffect(() => {
-    fillAll.value = isUnread
-    isFilledAlways.value = isViewOnce
+    fillAll.set(isUnread)
+    isFilledAlways.set(isViewOnce)
   }, [fillAll, isUnread, isFilledAlways, isViewOnce])
 
   useEffect(() => {
-    burn.value = viewOnce.isSpent ? BURNT : viewOnce.hasStarted ? BURNING : BURN_NONE
+    burn.set(viewOnce.isSpent ? BURNT : viewOnce.hasStarted ? BURNING : BURN_NONE)
   }, [burn, viewOnce.isSpent, viewOnce.hasStarted])
 
   const stopSource = useCallback(() => {
-    try {
-      sourceRef.current?.stop?.()
-    } catch {
-      // already stopped
-    }
+    stopSourceNode(sourceRef.current)
     sourceRef.current = null
     stopRaf()
     setIsPlaying(false)
@@ -513,13 +524,11 @@ export function WaveformPlayer ({
     if (!viewOnceRef.current.onStart())
       return
 
+    const offset = fraction > 0 && fraction < 1 ? fraction * durationRef.current : 0
+    const shouldMarkRead = isIncoming && isMediaUnread
     try {
       // Replace any source already running (a seek mid-playback).
-      try {
-        sourceRef.current?.stop?.()
-      } catch {
-        // already stopped
-      }
+      stopSourceNode(sourceRef.current)
       sourceRef.current = null
 
       const source = ctx.createBufferSource()
@@ -546,7 +555,6 @@ export function WaveformPlayer ({
         onEndedRef.current()
       }
 
-      const offset = fraction > 0 && fraction < 1 ? fraction * durationRef.current : 0
       startedAtRef.current = ctx.currentTime - offset / rateRef.current
       source.start(0, offset)
       sourceRef.current = source
@@ -558,7 +566,7 @@ export function WaveformPlayer ({
       tickTimerRef.current = setInterval(tick, PROGRESS_SYNC_MS)
 
       // An incoming note is marked read the moment it starts playing.
-      if (isIncoming && isMediaUnread) {
+      if (shouldMarkRead) {
         setIsHeard(true)
         markReadRef.current()
       }
@@ -567,7 +575,9 @@ export function WaveformPlayer ({
     }
   }, [tick, stopRaf, playerId, onStop, onEndedRef, isIncoming, isMediaUnread, markReadRef, setProgressValue])
 
-  playFromRef.current = playFrom
+  useLayoutEffect(() => {
+    playFromRef.current = playFrom
+  })
 
   // A paused note keeps its claim: it is still the current one, so a note
   // started later can reset it.
@@ -611,11 +621,10 @@ export function WaveformPlayer ({
   // Re-seat a running source so a new rate - picked here or on another note -
   // takes effect immediately.
   useEffect(() => {
-    if (sourceRef.current)
-      playFrom(progressRef.current)
     // Only a rate change should re-seat; `playFrom` changes identity with
-    // `tick` and would restart the source for nothing.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // `tick` and would restart the source for nothing, so it is read through its ref.
+    if (sourceRef.current)
+      playFromRef.current(progressRef.current)
   }, [rate])
 
   // The waveform seeks once, on release;
@@ -634,9 +643,11 @@ export function WaveformPlayer ({
 
   // The gesture is built once; it reaches the latest handlers through refs.
   const toggleRef = useRef(togglePlayback)
-  toggleRef.current = togglePlayback
   const commitSeekRef = useRef(commitSeek)
-  commitSeekRef.current = commitSeek
+  useLayoutEffect(() => {
+    toggleRef.current = togglePlayback
+    commitSeekRef.current = commitSeek
+  })
   const onWaveformTap = useCallback(() => toggleRef.current(), [])
   const onWaveformDragEnd = useCallback((fraction: number) => commitSeekRef.current(fraction), [])
 
@@ -660,23 +671,23 @@ export function WaveformPlayer ({
     failOffsetY: [-12, 12],
     testID: 'voice-waveform-pan',
     onActivate: () => {
-      isDragging.value = true
+      isDragging.set(true)
       cancelAnimation(progress)
-      dragStart.value = progress.value
+      dragStart.set(progress.get())
     },
     onUpdate: event => {
-      const width = trackWidthSV.value
+      const width = trackWidthSV.get()
       if (width <= 0)
         return
 
-      progress.value = Math.max(0, Math.min(1, dragStart.value + event.translationX / width))
-      runOnJS(onWaveformDrag)(progress.value)
+      progress.set(Math.max(0, Math.min(1, dragStart.get() + event.translationX / width)))
+      runOnJS(onWaveformDrag)(progress.get())
     },
     onDeactivate: () => {
-      runOnJS(onWaveformDragEnd)(progress.value)
+      runOnJS(onWaveformDragEnd)(progress.get())
     },
     onFinalize: () => {
-      isDragging.value = false
+      isDragging.set(false)
     },
   })
   const waveformTap = useTapGesture({
@@ -691,7 +702,7 @@ export function WaveformPlayer ({
 
   const onTrackLayout = useCallback((event: LayoutChangeEvent) => {
     const width = event.nativeEvent.layout.width
-    trackWidthSV.value = width
+    trackWidthSV.set(width)
     setTrackWidth(width)
   }, [trackWidthSV])
 
@@ -702,19 +713,19 @@ export function WaveformPlayer ({
   useEffect(() => {
     if (isShimmering) {
       setIsSweepMounted(true)
-      loading.value = withTiming(1, { duration: LOADING_FADE_MS })
-      sweep.value = 0
-      sweep.value = withRepeat(withTiming(1, { duration: SWEEP_MS, easing: Easing.poly(0.75) }), -1, false)
+      loading.set(withTiming(1, { duration: LOADING_FADE_MS }))
+      sweep.set(0)
+      sweep.set(withRepeat(withTiming(1, { duration: SWEEP_MS, easing: Easing.poly(0.75) }), -1, false))
       return
     }
 
-    loading.value = withTiming(0, { duration: LOADING_FADE_MS }, finished => {
+    loading.set(withTiming(0, { duration: LOADING_FADE_MS }, finished => {
       if (!finished)
         return
 
       cancelAnimation(sweep)
       runOnJS(setIsSweepMounted)(false)
-    })
+    }))
   }, [isShimmering, loading, sweep])
 
   const flightColor = String(styles.playCircle.backgroundColor)
@@ -726,7 +737,7 @@ export function WaveformPlayer ({
     hasLandedRef.current = true
     const node = playRef.current
     const reveal = () => {
-      playReveal.value = withTiming(1, { duration: SEND_FLIGHT_REVEAL_MS })
+      playReveal.set(withTiming(1, { duration: SEND_FLIGHT_REVEAL_MS }))
     }
     if (!node) {
       reveal()
@@ -742,7 +753,7 @@ export function WaveformPlayer ({
         iconColor: flightIconColor,
       })
       if (!isLanded) {
-        playReveal.value = 1
+        playReveal.set(1)
         return
       }
 
@@ -763,22 +774,22 @@ export function WaveformPlayer ({
 
   useEffect(() => () => flightCleanupRef.current?.(), [])
 
-  const playRevealStyle = useAnimatedStyle(() => ({ opacity: playReveal.value }))
+  const playRevealStyle = useAnimatedStyle(() => ({ opacity: playReveal.get() }))
 
   const hasLevels = levels.length > 0
 
   // Bars of a just-sent note grow in once there is a waveform to grow.
   useEffect(() => {
-    if (!appearOnMount || !hasLevels || appear.value !== 0)
+    if (!appearOnMount || !hasLevels || appear.get() !== 0)
       return
 
-    appear.value = withDelay(
+    appear.set(withDelay(
       APPEAR_DELAY_MS,
       withTiming(1, { duration: APPEAR_MS, easing: EASE_OUT_QUINT }, finished => {
         if (finished)
           runOnJS(setIsAppearing)(false)
       })
-    )
+    ))
   }, [appearOnMount, hasLevels, appear])
 
   useEffect(() => () => {
@@ -790,17 +801,17 @@ export function WaveformPlayer ({
   // All bars in the track color, with the played color clipped at the exact
   // progress pixel on top, so a bar can be half filled.
   const playedStyle = useAnimatedStyle(() => ({
-    width: ((fillAll.value && progress.value <= 0) || isFilledAlways.value ? 1 : progress.value)
-      * trackWidthSV.value,
-    opacity: 1 - loading.value,
+    width: ((fillAll.get() && progress.get() <= 0) || isFilledAlways.get() ? 1 : progress.get())
+      * trackWidthSV.get(),
+    opacity: 1 - loading.get(),
   }))
 
   // A view-once waveform burns away from its end as it plays.
   const burnStyle = useAnimatedStyle(() => ({
-    width: burn.value === BURNT
+    width: burn.get() === BURNT
       ? 0
-      : burn.value === BURNING
-        ? (1 - progress.value) * trackWidthSV.value
+      : burn.get() === BURNING
+        ? (1 - progress.get()) * trackWidthSV.get()
         : '100%',
   }))
 

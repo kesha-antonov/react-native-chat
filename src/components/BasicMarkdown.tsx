@@ -107,9 +107,18 @@ export interface BasicMarkdownProps {
   trailing?: React.ReactNode
 }
 
-export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress, trailing }: BasicMarkdownProps) => {
-  const styles = useThemedStyles(createStyles)
-
+// A plain function rather than the component body: the block parser threads a mutable key
+// counter and "last block" slot through local closures, which React Compiler cannot lower.
+// Kept outside the component, the parse runs exactly as before and the compiler only
+// memoizes its call.
+function renderBlocks (
+  text: string,
+  styles: MdStyles,
+  textStyle: StyleProp<TextStyle>,
+  linkStyle: StyleProp<TextStyle>,
+  onLinkPress: ((url: string) => void) | undefined,
+  trailing: React.ReactNode
+): React.ReactNode[] {
   const lines = text.split('\n')
   const blocks: React.ReactNode[] = []
   let paragraph: string[] = []
@@ -223,9 +232,14 @@ export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress, trailin
       blocks[blocks.length - 1] = finishLastBlock(trailing)
     else
       blocks.push(<Text key='trailing' style={textStyle}>{trailing}</Text>)
-  
 
-  return <View style={styles.root}>{blocks}</View>
+  return blocks
+}
+
+export const BasicMarkdown = ({ text, textStyle, linkStyle, onLinkPress, trailing }: BasicMarkdownProps) => {
+  const styles = useThemedStyles(createStyles)
+
+  return <View style={styles.root}>{renderBlocks(text, styles, textStyle, linkStyle, onLinkPress, trailing)}</View>
 }
 
 const createStyles = (theme: ChatTheme) => {

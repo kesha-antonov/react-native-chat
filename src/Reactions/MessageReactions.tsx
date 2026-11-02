@@ -39,10 +39,10 @@ const ReactionPill = ({ emoji, count, avatars, isChosen, background, textColor, 
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
 
   const handlePressIn = useCallback(() => {
-    scale.value = withTiming(0.9, PRESS_IN)
+    scale.set(withTiming(0.9, PRESS_IN))
   }, [scale])
   const handlePressOut = useCallback(() => {
-    scale.value = withTiming(1, PRESS_OUT)
+    scale.set(withTiming(1, PRESS_OUT))
   }, [scale])
   const handlePress = useCallback(() => onPress?.(emoji), [onPress, emoji])
 

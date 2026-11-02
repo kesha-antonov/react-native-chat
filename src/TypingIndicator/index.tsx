@@ -130,18 +130,18 @@ const SlidingTypingIndicator = ({ isTyping, style }: TypingIndicatorProps) => {
   }))
 
   const slideIn = useCallback(() => {
-    yCoords.value = withTiming(0, { duration: SLIDE_MS })
-    heightScale.value = withTiming(BUBBLE_HEIGHT, { duration: SLIDE_MS })
-    marginScale.value = withTiming(BUBBLE_MARGIN, { duration: SLIDE_MS })
+    yCoords.set(withTiming(0, { duration: SLIDE_MS }))
+    heightScale.set(withTiming(BUBBLE_HEIGHT, { duration: SLIDE_MS }))
+    marginScale.set(withTiming(BUBBLE_MARGIN, { duration: SLIDE_MS }))
   }, [yCoords, heightScale, marginScale])
 
   const slideOut = useCallback(() => {
-    yCoords.value = withTiming(200, { duration: SLIDE_MS }, isFinished => {
+    yCoords.set(withTiming(200, { duration: SLIDE_MS }, isFinished => {
       if (isFinished)
         runOnJS(setIsVisible)(false)
-    })
-    heightScale.value = withTiming(0, { duration: SLIDE_MS })
-    marginScale.value = withTiming(0, { duration: SLIDE_MS })
+    }))
+    heightScale.set(withTiming(0, { duration: SLIDE_MS }))
+    marginScale.set(withTiming(0, { duration: SLIDE_MS }))
   }, [yCoords, heightScale, marginScale])
 
   useEffect(() => {

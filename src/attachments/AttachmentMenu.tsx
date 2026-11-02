@@ -120,11 +120,12 @@ const formatDuration = (seconds?: number) => {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }
 
-const ExpoImage = () => getExpoImage()?.Image ?? null
+// Resolved once, like MessageImage does: a component type looked up in render is one the
+// compiler cannot prove stable.
+const ExpoImageView = getExpoImage()?.Image ?? null
 
 const Thumbnail = ({ asset, style }: { asset: GalleryAsset, style: object }) => {
   const uri = useAssetThumbnailUri(asset)
-  const ExpoImageView = ExpoImage()
   if (!uri)
     return <View style={style} />
   if (ExpoImageView)
@@ -144,7 +145,7 @@ const GalleryCell = memo(({ asset, size, selection, cornerStyle, isRTL, onToggle
 }) => {
   const progress = useSharedValue(selection ? 1 : 0)
   useEffect(() => {
-    progress.value = withTiming(selection ? 1 : 0, { duration: SELECT_MS, easing: EASE_OUT, reduceMotion: REDUCE_MOTION })
+    progress.set(withTiming(selection ? 1 : 0, { duration: SELECT_MS, easing: EASE_OUT, reduceMotion: REDUCE_MOTION }))
   }, [selection, progress])
   const imageStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 - (1 - SELECTED_SCALE) * progress.value }],
@@ -195,15 +196,15 @@ const TabButton = ({ tab, index, label, width, isSelected, onPress, styles, them
   const fade = useSharedValue(0)
   useEffect(() => {
     const delay = 20 + TAB_STAGGER_MS * Math.max(0, 3 - index)
-    appear.value = withDelay(delay, withSequence(
+    appear.set(withDelay(delay, withSequence(
       withTiming(1.1, { duration: 200, easing: EASE_OUT, reduceMotion: REDUCE_MOTION }),
       withTiming(1, { duration: 100, easing: EASE_IN, reduceMotion: REDUCE_MOTION })
-    ), REDUCE_MOTION)
-    fade.value = withDelay(delay, withTiming(1, { duration: 200, easing: EASE_BOTH, reduceMotion: REDUCE_MOTION }), REDUCE_MOTION)
+    ), REDUCE_MOTION))
+    fade.set(withDelay(delay, withTiming(1, { duration: 200, easing: EASE_BOTH, reduceMotion: REDUCE_MOTION }), REDUCE_MOTION))
   }, [appear, fade, index])
   const selected = useSharedValue(isSelected ? 1 : 0)
   useEffect(() => {
-    selected.value = withTiming(isSelected ? 1 : 0, { duration: TAB_SELECT_MS, easing: DECELERATE, reduceMotion: REDUCE_MOTION })
+    selected.set(withTiming(isSelected ? 1 : 0, { duration: TAB_SELECT_MS, easing: DECELERATE, reduceMotion: REDUCE_MOTION }))
   }, [isSelected, selected])
   const appearStyle = useAnimatedStyle(() => ({
     opacity: fade.value,
@@ -272,32 +273,32 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
   const contentShift = useSharedValue(0)
 
   const animateIn = useCallback(() => {
-    open.value = 0
-    dim.value = 0
-    open.value = withSpring(1, SHEET_SPRING)
-    dim.value = withDelay(20, withTiming(1, DIM_IN), REDUCE_MOTION)
+    open.set(0)
+    dim.set(0)
+    open.set(withSpring(1, SHEET_SPRING))
+    dim.set(withDelay(20, withTiming(1, DIM_IN), REDUCE_MOTION))
   }, [open, dim])
   const animateOut = useCallback((onDone: () => void) => {
-    dim.value = withTiming(0, CLOSE)
-    open.value = withTiming(0, CLOSE, finished => {
+    dim.set(withTiming(0, CLOSE))
+    open.set(withTiming(0, CLOSE, finished => {
       if (finished)
         runOnJS(onDone)()
-    })
+    }))
   }, [open, dim])
   const { isMounted, close } = useAnimatedPresence(visible, animateIn, animateOut)
 
   // Every open starts fresh.
-  const wasMountedRef = useRef(false)
-  if (isMounted && !wasMountedRef.current) {
-    wasMountedRef.current = true
-    if (activeTab !== initialTab)
-      setActiveTab(initialTab)
-    if (selected.length)
-      setSelected([])
-    if (caption)
-      setCaption('')
-  } else if (!isMounted && wasMountedRef.current) {
-    wasMountedRef.current = false
+  const [wasMounted, setWasMounted] = useState(false)
+  if (isMounted !== wasMounted) {
+    setWasMounted(isMounted)
+    if (isMounted) {
+      if (activeTab !== initialTab)
+        setActiveTab(initialTab)
+      if (selected.length)
+        setSelected([])
+      if (caption)
+        setCaption('')
+    }
   }
 
   const isGridTab = activeTab === 'gallery' && hasGrid
@@ -306,10 +307,10 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
     !(gallery.status === 'ready' && gallery.assets.length === 0)
 
   useEffect(() => {
-    gridMode.value = withTiming(isGridShown ? 1 : 0, CLOSE)
+    gridMode.set(withTiming(isGridShown ? 1 : 0, CLOSE))
   }, [isGridShown, gridMode])
   useEffect(() => {
-    captionShown.value = withTiming(selected.length > 0 ? 1 : 0, { duration: CAPTION_SWAP_MS, easing: DECELERATE, reduceMotion: REDUCE_MOTION })
+    captionShown.set(withTiming(selected.length > 0 ? 1 : 0, { duration: CAPTION_SWAP_MS, easing: DECELERATE, reduceMotion: REDUCE_MOTION }))
   }, [selected.length, captionShown])
 
   const dismiss = useCallback(() => close(onClose), [close, onClose])
@@ -362,8 +363,8 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
     if (tab === activeTab)
       return
     setActiveTab(tab)
-    contentShift.value = TAB_CONTENT_SHIFT
-    contentShift.value = withSpring(0, TAB_CONTENT_SPRING)
+    contentShift.set(TAB_CONTENT_SHIFT)
+    contentShift.set(withSpring(0, TAB_CONTENT_SPRING))
     if (tab === 'location' && (location == null || (typeof location === 'object' && location.status !== 'located')))
       fetchLocation()
   }, [runPicker, hasGrid, activeTab, contentShift, location, fetchLocation])
@@ -412,7 +413,7 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
   const tabWidth = Math.min(TAB_MAX_WIDTH, Math.floor((screenWidth - 40) / Math.min(4.5, Math.max(1, tabs.length))))
 
   const scrollHandler = useAnimatedScrollHandler(event => {
-    scrollY.value = event.contentOffset.y
+    scrollY.set(event.contentOffset.y)
   })
 
   const sheetStyle = useAnimatedStyle(() => ({

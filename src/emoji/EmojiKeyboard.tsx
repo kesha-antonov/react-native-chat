@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BackHandler, Keyboard, Platform, StyleSheet } from 'react-native'
 import { KeyboardEvents, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, { Easing, SharedValue, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -105,14 +105,16 @@ export function useEmojiKeyboard ({ isEnabled, focusComposer, defaultHeight }: U
   const open = useSharedValue(0)
   const searching = useSharedValue(0)
   const isOpenRef = useRef(false)
-  isOpenRef.current = isOpen
+  useLayoutEffect(() => {
+    isOpenRef.current = isOpen
+  })
   // The composer asked for the system keyboard; the panel goes once it is up.
   const awaitingKeyboardRef = useRef(false)
 
   const finishClose = useCallback((animated: boolean) => {
     awaitingKeyboardRef.current = false
-    open.value = animated ? withTiming(0, SWITCH) : 0
-    searching.value = 0
+    open.set(animated ? withTiming(0, SWITCH) : 0)
+    searching.set(0)
     setIsSearching(false)
     setIsOpen(false)
   }, [open, searching])
@@ -158,20 +160,20 @@ export function useEmojiKeyboard ({ isEnabled, focusComposer, defaultHeight }: U
       setPanelHeight(lastKeyboardHeight)
     setIsMounted(true)
     setIsOpen(true)
-    const isKeyboardUp = keyboardProgress.value > 0.5
+    const isKeyboardUp = keyboardProgress.get() > 0.5
     if (isKeyboardUp) {
       // The panel takes the keyboard's exact place while the keyboard leaves.
-      open.value = 1
+      open.set(1)
       Keyboard.dismiss()
     } else {
-      open.value = withTiming(1, SWITCH)
+      open.set(withTiming(1, SWITCH))
     }
   }, [isEnabled, focusComposer, keyboardProgress, open])
 
   const close = useCallback(() => {
     if (!isOpenRef.current)
       return
-    if (keyboardProgress.value > 0.5)
+    if (keyboardProgress.get() > 0.5)
       Keyboard.dismiss()
     finishClose(true)
   }, [finishClose, keyboardProgress])
@@ -181,12 +183,12 @@ export function useEmojiKeyboard ({ isEnabled, focusComposer, defaultHeight }: U
       return
     awaitingKeyboardRef.current = true
     // Moving focus from the panel's search keeps the keyboard up, so nothing will announce it.
-    if (searching.value > 0 || keyboardProgress.value > 0.9)
+    if (searching.get() > 0 || keyboardProgress.get() > 0.9)
       finishClose(true)
   }, [finishClose, keyboardProgress, searching])
 
   const onSearchModeChange = useCallback((next: boolean) => {
-    searching.value = next ? 1 : 0
+    searching.set(next ? 1 : 0)
     setIsSearching(next)
   }, [searching])
 

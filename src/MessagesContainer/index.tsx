@@ -1,9 +1,9 @@
-import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   GestureResponderEvent,
   LayoutChangeEvent } from 'react-native'
-import type { ViewabilityConfigCallbackPair, ViewToken } from '@legendapp/list/react-native'
+import type { ViewabilityConfigCallbackPair } from '@legendapp/list/react-native'
 import { AnimatedLegendList } from '@legendapp/list/reanimated'
 import { Pressable } from 'react-native-gesture-handler'
 import Animated, { Easing, makeMutable, runOnJS, SharedValue, useAnimatedReaction, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -11,7 +11,7 @@ import { BubbleGradientContext, BubbleGradientStore } from '../components/Bubble
 import { useComposerPanels } from '../components/composerPanels'
 import { GlassSurface } from '../components/GlassSurface'
 import { Icon } from '../components/Icon'
-import { MediaPlaybackContext } from '../components/mediaPlayback'
+import { MediaPlaybackContext, MediaPlaybackController } from '../components/mediaPlayback'
 import { useIsKeyboardVisible } from '../hooks/useIsKeyboardVisible'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { LoadEarlierMessages } from '../LoadEarlierMessages'
@@ -71,6 +71,44 @@ const overshoot = (tension: number) => (t: number) => {
 const SCROLL_BUTTON_PRESS_IN = { duration: 80 }
 const SCROLL_BUTTON_PRESS_OUT = { duration: 350, easing: overshoot(2) }
 
+type ViewableItemsChanged = NonNullable<ViewabilityConfigCallbackPair['onViewableItemsChanged']>
+
+/**
+ * The list reads its viewability callbacks once, at mount, so they are permanent and forward to
+ * what the latest commit handed over (the list only reports after a commit). A plain object
+ * rather than refs: the callbacks are built while rendering, and React Compiler rejects a
+ * render-time closure over a ref even when nothing calls it until later.
+ */
+function createViewabilityRelay (
+  initialMediaController: MediaPlaybackController | null,
+  initialConsumer: ViewableItemsChanged | null | undefined
+) {
+  let mediaController = initialMediaController
+  let markRowsSeen: (ids: (string | number)[]) => void = () => {}
+  let consumer = initialConsumer
+  const onRowsViewable: ViewableItemsChanged = ({ viewableItems }) => {
+    const ids: (string | number)[] = []
+    for (const token of viewableItems) {
+      const id = (token.item as IMessage | undefined)?._id
+      if (id != null)
+        ids.push(id)
+    }
+    mediaController?.setViewableMessages(ids)
+    markRowsSeen(ids)
+  }
+  const onConsumerViewable: ViewableItemsChanged = info => consumer?.(info)
+  const update = (next: {
+    mediaController: MediaPlaybackController | null
+    markRowsSeen: (ids: (string | number)[]) => void
+    consumer: ViewableItemsChanged | null | undefined
+  }) => {
+    mediaController = next.mediaController
+    markRowsSeen = next.markRowsSeen
+    consumer = next.consumer
+  }
+  return { onRowsViewable, onConsumerViewable, update }
+}
+
 export const MessagesContainer = <TMessage extends IMessage>(props: MessagesContainerProps<TMessage>) => {
   const {
     messages = [],
@@ -115,26 +153,13 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // Which rows are on screen, for the floating round note. The list reads viewability
   // callbacks once, at mount, and FlatList refuses
   // `onViewableItemsChanged` alongside `viewabilityConfigCallbackPairs`, so a
-  // consumer's own handler is folded into the pairs here, read through a ref.
+  // consumer's own handler is folded into the pairs here, read through a relay.
   const mediaController = useContext(MediaPlaybackContext)
-  const mediaControllerRef = useRef(mediaController)
-  mediaControllerRef.current = mediaController
-  const markRowsSeenRef = useRef<(ids: (string | number)[]) => void>(() => {})
-  const consumerViewableRef = useRef(listProps?.onViewableItemsChanged)
-  consumerViewableRef.current = listProps?.onViewableItemsChanged
+  const [viewabilityRelay] = useState(() => createViewabilityRelay(mediaController, listProps?.onViewableItemsChanged))
   const [viewabilityPairs] = useState(() => {
     const pairs: ViewabilityConfigCallbackPair[] = [{
       viewabilityConfig: ROW_ON_SCREEN_CONFIG,
-      onViewableItemsChanged: ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-        const ids: (string | number)[] = []
-        for (const token of viewableItems) {
-          const id = (token.item as IMessage | undefined)?._id
-          if (id != null)
-            ids.push(id)
-        }
-        mediaControllerRef.current?.setViewableMessages(ids)
-        markRowsSeenRef.current(ids)
-      },
+      onViewableItemsChanged: viewabilityRelay.onRowsViewable,
     }]
     if (listProps?.viewabilityConfigCallbackPairs)
       pairs.push(...listProps.viewabilityConfigCallbackPairs)
@@ -142,7 +167,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       pairs.push({
         // FlatList's own default when a handler comes without a config.
         viewabilityConfig: listProps.viewabilityConfig ?? { viewAreaCoveragePercentThreshold: 0 },
-        onViewableItemsChanged: info => consumerViewableRef.current?.(info),
+        onViewableItemsChanged: viewabilityRelay.onConsumerViewable,
       })
     return pairs
   })
@@ -296,10 +321,10 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       if (isVisible)
         runOnJS(setIsScrollToBottomVisible)(true)
 
-      scrollToBottomOpacity.value = withTiming(isVisible ? 1 : 0, SCROLL_BUTTON_SHOW, isFinished => {
+      scrollToBottomOpacity.set(withTiming(isVisible ? 1 : 0, SCROLL_BUTTON_SHOW, isFinished => {
         if (isFinished && !isVisible)
           runOnJS(setIsScrollToBottomVisible)(false)
-      })
+      }))
     })
 
   const pageDownReturn = useContext(PageDownReturnContext)
@@ -309,15 +334,15 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     if (returnToMessageId == null)
       return
 
-    isShownByScroll.value = false
-    isScrollToBottomShown.value = true
+    isShownByScroll.set(false)
+    isScrollToBottomShown.set(true)
   }, [returnToMessageId, isShownByScroll, isScrollToBottomShown])
 
   const doScrollToBottom = useCallback((animated: boolean = true) => {
-    isScrollingDown.value = true
-    isScrollToBottomShown.value = false
-    isShownByScroll.value = false
-    scrollTravel.value = 0
+    isScrollingDown.set(true)
+    isScrollToBottomShown.set(false)
+    isShownByScroll.set(false)
+    scrollTravel.set(0)
 
     forwardRef?.current?.scrollToEnd({ animated })
   }, [forwardRef, isScrollingDown, isScrollToBottomShown, isShownByScroll, scrollTravel])
@@ -333,9 +358,12 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   // The list's data keeps its identity while the ids and their order do: a status change,
   // a reaction or a streamed token then leaves the list and its cells alone.
-  const listDataRef = useRef<TMessage[] | undefined>(undefined)
-  const listData = sameOrder(listDataRef.current, messages)
-  listDataRef.current = listData
+  // Kept in state, not a ref: a render that changes the order stores the new array (React
+  // re-runs that render once, before any child renders).
+  const [previousListData, setPreviousListData] = useState(messages)
+  const listData = sameOrder(previousListData, messages)
+  if (listData !== previousListData)
+    setPreviousListData(listData)
   // The list renders oldest first; `messages` comes newest first unless `isInverted` is off.
   const orderedData = useMemo(() => isInverted ? [...listData].reverse() : listData, [listData, isInverted])
 
@@ -375,16 +403,21 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     /* eslint-enable @typescript-eslint/no-unused-vars */
     ...sharedRowProps
   } = props
-  const rowConfig = useStableRowConfig({
+  const stableRowProps = useStableRowConfig({
     ...sharedRowProps,
     isInverted,
     isDayAnimationEnabled,
+  })
+  // The list's shared values join outside the comparison: they keep their identity anyway, and
+  // the comparison must only see what the props hand it (see useStableRowConfig).
+  const rowConfig = useMemo(() => ({
+    ...stableRowProps,
     scrolledY,
     daysPositions,
     listHeight,
     floatingRenderedDate,
     floatingDayOpacity,
-  })
+  }), [stableRowProps, scrolledY, daysPositions, listHeight, floatingRenderedDate, floatingDayOpacity])
 
   const renderItem = useCallback(({ item }: { item: unknown }): React.ReactElement =>
     <MessageRow id={String((item as TMessage)._id)} />
@@ -457,12 +490,12 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       incoming.forEach(message => unreadIdsRef.current.add(message._id))
       setUnreadCount(unreadIdsRef.current.size)
     }
-    isShownByScroll.value = false
-    isScrollToBottomShown.value = true
+    isShownByScroll.set(false)
+    isScrollToBottomShown.set(true)
   }, [newestMessageId, messages, isInverted, userId, isScrollToBottomEnabled, isScrollToBottomBadgeEnabled, distanceFromNewestSV, isShownByScroll, isScrollToBottomShown, listState])
 
   // Read as they come into view.
-  markRowsSeenRef.current = (ids: (string | number)[]) => {
+  const markRowsSeen = useCallback((ids: (string | number)[]) => {
     if (unreadIdsRef.current.size === 0)
       return
 
@@ -472,12 +505,22 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
     if (changed)
       setUnreadCount(unreadIdsRef.current.size)
-  }
+  }, [])
+  const consumerOnViewableItemsChanged = listProps?.onViewableItemsChanged
+  // An insertion effect runs before any layout effect, the list's own included, so a report
+  // made while the list commits already reaches this render's handlers.
+  useInsertionEffect(() => {
+    viewabilityRelay.update({ mediaController, markRowsSeen, consumer: consumerOnViewableItemsChanged })
+  })
 
   // Through a ref: the callback changes with every new message, and re-running this then would
   // clear a count just set by a message that arrived before the button had come up.
   const clearPageDownReturnRef = useRef(pageDownReturn?.clear)
-  clearPageDownReturnRef.current = pageDownReturn?.clear
+  const clearPageDownReturn = pageDownReturn?.clear
+  // A layout effect, so it is current before the passive effect below reads it.
+  useLayoutEffect(() => {
+    clearPageDownReturnRef.current = clearPageDownReturn
+  })
   useEffect(() => {
     if (!isScrollToBottomVisible) {
       unreadIdsRef.current.clear()
@@ -512,13 +555,13 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [doScrollToBottom, returnToMessageId, goBackFromQuote])
 
   const handleScrollToBottomPressIn = useCallback(() => {
-    scrollToBottomPressScale.value = withTiming(SCROLL_BUTTON_PRESSED, SCROLL_BUTTON_PRESS_IN)
-    scrollToBottomPressed.value = 1
+    scrollToBottomPressScale.set(withTiming(SCROLL_BUTTON_PRESSED, SCROLL_BUTTON_PRESS_IN))
+    scrollToBottomPressed.set(1)
   }, [scrollToBottomPressScale, scrollToBottomPressed])
 
   const handleScrollToBottomPressOut = useCallback(() => {
-    scrollToBottomPressScale.value = withTiming(1, SCROLL_BUTTON_PRESS_OUT)
-    scrollToBottomPressed.value = withTiming(0, { duration: 150 })
+    scrollToBottomPressScale.set(withTiming(1, SCROLL_BUTTON_PRESS_OUT))
+    scrollToBottomPressed.set(withTiming(0, { duration: 150 }))
   }, [scrollToBottomPressScale, scrollToBottomPressed])
 
   const scrollToBottomContent = useMemo(() => {
@@ -550,14 +593,10 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     )
   }, [scrollToBottomStyleAnim, scrollToBottomContentStyle, renderScrollBottomComponent, themedStyles, unreadCount, theme, scrollToBottomPressedStyle])
 
-  const ScrollToBottomWrapper = useCallback(() => {
-    if (!isScrollToBottomEnabled)
-      return null
-
-    if (!isScrollToBottomVisible)
-      return null
-
-    return (
+  // An element, not a component made here: a component created during render remounts every
+  // time its callback's inputs change.
+  const scrollToBottomButton = isScrollToBottomEnabled && isScrollToBottomVisible
+    ? (
       <Pressable
         style={[styles.scrollToBottom, scrollToBottomStyle]}
         onPress={handleScrollToBottomPress}
@@ -569,10 +608,10 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
         {scrollToBottomContent}
       </Pressable>
     )
-  }, [isScrollToBottomEnabled, isScrollToBottomVisible, handleScrollToBottomPress, handleScrollToBottomPressIn, handleScrollToBottomPressOut, scrollToBottomContent, scrollToBottomStyle])
+    : null
 
   const onLayoutList = useCallback((event: LayoutChangeEvent) => {
-    listHeight.value = event.nativeEvent.layout.height
+    listHeight.set(event.nativeEvent.layout.height)
     setIsListLaidOut(true)
 
     const onLayoutProp = listProps?.onLayout as ((event: LayoutChangeEvent) => void) | undefined
@@ -644,12 +683,15 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       if (y != null)
         initial[id] = entry(y)
       return state.listenToPosition(id, position => {
-        (pending ??= {})[id] = entry(position)
-        frame ??= requestAnimationFrame(flush)
+        if (pending == null)
+          pending = {}
+        pending[id] = entry(position)
+        if (frame == null)
+          frame = requestAnimationFrame(flush)
       })
     })
     // The days this list shows now, replacing any that went with a deleted or earlier message.
-    daysPositions.value = initial
+    daysPositions.set(initial)
 
     return () => {
       unsubscribes.forEach(unsubscribe => unsubscribe())
@@ -676,65 +718,67 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // Scroll state, on the UI thread from the list's scroll offset: how far the viewport is from
   // the newest message decides the scroll-to-bottom button.
   useAnimatedReaction(
-    () => scrollOffset.value,
+    () => scrollOffset.get(),
     y => {
-      isScrollingDown.value = lastScrolledY.value < y
-      lastScrolledY.value = y
+      isScrollingDown.set(lastScrolledY.get() < y)
+      lastScrolledY.set(y)
 
-      const distanceFromNewest = Math.max(0, contentHeight.value - listHeight.value - y)
-      const delta = distanceFromNewest - distanceFromNewestSV.value
-      distanceFromNewestSV.value = distanceFromNewest
+      const distanceFromNewest = Math.max(0, contentHeight.get() - listHeight.get() - y)
+      const delta = distanceFromNewest - distanceFromNewestSV.get()
+      distanceFromNewestSV.set(distanceFromNewest)
 
       // The button hides once the newest message is reached; it comes up after scrolling
       // back towards the newest by `scrollToBottomOffset`, and goes again after scrolling
       // away by as much if scrolling is what brought it up.
       if (distanceFromNewest <= NEWEST_SLOP) {
         if (delta <= 0) {
-          isScrollToBottomShown.value = false
-          isShownByScroll.value = false
-          scrollTravel.value = 0
+          isScrollToBottomShown.set(false)
+          isShownByScroll.set(false)
+          scrollTravel.set(0)
         }
       } else if (delta < 0) {
-        if (!isScrollToBottomShown.value) {
-          scrollTravel.value += -delta
-          if (scrollTravel.value > scrollToBottomOffset!) {
-            scrollTravel.value = 0
-            isScrollToBottomShown.value = true
-            isShownByScroll.value = true
+        if (!isScrollToBottomShown.get()) {
+          scrollTravel.set(scrollTravel.get() - delta)
+          if (scrollTravel.get() > scrollToBottomOffset!) {
+            scrollTravel.set(0)
+            isScrollToBottomShown.set(true)
+            isShownByScroll.set(true)
           }
         }
-      } else if (delta > 0 && isShownByScroll.value && isScrollToBottomShown.value) {
-        scrollTravel.value -= delta
-        if (scrollTravel.value < -scrollToBottomOffset!) {
-          scrollTravel.value = 0
-          isScrollToBottomShown.value = false
-          isShownByScroll.value = false
+      } else if (delta > 0 && isShownByScroll.get() && isScrollToBottomShown.get()) {
+        scrollTravel.set(scrollTravel.get() - delta)
+        if (scrollTravel.get() < -scrollToBottomOffset!) {
+          scrollTravel.set(0)
+          isScrollToBottomShown.set(false)
+          isShownByScroll.set(false)
         }
       }
     })
 
   // The floating day header shows while a finger or momentum moves the list.
   const onScrollBeginDrag = useCallback(() => {
-    isScrollActive.value = true
+    isScrollActive.set(true)
   }, [isScrollActive])
   // Momentum (if any) re-asserts it within the header's fade-out delay, so a flick keeps the
   // header up.
   const dragEndedAtRef = useRef(0)
   const onScrollEndDrag = useCallback(() => {
     dragEndedAtRef.current = Date.now()
-    isScrollActive.value = false
+    isScrollActive.set(false)
   }, [isScrollActive])
   const onMomentumScrollEnd = useCallback(() => {
-    isScrollActive.value = false
+    isScrollActive.set(false)
   }, [isScrollActive])
+  // Whether the whole conversation still fits the list (see `maintainScrollAtEnd` below).
+  const [isContentShort, setIsContentShort] = useState(true)
   const onContentSizeChange = useCallback((_width: number, height: number) => {
-    contentHeight.value = height
+    contentHeight.set(height)
     // The space holding a short chat at the bottom makes its content exactly as tall as the list.
     const isShort = height <= listHeight.value + 1
     setIsContentShort(previous => previous === isShort ? previous : isShort)
   }, [contentHeight, listHeight])
   const onMetricsChange = useCallback((metrics: { footerSize: number }) => {
-    footerSize.value = metrics.footerSize
+    footerSize.set(metrics.footerSize)
   }, [footerSize])
   useEffect(() => {
     const state = isListLaidOut ? listState() : undefined
@@ -748,10 +792,10 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       const lastId = String(lastMessage._id)
       const position = state.positionByKey(lastId)
       if (position != null)
-        rowsHeight.value = position + (state.sizes.get(lastId) ?? 0)
+        rowsHeight.set(position + (state.sizes.get(lastId) ?? 0))
     }
     return state.listen('totalSize', size => {
-      rowsHeight.value = size
+      rowsHeight.set(size)
     })
   }, [isListLaidOut, listState, rowsHeight, orderedData])
 
@@ -776,7 +820,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // header up for good.
   const onMomentumScrollBegin = useCallback(() => {
     if (Date.now() - dragEndedAtRef.current < 300)
-      isScrollActive.value = true
+      isScrollActive.set(true)
   }, [isScrollActive])
 
   // New messages keep the list at the newest one while it is there (or near), and the newest
@@ -784,7 +828,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // whole conversation still fits, the follow is immediate: an animated one holds back the space
   // that keeps a short chat at the bottom until it ends, and a reply streaming in restarts it
   // every few frames, so the reply grew off screen until it was done.
-  const [isContentShort, setIsContentShort] = useState(true)
   const maintainScrollAtEnd = useMemo(() => ({ animated: !isContentShort }), [isContentShort])
 
   // Memoized, so a render of the container that leaves the list's inputs alone - a status
@@ -836,7 +879,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       onTouchEnd={onListTouchEnd}
     >
       {listEngine}
-      <ScrollToBottomWrapper />
+      {scrollToBottomButton}
       {isDayAnimationEnabled && (
         <DayAnimated
           scrolledY={scrolledY}

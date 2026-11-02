@@ -107,7 +107,7 @@ export const DayAnimated = ({ scrolledY, daysPositions, listHeight: _listHeight,
   })
 
   const handleLayout = useCallback(({ nativeEvent }: LayoutChangeEvent) => {
-    containerHeight.value = nativeEvent.layout.height
+    containerHeight.set(nativeEvent.layout.height)
   }, [containerHeight])
 
   useAnimatedReaction(
@@ -125,13 +125,13 @@ export const DayAnimated = ({ scrolledY, daysPositions, listHeight: _listHeight,
   })
 
   useEffect(() => {
-    isLoadingAnim.value = isLoading
+    isLoadingAnim.set(isLoading)
   }, [isLoadingAnim, isLoading])
 
   // Publish the date the header is actually rendering so the inline separators (and
   // the header's own renderGate) know when the text has caught up to the worklet.
   useEffect(() => {
-    floatingRenderedDate.value = createdAt
+    floatingRenderedDate.set(createdAt)
   }, [createdAt, floatingRenderedDate])
 
   const dayContent = useMemo(() => {

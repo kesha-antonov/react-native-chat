@@ -378,7 +378,7 @@ export const RecordCircle = memo(function RecordCircle ({
     'worklet'
     const dt = Math.min(64, info.timeSincePreviousFrame ?? 16)
     const frames = dt / (1000 / 60)
-    let current = state.value
+    let current = state.get()
     if (!current) {
       // Built here, on the UI thread, so the arrays stay mutable in place.
       current = {
@@ -387,14 +387,14 @@ export const RecordCircle = memo(function RecordCircle ({
         tiny: createBlob(11, 47, 47 + 15 * 0.6),
         waves: 0,
       }
-      state.value = current
+      state.set(current)
     }
 
     const target = amplitude.value
     // `animationSpeedCircle` 0.55; blobs: `ANIMATION_SPEED_WAVE_HUGE` 0.65 and
     // `_SMALL` 0.45, as (1 - speed).
     stepAmplitude(current.circle, target, 100 + 500 * 0.55, 100 + 500 * 0.55, dt)
-    circleAmplitude.value = current.circle.amplitude
+    circleAmplitude.set(current.circle.amplitude)
 
     if (!hasBlobs)
       return
@@ -410,8 +410,8 @@ export const RecordCircle = memo(function RecordCircle ({
     // The send flight drops the blobs over its first 60% (`hideWavesProgress`).
     const flightWaves = 1 - clamp01(flight.value / VOICE_FLIGHT_BLOB_SHARE)
     const waves = easeOut(current.waves) * blobScale * flightWaves
-    bigPath.value = blobPath(current.big, BLOB_CENTER, BLOB_CENTER, waves * (0.878 + 1.4 * current.big.amplitude))
-    tinyPath.value = blobPath(current.tiny, BLOB_CENTER, BLOB_CENTER, waves * (0.926 + 1.4 * current.tiny.amplitude))
+    bigPath.set(blobPath(current.big, BLOB_CENTER, BLOB_CENTER, waves * (0.878 + 1.4 * current.big.amplitude)))
+    tinyPath.set(blobPath(current.tiny, BLOB_CENTER, BLOB_CENTER, waves * (0.926 + 1.4 * current.tiny.amplitude)))
   })
 
   // Sideways only: the circle follows the cancel slide, never the finger up.

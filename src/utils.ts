@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { IMessage } from './Models'
 
 export function renderComponentOrElement<TProps extends Record<string, any>>(
@@ -122,18 +122,46 @@ function processCallbackArguments (args: unknown[]): unknown[] {
   return params
 }
 
+function areDepsEqual (a: React.DependencyList, b: React.DependencyList): boolean {
+  if (a.length !== b.length)
+    return false
+  for (let i = 0; i < a.length; i++)
+    if (!Object.is(a[i], b[i]))
+      return false
+  return true
+}
+
+/**
+ * A number that changes whenever `deps` changes (compared like React compares a dependency
+ * list). The hooks below take a caller-owned `deps` list, which cannot be spread into a
+ * memo's dependency array without making React Compiler skip the whole hook; folding it into
+ * one value keeps the array a literal.
+ */
+function useDepsVersion (deps: React.DependencyList): number {
+  const [prevDeps, setPrevDeps] = useState(deps)
+  const [version, setVersion] = useState(0)
+  if (!areDepsEqual(prevDeps, deps)) {
+    setPrevDeps(deps)
+    setVersion(version + 1)
+    return version + 1
+  }
+  return version
+}
+
 export function useCallbackDebounced<T extends (...args: any[]) => any>(callbackFunc: T, deps: React.DependencyList = [], time: number): (...args: Parameters<T>) => void {
   const timeoutId = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const depsVersion = useDepsVersion(deps)
 
   const savedFunc = useCallback((...args: Parameters<T>) => {
+    // Referenced so the callback's identity follows the caller's `deps`, as before.
+    void depsVersion
     const params = processCallbackArguments(args)
     if (timeoutId.current)
       clearTimeout(timeoutId.current)
     timeoutId.current = setTimeout(() => {
       callbackFunc(...params as Parameters<T>)
     }, time)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [callbackFunc, time, ...deps])
+  }, [callbackFunc, time, depsVersion])
 
   useEffect(() => {
     return () => {
@@ -148,9 +176,11 @@ export function useCallbackDebounced<T extends (...args: any[]) => any>(callback
 export function useCallbackThrottled<T extends (...args: any[]) => any>(callbackFunc: T, deps: React.DependencyList = [], time: number): (...args: Parameters<T>) => void {
   const lastExecution = useRef<number>(0)
   const timeoutId = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const depsVersion = useDepsVersion(deps)
 
-  // we use function instead of arrow to access arguments object
   const savedFunc = useCallback((...args: Parameters<T>) => {
+    // Referenced so the callback's identity follows the caller's `deps`, as before.
+    void depsVersion
     const params = processCallbackArguments(args)
 
     const now = Date.now()
@@ -168,8 +198,7 @@ export function useCallbackThrottled<T extends (...args: any[]) => any>(callback
         callbackFunc(...params as Parameters<T>)
       }, time - timeSinceLastExecution)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [callbackFunc, time, ...deps])
+  }, [callbackFunc, time, depsVersion])
 
   useEffect(() => {
     return () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 /**
  * Keeps an overlay mounted for its exit animation.
@@ -36,8 +36,10 @@ export const useAnimatedPresence = (
   const isOpenRef = useRef(false)
   const animateInRef = useRef(animateIn)
   const animateOutRef = useRef(animateOut)
-  animateInRef.current = animateIn
-  animateOutRef.current = animateOut
+  useLayoutEffect(() => {
+    animateInRef.current = animateIn
+    animateOutRef.current = animateOut
+  })
 
   const close = useCallback((after?: () => void) => {
     if (!isOpenRef.current)

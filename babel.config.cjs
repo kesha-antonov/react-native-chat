@@ -17,6 +17,12 @@ module.exports = function (api) {
       ['@babel/plugin-transform-private-methods', { loose: true }],
       ['@babel/plugin-transform-private-property-in-object', { loose: true }],
       '@babel/plugin-transform-unicode-property-regex',
+      // Tests run the library through the same compiler it is published with (babel.build.cjs),
+      // so they exercise the memoization apps get - not a version only the test suite sees.
+      ['babel-plugin-react-compiler', {
+        target: '19',
+        sources: filename => /\/src\//.test(filename) && !/\/__tests__\//.test(filename),
+      }],
       '@babel/plugin-transform-react-jsx',
       'react-native-reanimated/plugin',
     ],

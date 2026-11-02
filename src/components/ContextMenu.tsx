@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   LayoutChangeEvent,
   Modal,
@@ -206,7 +206,7 @@ const MenuRow = ({
   // Each row comes in as the unrolling card reaches it.
   const appear = useSharedValue(0)
   useEffect(() => {
-    appear.value = withDelay(revealMs * index / Math.max(1, rowCount), withTiming(1, timing(ROW_IN_MS, DECELERATE)), REDUCE_MOTION)
+    appear.set(withDelay(revealMs * index / Math.max(1, rowCount), withTiming(1, timing(ROW_IN_MS, DECELERATE)), REDUCE_MOTION))
   }, [appear, revealMs, index, rowCount])
   const appearStyle = useAnimatedStyle(() => ({
     opacity: appear.value,
@@ -261,7 +261,7 @@ const ReactionButton = ({
 }) => {
   const appear = useSharedValue(0)
   useEffect(() => {
-    appear.value = withDelay(delay, withTiming(1, timing(ITEM_IN_MS, EASE_OUT_QUINT)), REDUCE_MOTION)
+    appear.set(withDelay(delay, withTiming(1, timing(ITEM_IN_MS, EASE_OUT_QUINT)), REDUCE_MOTION))
   }, [appear, delay])
   const appearStyle = useAnimatedStyle(() => ({
     transform: [{ scale: appear.value }],
@@ -314,12 +314,12 @@ const ReactionFlight = ({
   const flyX = useSharedValue(0)
   const flyY = useSharedValue(0)
   useEffect(() => {
-    grow.value = withTiming(1, timing(FLIGHT_GROW_MS, DECELERATE))
-    flyX.value = withDelay(FLIGHT_GROW_MS, withTiming(1, timing(FLIGHT_MS, EASE_OUT_QUINT)), REDUCE_MOTION)
-    flyY.value = withDelay(FLIGHT_GROW_MS, withTiming(1, timing(FLIGHT_MS, DEFAULT_CURVE), finished => {
+    grow.set(withTiming(1, timing(FLIGHT_GROW_MS, DECELERATE)))
+    flyX.set(withDelay(FLIGHT_GROW_MS, withTiming(1, timing(FLIGHT_MS, EASE_OUT_QUINT)), REDUCE_MOTION))
+    flyY.set(withDelay(FLIGHT_GROW_MS, withTiming(1, timing(FLIGHT_MS, DEFAULT_CURVE), finished => {
       if (finished)
         runOnJS(onEnd)()
-    }), REDUCE_MOTION)
+    }), REDUCE_MOTION))
   }, [grow, flyX, flyY, onEnd])
 
   const dx = target.toX - flight.fromX
@@ -371,6 +371,11 @@ const useCloseStyle = (closing: SharedValue<number>) => useAnimatedStyle(() => (
   transform: [{ scale: 1 - (1 - CLOSE_SCALE) * closing.value }],
 }))
 
+// The center of a reactions bar cell, in window coordinates.
+const cellCenter = (index: number, barLeft: number, barWidth: number, isRTL: boolean) => isRTL
+  ? barLeft + barWidth - BAR_INSET - index * BAR_CELL - BAR_CELL / 2
+  : barLeft + BAR_INSET + index * BAR_CELL + BAR_CELL / 2
+
 /**
  * The long-press menu. The chat dims under a black scrim while the pressed
  * message stays lit in place; the reactions bar pops out above the actions, which unroll from
@@ -417,8 +422,8 @@ export const ContextMenu = ({
     touchX: touchX ?? pageX + bubbleWidth / 2,
     touchY: touchY ?? pageY + bubbleHeight / 2,
   }
-  const openAnchorRef = useRef<typeof anchor | null>(null)
-  const openAnchor = openAnchorRef.current ?? anchor
+  const [openedAt, setOpenedAt] = useState<typeof anchor | null>(null)
+  const openAnchor = openedAt ?? anchor
 
   // While a picked reaction is flying, the overlay stays up until it has landed.
   const isFlyingRef = useRef(false)
@@ -448,14 +453,14 @@ export const ContextMenu = ({
   const animateIn = useCallback(() => {
     // The same overlay opens again for the next long-press, so every open starts from rest;
     // a panel left expanded would reopen empty.
-    expand.value = 0
-    closing.value = 0
-    menuFade.value = 1
-    barIn.value = 0
-    reveal.value = 0
-    scrim.value = withTiming(1, timing(SCRIM_MS, EASE_OUT_QUINT))
-    reveal.value = withTiming(1, timing(revealMs))
-    barIn.value = withTiming(1, BAR_IN)
+    expand.set(0)
+    closing.set(0)
+    menuFade.set(1)
+    barIn.set(0)
+    reveal.set(0)
+    scrim.set(withTiming(1, timing(SCRIM_MS, EASE_OUT_QUINT)))
+    reveal.set(withTiming(1, timing(revealMs)))
+    barIn.set(withTiming(1, BAR_IN))
   }, [scrim, reveal, barIn, closing, expand, menuFade, revealMs])
 
   const animateOut = useCallback((onDone: () => void) => {
@@ -463,25 +468,30 @@ export const ContextMenu = ({
     // The flight (if any) and the scrim both have to finish.
     pendingRef.current = isFlyingRef.current ? 2 : 1
 
-    closing.value = withTiming(1, timing(CLOSE_MS, DECELERATE))
-    scrim.value = withTiming(0, timing(SCRIM_MS, EASE_OUT_QUINT), finished => {
+    closing.set(withTiming(1, timing(CLOSE_MS, DECELERATE)))
+    scrim.set(withTiming(0, timing(SCRIM_MS, EASE_OUT_QUINT), finished => {
       if (finished)
         runOnJS(settle)()
-    })
+    }))
   }, [scrim, closing, settle])
 
   const { isMounted, close } = useAnimatedPresence(visible, animateIn, animateOut)
 
   if (!isMounted) {
-    openAnchorRef.current = null
-    isFlyingRef.current = false
+    if (openedAt)
+      setOpenedAt(null)
     if (flight)
       setFlight(null)
     if (isExpanded)
       setIsExpanded(false)
-  } else if (!openAnchorRef.current) {
-    openAnchorRef.current = anchor
+  } else if (!openedAt) {
+    setOpenedAt(anchor)
   }
+  // A flight cut short by the overlay unmounting must not hold up the next close.
+  useLayoutEffect(() => {
+    if (!isMounted)
+      isFlyingRef.current = false
+  }, [isMounted])
 
   const handleDismiss = useCallback(() => close(onDismiss), [close, onDismiss])
 
@@ -563,7 +573,7 @@ export const ContextMenu = ({
   const followDy = movedBy === 0 ? 0 : placeTop(openAnchor.touchY + movedBy, pageY, bubbleHeight) - containerTop
   const followY = useSharedValue(0)
   useEffect(() => {
-    followY.value = withTiming(followDy, timing(FOLLOW_MS, DECELERATE))
+    followY.set(withTiming(followDy, timing(FOLLOW_MS, DECELERATE)))
   }, [followDy, followY])
   const followStyle = useAnimatedStyle(() => ({ transform: [{ translateY: followY.value }] }))
 
@@ -586,20 +596,14 @@ export const ContextMenu = ({
     toY: pageY + bubbleHeight - PILL_Y,
   }
 
-  const cellCenter = (index: number) => isRTL
-    ? barLeft + barWidth - BAR_INSET - index * BAR_CELL - BAR_CELL / 2
-    : barLeft + BAR_INSET + index * BAR_CELL + BAR_CELL / 2
-
   const handleReaction = useCallback((emoji: string, index: number) => {
     if (isFlyingRef.current)
       return
 
     isFlyingRef.current = true
-    setFlight({ emoji, fromX: cellCenter(index), fromY: pillTop + BAR_HEIGHT / 2 })
+    setFlight({ emoji, fromX: cellCenter(index, barLeft, barWidth, isRTL), fromY: pillTop + BAR_HEIGHT / 2 })
     reactions?.onSelect(emoji)
     close(onDismiss)
-    // cellCenter reads only the values listed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [close, reactions, onDismiss, barLeft, barWidth, pillTop, isRTL])
 
   // A pick from the expanded panel has no bar slot to fly from, so the overlay simply closes.
@@ -611,19 +615,19 @@ export const ContextMenu = ({
     })
   }, [close, reactions?.onSelect, onDismiss])
 
+  const isCollapsingRef = useRef(false)
   const handleExpand = useCallback(() => {
     selectionHaptic()
     isCollapsingRef.current = false
     setIsExpanded(true)
-    expand.value = withTiming(1, EXPAND)
+    expand.set(withTiming(1, EXPAND))
     // The actions make way for the panel.
-    menuFade.value = withTiming(0, timing(150))
+    menuFade.set(withTiming(0, timing(150)))
   }, [expand, menuFade])
 
   // A tap outside the expanded panel (or Android's back) folds it back into the bar and keeps
   // the menu up, as Telegram's emoji window does on Android; only a second tap closes the menu.
   // The panel stays mounted until it has folded away.
-  const isCollapsingRef = useRef(false)
   const finishCollapse = useCallback(() => {
     if (isCollapsingRef.current)
       setIsExpanded(false)
@@ -633,11 +637,11 @@ export const ContextMenu = ({
     if (isCollapsingRef.current)
       return
     isCollapsingRef.current = true
-    expand.value = withTiming(0, EXPAND, finished => {
+    expand.set(withTiming(0, EXPAND, finished => {
       if (finished)
         runOnJS(finishCollapse)()
-    })
-    menuFade.value = withTiming(1, timing(150))
+    }))
+    menuFade.set(withTiming(1, timing(150)))
   }, [expand, menuFade, finishCollapse])
   const handleOutsidePress = isExpanded ? handleCollapse : handleDismiss
 
@@ -738,7 +742,7 @@ export const ContextMenu = ({
                       pointerEvents={isExpanded ? 'none' : 'box-none'}
                     >
                       {quickEmojis.map((emoji, index) => {
-                        const center = cellCenter(index) - barLeft
+                        const center = cellCenter(index, barLeft, barWidth, isRTL) - barLeft
                         return (
                           <ReactionButton
                             key={emoji}

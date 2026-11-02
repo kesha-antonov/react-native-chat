@@ -50,7 +50,7 @@
   ],
   "scripts": {
     "typecheck": "yarn tsc --noEmit",
-    "build": "rm -rf lib && yarn tsc",
+    "build": "rm -rf lib && yarn tsc --emitDeclarationOnly && yarn babel src --out-dir lib --extensions .ts,.tsx --config-file ./babel.build.cjs --no-babelrc --ignore 'src/__tests__/**' --source-maps --quiet",
     "tsc:watch": "yarn typecheck --watch",
     "lint": "yarn eslint src example",
     "lint:fix": "yarn eslint --cache --fix src example",
@@ -76,6 +76,7 @@
     "react-native-zoom-reanimated": "^1.6.0"
   },
   "devDependencies": {
+    "@babel/cli": "^7.29.7",
     "@babel/core": "^7.29.7",
     "@babel/plugin-transform-class-properties": "^7.29.7",
     "@babel/plugin-transform-private-methods": "^7.29.7",
@@ -101,6 +102,7 @@
     "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.72.1",
     "babel-jest": "^30.5.2",
+    "babel-plugin-react-compiler": "1.0.0",
     "emoji-datasource": "16.0.0",
     "eslint": "^10.14.0",
     "eslint-import-resolver-typescript": "^4.4.5",

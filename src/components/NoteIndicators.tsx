@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { StyleSheet } from 'react-native'
 import Animated, {
   Easing,
@@ -21,11 +21,13 @@ export const INDICATOR_MS = 150
  * so a row does not animate as it scrolls into view.
  */
 export const useEnteringAfterMount = () => {
-  const isMounted = useRef(false)
+  // State, not a ref: the returned value is render output. The one extra render after mount
+  // changes only `entering` on a view that is already mounted, which Reanimated ignores.
+  const [isMounted, setIsMounted] = useState(false)
   useEffect(() => {
-    isMounted.current = true
+    setIsMounted(true)
   }, [])
-  return isMounted.current ? ZoomIn.duration(INDICATOR_MS) : undefined
+  return isMounted ? ZoomIn.duration(INDICATOR_MS) : undefined
 }
 
 export const indicatorExiting = ZoomOut.duration(INDICATOR_MS)

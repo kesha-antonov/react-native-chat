@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { Profiler, useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { act, fireEvent, render } from '@testing-library/react-native'
 
@@ -133,10 +133,10 @@ it('does not re-render or remount message rows when the parent re-renders', asyn
   // `reply` is rebuilt on the way down to the list, so a consumer passing it is the case
   // most likely to regress.
   const reply = { swipe: { onSwipe: () => {} } }
-  // Drawn by `Chat` on each of its renders: the probe that the parent re-render reached it.
-  const renderChatFooter = () => {
+  // The probe that the parent re-render reached `Chat`. A render prop drawn by `Chat` would not
+  // do: compiled, `Chat` does not call an unchanged render function again.
+  const onChatRender = () => {
     chatRenders++
-    return null
   }
 
   const Parent = () => {
@@ -144,15 +144,16 @@ it('does not re-render or remount message rows when the parent re-renders', asyn
     bump = () => setTick(t => t + 1)
 
     return (
-      <Chat
-        messages={MESSAGES}
-        user={USER}
-        onSend={onSend}
-        reply={reply}
-        renderMessage={renderMessage}
-        renderSend={renderSend}
-        renderChatFooter={renderChatFooter}
-      />
+      <Profiler id='chat' onRender={onChatRender}>
+        <Chat
+          messages={MESSAGES}
+          user={USER}
+          onSend={onSend}
+          reply={reply}
+          renderMessage={renderMessage}
+          renderSend={renderSend}
+        />
+      </Profiler>
     )
   }
 

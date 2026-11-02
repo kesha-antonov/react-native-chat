@@ -3,6 +3,7 @@ import { Text, View } from 'react-native'
 import { fireEvent, render } from '@testing-library/react-native'
 
 import { Chat, IMessage } from '..'
+import { waitForRows } from './waitForRows'
 
 const ME = { _id: 1, name: 'Me' }
 
@@ -14,6 +15,7 @@ const mountChat = async (ui: React.ReactElement) => {
   await fireEvent(utils.getByTestId('GC_WRAPPER'), 'layout', {
     nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } },
   })
+  await waitForRows()
   return utils
 }
 

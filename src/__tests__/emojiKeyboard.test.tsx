@@ -14,6 +14,7 @@ import {
 } from '../emoji/emojiStore'
 import { deleteBackward, insertText, previousCharacterStart } from '../emoji/textEditing'
 import { render } from './renderWithGestureRoot'
+import { waitForRows } from './waitForRows'
 
 const ME = { _id: 1, name: 'Me' }
 const PLACEHOLDER = 'Type a message...'
@@ -26,6 +27,7 @@ const mountChat = async (ui: React.ReactElement) => {
   await fireEvent(utils.getByTestId('GC_WRAPPER'), 'layout', {
     nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } },
   })
+  await waitForRows()
   return utils
 }
 

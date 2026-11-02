@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -145,11 +145,11 @@ function RecorderChrome ({
 
   // Keep the shared lock flag in step when the parent locks or resets.
   useEffect(() => {
-    lockedSV.value = isLocked ? 1 : 0
+    lockedSV.set(isLocked ? 1 : 0)
     if (!isRecording) {
-      translateX.value = 0
-      translateY.value = 0
-      cancelArmed.value = 0
+      translateX.set(0)
+      translateY.set(0)
+      cancelArmed.set(0)
       setIsCancelArmed(false)
     }
   }, [isLocked, isRecording, lockedSV, translateX, translateY, cancelArmed])
@@ -168,36 +168,36 @@ function RecorderChrome ({
 
       const x = Math.max(-cancelThreshold, Math.min(0, event.translationX))
       const y = Math.max(-(lockThreshold + 12), Math.min(0, event.translationY))
-      translateX.value = x
-      translateY.value = y
+      translateX.set(x)
+      translateY.set(y)
 
       // Same rule as the record button: releasing past 55% of the slide cancels.
       const armed = x <= -cancelThreshold * 0.55 ? 1 : 0
       if (armed !== cancelArmed.value) {
-        cancelArmed.value = armed
+        cancelArmed.set(armed)
         runOnJS(setIsCancelArmed)(armed > 0)
       }
 
       if (-y >= lockThreshold && armed === 0) {
-        lockedSV.value = 1
-        translateX.value = withTiming(0, { duration: 150 })
-        translateY.value = withTiming(0, { duration: 150 })
+        lockedSV.set(1)
+        translateX.set(withTiming(0, { duration: 150 }))
+        translateY.set(withTiming(0, { duration: 150 }))
         runOnJS(onLock)()
       }
     },
     onFinalize: () => {
       // Locked: the finger lifts but recording continues.
       if (lockedSV.value > 0) {
-        translateX.value = withTiming(0, { duration: 150 })
-        translateY.value = withTiming(0, { duration: 150 })
-        cancelArmed.value = 0
+        translateX.set(withTiming(0, { duration: 150 }))
+        translateY.set(withTiming(0, { duration: 150 }))
+        cancelArmed.set(0)
         return
       }
 
       const cancelled = cancelArmed.value > 0
-      translateX.value = withTiming(0, { duration: 150 })
-      translateY.value = withTiming(0, { duration: 150 })
-      cancelArmed.value = 0
+      translateX.set(withTiming(0, { duration: 150 }))
+      translateY.set(withTiming(0, { duration: 150 }))
+      cancelArmed.set(0)
       runOnJS(cancelled ? onCancel : onStop)()
     },
   })
@@ -347,7 +347,9 @@ function useRecordingTimer (maxMs: number, onMax: () => void) {
   const startedAtRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const onMaxRef = useRef(onMax)
-  onMaxRef.current = onMax
+  useLayoutEffect(() => {
+    onMaxRef.current = onMax
+  })
 
   const clear = useCallback(() => {
     if (timerRef.current) {
@@ -435,6 +437,15 @@ function UnavailableVideoNote ({ onClose }: { onClose: () => void }) {
   )
 }
 
+// Picked once at load, not off the module during render: a hook has to be the same function on
+// every render, and the module never changes once resolved. Only LiveVideoNote calls them, and
+// it only mounts when the native module is present.
+const visionCamera = getVisionCamera()
+const useCameraDevice: (facing: 'front' | 'back') => any = visionCamera?.useCameraDevice
+const useCameraPermission: () => any = visionCamera?.useCameraPermission
+const useMicrophonePermission: () => any = visionCamera?.useMicrophonePermission
+const useVideoOutput: (options: object) => any = visionCamera?.useVideoOutput
+
 /** Real path: front camera into the round preview (only when native is ready). */
 function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   config,
@@ -442,23 +453,24 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   onSend,
 }: VideoNoteRecorderProps<TMessage>) {
   const labels = useLabels()
-  const visionCamera = getVisionCamera()
   const Camera = visionCamera.Camera
   // The camera can flip to the rear one; a note starts on the front one.
   const [facing, setFacing] = useState<'front' | 'back'>('front')
-  const device = visionCamera.useCameraDevice(facing)
-  const otherDevice = visionCamera.useCameraDevice(facing === 'front' ? 'back' : 'front')
-  const { hasPermission, requestPermission } = visionCamera.useCameraPermission()
-  const microphone = visionCamera.useMicrophonePermission()
+  const device = useCameraDevice(facing)
+  const otherDevice = useCameraDevice(facing === 'front' ? 'back' : 'front')
+  const { hasPermission, requestPermission } = useCameraPermission()
+  const microphone = useMicrophonePermission()
 
   // Recording goes through a video output and the recorders it creates; the
   // persistent recorder keeps one file across a flip mid-take. Audio is only
   // recorded with the microphone permission granted.
-  const videoOutput = visionCamera.useVideoOutput({ enableAudio: microphone.hasPermission, enablePersistentRecorder: true })
+  const videoOutput = useVideoOutput({ enableAudio: microphone.hasPermission, enablePersistentRecorder: true })
   const outputs = useMemo(() => [videoOutput], [videoOutput])
   const recorder = useMemo(() => createVideoNoteRecorder(videoOutput), [videoOutput])
   const cameraRef = useRef<VideoNoteRecorderController>(recorder)
-  cameraRef.current = recorder
+  useLayoutEffect(() => {
+    cameraRef.current = recorder
+  })
   const maxMs = (config?.maxDuration ?? 60) * 1000
   const minDurationMs = config?.minDurationMs ?? 800
   const startedAtRef = useRef(0)
@@ -513,7 +525,9 @@ function LiveVideoNote<TMessage extends IMessage = IMessage> ({
       finish(null)
     }
   }, [end, config, finish])
-  stopRef.current = stopRecording
+  useLayoutEffect(() => {
+    stopRef.current = stopRecording
+  })
 
   // The camera is only usable with both a device and permission; without this
   // the shutter called startRecording on a null ref, threw, and silently

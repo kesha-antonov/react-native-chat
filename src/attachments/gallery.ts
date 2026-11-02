@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 
 import { getExpoImage, getExpoMediaLibrary } from '../optional'
@@ -32,6 +32,21 @@ const toGalleryAsset = (asset: any): GalleryAsset => ({
   filename: asset.filename,
 })
 
+// Outside the hook: the compiler cannot lower optional chaining inside a try block.
+const fetchPage = async (library: any, after: string | undefined) => {
+  const page = await library.getAssetsAsync({
+    first: PAGE_SIZE,
+    after,
+    mediaType: [library.MediaType?.photo ?? 'photo', library.MediaType?.video ?? 'video'],
+    sortBy: [[library.SortBy?.creationTime ?? 'creationTime', false]],
+  })
+  return {
+    cursor: page?.endCursor as string | undefined,
+    hasMore: !!page?.hasNextPage,
+    assets: ((page?.assets ?? []) as any[]).map(toGalleryAsset),
+  }
+}
+
 /**
  * The newest photos and videos from `expo-media-library`, a page at a time, once `isActive`.
  * Asks for photo access the first time.
@@ -53,27 +68,23 @@ export function useGallery (isActive: boolean) {
       return
     isLoadingRef.current = true
     try {
-      const page = await library.getAssetsAsync({
-        first: PAGE_SIZE,
-        after: cursorRef.current,
-        mediaType: [library.MediaType?.photo ?? 'photo', library.MediaType?.video ?? 'video'],
-        sortBy: [[library.SortBy?.creationTime ?? 'creationTime', false]],
-      })
-      cursorRef.current = page?.endCursor
-      hasMoreRef.current = !!page?.hasNextPage
-      const next = (page?.assets ?? []).map(toGalleryAsset)
-      setAssets(previous => [...previous, ...next])
+      const page = await fetchPage(library, cursorRef.current)
+      cursorRef.current = page.cursor
+      hasMoreRef.current = page.hasMore
+      setAssets(previous => [...previous, ...page.assets])
       setStatus('ready')
     } catch {
       // Most likely access was taken away; the panel then offers the system picker.
       setStatus(previous => (previous === 'loading' ? 'denied' : previous))
-    } finally {
-      isLoadingRef.current = false
     }
+    // The catch above never throws, so this always runs - a `finally` the compiler cannot lower.
+    isLoadingRef.current = false
   }, [])
 
   const statusRef = useRef(status)
-  statusRef.current = status
+  useLayoutEffect(() => {
+    statusRef.current = status
+  })
   const startedRef = useRef(false)
   useEffect(() => {
     // Access refused last time: ask again on the next open (the user may have changed it).

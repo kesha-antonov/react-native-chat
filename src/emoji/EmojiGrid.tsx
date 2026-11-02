@@ -189,7 +189,7 @@ const TabStrip = memo(({ tabs, activeRef, onPress, onScrubEnd, styles, theme, is
     if (activeIndexRef.current === index)
       return
     activeIndexRef.current = index
-    position.value = withTiming(index, INDICATOR_MOVE)
+    position.set(withTiming(index, INDICATOR_MOVE))
     setActive(index)
   }, [position])
   useEffect(() => {
@@ -298,7 +298,7 @@ const TonePopup = ({ popup, width, onPick, onClose, styles }: {
   const arrowLeft = Math.max(12, Math.min(popup.x - left - TONE_ARROW, TONE_POPUP_WIDTH - 12 - TONE_ARROW * 2))
   const appear = useSharedValue(0)
   useEffect(() => {
-    appear.value = withTiming(1, { duration: 125, easing: Easing.bezier(0.23, 1, 0.32, 1) })
+    appear.set(withTiming(1, { duration: 125, easing: Easing.bezier(0.23, 1, 0.32, 1) }))
   }, [appear])
   const appearStyle = useAnimatedStyle(() => ({
     opacity: appear.value,
@@ -365,6 +365,22 @@ const BackspaceButton = ({ onBackspace, styles, color, label, isRTL }: {
     </Pressable>
   )
 }
+
+const SearchIcon = ({ styles, color }: { styles: Styles, color: string }) => (
+  <View style={styles.searchIcon}>
+    <Icon name='search' color={color} size={20} fallback={<Text style={styles.searchFallback}>{'⌕'}</Text>} />
+  </View>
+)
+
+// The search row as a list item in the keyboard: a tap target that only looks like the field.
+const SearchHint = ({ styles, isRTL, color, label }: { styles: Styles, isRTL: boolean, color: string, label: string }) => (
+  <View style={styles.searchRow}>
+    <View style={[styles.searchPill, isRTL && styles.rowReverse]}>
+      <SearchIcon styles={styles} color={color} />
+      <Text style={[styles.searchHint, isRTL && styles.textRTL]} numberOfLines={1}>{label}</Text>
+    </View>
+  </View>
+)
 
 /**
  * The built-in emoji grid with its tab strip, section headers,
@@ -480,14 +496,15 @@ export const EmojiGrid = ({
     return { length, offset: offsets[index] ?? 0, index }
   }, [items, offsets, cellSize])
 
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ListViewToken[] }) => {
+  const [viewabilityConfig] = useState(() => ({ itemVisiblePercentThreshold: 50 }))
+  // FlatList does not allow this to change between renders.
+  const [onViewableItemsChanged] = useState(() => ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
     if (isJumpingRef.current)
       return
     const first = viewableItems.map(token => token.item as Item).find(item => item.type !== 'search')
     if (first)
       activeTabRef.current(first.tab)
-  }).current
+  })
 
   const jumpEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scrollToTab = useCallback((tab: number, isScrub = false) => {
@@ -561,47 +578,37 @@ export const EmojiGrid = ({
     onSearchModeChange?.(false)
   }, [onSearchModeChange])
 
-  const renderSearchPill = (isInput: boolean) => (
+  const searchField = (
     <View style={styles.searchRow}>
       <View style={[styles.searchPill, isRTL && styles.rowReverse]}>
-        {isInput && isKeyboard
+        {isKeyboard
           ? (
             <Pressable onPress={leaveSearch} style={styles.searchIcon} hitSlop={6} accessibilityRole='button' accessibilityLabel={labels.cancel}>
               <Icon name='close' color={theme.emojiKeyboard.searchIcon} size={20} fallback={<Text style={styles.searchFallback}>{'✕'}</Text>} />
             </Pressable>
           )
-          : (
-            <View style={styles.searchIcon}>
-              <Icon name='search' color={theme.emojiKeyboard.searchIcon} size={20} fallback={<Text style={styles.searchFallback}>{'⌕'}</Text>} />
-            </View>
-          )}
-        {isInput
-          ? (
-            <TextInput
-              ref={searchInputRef}
-              value={query}
-              onChangeText={value => {
-                setQuery(value)
-                // The reactions panel searches as you type, focus or not.
-                if (!isKeyboard)
-                  setIsSearching(!!value)
-              }}
-              placeholder={labels.emojiSearch}
-              placeholderTextColor={theme.emojiKeyboard.searchIcon}
-              style={[styles.searchInput, isRTL && styles.textRTL]}
-              autoCorrect={false}
-              autoCapitalize='none'
-              returnKeyType='search'
-              autoFocus={isKeyboard && Platform.OS === 'android'}
-              keyboardAppearance={isDark ? 'dark' : 'default'}
-              onFocus={isKeyboard ? undefined : () => setIsSearching(true)}
-              onBlur={isKeyboard ? undefined : () => !query && setIsSearching(false)}
-              accessibilityLabel={labels.emojiSearch}
-            />
-          )
-          : (
-            <Text style={[styles.searchHint, isRTL && styles.textRTL]} numberOfLines={1}>{labels.emojiSearch}</Text>
-          )}
+          : <SearchIcon styles={styles} color={theme.emojiKeyboard.searchIcon} />}
+        <TextInput
+          ref={searchInputRef}
+          value={query}
+          onChangeText={value => {
+            setQuery(value)
+            // The reactions panel searches as you type, focus or not.
+            if (!isKeyboard)
+              setIsSearching(!!value)
+          }}
+          placeholder={labels.emojiSearch}
+          placeholderTextColor={theme.emojiKeyboard.searchIcon}
+          style={[styles.searchInput, isRTL && styles.textRTL]}
+          autoCorrect={false}
+          autoCapitalize='none'
+          returnKeyType='search'
+          autoFocus={isKeyboard && Platform.OS === 'android'}
+          keyboardAppearance={isDark ? 'dark' : 'default'}
+          onFocus={isKeyboard ? undefined : () => setIsSearching(true)}
+          onBlur={isKeyboard ? undefined : () => !query && setIsSearching(false)}
+          accessibilityLabel={labels.emojiSearch}
+        />
       </View>
     </View>
   )
@@ -611,7 +618,7 @@ export const EmojiGrid = ({
       case 'search':
         return (
           <Pressable onPress={enterSearch} accessibilityRole='search' accessibilityLabel={labels.emojiSearch}>
-            {renderSearchPill(false)}
+            <SearchHint styles={styles} isRTL={isRTL} color={theme.emojiKeyboard.searchIcon} label={labels.emojiSearch} />
           </Pressable>
         )
       case 'header':
@@ -632,9 +639,7 @@ export const EmojiGrid = ({
           />
         )
     }
-    // renderSearchPill reads only values listed here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enterSearch, labels, styles, isRTL, cellSize, fontSize, toneVersion, handleSelect, handleLongPress])
+  }, [enterSearch, labels, styles, isRTL, theme.emojiKeyboard.searchIcon, cellSize, fontSize, toneVersion, handleSelect, handleLongPress])
 
   const showTabs = !isSearching && tabs.length > 1
   const showFixedSearch = isSearchEnabled && (!isKeyboard || isSearching)
@@ -644,7 +649,7 @@ export const EmojiGrid = ({
       {isKeyboard && showTabs && (
         <TabStrip tabs={tabs} activeRef={activeTabRef} onPress={scrollToTab} onScrubEnd={endScrub} styles={styles} theme={theme} isRTL={isRTL} />
       )}
-      {showFixedSearch && renderSearchPill(true)}
+      {showFixedSearch && searchField}
       {!isKeyboard && showTabs && (
         <TabStrip tabs={tabs} activeRef={activeTabRef} onPress={scrollToTab} onScrubEnd={endScrub} styles={styles} theme={theme} isRTL={isRTL} />
       )}

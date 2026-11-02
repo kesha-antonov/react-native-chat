@@ -1,11 +1,12 @@
 import React from 'react'
 import { Linking, View } from 'react-native'
-import { fireEvent, render } from '@testing-library/react-native'
+import { act, fireEvent, render } from '@testing-library/react-native'
 
 import { Chat, IMessage, MessageFile, buildAttachmentMessages, formatFileSize, getAttachmentTabs } from '..'
 import { resolveAttachmentMessages } from '../attachments/buildMessages'
 import { fileExtension } from '../MessageFile'
 import { resetOptionalModules } from '../optional'
+import { waitForRows } from './waitForRows'
 
 const mockGetDocumentAsync = jest.fn()
 const mockShareAsync = jest.fn(() => Promise.resolve())
@@ -73,6 +74,14 @@ describe('attachment messages', () => {
   })
 })
 
+// The built-in menu mounts on its first open and opens on the frame after.
+const openMenu = async (button: Parameters<typeof fireEvent.press>[0]) => {
+  await fireEvent.press(button)
+  await act(async () => {
+    await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)))
+  })
+}
+
 describe('the paperclip', () => {
   const messages: IMessage[] = [{ _id: 1, text: 'hi', createdAt: 0, user: { _id: 2, name: 'Bot' } }]
   const mountChat = async (ui: React.ReactElement) => {
@@ -83,6 +92,7 @@ describe('the paperclip', () => {
     await fireEvent(utils.getByTestId('GC_WRAPPER'), 'layout', {
       nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } },
     })
+    await waitForRows()
     return utils
   }
 
@@ -91,7 +101,7 @@ describe('the paperclip', () => {
     const onSend = jest.fn()
     const utils = await mountChat(<Chat messages={messages} onSend={onSend} user={ME} />)
 
-    await fireEvent.press(utils.getByLabelText('Attach'))
+    await openMenu(utils.getByLabelText('Attach'))
     expect(utils.queryByLabelText('Gallery')).toBeNull()
     expect(utils.getByLabelText('Location')).toBeTruthy()
 
@@ -115,7 +125,7 @@ describe('the paperclip', () => {
       return { canceled: true, assets: null }
     })
 
-    await fireEvent.press(utils.getByLabelText('Attach'))
+    await openMenu(utils.getByLabelText('Attach'))
     await fireEvent.press(utils.getByLabelText('File'))
     await new Promise(resolve => setTimeout(resolve, 0))
 
@@ -129,7 +139,7 @@ describe('the paperclip', () => {
     const onSend = jest.fn()
     const utils = await mountChat(<Chat messages={messages} onSend={onSend} user={ME} />)
 
-    await fireEvent.press(utils.getByLabelText('Attach'))
+    await openMenu(utils.getByLabelText('Attach'))
     await fireEvent.press(utils.getByLabelText('Location'))
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(utils.getByText('Accurate to 12 m')).toBeTruthy()
@@ -146,7 +156,7 @@ describe('the paperclip', () => {
 
     const action = jest.fn()
     const legacy = await mountChat(<Chat messages={messages} onSend={() => {}} user={ME} actions={[{ title: 'Mine', action }]} />)
-    await fireEvent.press(legacy.getByLabelText('Attach'))
+    await openMenu(legacy.getByLabelText('Attach'))
     expect(legacy.queryByLabelText('Location')).toBeNull()
     expect(legacy.getByText('Mine')).toBeTruthy()
   })

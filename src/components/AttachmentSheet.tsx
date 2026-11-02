@@ -166,17 +166,17 @@ const ModalAttachment = ({ visible, actions, onClose, tintColor }: AttachmentShe
   const offset = useSharedValue(windowHeight)
 
   const animateIn = useCallback(() => {
-    offset.value = windowHeight
-    offset.value = withSpring(0, SHEET_SPRING)
-    backdrop.value = withTiming(1, BACKDROP_IN)
+    offset.set(windowHeight)
+    offset.set(withSpring(0, SHEET_SPRING))
+    backdrop.set(withTiming(1, BACKDROP_IN))
   }, [offset, backdrop, windowHeight])
 
   const animateOut = useCallback((onDone: () => void) => {
-    backdrop.value = withTiming(0, SHEET_OUT)
-    offset.value = withTiming(windowHeight, SHEET_OUT, finished => {
+    backdrop.set(withTiming(0, SHEET_OUT))
+    offset.set(withTiming(windowHeight, SHEET_OUT, finished => {
       if (finished)
         runOnJS(onDone)()
-    })
+    }))
   }, [offset, backdrop, windowHeight])
 
   const { isMounted, close } = useAnimatedPresence(visible, animateIn, animateOut)

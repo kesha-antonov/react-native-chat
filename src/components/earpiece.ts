@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 
 import { getAudioApi, getExpoAudio } from '../optional'
 import { useIsNearEar } from './mediaPlayback'
@@ -151,7 +151,9 @@ export const useRaiseToListen = ({ isCurrent, getPositionSeconds, listen, pause 
   const isNearEar = useIsNearEar()
   const releaseRef = useRef<(() => void) | null>(null)
   const actionsRef = useRef({ getPositionSeconds, listen, pause })
-  actionsRef.current = { getPositionSeconds, listen, pause }
+  useLayoutEffect(() => {
+    actionsRef.current = { getPositionSeconds, listen, pause }
+  })
 
   useEffect(() => {
     const action = raiseToListenStep({

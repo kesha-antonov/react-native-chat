@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * A view-once note plays a single time. Once it has
@@ -14,6 +14,8 @@ export interface ViewOnceTracker {
   hasStarted: () => boolean
   isSpent: () => boolean
 }
+
+const noop = () => {}
 
 export const createViewOnceTracker = (isViewOnce: boolean, onEnd: () => void): ViewOnceTracker => {
   let hasStarted = false
@@ -53,19 +55,21 @@ export const useViewOnce = <TMessage >(
   const [hasStarted, setHasStarted] = useState(false)
   const [isSpent, setIsSpent] = useState(false)
   const notifyRef = useRef(() => {})
-  notifyRef.current = () => {
-    if (message)
-      onViewOnceEnd?.(message)
-  }
-
-  const trackerRef = useRef<{ key: unknown, tracker: ViewOnceTracker } | null>(null)
-  const key = `${isViewOnce}:${messageId}`
-  if (!trackerRef.current || trackerRef.current.key !== key)
-    trackerRef.current = {
-      key,
-      tracker: createViewOnceTracker(isViewOnce, () => notifyRef.current()),
+  useLayoutEffect(() => {
+    notifyRef.current = () => {
+      if (message)
+        onViewOnceEnd?.(message)
     }
-  const tracker = trackerRef.current.tracker
+  })
+
+  const key = `${isViewOnce}:${messageId}`
+  // One tracker per note: a recycled row showing another message starts afresh. The app is
+  // told here, where `end()` reports spending the note, rather than through the tracker's
+  // callback, so render never hands a ref-reading closure to it.
+  const { tracker } = useMemo(
+    () => ({ key, tracker: createViewOnceTracker(isViewOnce, noop) }),
+    [key, isViewOnce]
+  )
 
   useEffect(() => {
     setHasStarted(false)
@@ -73,7 +77,8 @@ export const useViewOnce = <TMessage >(
   }, [key])
 
   useEffect(() => () => {
-    tracker.end()
+    if (tracker.end())
+      notifyRef.current()
   }, [tracker])
 
   return {
@@ -86,8 +91,10 @@ export const useViewOnce = <TMessage >(
       return canPlay
     },
     onEnd: () => {
-      if (tracker.end())
-        setIsSpent(true)
+      if (!tracker.end())
+        return
+      notifyRef.current()
+      setIsSpent(true)
     },
   }
 }

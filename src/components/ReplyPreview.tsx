@@ -127,21 +127,21 @@ export function ReplyPreview ({
 
   // Animate in on mount
   useEffect(() => {
-    animationProgress.value = withTiming(1, {
+    animationProgress.set(withTiming(1, {
       duration: ANIMATION_DURATION,
       easing: ANIMATION_EASING,
-    })
+    }))
   }, [animationProgress])
 
   const handleClear = () => {
     'worklet'
-    animationProgress.value = withTiming(0, {
+    animationProgress.set(withTiming(0, {
       duration: ANIMATION_DURATION,
       easing: ANIMATION_EASING,
     }, finished => {
       if (finished && onClearReply)
         runOnJS(onClearReply)()
-    })
+    }))
   }
 
   const wrapperAnimatedStyle = useAnimatedStyle(() => {
@@ -177,10 +177,10 @@ export function ReplyPreview ({
         onLayout={e => {
           const newHeight = e.nativeEvent.layout.height + 8
           // Animate height change smoothly when content changes
-          contentHeight.value = withTiming(newHeight, {
+          contentHeight.set(withTiming(newHeight, {
             duration: ANIMATION_DURATION,
             easing: ANIMATION_EASING,
-          })
+          }))
         }}
       >
         <View style={styles.leadingIcon}>

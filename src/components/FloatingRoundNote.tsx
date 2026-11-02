@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native'
 import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, {
@@ -55,6 +55,24 @@ const DRAG_START_DISTANCE = 11
 let lastDock: FloatingDock = DEFAULT_FLOATING_DOCK
 
 /** The progress ring, an arc from 12 o'clock. */
+// Puts the ring on the player's position and runs it to the end. Outside the component: the
+// compiler cannot yet lower `||` or a ternary inside a `try`.
+const syncRing = (player: any, progress: SharedValue<number>) => {
+  try {
+    const length = player.duration || 0
+    const time = player.currentTime || 0
+    progress.set(length > 0 ? Math.min(1, time / length) : 0)
+    if (length > 0 && player.playing)
+      progress.set(withTiming(1, {
+        duration: Math.max(0, length - time) * 1000 / (player.playbackRate || 1),
+        easing: Easing.linear,
+        reduceMotion: ReduceMotion.Never,
+      }))
+  } catch {
+    // player released
+  }
+}
+
 const ProgressRing = ({ progress }: { progress: SharedValue<number> }) => {
   const radius = FLOATING_NOTE_SIZE / 2 - RING_EDGE_INSET
   const circumference = 2 * Math.PI * radius
@@ -95,7 +113,9 @@ const FloatingNoteView = ({ entry, isVisible, area, onHidden }: FloatingNoteView
   const VideoView = expoVideo.VideoView
 
   const entryRef = useRef(entry)
-  entryRef.current = entry
+  useLayoutEffect(() => {
+    entryRef.current = entry
+  })
   const toggle = useCallback(() => entryRef.current.toggle(), [])
   const close = useCallback(() => entryRef.current.stop(), [])
   const saveDock = useCallback((dock: FloatingDock) => {
@@ -145,21 +165,7 @@ const FloatingNoteView = ({ entry, isVisible, area, onHidden }: FloatingNoteView
   // position four times a second.
   const progress = useSharedValue(0)
   useEffect(() => {
-    const sync = () => {
-      try {
-        const length = player.duration || 0
-        const time = player.currentTime || 0
-        progress.value = length > 0 ? Math.min(1, time / length) : 0
-        if (length > 0 && player.playing)
-          progress.value = withTiming(1, {
-            duration: Math.max(0, length - time) * 1000 / (player.playbackRate || 1),
-            easing: Easing.linear,
-            reduceMotion: ReduceMotion.Never,
-          })
-      } catch {
-        // player released
-      }
-    }
+    const sync = () => syncRing(player, progress)
     sync()
     const timer = setInterval(sync, 250)
     return () => {
@@ -171,31 +177,32 @@ const FloatingNoteView = ({ entry, isVisible, area, onHidden }: FloatingNoteView
   const pan = usePanGesture({
     minDistance: DRAG_START_DISTANCE,
     onActivate: () => {
-      dragStart.value = { x: x.value, y: y.value }
+      dragStart.set({ x: x.get(), y: y.get() })
     },
     onUpdate: event => {
-      const next = clampDrag(dragStart.value.x + event.translationX, dragStart.value.y + event.translationY, areaSV.value)
-      x.value = next.x
-      y.value = next.y
-      fade.value = dragAlpha(next.x, areaSV.value.width)
+      const area = areaSV.get()
+      const next = clampDrag(dragStart.get().x + event.translationX, dragStart.get().y + event.translationY, area)
+      x.set(next.x)
+      y.set(next.y)
+      fade.set(dragAlpha(next.x, area.width))
     },
     onDeactivate: event => {
-      const settle = settleFloatingNote(x.value, y.value, event.velocityX, areaSV.value, lastDock)
+      const settle = settleFloatingNote(x.get(), y.get(), event.velocityX, areaSV.get(), lastDock)
       const timing = { duration: FLOATING_NOTE_MS, easing: decelerate }
-      y.value = withTiming(settle.y, timing)
+      y.set(withTiming(settle.y, timing))
       if (settle.isClosing) {
         // Thrown off the side: slide out, then stop playback
         // (`animateToBoundsMaybe` -> `close` -> `onCloseRunnable`).
-        fade.value = withTiming(0, timing)
-        x.value = withTiming(settle.x, timing, finished => {
+        fade.set(withTiming(0, timing))
+        x.set(withTiming(settle.x, timing, finished => {
           if (finished)
             runOnJS(close)()
-        })
+        }))
         return
       }
 
-      fade.value = withTiming(1, timing)
-      x.value = withTiming(settle.x, timing)
+      fade.set(withTiming(1, timing))
+      x.set(withTiming(settle.x, timing))
       runOnJS(saveDock)(settle.dock)
     },
   })

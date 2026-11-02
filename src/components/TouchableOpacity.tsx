@@ -37,17 +37,17 @@ export const TouchableOpacity: React.FC<TouchableOpacityProps> = ({
   }, [])
 
   const handlePressIn = useCallback(() => {
-    opacity.value = withTiming(activeOpacity, { duration: 150 }, () => {
-      isAnimationInFinished.value = true
-    })
+    opacity.set(withTiming(activeOpacity, { duration: 150 }, () => {
+      isAnimationInFinished.set(true)
+    }))
   }, [activeOpacity, opacity, isAnimationInFinished])
 
   const handlePressOut = useCallback(() => {
     clearTimeout(pressOutTimeout.current)
     pressOutTimeout.current = setTimeout(() => {
-      opacity.value = withTiming(1, { duration: 150 })
-      isAnimationInFinished.value = false
-    }, isAnimationInFinished.value ? 0 : 150)
+      opacity.set(withTiming(1, { duration: 150 }))
+      isAnimationInFinished.set(false)
+    }, isAnimationInFinished.get() ? 0 : 150)
   }, [opacity, isAnimationInFinished])
 
   const handleActiveStateChange = useCallback((isActive: boolean) => {
@@ -58,7 +58,7 @@ export const TouchableOpacity: React.FC<TouchableOpacityProps> = ({
   }, [handlePressIn, handlePressOut])
 
   const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+    opacity: opacity.get(),
   }))
 
   const handlePress = useCallback(() => {

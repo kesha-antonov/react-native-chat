@@ -253,16 +253,18 @@ function ChatListContent<TChat extends ChatListItem> ({
   useLayoutEffect(() => {
     if (!dropCount)
       return
-    isDragActive.value = false
-    dragY.value = 0
-    dragId.value = ''
+    isDragActive.set(false)
+    dragY.set(0)
+    dragId.set('')
     const timer = setTimeout(() => setIsSettling(false), 50)
     return () => clearTimeout(timer)
   }, [dropCount, isDragActive, dragY, dragId])
 
   // Stable handlers for the rows (which only re-render when what they show changes).
   const dragHandlersRef = useRef({ onDragStart, onDrop })
-  dragHandlersRef.current = { onDragStart, onDrop }
+  useLayoutEffect(() => {
+    dragHandlersRef.current = { onDragStart, onDrop }
+  })
   const stableOnStart = useCallback((chat: TChat) => dragHandlersRef.current.onDragStart(chat), [])
   const stableOnDrop = useCallback((chat: TChat, toIndex: number) => dragHandlersRef.current.onDrop(chat, toIndex), [])
 

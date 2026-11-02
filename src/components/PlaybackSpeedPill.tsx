@@ -41,20 +41,18 @@ export function PlaybackSpeedPill ({ rate }: PlaybackSpeedPillProps) {
   const pillRef = useRef<React.ComponentRef<typeof View>>(null)
   const [anchor, setAnchor] = useState<{ x: number, y: number } | null>(null)
   // The menu keeps its spot while it animates out after `anchor` is cleared.
-  const lastAnchorRef = useRef(anchor)
-  if (anchor)
-    lastAnchorRef.current = anchor
-  const shownAnchor = anchor ?? lastAnchorRef.current
+  const [lastAnchor, setLastAnchor] = useState<{ x: number, y: number } | null>(null)
+  const shownAnchor = anchor ?? lastAnchor
 
   const appear = useSharedValue(0)
   const animateIn = useCallback(() => {
-    appear.value = withSpring(1, MENU_SPRING)
+    appear.set(withSpring(1, MENU_SPRING))
   }, [appear])
   const animateOut = useCallback((onDone: () => void) => {
-    appear.value = withTiming(0, MENU_OUT, finished => {
+    appear.set(withTiming(0, MENU_OUT, finished => {
       if (finished)
         runOnJS(onDone)()
-    })
+    }))
   }, [appear])
   const { isMounted, close } = useAnimatedPresence(!!anchor, animateIn, animateOut)
 
@@ -64,7 +62,9 @@ export function PlaybackSpeedPill ({ rate }: PlaybackSpeedPillProps) {
 
   const openMenu = useCallback(() => {
     pillRef.current?.measureInWindow((x, y, width, height) => {
-      setAnchor({ x: x + width / 2, y: y + height })
+      const next = { x: x + width / 2, y: y + height }
+      setAnchor(next)
+      setLastAnchor(next)
     })
   }, [])
 

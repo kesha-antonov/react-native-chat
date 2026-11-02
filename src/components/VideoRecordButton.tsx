@@ -75,16 +75,16 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
   // recorder stays mounted until it has faded out.
   const recorderOpacity = useSharedValue(0)
   const animateIn = useCallback(() => {
-    recorderOpacity.value = withTiming(1, RECORDER_FADE_IN)
+    recorderOpacity.set(withTiming(1, RECORDER_FADE_IN))
   }, [recorderOpacity])
   const animateOut = useCallback((onDone: () => void) => {
-    recorderOpacity.value = withTiming(0, RECORDER_FADE_OUT, finished => {
+    recorderOpacity.set(withTiming(0, RECORDER_FADE_OUT, finished => {
       if (finished)
         runOnJS(onDone)()
-    })
+    }))
   }, [recorderOpacity])
   const { isMounted: isRecorderMounted } = useAnimatedPresence(isRecorderOpen, animateIn, animateOut)
-  const recorderStyle = useAnimatedStyle(() => ({ opacity: recorderOpacity.value }))
+  const recorderStyle = useAnimatedStyle(() => ({ opacity: recorderOpacity.get() }))
 
   const launchPicker = useCallback(async () => {
     // expo-image-picker's system camera hard-crashes on a simulator/emulator
@@ -94,7 +94,8 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
       return
     }
 
-    try {
+    // `.catch` rather than try/catch: the compiler cannot lower the optional chains inside a `try`.
+    await (async () => {
       const permission = await imagePicker.requestCameraPermissionsAsync()
       if (!permission?.granted) {
         config?.onPermissionDenied?.()
@@ -112,9 +113,9 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
       const uri = result?.assets?.[0]?.uri
       if (!result?.canceled && uri)
         onSend?.({ video: uri } as Partial<TMessage>, false)
-    } catch (error) {
+    })().catch(error => {
       config?.onError?.(error)
-    }
+    })
   }, [config, onSend])
 
   // Gate on the *native* probe, not the JS require: a binary where the package

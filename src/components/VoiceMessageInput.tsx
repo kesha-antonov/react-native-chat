@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useImperativeHandle,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -101,6 +102,36 @@ type PendingFinish = { cancelled: boolean } | null
 /** The message field a view-once take adds (`IMessage.isViewOnce`). */
 const viewOnceFields = (isViewOnce: boolean) => (isViewOnce ? { isViewOnce: true } : null)
 
+// The three best-effort native calls below live at module level because the compiler cannot
+// lower an optional chain inside a `try`, and so would skip the whole component.
+const releaseRecorder = (recorder: any) => {
+  try {
+    recorder?.release?.()
+  } catch {
+    // already released
+  }
+}
+
+const stopRecorderQuietly = (recorder: any) => {
+  try {
+    const stopped = recorder?.stop() as unknown as Promise<void> | undefined
+    stopped?.catch?.(() => {})
+  } catch {
+    // already stopped
+  }
+}
+
+// Leaves the audio session as we found it. Recording puts iOS into
+// PlayAndRecord, which routes playback to the quiet receiver; not restoring it
+// makes every voice note played afterwards sound muffled.
+const releaseAudioSession = () => {
+  try {
+    expoAudio.setAudioModeAsync?.({ allowsRecording: false, playsInSilentMode: true })
+  } catch {
+    // best-effort; the session is not worth failing a send over
+  }
+}
+
 export interface VoiceMessageInputHandle {
   /** Discard the in-progress or paused take (the bar's CANCEL / delete). */
   cancel: () => void
@@ -183,11 +214,7 @@ function VoiceMessageInputInner (
     return recorderRef.current
   }, [recorderOptions])
   useEffect(() => () => {
-    try {
-      recorderRef.current?.release?.()
-    } catch {
-      // already released
-    }
+    releaseRecorder(recorderRef.current)
     recorderRef.current = null
   }, [])
   const labels = useLabels()
@@ -208,7 +235,9 @@ function VoiceMessageInputInner (
   // pauses and resumes, read when it is sent.
   const [isViewOnce, setIsViewOnce] = useState(false)
   const isViewOnceRef = useRef(false)
-  isViewOnceRef.current = isViewOnce
+  useLayoutEffect(() => {
+    isViewOnceRef.current = isViewOnce
+  })
   const toggleViewOnce = useCallback(() => setIsViewOnce(current => !current), [])
 
   const startedAtRef = useRef(0)
@@ -255,17 +284,6 @@ function VoiceMessageInputInner (
     return pending
   }, [])
 
-  // Leaves the audio session as we found it. Recording puts iOS into
-  // PlayAndRecord, which routes playback to the quiet receiver; not restoring it
-  // makes every voice note played afterwards sound muffled.
-  const releaseAudioSession = useCallback(() => {
-    try {
-      expoAudio.setAudioModeAsync?.({ allowsRecording: false, playsInSilentMode: true })
-    } catch {
-      // best-effort; the session is not worth failing a send over
-    }
-  }, [])
-
   /**
    * Stops the recorder and decides what the take becomes: sent, kept for a
    * preview, or dropped (cancelled, or too short).
@@ -291,7 +309,9 @@ function VoiceMessageInputInner (
     else
       setIsLocked(false)
 
-    try {
+    // A promise chain rather than try/finally, which the compiler cannot lower: the cleanup
+    // still runs after every outcome, the early returns and a throwing `onError` included.
+    await (async () => {
       const recorder = getRecorder()
       await recorder.stop()
       const uri = recorder.uri
@@ -326,18 +346,22 @@ function VoiceMessageInputInner (
 
       clipsRef.current = []
       onSend?.({ audio: joined, duration: Math.round(durationMs / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
-    } catch (error) {
-      clipsRef.current = []
-      config?.onError?.(error)
-    } finally {
-      setIsJoining(false)
-      setIsLocked(false)
-      releaseAudioSession()
-    }
-  }, [getRecorder, minDurationMs, onSend, config, clearTimer, releaseAudioSession])
+    })()
+      .catch(error => {
+        clipsRef.current = []
+        config?.onError?.(error)
+      })
+      .finally(() => {
+        setIsJoining(false)
+        setIsLocked(false)
+        releaseAudioSession()
+      })
+  }, [getRecorder, minDurationMs, onSend, config, clearTimer])
 
   const stopTakeRef = useRef(stopTake)
-  stopTakeRef.current = stopTake
+  useLayoutEffect(() => {
+    stopTakeRef.current = stopTake
+  })
 
   /** Starts a take, or with `isResume` a new clip of the paused one. */
   const start = useCallback(async (isResume = false) => {
@@ -358,7 +382,8 @@ function VoiceMessageInputInner (
     // playing so it does not bleed into the take.
     stopAllPlayback()
 
-    try {
+    // A promise chain rather than try/finally, which the compiler cannot lower.
+    await (async () => {
       const permission = await expoAudio.AudioModule.requestRecordingPermissionsAsync()
       if (!permission?.granted) {
         config?.onPermissionDenied?.()
@@ -405,27 +430,29 @@ function VoiceMessageInputInner (
         if (ms >= maxDurationMs)
           stopTakeRef.current('send')
       }, 100)
-    } catch (error) {
-      config?.onError?.(error)
-      isRecordingRef.current = false
-      clipsRef.current = []
-      setIsRecording(false)
-      setIsLocked(false)
-      clearTimer()
-      releaseAudioSession()
-    } finally {
-      setIsResuming(false)
-      if (startTokenRef.current === token) {
-        startTokenRef.current = 0
+    })()
+      .catch(error => {
+        config?.onError?.(error)
+        isRecordingRef.current = false
+        clipsRef.current = []
+        setIsRecording(false)
+        setIsLocked(false)
+        clearTimer()
+        releaseAudioSession()
+      })
+      .finally(() => {
+        setIsResuming(false)
+        if (startTokenRef.current === token) {
+          startTokenRef.current = 0
 
-        // Apply a release that arrived while we were starting up. Without this
-        // a quick tap leaves a live recording with no control to end it.
-        const pending = takePendingFinish()
-        if (pending)
-          stopTakeRef.current(pending.cancelled ? 'cancel' : 'send')
-      }
-    }
-  }, [getRecorder, recorderOptions, config, clearTimer, maxDurationMs, releaseAudioSession, takePendingFinish])
+          // Apply a release that arrived while we were starting up. Without this
+          // a quick tap leaves a live recording with no control to end it.
+          const pending = takePendingFinish()
+          if (pending)
+            stopTakeRef.current(pending.cancelled ? 'cancel' : 'send')
+        }
+      })
+  }, [getRecorder, recorderOptions, config, clearTimer, maxDurationMs, takePendingFinish])
 
   // Tear the recorder down with the component: without this the mic stays hot
   // (and the iOS recording indicator lit) after navigating away mid-recording,
@@ -437,17 +464,12 @@ function VoiceMessageInputInner (
 
     if (isRecordingRef.current) {
       isRecordingRef.current = false
-      try {
-        const stopped = recorderRef.current?.stop() as unknown as Promise<void> | undefined
-        stopped?.catch?.(() => {})
-      } catch {
-        // already stopped
-      }
+      stopRecorderQuietly(recorderRef.current)
     }
 
     releaseAudioSession()
     onStateChange?.(IDLE_STATE)
-  }, [clearTimer, releaseAudioSession, onStateChange])
+  }, [clearTimer, onStateChange])
 
   const cancel = useCallback(() => {
     if (preview) {
@@ -493,12 +515,14 @@ function VoiceMessageInputInner (
 
     const clips = trimmedClips()
     clipsRef.current = []
-    try {
-      const uri = await renderClips(clips)
-      onSend?.({ audio: uri, duration: Math.round(clipsDuration(clips) / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
-    } catch (error) {
-      config?.onError?.(error)
-    }
+    // A promise chain: the compiler cannot lower the optional calls inside a `try`.
+    await renderClips(clips)
+      .then(uri => {
+        onSend?.({ audio: uri, duration: Math.round(clipsDuration(clips) / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
+      })
+      .catch(error => {
+        config?.onError?.(error)
+      })
   }, [preview, onSend, config, trimmedClips])
 
   // Resume: cut the take to the handles, then record onto its end.
@@ -672,7 +696,9 @@ export function RecordedVoicePreview ({ preview, onTrim }: RecordedVoicePreviewP
   // A drag spans many renders (each trim moves `range`); everything it reads
   // goes through this ref so one drag sees one consistent, current state.
   const live = useRef({ range, width, duration, isPlaying, play, pause, onTrim, player })
-  live.current = { range, width, duration, isPlaying, play, pause, onTrim, player }
+  useLayoutEffect(() => {
+    live.current = { range, width, duration, isPlaying, play, pause, onTrim, player }
+  })
   const dragRef = useRef<TrimDrag | null>(null)
 
   const usable = () => Math.max(1, live.current.width - TRIM_INSET * 2)

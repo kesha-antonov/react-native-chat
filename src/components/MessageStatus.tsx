@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Animated, {
   Easing,
@@ -142,6 +142,12 @@ export const MessageStatus = ({ status, color, errorColor }: MessageStatusProps)
 
   const isSvgChecks = !!(Svg && Path) && !icons.check && !icons.checkAll
   const isMove = isSvgChecks && previous === 'sent' && current === 'read'
+  // Read by the effect below, which runs once per status change; `isMove` is derived from the
+  // same change, and clearing `previous` afterwards must not start it again.
+  const isMoveRef = useRef(isMove)
+  useLayoutEffect(() => {
+    isMoveRef.current = isMove
+  })
 
   useEffect(() => {
     if (!isMounted.current) {
@@ -149,15 +155,13 @@ export const MessageStatus = ({ status, color, errorColor }: MessageStatusProps)
       return
     }
 
-    if (!isMove)
+    if (!isMoveRef.current)
       return
-    progress.value = 0
-    progress.value = withTiming(1, { duration: STATUS_MOVE_MS, easing: EASE_DEFAULT }, finished => {
+    progress.set(0)
+    progress.set(withTiming(1, { duration: STATUS_MOVE_MS, easing: EASE_DEFAULT }, finished => {
       if (finished)
         runOnJS(setPrevious)(null)
-    })
-    // Runs once per status change; `isMove` is derived from the same change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }))
   }, [current, progress])
 
   const glyphFor = (kind: MessageStatusKind, move?: SharedValue<number>): React.ReactNode => {

@@ -61,11 +61,15 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - **Chats open much faster.** Voice notes share one audio context made on first play (each one used to start its own worklet runtime, a few hundred ms of blocked JS per bubble); the long-press menu and the swipe-to-reply arrow mount on first use instead of with every row; the list and composer no longer wait a layout pass; the wallpaper and composer paint first and the messages follow a frame later
 - `ChatList` rows re-render only when their own chat changes
 - **Less work per message row.** The day check compares calendar-day numbers instead of parsing two dates through dayjs per row; formatted times are cached by timestamp, locale and format; themed styles are built once per theme and shared by every row; status ticks are plain views except during the sent-to-read slide; the swipe-to-reply progress and the round-note time shift are computed only in the rows that use them; the transfer ring derives its geometry once per frame instead of three times
-- **A screen-gradient bubble listens to its row's position only while it is mounted**, so a long scroll no longer leaves a live position listener for every message it passed
+- **The published code is compiled with the React Compiler.** `lib/` now carries the compiler's memoization for every app, including apps that do not compile `node_modules`; before, only an app that happened to compile the package got it. Every component compiles (the build fails otherwise), and the test suite runs the compiled code
+- **Selection, the quote-jump highlight and link previews wake only the rows they concern.** Checking a message, flashing one or a preview landing used to run a check in every mounted row; each row now listens to its own message id
+- Components inside a `Chat` no longer each subscribe to the system colour scheme (several per row); the chat reads it once
+- Day separators cache their label instead of building and formatting two dates per separator on every mount
 - **Opening a chat no longer builds a native audio recorder** (about 30ms on an iPhone simulator): it is made on the first voice take. The built-in attachment menu mounts on its first open, and the action sheet behind `actions` is no longer mounted when the built-in menu replaces it
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- The scroll-to-bottom button no longer remounts (dropping a press in progress) when its unread count changes
 - **Emoji categories answer a tap mid-scroll**: in the reactions panel a category tapped while the grid was still flinging only stopped the fling. The category strip is now one native gesture, so it fires either way. `EmojiGrid` rendered outside `Chat` needs a `GestureHandlerRootView` above it
 - **Gradient bubbles were all one colour on iOS**: the list's row height was read only on change, and on iOS it settles before the list subscribes, so every bubble sampled the gradient a content height off. It is now read when the list subscribes too
 - A tap outside the expanded emoji picker (or Android's back) folds it back into the reactions bar and leaves the menu open, as in Telegram for Android, instead of closing the menu

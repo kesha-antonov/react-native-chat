@@ -1,6 +1,7 @@
 import React, {
   createRef,
   useEffect,
+  useInsertionEffect,
   useMemo,
   useRef,
   useState,
@@ -111,7 +112,7 @@ const byDate = <TMessage extends IMessage>(a: TMessage, b: TMessage) =>
  */
 function ChatSelectionBar<TMessage extends IMessage> ({
   store,
-  messagesRef,
+  messages: allMessages,
   canCopy,
   onCopy,
   onForward,
@@ -119,7 +120,7 @@ function ChatSelectionBar<TMessage extends IMessage> ({
   renderSelectionBar,
 }: {
   store: MessageSelectionStore
-  messagesRef: React.RefObject<TMessage[]>
+  messages: TMessage[]
   canCopy: boolean
   onCopy: (messages: TMessage[]) => void
   onForward?: (messages: TMessage[]) => void
@@ -127,12 +128,10 @@ function ChatSelectionBar<TMessage extends IMessage> ({
   renderSelectionBar?: ((props: SelectionBarProps & { messages: TMessage[] }) => React.ReactNode) | null
 }) {
   const ids = useSelectedIds(store)
-  const messages = useMemo(() => {
-    const all = messagesRef.current ?? []
-    return ids
-      .map(id => all.find(message => message._id === id))
-      .filter((message): message is TMessage => !!message)
-  }, [ids, messagesRef])
+  const messages = useMemo(() => ids
+    .map(id => allMessages.find(message => message._id === id))
+    .filter((message): message is TMessage => !!message)
+  , [ids, allMessages])
   const ordered = useMemo(() => [...messages].sort(byDate), [messages])
 
   const actions: SelectionBarAction[] = []
@@ -150,6 +149,27 @@ function ChatSelectionBar<TMessage extends IMessage> ({
   return <SelectionBar {...props} />
 }
 
+// "random" function from here: https://stackoverflow.com/a/8084248/3452513
+// we do not use uuid since it would add extra native dependency (https://www.npmjs.com/package/react-native-get-random-values)
+// lib's user can decide which algorithm to use and pass it as a prop
+const defaultMessageIdGenerator = () => (Math.random() + 1).toString(36).substring(7)
+
+/**
+ * An app's `renderInputToolbar`, called from a component of its own. Its props carry the
+ * composer's ref and ref-backed handlers, which must not be handed to a function called while
+ * `Chat` renders.
+ */
+function CustomInputToolbar<TProps extends Record<string, any>> ({ render, props }: {
+  render: Parameters<typeof renderComponentOrElement<TProps>>[0]
+  props: TProps
+}) {
+  return <>{renderComponentOrElement(render, props)}</>
+}
+
+// The input's ref may be the app's (a prop), so the compiler cannot tell a `.current` read inside
+// a callback from a render input; reading it out here keeps the callback's memoization.
+const clearInput = (ref: RefObject<React.ComponentRef<typeof TextInput> | null>) => ref.current?.clear()
+
 function Chat<TMessage extends IMessage = IMessage> (
   props: ChatProps<TMessage>
 ) {
@@ -158,10 +178,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     initialText = '',
     isTyping,
 
-    // "random" function from here: https://stackoverflow.com/a/8084248/3452513
-    // we do not use uuid since it would add extra native dependency (https://www.npmjs.com/package/react-native-get-random-values)
-    // lib's user can decide which algorithm to use and pass it as a prop
-    messageIdGenerator = () => (Math.random() + 1).toString(36).substring(7),
+    messageIdGenerator = defaultMessageIdGenerator,
 
     user = {},
     onSend,
@@ -237,8 +254,11 @@ function Chat<TMessage extends IMessage = IMessage> (
       setPlaybackRate(initialPlaybackRate)
   }, [initialPlaybackRate])
 
-  const onPlaybackRateChangeRef = useRef(mediaPlayback?.onPlaybackRateChange)
-  onPlaybackRateChangeRef.current = mediaPlayback?.onPlaybackRateChange
+  const onPlaybackRateChange = mediaPlayback?.onPlaybackRateChange
+  const onPlaybackRateChangeRef = useRef(onPlaybackRateChange)
+  useInsertionEffect(() => {
+    onPlaybackRateChangeRef.current = onPlaybackRateChange
+  })
   useEffect(() => subscribePlaybackRate(rate => onPlaybackRateChangeRef.current?.(rate)), [])
 
   // Extract reply props for internal use
@@ -278,10 +298,11 @@ function Chat<TMessage extends IMessage = IMessage> (
     [props.messagesContainerRef]
   ) as RefObject<AnimatedList>
 
+  // Typed as a ref so the compiler knows reading `.current` in a callback is not a render input.
   const textInputRef = useMemo(
     () => props.textInputRef || createRef<React.ComponentRef<typeof TextInput>>(),
     [props.textInputRef]
-  )
+  ) as RefObject<React.ComponentRef<typeof TextInput>>
 
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
   const [text, setText] = useState<string | undefined>(() => props.text || props.initialText || '')
@@ -296,13 +317,17 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   // The selection's messages are looked up by id when it changes; deleted ones drop out of it.
   const messagesRef = useRef(messages)
-  messagesRef.current = messages
+  useInsertionEffect(() => {
+    messagesRef.current = messages
+  })
   useEffect(() => {
     selectionStore.retain(new Set(messages.map(message => message._id)))
   }, [messages, selectionStore])
 
   const onSelectionChangeRef = useRef(onSelectionChange)
-  onSelectionChangeRef.current = onSelectionChange
+  useInsertionEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange
+  })
   useEffect(() => selectionStore.subscribe(() => {
     const ids = selectionStore.getSelectedIds()
     onSelectionChangeRef.current?.(
@@ -337,7 +362,7 @@ function Chat<TMessage extends IMessage = IMessage> (
   const scrollToBottom = useCallback(
     (isAnimated = true) => {
       // The list renders oldest first, so the newest message is at its end.
-      messagesContainerRef?.current?.scrollToEnd({ animated: isAnimated })
+      messagesContainerRef.current?.scrollToEnd({ animated: isAnimated })
     },
     [messagesContainerRef]
   )
@@ -348,8 +373,11 @@ function Chat<TMessage extends IMessage = IMessage> (
   }, [])
 
   const isReplyEnabled = reply?.isEnabled !== false
-  const onReplyRef = useRef(reply?.onReply)
-  onReplyRef.current = reply?.onReply
+  const onReply = reply?.onReply
+  const onReplyRef = useRef(onReply)
+  useInsertionEffect(() => {
+    onReplyRef.current = onReply
+  })
 
   const focusComposer = useCallback(() => {
     // After the menu's exit, so the keyboard does not fight the lifted bubble flying back.
@@ -454,10 +482,13 @@ function Chat<TMessage extends IMessage = IMessage> (
   const isEditingRef = useRef(false)
   const stashedDraftRef = useRef('')
   const textValueRef = useRef(text ?? '')
-  textValueRef.current = text ?? ''
   const draftRef = useRef(props.initialText ?? '')
-  const onDraftChangeRef = useRef(props.onDraftChange)
-  onDraftChangeRef.current = props.onDraftChange
+  const onDraftChange = props.onDraftChange
+  const onDraftChangeRef = useRef(onDraftChange)
+  useInsertionEffect(() => {
+    textValueRef.current = text ?? ''
+    onDraftChangeRef.current = onDraftChange
+  })
   const notifyDraft = useCallback((draft: string) => {
     if (isEditingRef.current || draft === draftRef.current)
       return
@@ -488,10 +519,12 @@ function Chat<TMessage extends IMessage = IMessage> (
     restoreDraft()
   }, [restoreDraft])
 
-  cancelEdit.current = () => {
-    if (editingMessage)
-      stopEdit()
-  }
+  useInsertionEffect(() => {
+    cancelEdit.current = () => {
+      if (editingMessage)
+        stopEdit()
+    }
+  })
 
   // A group is any chat with more than one other sender; avatars and sender names show
   // only there.
@@ -526,7 +559,9 @@ function Chat<TMessage extends IMessage = IMessage> (
     return map
   }, [messages, user])
   const usersByIdRef = useRef(usersById)
-  usersByIdRef.current = usersById
+  useInsertionEffect(() => {
+    usersByIdRef.current = usersById
+  })
   const getUserFromMessages = useCallback((id: string | number) => usersByIdRef.current.get(id), [])
 
   // Reactions turn on by themselves once the app can apply them.
@@ -547,7 +582,9 @@ function Chat<TMessage extends IMessage = IMessage> (
   // The app's callbacks are read through a ref, so an inline arrow does not hand every row a
   // new `messageActions` (and re-render it) on each parent render.
   const actionCallbacksRef = useRef({ onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage, onForwardMessages, onDeleteMessages })
-  actionCallbacksRef.current = { onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage, onForwardMessages, onDeleteMessages }
+  useInsertionEffect(() => {
+    actionCallbacksRef.current = { onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage, onForwardMessages, onDeleteMessages }
+  })
   const hasPin = !!onPinMessage
   const hasEdit = !!onEditMessage
   const hasDelete = !!onDeleteMessage || !!onDeleteMessages
@@ -761,7 +798,7 @@ function Chat<TMessage extends IMessage = IMessage> (
   }, [props.textInputProps])
 
   const resetInputToolbar = useCallback(() => {
-    textInputRef.current?.clear()
+    clearInput(textInputRef)
 
     notifyInputTextReset()
 
@@ -835,12 +872,14 @@ function Chat<TMessage extends IMessage = IMessage> (
     },
     [props.text, props.textInputProps, notifyDraft]
   )
-  changeTextRef.current = _onChangeText
-  sendRef.current = messages => _onSend(messages, false)
-  clearReplyRef.current = () => {
-    if (replyMessage)
-      clearReply()
-  }
+  useInsertionEffect(() => {
+    changeTextRef.current = _onChangeText
+    sendRef.current = messages => _onSend(messages, false)
+    clearReplyRef.current = () => {
+      if (replyMessage)
+        clearReply()
+    }
+  })
 
   // Hints for a feature that was asked for but cannot work without its optional peer.
   const isRequested = (config: boolean | { isEnabled?: boolean } | undefined) =>
@@ -858,14 +897,18 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   // Measures where the chat starts in the window, which is what the
   // KeyboardAvoidingView needs to keep the toolbar on the keyboard.
-  const keyboardOffset = useKeyboardVerticalOffset()
-  const measureKeyboardOffset = keyboardOffset.onLayout
+  const {
+    ref: keyboardOffsetRef,
+    onLayout: measureKeyboardOffset,
+    keyboardVerticalOffset,
+    isMeasured: isKeyboardOffsetMeasured,
+  } = useKeyboardVerticalOffset()
 
   // Reveal only once the real offset has been measured, not just once the layout
   // event that kicked off measuring it has fired - `isInitialized` alone let the
   // toolbar paint for a frame at the pre-measurement seed, which is offset 0 for
   // any chat that isn't full-screen. See `useKeyboardVerticalOffset` (#12).
-  const isReady = isInitialized && keyboardOffset.isMeasured
+  const isReady = isInitialized && isKeyboardOffsetMeasured
 
   const onInitialLayoutViewLayout = useCallback(
     (e: LayoutChangeEvent) => {
@@ -927,7 +970,9 @@ function Chat<TMessage extends IMessage = IMessage> (
   // The composer's send keeps one identity: it is an event handler, and a new one each time
   // the app's `onSend` or the reply/edit state changed re-rendered the whole composer.
   const onSendRef = useRef(_onSend)
-  onSendRef.current = _onSend
+  useInsertionEffect(() => {
+    onSendRef.current = _onSend
+  })
   const composerOnSend = useCallback((messages?: TMessage[], shouldResetInputToolbar?: boolean) =>
     onSendRef.current(messages, shouldResetInputToolbar)
   , [])
@@ -938,19 +983,12 @@ function Chat<TMessage extends IMessage = IMessage> (
     ref: textInputRef,
   }), [textInputProps, _onChangeText, textInputRef])
 
+  const isSelectionBarShown = isSelecting && renderSelectionBar !== null
   const inputToolbarFragment = useMemo(() => {
-    if (isSelecting && renderSelectionBar !== null)
-      return (
-        <ChatSelectionBar<TMessage>
-          store={selectionStore}
-          messagesRef={messagesRef}
-          canCopy={hasClipboard}
-          onCopy={copySelection}
-          onForward={forwardSelection}
-          onDelete={deleteSelection}
-          renderSelectionBar={renderSelectionBar}
-        />
-      )
+    // The selection bar takes the composer's place (below), and needs `messages`, which this
+    // memo is kept clear of.
+    if (isSelectionBarShown)
+      return null
 
     const inputToolbarProps = {
       ...props,
@@ -968,7 +1006,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     }
 
     if (renderInputToolbar)
-      return renderComponentOrElement(renderInputToolbar, inputToolbarProps)
+      return <CustomInputToolbar render={renderInputToolbar} props={inputToolbarProps} />
 
     // The built-in composer has no use for the messages, and leaving them out lets its memo
     // skip the render a new message would otherwise cost it.
@@ -989,13 +1027,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     renderReplyPreview,
     replyPreviewContainerStyle,
     replyPreviewTextStyle,
-    isSelecting,
-    renderSelectionBar,
-    selectionStore,
-    hasClipboard,
-    copySelection,
-    forwardSelection,
-    deleteSelection,
+    isSelectionBarShown,
   ])
 
   const contextValues = useMemo(
@@ -1027,7 +1059,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     <ChatContext.Provider value={contextValues}>
       <View
         testID={TEST_ID.WRAPPER}
-        ref={keyboardOffset.ref}
+        ref={keyboardOffsetRef}
         style={[stylesCommon.fill, styles.contentContainer, { backgroundColor: resolvedTheme.colors.background }]}
         onLayout={onInitialLayoutViewLayout}
       >
@@ -1039,7 +1071,7 @@ function Chat<TMessage extends IMessage = IMessage> (
           renderWallpaper={renderWallpaper}
         />
         <ChatKeyboardAvoidingView
-          keyboardVerticalOffset={keyboardOffset.keyboardVerticalOffset}
+          keyboardVerticalOffset={keyboardVerticalOffset}
           keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}
         >
           {/*
@@ -1065,7 +1097,19 @@ function Chat<TMessage extends IMessage = IMessage> (
                     <ComposerPanelsContext.Provider value={composerPanels}>
                       <ChatOverlayProvider>
                         {isListMounted ? renderMessages : <View style={stylesCommon.fill} />}
-                        {inputToolbarFragment}
+                        {isSelectionBarShown
+                          ? (
+                            <ChatSelectionBar<TMessage>
+                              store={selectionStore}
+                              messages={messages}
+                              canCopy={hasClipboard}
+                              onCopy={copySelection}
+                              onForward={forwardSelection}
+                              onDelete={deleteSelection}
+                              renderSelectionBar={renderSelectionBar}
+                            />
+                          )
+                          : inputToolbarFragment}
                       </ChatOverlayProvider>
                     </ComposerPanelsContext.Provider>
                   </MessageSelectionContext.Provider>

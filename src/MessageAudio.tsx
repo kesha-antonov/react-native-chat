@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useRaiseToListen } from './components/earpiece'
 import { MediaCard } from './components/MediaCard'
@@ -139,7 +139,10 @@ const ExpoAudioPlayer = ({
 
   const onEndedRef = usePlaylistEntry(messageId, () => play(true))
   const viewOnceEndRef = useRef(viewOnce.onEnd)
-  viewOnceEndRef.current = viewOnce.onEnd
+  // Layout effects run before the passive effect below that calls it, so it is never stale.
+  useLayoutEffect(() => {
+    viewOnceEndRef.current = viewOnce.onEnd
+  })
 
   // `didJustFinish` is set only by a natural end, never by a pause, so it is
   // the signal to move on to the next note.

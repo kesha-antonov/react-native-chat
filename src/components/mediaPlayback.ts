@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useSyncExternalStore } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 import { NotePlayer, NotePlayerCache, createNotePlayerCache, detachRoundNote } from './roundNotePlayers'
 
 /**
@@ -431,7 +431,9 @@ const useReadablePlayback = () => {
 export const usePlaylistEntry = (messageId: string | number | undefined, play: () => void) => {
   const controller = useContext(MediaPlaybackContext)
   const playRef = useRef(play)
-  playRef.current = play
+  useLayoutEffect(() => {
+    playRef.current = play
+  })
 
   useEffect(() => {
     if (!controller || messageId == null)
@@ -441,10 +443,12 @@ export const usePlaylistEntry = (messageId: string | number | undefined, play: (
   }, [controller, messageId])
 
   const onEndedRef = useRef(() => {})
-  onEndedRef.current = () => {
-    if (controller && messageId != null)
-      controller.onEnded(messageId)
-  }
+  useLayoutEffect(() => {
+    onEndedRef.current = () => {
+      if (controller && messageId != null)
+        controller.onEnded(messageId)
+    }
+  })
 
   return onEndedRef
 }
@@ -456,10 +460,12 @@ export const usePlaylistEntry = (messageId: string | number | undefined, play: (
 export const useNotePlaybackOptions = (messageId: string | number | undefined) => {
   const controller = useContext(MediaPlaybackContext)
   const markReadRef = useRef(() => {})
-  markReadRef.current = () => {
-    if (controller && messageId != null)
-      controller.markRead(messageId)
-  }
+  useLayoutEffect(() => {
+    markReadRef.current = () => {
+      if (controller && messageId != null)
+        controller.markRead(messageId)
+    }
+  })
 
   const options = controller?.getOptions()
   return {
@@ -529,7 +535,9 @@ export const useReportNowPlaying = (
 ) => {
   const controller = useContext(MediaPlaybackContext)
   const actionsRef = useRef({ toggle, stop })
-  actionsRef.current = { toggle, stop }
+  useLayoutEffect(() => {
+    actionsRef.current = { toggle, stop }
+  })
 
   useEffect(() => {
     if (!controller || messageId == null || !isCurrent)

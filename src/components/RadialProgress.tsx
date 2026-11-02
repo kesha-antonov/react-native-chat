@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import Animated, {
   Easing,
@@ -500,7 +500,7 @@ export function RadialProgress ({
   const progressSource = typeof progress === 'number' ? fallbackProgress : progress
   const numericProgress = typeof progress === 'number' ? progress : null
 
-  const initialIcon = useRef(icon).current
+  const [initialIcon] = useState(icon)
 
   // The ring turns from the moment the cancel icon is set; mounted on it, too.
   useEffect(() => {
@@ -547,7 +547,7 @@ export function RadialProgress ({
     () => progressSource.value,
     value => {
       if (numericProgress == null)
-        target.value = value
+        target.set(value)
     }
   )
 
@@ -555,12 +555,12 @@ export function RadialProgress ({
     () => target.value,
     value => {
       // A drop jumps; a rise eases over 200ms from where the ring is.
-      if (value <= arc.value) {
+      if (value <= arc.get()) {
         cancelAnimation(arc)
-        arc.value = value
+        arc.set(value)
         return
       }
-      arc.value = withTiming(value, { duration: RADIAL_PROGRESS_MS, easing: DECELERATE })
+      arc.set(withTiming(value, { duration: RADIAL_PROGRESS_MS, easing: DECELERATE }))
     }
   )
 

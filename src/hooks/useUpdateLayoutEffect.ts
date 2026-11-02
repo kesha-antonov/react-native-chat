@@ -1,5 +1,14 @@
 import { DependencyList, useLayoutEffect, useRef } from 'react'
 
+function areDepsEqual (a: DependencyList, b: DependencyList): boolean {
+  if (a.length !== b.length)
+    return false
+  for (let i = 0; i < a.length; i++)
+    if (!Object.is(a[i], b[i]))
+      return false
+  return true
+}
+
 /**
  * A custom useEffect hook that only triggers on updates, not on initial mount
  * Idea stolen from: https://stackoverflow.com/a/55075818/1526448
@@ -10,15 +19,15 @@ export function useUpdateLayoutEffect (
   effect: () => void,
   dependencies: DependencyList = []
 ) {
-  const isInitialMount = useRef(true)
+  // `dependencies` is the caller's list, so it cannot be handed to useLayoutEffect as a
+  // literal array (React Compiler would skip this hook). Compare it by hand instead, the way
+  // React compares a dependency list; `null` marks the mount, which must not fire.
+  const prevDependencies = useRef<DependencyList | null>(null)
 
   useLayoutEffect(() => {
-    if (isInitialMount.current)
-      isInitialMount.current = false
-    else
+    const prev = prevDependencies.current
+    prevDependencies.current = dependencies
+    if (prev !== null && !areDepsEqual(prev, dependencies))
       effect()
-  // `dependencies` is this hook's own parameter - the caller owns the list, so there is
-  // nothing static to verify here.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, dependencies)
+  })
 }

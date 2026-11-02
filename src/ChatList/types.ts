@@ -1,5 +1,6 @@
 import React from 'react'
 import { ColorSchemeName, FlatListProps, StyleProp, ViewStyle } from 'react-native'
+import { SharedValue } from 'react-native-reanimated'
 
 import { TypingAction } from '../components/TypingStatus'
 import { ChatLabels } from '../i18n'
@@ -66,10 +67,10 @@ export interface ChatListReorder<TChat extends ChatListItem = ChatListItem> {
 
 /** The drag in progress, shared by every pinned row (UI-thread values). */
 export interface ChatListDrag {
-  id: { value: string }
-  from: { value: number }
-  y: { value: number }
-  isActive: { value: boolean }
+  id: SharedValue<string>
+  from: SharedValue<number>
+  y: SharedValue<number>
+  isActive: SharedValue<boolean>
 }
 
 export interface ChatListProps<TChat extends ChatListItem = ChatListItem> {

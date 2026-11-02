@@ -132,10 +132,10 @@ function ChatListCellInner<TChat extends ChatListItem> ({
     onActivate: () => {
       if (!drag)
         return
-      drag.id.value = chatKey
-      drag.from.value = index
-      drag.y.value = 0
-      drag.isActive.value = true
+      drag.id.set(chatKey)
+      drag.from.set(index)
+      drag.y.set(0)
+      drag.isActive.set(true)
       if (onDragStart)
         runOnJS(onDragStart)(chat)
     },
@@ -145,16 +145,16 @@ function ChatListCellInner<TChat extends ChatListItem> ({
       // Kept to the pinned rows, give or take half a row.
       const min = -(index + 0.5) * ROW_HEIGHT
       const max = (count - 1 - index + 0.5) * ROW_HEIGHT
-      drag.y.value = Math.max(min, Math.min(max, event.translationY))
+      drag.y.set(Math.max(min, Math.min(max, event.translationY)))
     },
     onDeactivate: () => {
       if (!drag || drag.id.value !== chatKey)
         return
       const to = hoverIndex(drag, count)
-      drag.y.value = withTiming((to - index) * ROW_HEIGHT, SETTLE, () => {
+      drag.y.set(withTiming((to - index) * ROW_HEIGHT, SETTLE, () => {
         if (onDrop)
           runOnJS(onDrop)(chat, to)
-      })
+      }))
     },
   })
   const gesture = useCompetingGestures(pan, dragPan)

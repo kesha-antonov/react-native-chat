@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
 import { GestureDetector, usePinchGesture } from 'react-native-gesture-handler'
 import Animated, {
@@ -170,7 +170,6 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   // View-once: off at the start of every take, read on send.
   const [isViewOnce, setIsViewOnce] = useState(false)
   const isViewOnceRef = useRef(false)
-  isViewOnceRef.current = isViewOnce
   // After a take ends, the overlay stays up a moment longer so the circle can
   // close and the dim fade out.
   const [closing, setClosing] = useState<{
@@ -179,12 +178,17 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     uri: string | null
     /** Sent: the circle flies into the new note instead of closing. */
     isFlight: boolean
+    /** The phase the take closed from and its elapsed time, so the ring holds its last share. */
+    fromPhase: Phase
+    elapsed: number
   } | null>(null)
 
   const phaseRef = useRef<Phase>('idle')
   const cameraRef = useRef<VideoNoteRecorderController | null>(null)
   const startedAtRef = useRef(0)
   const durationRef = useRef(0)
+  // The same take length, for rendering the paused take's preview.
+  const [takeDurationMs, setTakeDurationMs] = useState(0)
   // Set when a take is cancelled, so a capture callback that lands afterwards
   // drops its file instead of posting the note.
   const abortedRef = useRef(false)
@@ -192,13 +196,16 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   const finishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previewUriRef = useRef<string | null>(null)
-  previewUriRef.current = previewUri
-  // The ring's last share, held while the circle closes.
-  const lastProgressRef = useRef(0)
+  // Mirrors `elapsed` for `close`, which records it so the ring holds its last share.
+  const elapsedRef = useRef(0)
   const configRef = useRef(config)
-  configRef.current = config
   const onSendRef = useRef(onSend)
-  onSendRef.current = onSend
+  useLayoutEffect(() => {
+    isViewOnceRef.current = isViewOnce
+    previewUriRef.current = previewUri
+    configRef.current = config
+    onSendRef.current = onSend
+  })
 
   const maxMs = (config?.maxDuration ?? 60) * 1000
   const minDurationMs = config?.minDurationMs ?? DEFAULT_MIN_DURATION_MS
@@ -232,6 +239,8 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
         isSlideOut: recordedMs > SLIDE_OUT_MIN_MS,
         uri: previewUriRef.current,
         isFlight,
+        fromPhase: was,
+        elapsed: elapsedRef.current,
       })
       closingTimerRef.current = setTimeout(() => {
         closingTimerRef.current = null
@@ -243,6 +252,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     startedAtRef.current = 0
     setPhase('idle')
     setIsLocked(false)
+    elapsedRef.current = 0
     setElapsed(0)
     setIsFlashOn(false)
     setPreviewUri(null)
@@ -297,6 +307,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     }
 
     durationRef.current = duration
+    setTakeDurationMs(duration)
     clearTimers()
     setPhase(outcome === 'preview' ? 'stopping' : 'finishing')
     stopCapture()
@@ -304,7 +315,9 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   }, [close, clearTimers, setPhase, stopCapture, minDurationMs])
 
   const stopTakeRef = useRef(stopTake)
-  stopTakeRef.current = stopTake
+  useLayoutEffect(() => {
+    stopTakeRef.current = stopTake
+  })
 
   const start = useCallback(() => {
     if (phaseRef.current !== 'idle' || !isVisionCameraAvailable)
@@ -320,16 +333,16 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     // The permission prompt takes the finger off the button anyway, so ask and
     // stop here; the next hold records.
     if (!hasCamera || !hasMicrophone) {
+      // `.catch` rather than try/catch: the compiler cannot lower the `||` and optional
+      // calls inside a `try`.
       ;(async () => {
-        try {
-          const camera = hasCamera || await requestCameraPermission()
-          const mic = hasMicrophone || await requestMicrophonePermission()
-          if (!camera || !mic)
-            configRef.current?.onPermissionDenied?.()
-        } catch (error) {
-          configRef.current?.onError?.(error)
-        }
-      })()
+        const camera = hasCamera || await requestCameraPermission()
+        const mic = hasMicrophone || await requestMicrophonePermission()
+        if (!camera || !mic)
+          configRef.current?.onPermissionDenied?.()
+      })().catch(error => {
+        configRef.current?.onError?.(error)
+      })
       return
     }
 
@@ -342,7 +355,6 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     // Reset here rather than on close, so the closing circle does not flip.
     setFacing('front')
     setIsViewOnce(false)
-    lastProgressRef.current = 0
     setPhase('preparing')
   }, [setPhase])
 
@@ -391,11 +403,13 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     // Tick when the round take actually starts recording.
     recordingHaptic()
     startedAtRef.current = Date.now()
+    elapsedRef.current = 0
     setElapsed(0)
     setPhase('recording')
     clearTimers()
     timerRef.current = setInterval(() => {
       const ms = Date.now() - startedAtRef.current
+      elapsedRef.current = ms
       setElapsed(ms)
       // Out of time: stop into the preview, or send without a player for it.
       if (ms >= maxMs - LIMIT_LEAD_MS)
@@ -463,14 +477,14 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   const isRecording = phase === 'recording'
   const isClosing = phase === 'idle' && !!closing
 
-  let progress = lastProgressRef.current
-  if (isRecording)
-    progress = Math.min(1, elapsed / maxMs)
-  else if (phase === 'preparing')
-    progress = 0
-  else if (phase !== 'idle')
+  // Closed: the ring holds the share it had when the take ended.
+  const progressPhase = phase === 'idle' ? closing?.fromPhase ?? 'idle' : phase
+  const progressElapsed = phase === 'idle' ? closing?.elapsed ?? 0 : elapsed
+  let progress = 0
+  if (progressPhase === 'recording')
+    progress = Math.min(1, progressElapsed / maxMs)
+  else if (progressPhase !== 'preparing' && progressPhase !== 'idle')
     progress = 1
-  lastProgressRef.current = progress
 
   const overlayKind = phase === 'idle'
     ? closing?.kind ?? null
@@ -523,9 +537,9 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     isActive: phase === 'preparing' || phase === 'recording' || phase === 'preview',
     isLocked,
     isCapturing: isRecording,
-    elapsed: phase === 'preview' ? durationRef.current : elapsed,
+    elapsed: phase === 'preview' ? takeDurationMs : elapsed,
     buttonPhase,
-    preview: phase === 'preview' ? { durationMs: durationRef.current } : null,
+    preview: phase === 'preview' ? { durationMs: takeDurationMs } : null,
     start,
     finish,
     lock,
@@ -588,7 +602,7 @@ function VideoNoteStage ({ isClosing, children }: { isClosing: boolean, children
   const isDark = useColorScheme() === 'dark'
   const dim = useSharedValue(0)
   useEffect(() => {
-    dim.value = withTiming(isClosing ? 0 : 1, { duration: DIM_ANIMATION_MS, easing: EASE_OUT_QUINT })
+    dim.set(withTiming(isClosing ? 0 : 1, { duration: DIM_ANIMATION_MS, easing: EASE_OUT_QUINT }))
   }, [isClosing, dim])
   const isBlurred = !!BlurView
   const dimStyle = useAnimatedStyle(() => ({ opacity: dim.value * (isBlurred ? BLUR_LAYER_ALPHA : 1) }))
@@ -633,14 +647,14 @@ function useRoundAnimation ({ isClosing, isSlideOut, isOpen, area, isFlight, rou
 
   const open = useSharedValue(isOpen ? 1 : 0)
   useEffect(() => {
-    open.value = withTiming(isClosed ? 0 : 1, { duration: ROUND_ANIMATION_MS, easing: DECELERATE })
+    open.set(withTiming(isClosed ? 0 : 1, { duration: ROUND_ANIMATION_MS, easing: DECELERATE }))
   }, [isClosed, open])
 
   // The ring and the buttons go as soon as the take ends, on a flight too
   // (`getButtonsLayout`, `getPaint` faded to 0).
   const chrome = useSharedValue(isOpen ? 1 : 0)
   useEffect(() => {
-    chrome.value = withTiming(isClosing ? 0 : 1, { duration: ROUND_ANIMATION_MS, easing: DECELERATE })
+    chrome.set(withTiming(isClosing ? 0 : 1, { duration: ROUND_ANIMATION_MS, easing: DECELERATE }))
   }, [isClosing, chrome])
 
   // The round note flight: the camera circle moves onto the note
@@ -652,11 +666,13 @@ function useRoundAnimation ({ isClosing, isSlideOut, isOpen, area, isFlight, rou
   const flyScale = useSharedValue(1)
   const fade = useSharedValue(1)
   const roundSizeRef = useRef(roundSize)
-  roundSizeRef.current = roundSize
+  useLayoutEffect(() => {
+    roundSizeRef.current = roundSize
+  })
 
   const jsLanded = useCallback(() => {
     finishSendFlight('round')
-    fade.value = withTiming(0, { duration: ROUND_FLIGHT_FADE_MS, easing: DECELERATE })
+    fade.set(withTiming(0, { duration: ROUND_FLIGHT_FADE_MS, easing: DECELERATE }))
   }, [fade])
 
   useEffect(() => {
@@ -693,13 +709,13 @@ function useRoundAnimation ({ isClosing, isSlideOut, isOpen, area, isFlight, rou
         if (!isFlying)
           return
 
-        flyX.value = target.x + target.size / 2 - (x + width / 2)
-        flyY.value = target.y + target.size / 2 - (y + height / 2)
-        flyScale.value = target.size / size
-        fly.value = withTiming(1, { duration: ROUND_FLIGHT_MS, easing: Easing.linear }, finished => {
+        flyX.set(target.x + target.size / 2 - (x + width / 2))
+        flyY.set(target.y + target.size / 2 - (y + height / 2))
+        flyScale.set(target.size / size)
+        fly.set(withTiming(1, { duration: ROUND_FLIGHT_MS, easing: Easing.linear }, finished => {
           if (finished)
             runOnJS(jsLanded)()
-        })
+        }))
       })
     })
     if (isWaiting)
@@ -737,6 +753,14 @@ function useRoundAnimation ({ isClosing, isSlideOut, isOpen, area, isFlight, rou
   return { roundStyle, controlsStyle, ringStyle }
 }
 
+// Picked once at load, not off the module during render: a hook has to be the same function on
+// every render, and the module never changes once resolved. VideoNoteCaptureView only mounts
+// when the native module is present.
+const visionCamera = getVisionCamera()
+const useCameraDevice: (position: 'front' | 'back') => any = visionCamera?.useCameraDevice
+const useCameraDevices: () => any[] = visionCamera?.useCameraDevices
+const useVideoOutput: (options: object) => any = visionCamera?.useVideoOutput
+
 /**
  * The round camera preview drawn over the dimmed conversation while a take
  * records. A separate component so the vision-camera hooks only run while the
@@ -757,19 +781,18 @@ function VideoNoteCaptureView ({
   onFlip,
 }: VideoNoteCaptureViewProps) {
   const labels = useLabels()
-  const visionCamera = getVisionCamera()
   const Camera = visionCamera.Camera
   // The camera on the chosen side, else the other side, else any camera at all
   // (an external one, an emulator's). Each side's default device is the one
   // vision-camera picks for it: the wide-angle lens.
-  const front = visionCamera.useCameraDevice('front')
-  const back = visionCamera.useCameraDevice('back')
-  const devices: any[] = visionCamera.useCameraDevices()
+  const front = useCameraDevice('front')
+  const back = useCameraDevice('back')
+  const devices: any[] = useCameraDevices()
   const device = (facing === 'front' ? front ?? back : back ?? front) ?? devices[0]
 
   // Recording goes through a video output and the recorders it creates. The
   // persistent recorder keeps one file across a flip mid-take.
-  const videoOutput = visionCamera.useVideoOutput({ enableAudio: true, enablePersistentRecorder: true })
+  const videoOutput = useVideoOutput({ enableAudio: true, enablePersistentRecorder: true })
   const outputs = useMemo(() => [videoOutput], [videoOutput])
   const recorder = useMemo(() => createVideoNoteRecorder(videoOutput), [videoOutput])
   useEffect(() => {
@@ -798,7 +821,9 @@ function VideoNoteCaptureView ({
   const flip = useSharedValue(0)
   const isFlippingRef = useRef(false)
   const onFlipRef = useRef(onFlip)
-  onFlipRef.current = onFlip
+  useLayoutEffect(() => {
+    onFlipRef.current = onFlip
+  })
   const jsSwitchCamera = useCallback(() => onFlipRef.current(), [])
   const jsFlipDone = useCallback(() => {
     isFlippingRef.current = false
@@ -808,10 +833,10 @@ function VideoNoteCaptureView ({
       return
 
     isFlippingRef.current = true
-    flip.value = 0
-    flip.value = withTiming(1, { duration: FLIP_MS, easing: EASE_OUT_QUINT }, () => {
+    flip.set(0)
+    flip.set(withTiming(1, { duration: FLIP_MS, easing: EASE_OUT_QUINT }, () => {
       runOnJS(jsFlipDone)()
-    })
+    }))
   }, [flip, jsFlipDone])
   useAnimatedReaction(
     () => flip.value >= 0.5,
@@ -835,7 +860,9 @@ function VideoNoteCaptureView ({
   // initialization that cannot happen. Not on the first render - Android fills
   // the device list asynchronously, and failing at once closed every take.
   const onErrorRef = useRef(onError)
-  onErrorRef.current = onError
+  useLayoutEffect(() => {
+    onErrorRef.current = onError
+  })
   const labelNoCamera = labels.noCamera
   const hasDevice = !!device
   useEffect(() => {
@@ -865,7 +892,9 @@ function VideoNoteCaptureView ({
 
   const pinchStartZoomRef = useRef(neutralZoom)
   const zoomRef = useRef(zoom)
-  zoomRef.current = zoom
+  useLayoutEffect(() => {
+    zoomRef.current = zoom
+  })
 
   const onPinchBegin = useCallback(() => {
     stopZoomReset()

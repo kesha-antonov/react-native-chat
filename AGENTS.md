@@ -35,7 +35,7 @@ Run these from the repo root:
 | `yarn typecheck` | `tsc --noEmit` over `src/`. Must stay clean. |
 | `yarn lint` | ESLint over **both** `src/` and `example/`. Must report 0 errors and 0 warnings. |
 | `yarn lint:fix` | Auto-fix what ESLint can. |
-| `yarn build` | `rm -rf lib && tsc` - emits `lib/`, which is gitignored and is what gets published. |
+| `yarn build` | `rm -rf lib`, `tsc` for the declarations, then Babel with the React Compiler (`babel.build.cjs`) for the JavaScript - emits `lib/`, which is gitignored and is what gets published. The build fails if the compiler has to skip any component. |
 | `yarn prepublishOnly` | lint + test + build, i.e. the full gate. |
 
 Inside `example/`: `yarn lint` and `yarn typecheck` cover the example app on its own. Note
@@ -102,6 +102,27 @@ Style is enforced by ESLint (`@stylistic`), so run `yarn lint:fix` rather than m
 - comments explain *why*, not *what*; several existing ones cite the issue they fix
 - user-visible diagnostics go through `logging.ts` (`warning`, `error`), which prefixes them
   with the package name, rather than a bare `console.*`
+
+**Write for the React Compiler.** `lib/` is compiled with it, so every app gets its memoization,
+and the build fails on a component it cannot compile (see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+for the rules the library is built to). ESLint runs the compiler's own checks over `src/`. In practice:
+
+- shared values from JS code (effects, handlers, render) are read with `.get()` and written with
+  `.set()`, not `.value`
+- no `ref.current` reads during render, and no "latest value" writes in the render body - write
+  the ref in a `useLayoutEffect` (or `useInsertionEffect` when another layout effect reads it)
+- no `eslint-disable` of `react-hooks` rules: one suppression makes the compiler skip the whole
+  component
+- no `??=`, and no `try/finally` inside a component or hook - move the body to a module-level
+  helper
+- per-chat state shared between components goes through `src/store.ts` (`createStore`,
+  `createKeyedStore`, `useStore`, `useKeyedValue`), keyed by message id where rows read it;
+  easings and the overshoot curve come from `src/motion.ts`
+
+Jest runs the library through the same compiler (`babel.config.cjs`), so tests see the shipped
+behaviour: a compiled component does not re-call an unchanged render prop, so a test cannot use one
+as a probe that its parent rendered (use `React.Profiler`), and rows mount a frame after `Chat`
+lays out, so a test that looks at them awaits `waitForRows()` first.
 
 **Never pass a dependency array to a Reanimated worklet hook.** `useAnimatedStyle`,
 `useDerivedValue`, `useAnimatedProps` and `useAnimatedReaction` all log

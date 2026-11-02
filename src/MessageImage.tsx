@@ -86,19 +86,19 @@ function ModalContent({ isVisible, imageSource, modalImageDimensions, imageProps
   const modalBorderRadius = useSharedValue(40)
 
   const handleModalClose = useCallback(() => {
-    modalOpacity.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.ease) })
-    modalScale.value = withTiming(0.9, { duration: 200, easing: Easing.in(Easing.ease) }, () => {
+    modalOpacity.set(withTiming(0, { duration: 200, easing: Easing.in(Easing.ease) }))
+    modalScale.set(withTiming(0.9, { duration: 200, easing: Easing.in(Easing.ease) }, () => {
       runOnJS(onClose)()
-    })
-    modalBorderRadius.value = withTiming(40, { duration: 200, easing: Easing.in(Easing.ease) })
+    }))
+    modalBorderRadius.set(withTiming(40, { duration: 200, easing: Easing.in(Easing.ease) }))
   }, [onClose, modalOpacity, modalScale, modalBorderRadius])
 
   // Animate on visibility change
   useEffect(() => {
     if (isVisible) {
-      modalOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) })
-      modalScale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) })
-      modalBorderRadius.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) })
+      modalOpacity.set(withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) }))
+      modalScale.set(withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) }))
+      modalBorderRadius.set(withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) }))
     }
   }, [isVisible, modalOpacity, modalScale, modalBorderRadius])
 
@@ -209,20 +209,20 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
     setHasShownButton(true)
 
   const onLoadStart = useCallback(() => {
-    loadProgress.value = 0
+    loadProgress.set(0)
   }, [loadProgress])
   const onLoadProgress = useCallback((event: { nativeEvent: { loaded: number, total: number } }) => {
     const { loaded, total } = event.nativeEvent
     if (!(total > 0))
       return
-    loadProgress.value = loaded / total
+    loadProgress.set(loaded / total)
     // Re-rendered only when the text changes, not per progress event.
     const label = transferLabel(loaded / total, total)
     setLoadLabel(previous => previous === label ? previous : label)
   }, [loadProgress])
   const onLoad = useCallback(() => {
     setLoadResult({ key: loadKey, state: 'loaded' })
-    imageOpacity.value = withTiming(1, { duration: IMAGE_CROSSFADE_MS })
+    imageOpacity.set(withTiming(1, { duration: IMAGE_CROSSFADE_MS }))
   }, [loadKey, imageOpacity])
   const onError = useCallback(() => {
     setLoadResult({ key: loadKey, state: 'error' })
@@ -287,7 +287,7 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
     if (buttonIcon === 'download') {
       setIsCancelled(false)
       if (loadState === 'error') {
-        imageOpacity.value = 0
+        imageOpacity.set(0)
         setAttempt(value => value + 1)
       } else if (isDownloadRequired && mediaTransfer.hasDownloadHandler()) {
         mediaTransfer.onDownload(currentMessage)

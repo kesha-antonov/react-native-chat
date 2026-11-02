@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View, StyleProp, ViewStyle, TextStyle } from 'react-native'
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, { Easing, FadeIn, FadeOut, Keyframe, LayoutAnimationConfig, ZoomIn, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Actions, ActionsProps } from './Actions'
 import { AttachmentButton, resolveAttachments } from './attachments/AttachmentButton'
 import { getAttachmentTabs } from './attachments/buildMessages'
-import { AttachmentsProps } from './attachments/types'
+import { AttachmentsProps, AttachmentTab } from './attachments/types'
 import { AttachmentAction } from './components/AttachmentSheet'
 import { useChatOverlay } from './components/ChatOverlay'
 import { useComposerPanels } from './components/composerPanels'
@@ -129,6 +129,10 @@ const textOut = makeTextOut(TEXT_SHIFT)
 const textOutRTL = makeTextOut(-TEXT_SHIFT)
 
 /** The way back in, waiting out whatever of the delay has not passed yet. */
+// Read once, as the field comes back, and kept in state from then on: the delays are only
+// read when the field's parts mount.
+const elapsedSince = (at: number) => Date.now() - at
+
 const makeReturn = (delays: { icons: number, text: number }, attachShift: number) => ({
   emoji: new Keyframe({
     0: { opacity: 0, transform: [{ scale: 0 }] },
@@ -229,6 +233,18 @@ type OnSend<TMessage extends IMessage> = (
   shouldResetInputToolbar: boolean
 ) => void
 
+// The composer's caret, kept for the emoji keyboard. The setter goes into the composer props
+// handed to a custom `renderComposer`, which is called during render; behind a hook it is not
+// mistaken for a ref read there - it only ever runs from the input's selection event.
+function useSelectionTracker () {
+  const selectionRef = useRef<TextSelection | null>(null)
+  const getSelection = useCallback(() => selectionRef.current, [])
+  const rememberSelection = useCallback((selection: TextSelection) => {
+    selectionRef.current = selection
+  }, [])
+  return { getSelection, rememberSelection }
+}
+
 export function InputToolbar<TMessage extends IMessage = IMessage> (
   props: InputToolbarProps<TMessage>
 ) {
@@ -261,9 +277,9 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   // The built-in emoji keyboard, unless the app handles the button itself.
   const emojiConfig = props.onPressEmoji ? null : resolveEmojiKeyboard(props.emojiKeyboard)
   const textInputRef = (props.textInputProps as { ref?: React.RefObject<{ focus?: () => void } | null> } | undefined)?.ref
-  const focusComposer = useCallback(() => {
+  const focusComposer = () => {
     textInputRef?.current?.focus?.()
-  }, [textInputRef])
+  }
   const emoji = useEmojiKeyboard({
     isEnabled: !!emojiConfig,
     focusComposer,
@@ -281,22 +297,26 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   // Edits go through the composer's own change handler, so they work whether the app controls
   // `text` or not. Kept in refs, as several taps can land before the next render.
   const textRef = useRef(props.text ?? '')
-  textRef.current = props.text ?? ''
-  const selectionRef = useRef<TextSelection | null>(null)
+  const { getSelection, rememberSelection } = useSelectionTracker()
   const onChangeTextRef = useRef(props.textInputProps?.onChangeText)
-  onChangeTextRef.current = props.textInputProps?.onChangeText
+  const text = props.text ?? ''
+  const onChangeText = props.textInputProps?.onChangeText
+  useLayoutEffect(() => {
+    textRef.current = text
+    onChangeTextRef.current = onChangeText
+  })
 
   const applyEdit = useCallback((edit: { text: string, selection: TextSelection }) => {
     textRef.current = edit.text
-    selectionRef.current = edit.selection
+    rememberSelection(edit.selection)
     onChangeTextRef.current?.(edit.text)
-  }, [])
+  }, [rememberSelection])
   const insertEmoji = useCallback((value: string) => {
-    applyEdit(insertText(textRef.current, value, selectionRef.current))
-  }, [applyEdit])
+    applyEdit(insertText(textRef.current, value, getSelection()))
+  }, [applyEdit, getSelection])
   const deleteBackwardInComposer = useCallback(() => {
-    applyEdit(deleteBackward(textRef.current, selectionRef.current))
-  }, [applyEdit])
+    applyEdit(deleteBackward(textRef.current, getSelection()))
+  }, [applyEdit, getSelection])
 
 
   // The island floats 9 above the home indicator (`INPUT_BUBBLE_BOTTOM`), and 9 above the
@@ -340,13 +360,16 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const attachmentsProp = props.attachments
   const attachmentsConfig = useMemo(() => resolveAttachments<TMessage>(attachmentsProp), [attachmentsProp])
   const requestedTabs = attachmentsConfig?.tabs
+  const hasAttachments = !!attachmentsConfig
+  // Keyed by the tab list, not its identity: an inline array would rebuild the menu every render.
   const requestedTabsId = requestedTabs?.join(',')
-  const attachmentTabs = useMemo(
-    () => (attachmentsConfig ? getAttachmentTabs(requestedTabs) : []),
-    // The tab list, not its identity: an inline array would rebuild the menu every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [!!attachmentsConfig, requestedTabsId]
-  )
+  const attachmentTabs = useMemo(() => {
+    if (!hasAttachments)
+      return []
+    return getAttachmentTabs(requestedTabsId === undefined
+      ? undefined
+      : requestedTabsId.split(',').filter(Boolean) as AttachmentTab[])
+  }, [hasAttachments, requestedTabsId])
   const onSendProp = (props as { onSend?: OnSend<TMessage> }).onSend
   const onSendForAttachments = useCallback((messages: Partial<TMessage>[], shouldReset: boolean) => {
     onSendProp?.(messages, shouldReset)
@@ -451,7 +474,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
           textInputProps?.onFocus?.(event)
         },
         onSelectionChange: (event: Parameters<NonNullable<NonNullable<ComposerProps['textInputProps']>['onSelectionChange']>>[0]) => {
-          selectionRef.current = event.nativeEvent.selection
+          rememberSelection(event.nativeEvent.selection)
           textInputProps?.onSelectionChange?.(event)
         },
       },
@@ -461,7 +484,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
       return renderComponentOrElement(renderComposer, composerProps)
 
     return <Composer {...composerProps} />
-  }, [renderComposer, props, onComposerFocus])
+  }, [renderComposer, props, onComposerFocus, rememberSelection])
 
   const sendFragment = useMemo(() => {
     if (renderSend)
@@ -563,10 +586,13 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const [isCancelLingering, setIsCancelLingering] = useState(false)
   const lingerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isRecordingActiveRef = useRef(isRecordingActive)
-  isRecordingActiveRef.current = isRecordingActive
-  const lastElapsedRef = useRef(0)
-  if (isRecordingActive)
-    lastElapsedRef.current = recording.elapsed
+  useLayoutEffect(() => {
+    isRecordingActiveRef.current = isRecordingActive
+  })
+  // The lingering bar keeps showing the time the take ended at.
+  const [lastElapsed, setLastElapsed] = useState(0)
+  if (isRecordingActive && recording.elapsed !== lastElapsed)
+    setLastElapsed(recording.elapsed)
 
   const startCancelLinger = useCallback(() => {
     // Only a bar that is showing has anything to animate out.
@@ -583,11 +609,11 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   }, [])
 
   // How and when the last take ended, for the composer's way back in.
-  const lastExitRef = useRef<{ reason: 'send' | 'cancel', at: number }>({ reason: 'cancel', at: 0 })
+  const [lastExit, setLastExit] = useState<{ reason: 'send' | 'cancel', at: number }>({ reason: 'cancel', at: 0 })
 
   const onRecordExit = useCallback((reason: RecordExitReason) => {
     if (reason !== 'preview')
-      lastExitRef.current = { reason, at: Date.now() }
+      setLastExit({ reason, at: Date.now() })
     if (reason === 'cancel')
       startCancelLinger()
   }, [startCancelLinger])
@@ -607,9 +633,9 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   }, [])
 
   // The composer comes back with a fade only after a take, not on first mount.
-  const hasHadTakeRef = useRef(false)
-  if (isTakeInProgress)
-    hasHadTakeRef.current = true
+  const [hasHadTake, setHasHadTake] = useState(false)
+  if (isTakeInProgress && !hasHadTake)
+    setHasHadTake(true)
 
   // A tooltip over the record button: after a mode switch, or after a tap on a
   // single-mode button.
@@ -629,9 +655,11 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   // Read through a ref so the callback stays stable: it is the record button's
   // `onTap`, and a new identity would rebuild the gesture mid-hold.
   const isTakeInProgressRef = useRef(isTakeInProgress)
-  isTakeInProgressRef.current = isTakeInProgress
   const labelsRef = useRef(labels)
-  labelsRef.current = labels
+  useLayoutEffect(() => {
+    isTakeInProgressRef.current = isTakeInProgress
+    labelsRef.current = labels
+  })
 
   const toggleRecordMode = useCallback(() => {
     // Never switch under a take in progress.
@@ -657,7 +685,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   }, [showRecordHint])
 
   const cancelRecording = useCallback(() => {
-    lastExitRef.current = { reason: 'cancel', at: Date.now() }
+    setLastExit({ reason: 'cancel', at: Date.now() })
     startCancelLinger()
     if (videoSession.isActive)
       videoSession.finish(true)
@@ -803,19 +831,21 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const isFieldShown = !isPreviewing && !isRecordingActive && !isCancelLingering
   // Computed as the field comes back; `entering` is only read on mount. A
   // cancel has usually spent most of its delay on the lingering bar already.
-  const returnRef = useRef<ReturnType<typeof makeReturn> | null>(null)
-  const wasFieldShownRef = useRef(true)
-  if (isFieldShown && !wasFieldShownRef.current) {
-    const { reason, at } = lastExitRef.current
-    const passed = Date.now() - at
-    const delays = RETURN_DELAYS[reason]
-    returnRef.current = makeReturn({
-      icons: Math.max(0, delays.icons - passed),
-      text: Math.max(0, delays.text - passed),
-    }, reason === 'cancel' ? (isRTL ? -ATTACH_SHIFT : ATTACH_SHIFT) : 0)
+  const [returnAnimations, setReturnAnimations] = useState<ReturnType<typeof makeReturn> | null>(null)
+  const [wasFieldShown, setWasFieldShown] = useState(true)
+  if (isFieldShown !== wasFieldShown) {
+    setWasFieldShown(isFieldShown)
+    if (isFieldShown) {
+      const { reason, at } = lastExit
+      const passed = elapsedSince(at)
+      const delays = RETURN_DELAYS[reason]
+      setReturnAnimations(makeReturn({
+        icons: Math.max(0, delays.icons - passed),
+        text: Math.max(0, delays.text - passed),
+      }, reason === 'cancel' ? (isRTL ? -ATTACH_SHIFT : ATTACH_SHIFT) : 0))
+    }
   }
-  wasFieldShownRef.current = isFieldShown
-  const returning = hasHadTakeRef.current ? returnRef.current : null
+  const returning = hasHadTake ? returnAnimations : null
 
   return (
     <>
@@ -877,7 +907,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
                 : isRecordingActive || isCancelLingering
                   ? (
                     <RecordingBar
-                      elapsed={isRecordingActive ? recording.elapsed : lastElapsedRef.current}
+                      elapsed={isRecordingActive ? recording.elapsed : lastElapsed}
                       isLocked={isRecordingActive && recording.locked}
                       isBlinking={!isVideoTake || videoSession.isCapturing}
                       isCancelled={!isRecordingActive}
@@ -890,7 +920,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
                     <Animated.View
                       style={fieldGroupStyles}
                       // The pill itself only fades; its parts move on their own.
-                      entering={hasHadTakeRef.current ? FadeIn.duration(CONTROLS_MS) : undefined}
+                      entering={hasHadTake ? FadeIn.duration(CONTROLS_MS) : undefined}
                       exiting={canTakeAway ? FadeOut.duration(CONTROLS_MS) : undefined}
                     >
                       {emojiFragment && (

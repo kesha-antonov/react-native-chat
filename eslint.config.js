@@ -402,4 +402,30 @@ export default [
       ...jestPlugin.configs.recommended.rules,
     },
   },
+  {
+    // lib/ is built with the React Compiler, and a component it skips loses its memoization in
+    // every app. These are the compiler's own checks: a violation here is a skipped component.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/__tests__/**'],
+    rules: {
+      'react-hooks/component-hook-factories': 'error',
+      'react-hooks/config': 'error',
+      'react-hooks/error-boundaries': 'error',
+      'react-hooks/gating': 'error',
+      'react-hooks/globals': 'error',
+      'react-hooks/hooks': 'error',
+      'react-hooks/immutability': 'error',
+      'react-hooks/incompatible-library': 'error',
+      'react-hooks/preserve-manual-memoization': 'error',
+      'react-hooks/purity': 'error',
+      'react-hooks/refs': 'error',
+      'react-hooks/rule-suppression': 'error',
+      'react-hooks/set-state-in-render': 'error',
+      'react-hooks/static-components': 'error',
+      'react-hooks/syntax': 'error',
+      'react-hooks/todo': 'error',
+      'react-hooks/unsupported-syntax': 'error',
+      'react-hooks/use-memo': 'error',
+    },
+  },
 ]

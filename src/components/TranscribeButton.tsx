@@ -200,7 +200,7 @@ export function TranscriptionText ({
   useEffect(() => () => cancelAnimation(open), [open])
 
   const onTextLayout = useCallback((event: LayoutChangeEvent) => {
-    textHeight.value = event.nativeEvent.layout.height
+    textHeight.set(event.nativeEvent.layout.height)
   }, [textHeight])
 
   const style = useAnimatedStyle(() => ({

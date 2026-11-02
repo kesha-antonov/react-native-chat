@@ -8,6 +8,7 @@ import { MessageProps } from '../Message'
 import { LIST_ITEM_DURATION } from '../MessagesContainer/listTransitions'
 import { TypingIndicator, TypingIndicatorListAnimationContext } from '../TypingIndicator'
 import { render as renderPlain } from './renderWithGestureRoot'
+import { waitForRows } from './waitForRows'
 
 const messages: IMessage[] = [
   { _id: 'b', text: 'Second', createdAt: new Date(2026, 0, 1, 10, 1), user: { _id: 2, name: 'Bob' } },
@@ -43,6 +44,7 @@ describe('Chat across a color scheme switch', () => {
 
     const { getByTestId } = await render(<Parent />)
     await fireEvent(getByTestId('GC_WRAPPER'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } } })
+    await waitForRows()
     expect(mounts).toBeGreaterThan(0) // guard: rows really mounted
     mounts = 0
 

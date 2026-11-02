@@ -21,13 +21,13 @@ export function useScrollGatedOpacity (isScrollActive: { value: boolean }) {
   const fadeOut = useCallback(() => {
     'worklet'
 
-    opacity.value = withTiming(0, { duration: FADE_OUT_DURATION * DAY_DEBUG.timeScale })
+    opacity.set(withTiming(0, { duration: FADE_OUT_DURATION * DAY_DEBUG.timeScale }))
   }, [opacity])
 
   const scheduleFadeOut = useCallback(() => {
-    clearTimeout(fadeOutTimeoutId.value)
+    clearTimeout(fadeOutTimeoutId.get())
 
-    fadeOutTimeoutId.value = setTimeout(fadeOut, FADE_OUT_DELAY * DAY_DEBUG.timeScale)
+    fadeOutTimeoutId.set(setTimeout(fadeOut, FADE_OUT_DELAY * DAY_DEBUG.timeScale))
   }, [fadeOut, fadeOutTimeoutId])
 
   useAnimatedReaction(
@@ -37,8 +37,8 @@ export function useScrollGatedOpacity (isScrollActive: { value: boolean }) {
         return
 
       if (active) {
-        clearTimeout(fadeOutTimeoutId.value)
-        opacity.value = withTiming(1, { duration: FADE_IN_DURATION * DAY_DEBUG.timeScale })
+        clearTimeout(fadeOutTimeoutId.get())
+        opacity.set(withTiming(1, { duration: FADE_IN_DURATION * DAY_DEBUG.timeScale }))
       } else {
         runOnJS(scheduleFadeOut)()
       }

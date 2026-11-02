@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useId, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Keyboard, Platform, Pressable, StyleProp, StyleSheet, View, ViewStyle, useWindowDimensions } from 'react-native'
 import { GestureDetector, GestureStateManager, usePanGesture } from 'react-native-gesture-handler'
 import Animated, { cancelAnimation, Easing, ReduceMotion, SharedValue, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -86,6 +86,21 @@ const PLAYING_NOTE_INSET = 28
 const NOTE_CENTRE_DELAY_MS = 260
 /** Seeks while dragging the ring are throttled to one per 100ms. */
 const SEEK_THROTTLE_MS = 100
+
+// The player is a native handle shared across rows, not React state: it is written through
+// here so the compiler does not take these writes for mutations of a render value.
+const setPlayer = (player: any, props: Record<string, unknown>) => {
+  Object.assign(player, props)
+}
+
+// Outside the component: the compiler cannot yet lower `||` inside a `try`.
+const playerTime = (player: any): number => {
+  try {
+    return player.currentTime || 0
+  } catch {
+    return 0
+  }
+}
 /** How often a playing note checks the player's real position. */
 const PROGRESS_SYNC_MS = 250
 /** The transcription opens with the cell's height change, about 220ms. */
@@ -187,7 +202,9 @@ const RoundNotePlayer = ({
   const transcribe = useTranscription(message, messageId, transcription, onTranscribe)
   const viewOnce = useViewOnce(message, messageId, isViewOnce, onViewOnceEnd)
   const viewOnceRef = useRef(viewOnce)
-  viewOnceRef.current = viewOnce
+  useLayoutEffect(() => {
+    viewOnceRef.current = viewOnce
+  })
   const controller = useMediaPlaybackController()
   const playerCache = useNotePlayerCache()
   const playerId = useId()
@@ -226,7 +243,7 @@ const RoundNotePlayer = ({
     const timer = setInterval(() => {
       const total = player.duration || duration || 0
       if (total > 0)
-        bufferProgress.value = Math.min(1, (player.bufferedPosition || 0) / total)
+        bufferProgress.set(Math.min(1, (player.bufferedPosition || 0) / total))
     }, 200)
     return () => clearInterval(timer)
   }, [isPlayerLoading, player, duration, bufferProgress])
@@ -254,7 +271,7 @@ const RoundNotePlayer = ({
 
   // A just-sent round note's row stays at alpha 0 while the
   // camera circle flies onto it, then shows it at once: it is the same picture.
-  const appearOnMount = useRef(!!animateAppear).current
+  const [appearOnMount] = useState(!!animateAppear)
   const flightReveal = useSharedValue(appearOnMount && isSendFlightExpected('round') ? 0 : 1)
   const hasLandedRef = useRef(false)
   const flightCleanupRef = useRef<(() => void) | null>(null)
@@ -265,20 +282,20 @@ const RoundNotePlayer = ({
     hasLandedRef.current = true
     const node = noteRef.current
     if (!node) {
-      flightReveal.value = 1
+      flightReveal.set(1)
       return
     }
 
     node.measureInWindow((x, y, width) => {
       if (!(width > 0 && landSendFlight('round', { x, y, size: width }))) {
-        flightReveal.value = 1
+        flightReveal.set(1)
         return
       }
 
       const show = () => {
         clearTimeout(safety)
         off()
-        flightReveal.value = 1
+        flightReveal.set(1)
       }
       const safety = setTimeout(show, SEND_FLIGHT_SAFETY_MS)
       const off = onSendFlightFinished('round', show)
@@ -289,11 +306,13 @@ const RoundNotePlayer = ({
     })
   }, [appearOnMount, flightReveal])
   useEffect(() => () => flightCleanupRef.current?.(), [])
-  const flightRevealStyle = useAnimatedStyle(() => ({ opacity: flightReveal.value }))
+  const flightRevealStyle = useAnimatedStyle(() => ({ opacity: flightReveal.get() }))
 
   const total = player.duration || duration || 0
   const totalRef = useRef(total)
-  totalRef.current = total
+  useLayoutEffect(() => {
+    totalRef.current = total
+  })
   const chrome = useRoundNoteChrome({ isCurrent, isPlaying, isGrown })
 
   const stopRaf = useCallback(() => {
@@ -313,13 +332,13 @@ const RoundNotePlayer = ({
     const time = player.currentTime || 0
     const length = totalRef.current
     if (length > 0) {
-      chrome.progress.value = Math.min(1, time / length)
-      chrome.progress.value = withTiming(1, {
+      chrome.progress.set(Math.min(1, time / length))
+      chrome.progress.set(withTiming(1, {
         duration: Math.max(0, length - time) * 1000 / (rateRef.current || 1),
         easing: Easing.linear,
         // It shows where playback is, not motion for its own sake.
         reduceMotion: ReduceMotion.Never,
-      })
+      }))
     }
     setCurrentTime(previous =>
       Math.floor(length - previous) === Math.floor(length - time) ? previous : time
@@ -343,10 +362,7 @@ const RoundNotePlayer = ({
     setTimeShift(0)
     setCurrentTime(0)
     try {
-      player.muted = true
-      player.loop = isAutoplay
-      player.playbackRate = 1
-      player.currentTime = 0
+      setPlayer(player, { muted: true, loop: isAutoplay, playbackRate: 1, currentTime: 0 })
       if (isAutoplay)
         player.play()
       else
@@ -380,7 +396,7 @@ const RoundNotePlayer = ({
 
   const resume = useCallback(() => {
     try {
-      player.playbackRate = rate
+      setPlayer(player, { playbackRate: rate })
       player.play()
     } catch {
       return
@@ -421,17 +437,15 @@ const RoundNotePlayer = ({
       return
 
     try {
-      player.loop = false
-      player.muted = false
-      player.currentTime = 0
+      setPlayer(player, { loop: false, muted: false, currentTime: 0 })
     } catch {
       return
     }
     setCurrentTime(0)
     // The ring holds its last position while it fades out after a stop, so
     // it only snaps back to 12 o'clock when the note starts again.
-    chrome.progress.value = 0
-    chrome.wrapAlpha.value = 0
+    chrome.progress.set(0)
+    chrome.wrapAlpha.set(0)
     becomeCurrent()
     resume()
 
@@ -452,8 +466,8 @@ const RoundNotePlayer = ({
     const wasPlaying = detached.adopt()
     const time = player.currentTime || 0
     const length = totalRef.current
-    chrome.progress.value = length > 0 ? Math.min(1, time / length) : 0
-    chrome.wrapAlpha.value = 0
+    chrome.progress.set(length > 0 ? Math.min(1, time / length) : 0)
+    chrome.wrapAlpha.set(0)
     setCurrentTime(time)
     setIsHeard(true)
     skipCentreRef.current = true
@@ -466,14 +480,18 @@ const RoundNotePlayer = ({
     }
   }, [playerCache, playerKey, player, chrome, becomeCurrent, resume, playerId, onStop])
   const adoptDetachedRef = useRef(adoptDetached)
-  adoptDetachedRef.current = adoptDetached
+  useLayoutEffect(() => {
+    adoptDetachedRef.current = adoptDetached
+  })
   useEffect(() => {
     adoptDetachedRef.current()
   }, [playerKey])
 
   const onEndedRef = usePlaylistEntry(messageId, playFromStart)
   const isCurrentRef = useRef(isCurrent)
-  isCurrentRef.current = isCurrent
+  useLayoutEffect(() => {
+    isCurrentRef.current = isCurrent
+  })
 
   // A natural end: shrink back to the loop and hand over to the next note.
   useEffect(() => {
@@ -498,7 +516,7 @@ const RoundNotePlayer = ({
       return
 
     try {
-      player.playbackRate = rate
+      setPlayer(player, { playbackRate: rate })
     } catch {
       // player already torn down
     }
@@ -538,16 +556,12 @@ const RoundNotePlayer = ({
   // from the start if it was under a second in; lowered, it pauses. A
   // view-once note is never rewound, which would replay part of it.
   const isPlayingRef = useRef(isPlaying)
-  isPlayingRef.current = isPlaying
+  useLayoutEffect(() => {
+    isPlayingRef.current = isPlaying
+  })
   useRaiseToListen({
     isCurrent,
-    getPositionSeconds: () => {
-      try {
-        return player.currentTime || 0
-      } catch {
-        return 0
-      }
-    },
+    getPositionSeconds: () => playerTime(player),
     listen: fromStart => {
       if (fromStart && !isViewOnce)
         playFromStart()
@@ -561,7 +575,9 @@ const RoundNotePlayer = ({
   // list, once it has grown, so the whole circle is in view.
   const scrollToMessage = useScrollToMessage()
   const scrollToMessageRef = useRef(scrollToMessage)
-  scrollToMessageRef.current = scrollToMessage
+  useLayoutEffect(() => {
+    scrollToMessageRef.current = scrollToMessage
+  })
   useEffect(() => {
     if (!isGrown)
       return
@@ -579,19 +595,19 @@ const RoundNotePlayer = ({
   const size = isGrown ? playingNoteSize : noteSize
   const sizeSV = useSharedValue(noteSize)
   useEffect(() => {
-    sizeSV.value = withTiming(size, { duration: NOTE_GROW_MS, easing: noteGrowEasing })
+    sizeSV.set(withTiming(size, { duration: NOTE_GROW_MS, easing: noteGrowEasing }))
   }, [size, sizeSV])
   const sizeStyle = useAnimatedStyle(() => ({
-    width: sizeSV.value,
-    height: sizeSV.value,
-    borderRadius: sizeSV.value / 2,
+    width: sizeSV.get(),
+    height: sizeSV.get(),
+    borderRadius: sizeSV.get() / 2,
   }))
   const shiftSV = useSharedValue(0)
   useEffect(() => {
-    shiftSV.value = withTiming(growShift, { duration: NOTE_GROW_MS, easing: noteGrowEasing })
+    shiftSV.set(withTiming(growShift, { duration: NOTE_GROW_MS, easing: noteGrowEasing }))
   }, [growShift, shiftSV])
   const shiftStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: shiftSV.value }],
+    transform: [{ translateX: shiftSV.get() }],
   }))
 
   // Scrub a paused note by dragging around its ring (`checkRoundSeekbar`).
@@ -610,7 +626,7 @@ const RoundNotePlayer = ({
     const time = fraction * total
     setCurrentTime(time)
     try {
-      player.currentTime = time
+      setPlayer(player, { currentTime: time })
     } catch {
       return
     }
@@ -622,17 +638,17 @@ const RoundNotePlayer = ({
   // goes through JS, throttled.
   const track = (x: number, y: number) => {
     'worklet'
-    const fraction = angleToFraction(sizeSV.value, x, y)
+    const fraction = angleToFraction(sizeSV.get(), x, y)
     // Wrapping past 12 o'clock leaves the old arc to fade out rather than
     // jumping, with one tick per wrap.
-    if (isWrap(chrome.progress.value, fraction)) {
-      if (chrome.wrapAlpha.value === 0)
+    if (isWrap(chrome.progress.get(), fraction)) {
+      if (chrome.wrapAlpha.get() === 0)
         runOnJS(recordingHaptic)()
-      chrome.wrapProgress.value = chrome.progress.value
-      chrome.wrapAlpha.value = 1
-      chrome.wrapAlpha.value = withTiming(0, { duration: FADE_MS })
+      chrome.wrapProgress.set(chrome.progress.get())
+      chrome.wrapAlpha.set(1)
+      chrome.wrapAlpha.set(withTiming(0, { duration: FADE_MS }))
     }
-    chrome.progress.value = fraction
+    chrome.progress.set(fraction)
     return fraction
   }
 
@@ -641,12 +657,12 @@ const RoundNotePlayer = ({
     manualActivation: true,
     onTouchesDown: event => {
       const touch = event.changedTouches[0]
-      const size = sizeSV.value
-      const pause = pausedAmount(chrome.pause.value, chrome.isPaused.value)
-      const knob = knobPoint(size, ringRadius(size, chrome.grow.value, pause), chrome.progress.value)
+      const size = sizeSV.get()
+      const pause = pausedAmount(chrome.pause.get(), chrome.isPaused.get())
+      const knob = knobPoint(size, ringRadius(size, chrome.grow.get(), pause), chrome.progress.get())
       if (isSeekTouch(size, knob, touch.x, touch.y)) {
         // `roundToPauseProgress2`: the knob swells under the finger.
-        chrome.drag.value = withTiming(1, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
+        chrome.drag.set(withTiming(1, { duration: FADE_MS, reduceMotion: ReduceMotion.Never }))
         GestureStateManager.activate(event.handlerTag)
       } else {
         GestureStateManager.fail(event.handlerTag)
@@ -659,7 +675,7 @@ const RoundNotePlayer = ({
       runOnJS(seekTo)(track(event.x, event.y), true)
     },
     onFinalize: () => {
-      chrome.drag.value = withTiming(0, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
+      chrome.drag.set(withTiming(0, { duration: FADE_MS, reduceMotion: ReduceMotion.Never }))
     },
   })
 
@@ -690,7 +706,9 @@ const RoundNotePlayer = ({
   // A view-once note never floats: closing it - here, by scrolling it away -
   // ends it, and `useViewOnce` spends it on unmount.
   const liveRef = useRef({ isCurrent, isPlaying, isViewOnce })
-  liveRef.current = { isCurrent, isPlaying, isViewOnce }
+  useLayoutEffect(() => {
+    liveRef.current = { isCurrent, isPlaying, isViewOnce }
+  })
   useEffect(() => () => {
     const live = liveRef.current
     if (live.isCurrent)
@@ -855,14 +873,14 @@ const RoundTranscription = ({
   const theme = useTheme()
   const open = useSharedValue(isOpen ? 1 : 0)
   useEffect(() => {
-    open.value = withTiming(isOpen ? 1 : 0, { duration: TRANSCRIPTION_OPEN_MS })
+    open.set(withTiming(isOpen ? 1 : 0, { duration: TRANSCRIPTION_OPEN_MS }))
   }, [isOpen, open])
   // Padding follows the opening too, so a closed transcription leaves no
   // empty bubble behind.
   const bubbleStyle = useAnimatedStyle(() => ({
-    opacity: open.value,
-    marginTop: TRANSCRIPTION_GAP * open.value,
-    paddingTop: TRANSCRIPTION_PADDING_TOP * open.value,
+    opacity: open.get(),
+    marginTop: TRANSCRIPTION_GAP * open.get(),
+    paddingTop: TRANSCRIPTION_PADDING_TOP * open.get(),
   }))
 
   return (

@@ -49,11 +49,13 @@ export const STREAM_RENDER_MS = 250
 export const useStreamThrottledText = (text: string, isStreaming: boolean) => {
   const [shown, setShown] = React.useState(text)
   const latestRef = React.useRef(text)
-  latestRef.current = text
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastAtRef = React.useRef(0)
 
   React.useEffect(() => {
+    // Read by the pending timer, which takes whatever the text is when it fires. This effect
+    // runs on every text change, so the ref is never behind.
+    latestRef.current = text
     if (!isStreaming) {
       if (timerRef.current) {
         clearTimeout(timerRef.current)
