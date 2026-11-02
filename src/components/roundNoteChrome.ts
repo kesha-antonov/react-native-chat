@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Easing, ReduceMotion, SharedValue, useSharedValue, withTiming } from 'react-native-reanimated'
+import { EASE_LAYOUT } from '../motion'
 
 /*
  * Numbers and state for the chrome drawn on a playing round note: the progress ring, the paused seek
@@ -8,7 +9,7 @@ import { Easing, ReduceMotion, SharedValue, useSharedValue, withTiming } from 'r
 
 // The chat list animates a row's size change over 250ms on this curve.
 export const NOTE_GROW_MS = 250
-export const noteGrowEasing = Easing.bezier(0.199, 0.011, 0.279, 0.91)
+export const noteGrowEasing = EASE_LAYOUT
 
 /** The progress ring: white at 0x9f alpha, 3dp, round caps. */
 export const RING_OPACITY = 0x9f / 255

@@ -5,7 +5,7 @@ import {
   ViewStyle,
   TextStyle,
   View } from 'react-native'
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { Icon } from './components/Icon'
 import { SendIcon } from './components/SendIcon'
@@ -14,6 +14,7 @@ import { TEST_ID } from './Constant'
 import { useIcons } from './hooks/useIcons'
 import { useTheme, useThemedStyles } from './hooks/useTheme'
 import { IMessage } from './Models'
+import { EASE_OUT_QUINT } from './motion'
 import { getSvg } from './optional'
 import { ChatTheme } from './Theme'
 
@@ -26,7 +27,7 @@ const PLANE = 'M3.4 20.3 L21.2 12.6 a0.65 0.65 0 0 0 0 -1.2 L3.4 3.7 a0.7 0.7 0 
 
 // The send button grows in from 0.1 as text appears and shrinks away with it, over 220ms
 // on EASE_OUT_QUINT.
-const MORPH = { duration: 220, easing: Easing.bezier(0.23, 1, 0.32, 1) }
+const MORPH = { duration: 220, easing: EASE_OUT_QUINT }
 
 const PlaneIcon = ({ color, size }: { color: string, size: number }) => {
   const icons = useIcons()

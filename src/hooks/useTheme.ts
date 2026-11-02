@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useChatContext } from '../ChatContext'
 import { ChatTheme, defaultDarkTheme, defaultLightTheme } from '../Theme'
-import { useColorScheme } from './useColorScheme'
+import { normalizeColorScheme, useSystemColorScheme } from './useColorScheme'
 
 /**
  * Returns the active {@link ChatTheme}. Inside `Chat` this is the resolved theme
@@ -11,14 +11,14 @@ import { useColorScheme } from './useColorScheme'
  * built-in defaults for the current system color scheme.
  */
 export function useTheme (): ChatTheme {
-  const colorScheme = useColorScheme()
-  const { getTheme } = useChatContext()
+  const { getTheme, getColorScheme } = useChatContext()
   const contextTheme = getTheme?.()
+  // Only a component outside a `Chat` listens to the system scheme itself.
+  const contextScheme = normalizeColorScheme(getColorScheme())
+  const systemScheme = normalizeColorScheme(useSystemColorScheme(!contextTheme && !contextScheme))
+  const colorScheme = contextScheme ?? systemScheme
 
-  return useMemo(
-    () => contextTheme ?? (colorScheme === 'dark' ? defaultDarkTheme : defaultLightTheme),
-    [contextTheme, colorScheme]
-  )
+  return contextTheme ?? (colorScheme === 'dark' ? defaultDarkTheme : defaultLightTheme)
 }
 
 /**

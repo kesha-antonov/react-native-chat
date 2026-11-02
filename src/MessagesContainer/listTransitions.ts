@@ -1,4 +1,5 @@
-import { Easing, LinearTransition } from 'react-native-reanimated'
+import { LinearTransition } from 'react-native-reanimated'
+import { EASE_LAYOUT } from '../motion'
 
 /**
  * Every row that moves (a message arriving, the typing
@@ -6,7 +7,7 @@ import { Easing, LinearTransition } from 'react-native-reanimated'
  * 250ms on `bezier(0.199, 0.011, 0.279, 0.910)`, instead of jumping there in one frame.
  */
 export const LIST_ITEM_DURATION = 250
-export const LIST_ITEM_EASING = Easing.bezier(0.199, 0.011, 0.279, 0.91)
+export const LIST_ITEM_EASING = EASE_LAYOUT
 
 export const listCellTransition = LinearTransition
   .duration(LIST_ITEM_DURATION)

@@ -1,13 +1,12 @@
 import React, { useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Animated, {
-  Easing,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
-
+import { EASE_OUT_QUINT } from '../motion'
 import {
   VIEW_ONCE_BADGE_CUT,
   VIEW_ONCE_BADGE_OFFSET,
@@ -18,7 +17,6 @@ import {
 
 // The badge shrinks away over 320ms as playback starts.
 const SCALE_MS = 320
-const EASE_OUT_QUINT = Easing.bezier(0.23, 1, 0.32, 1)
 const RING_STROKE = 1.5
 
 const OUTER = VIEW_ONCE_BADGE_SIZE + 2 * VIEW_ONCE_BADGE_CUT
