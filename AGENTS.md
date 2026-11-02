@@ -117,6 +117,11 @@ for the rules the library is built to). ESLint runs the compiler's own checks ov
   component
 - no `??=`, and no `try/finally` inside a component or hook - move the body to a module-level
   helper
+- a gesture hook's callbacks (`usePanGesture({ onUpdate })`...) must stay inline in its config:
+  compiled, they are hoisted into memo blocks where the worklets plugin no longer finds them, and
+  the gesture silently runs nothing on the UI thread. Jest cannot see this (it runs them on JS).
+  Put `'use no memo'` in a hook or component whose gesture callbacks write shared values, and
+  mark callbacks handed in from elsewhere with `'worklet'` (see `src/gestures/useRowSwipe.ts`)
 - per-chat state shared between components goes through `src/store.ts` (`createStore`,
   `createKeyedStore`, `useStore`, `useKeyedValue`), keyed by message id where rows read it;
   easings and the overshoot curve come from `src/motion.ts`

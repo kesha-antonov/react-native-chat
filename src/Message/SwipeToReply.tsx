@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
-import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
+import { GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   runOnJS,
@@ -16,6 +16,7 @@ import Animated, {
 import { impactHaptic } from '../components/haptics'
 import { Icon } from '../components/Icon'
 import { ReplyArrowIcon } from '../components/MediaControls'
+import { useRowSwipe } from '../gestures/useRowSwipe'
 import { useThemedStyles } from '../hooks/useTheme'
 import { getSvg } from '../optional'
 import { ChatTheme } from '../Theme'
@@ -96,9 +97,6 @@ export const SwipeToReplyRow = ({
   // and so read a shared value during render (Reanimated warns once per row per render).
   'use no memo'
   const styles = useThemedStyles(createStyles)
-  const sign = direction === 'left' ? -1 : 1
-  const offset = useSharedValue(0)
-  const isPastThreshold = useSharedValue(false)
   const iconScale = useSharedValue(0)
   const isIconShown = useSharedValue(false)
   // 1 once past the threshold: the circle fills, and an outer ring grows away and fades.
@@ -108,52 +106,52 @@ export const SwipeToReplyRow = ({
   // SVGs made a chat noticeably slower to open.
   const [isActionMounted, setIsActionMounted] = useState(false)
 
-  const pan = usePanGesture({
+  const { gesture: pan, offset } = useRowSwipe({
     testID: 'swipe-to-reply',
-    enabled: isEnabled,
-    activeOffsetX: direction === 'left'
-      ? [-SWIPE_START, Number.MAX_SAFE_INTEGER]
-      : [-Number.MAX_SAFE_INTEGER, SWIPE_START],
-    failOffsetY: [-SWIPE_FAIL_Y, SWIPE_FAIL_Y],
+    isEnabled,
+    sign: direction === 'left' ? -1 : 1,
+    activeOffsetX: SWIPE_START,
+    failOffsetY: SWIPE_FAIL_Y,
+    threshold: SWIPE_REPLY_THRESHOLD,
+    // Counted from where the drag took over, so the row does not jump when it starts.
+    isMeasuredFromStart: true,
+    maxDistance: SWIPE_MAX,
     onActivate: () => {
+      'worklet'
       runOnJS(setIsActionMounted)(true)
     },
-    onUpdate: event => {
-      // Counted from where the drag took over, so the row does not jump when it starts.
-      const distance = Math.min(SWIPE_MAX, Math.max(0, event.translationX * sign - SWIPE_START))
-      offset.value = distance * sign
-
+    onMove: distance => {
+      'worklet'
       // Only on a change: reassigning every frame would cancel a running spring.
       const shouldShowIcon = distance >= ICON_APPEAR
       if (shouldShowIcon !== isIconShown.value) {
         isIconShown.value = shouldShowIcon
         iconScale.value = withSpring(shouldShowIcon ? 1 : 0, APPEAR_SPRING)
       }
-
-      if (distance >= SWIPE_REPLY_THRESHOLD) {
-        if (!isPastThreshold.value) {
-          isPastThreshold.value = true
-          // The full circle pops, bouncing back to size.
-          iconScale.value = 1.25
-          iconScale.value = withSpring(1, FILL_SPRING)
-          filled.value = withSpring(1, FILL_SPRING)
-          outerRing.value = 0
-          outerRing.value = withSpring(1, OUTER_RING_SPRING)
-          runOnJS(impactHaptic)('Light')
-        }
-      } else if (isPastThreshold.value) {
-        isPastThreshold.value = false
+    },
+    onThresholdChange: isPast => {
+      'worklet'
+      if (isPast) {
+        // The full circle pops, bouncing back to size.
+        iconScale.value = 1.25
+        iconScale.value = withSpring(1, FILL_SPRING)
+        filled.value = withSpring(1, FILL_SPRING)
+        outerRing.value = 0
+        outerRing.value = withSpring(1, OUTER_RING_SPRING)
+        runOnJS(impactHaptic)('Light')
+      } else {
         filled.value = withTiming(0, RETURN)
       }
     },
-    onDeactivate: event => {
-      if (!event.canceled && Math.abs(offset.value) >= SWIPE_REPLY_THRESHOLD)
+    onRelease: isPast => {
+      'worklet'
+      if (isPast)
         runOnJS(onReply)()
     },
-    onFinalize: () => {
-      isPastThreshold.value = false
+    onFinalize: rowOffset => {
+      'worklet'
       isIconShown.value = false
-      offset.value = withTiming(0, RETURN, isFinished => {
+      rowOffset.value = withTiming(0, RETURN, isFinished => {
         if (isFinished)
           runOnJS(setIsActionMounted)(false)
       })

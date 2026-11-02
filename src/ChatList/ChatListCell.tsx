@@ -17,6 +17,7 @@ import { useChatContext } from '../ChatContext'
 import { selectionHaptic } from '../components/haptics'
 import { Icon } from '../components/Icon'
 import { TypingStatus } from '../components/TypingStatus'
+import { useRowSwipe } from '../gestures/useRowSwipe'
 import { useLabels } from '../hooks/useLabels'
 import { useTheme } from '../hooks/useTheme'
 import { ChatListAvatar } from './ChatListAvatar'
@@ -82,39 +83,34 @@ function ChatListCellInner<TChat extends ChatListItem> ({
 
   // The row swipes towards the start edge, revealing the action at the end.
   const direction = I18nManager.isRTL ? 1 : -1
-  const translateX = useSharedValue(0)
-  const isPast = useSharedValue(false)
   const reveal = useSharedValue(0)
   const iconScale = useSharedValue(1)
 
-  const pan = usePanGesture({
-    enabled: !isSelectionMode && !!onSwipe,
-    activeOffsetX: direction < 0 ? [-15, Number.MAX_SAFE_INTEGER] : [-Number.MAX_SAFE_INTEGER, 15],
-    failOffsetY: [-12, 12],
-    onUpdate: event => {
-      const distance = Math.max(0, event.translationX * direction)
-      translateX.value = distance * direction
-      const past = distance >= width * SWIPE_THRESHOLD
-      if (past !== isPast.value) {
-        isPast.value = past
-        reveal.value = withTiming(past ? 1 : 0, REVEAL)
-        if (past)
-          iconScale.value = withSequence(withTiming(1.2, { duration: 85 }), withTiming(1, { duration: 85 }))
-        runOnJS(selectionHaptic)()
-      }
+  const { gesture: pan, offset: translateX } = useRowSwipe({
+    isEnabled: !isSelectionMode && !!onSwipe,
+    sign: direction,
+    activeOffsetX: 15,
+    failOffsetY: 12,
+    threshold: width * SWIPE_THRESHOLD,
+    onThresholdChange: past => {
+      'worklet'
+      reveal.value = withTiming(past ? 1 : 0, REVEAL)
+      if (past)
+        iconScale.value = withSequence(withTiming(1.2, { duration: 85 }), withTiming(1, { duration: 85 }))
+      runOnJS(selectionHaptic)()
     },
-    onDeactivate: event => {
-      const isFling = event.velocityX * direction > SWIPE_ESCAPE_VELOCITY
-      if (!event.canceled && onSwipe && (isPast.value || isFling)) {
-        translateX.value = withTiming(width * direction, SWIPE_CANCEL, isFinished => {
+    onRelease: (isPast, velocity, rowOffset) => {
+      'worklet'
+      const isFling = velocity > SWIPE_ESCAPE_VELOCITY
+      if (onSwipe && (isPast || isFling)) {
+        rowOffset.value = withTiming(width * direction, SWIPE_CANCEL, isFinished => {
           if (isFinished)
             runOnJS(onSwipe)(chat)
         })
         return
       }
-      translateX.value = withTiming(0, SWIPE_CANCEL)
+      rowOffset.value = withTiming(0, SWIPE_CANCEL)
       reveal.value = withTiming(0, SWIPE_CANCEL)
-      isPast.value = false
     },
   })
 
