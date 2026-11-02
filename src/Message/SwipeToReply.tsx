@@ -166,8 +166,6 @@ export const SwipeToReplyRow = ({
     transform: [{ translateX: offset.value }],
   }))
 
-  const progress = useDerivedValue(() => Math.abs(offset.value) / SWIPE_REPLY_THRESHOLD)
-
   return (
     <GestureDetector gesture={pan}>
       <View>
@@ -177,7 +175,7 @@ export const SwipeToReplyRow = ({
               pointerEvents='none'
               style={[direction === 'left' ? styles.customActionRight : styles.customActionLeft, actionContainerStyle]}
             >
-              {renderAction(progress, offset, position)}
+              <CustomReplyAction renderAction={renderAction} offset={offset} position={position} />
             </View>
           )
           : (
@@ -199,6 +197,19 @@ export const SwipeToReplyRow = ({
       </View>
     </GestureDetector>
   )
+}
+
+/**
+ * A custom `renderAction`, handed the swipe's progress. Only rows with one mount the derived
+ * value it needs; every other row skips that UI-thread mapper.
+ */
+function CustomReplyAction ({ renderAction, offset, position }: {
+  renderAction: NonNullable<SwipeToReplyRowProps['renderAction']>
+  offset: SharedValue<number>
+  position: SwipeToReplyRowProps['position']
+}) {
+  const progress = useDerivedValue(() => Math.abs(offset.value) / SWIPE_REPLY_THRESHOLD)
+  return <>{renderAction(progress, offset, position)}</>
 }
 
 /** The arrow beside a row being swiped: a circle that fills, a ring that draws itself round it. */

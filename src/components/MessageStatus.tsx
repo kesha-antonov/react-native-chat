@@ -57,16 +57,31 @@ const CheckLayer = ({ d, color }: { d: string, color: string }) => (
   </Svg>
 )
 
-/** The two checks, `moving` 0 -> 1 from sent to read (1 at rest when read, 0 when sent). */
-const AnimatedChecks = ({ isRead, color, move }: { isRead: boolean, color: string, move?: SharedValue<number> }) => {
-  const checkStyle = useAnimatedStyle(() => {
-    const p = move ? move.value : isRead ? 1 : 0
-    return { transform: [{ translateX: CHECK_SHIFT * (1 - p) }] }
-  })
-  const halfStyle = useAnimatedStyle(() => {
-    const p = move ? move.value : isRead ? 1 : 0
-    return { opacity: p > 0 ? 1 : 0, transform: [{ scale: 0.5 + 0.5 * p }] }
-  })
+// The checks at rest: plain views, no worklet. Every own message on screen draws one.
+const sentCheckStyle = { transform: [{ translateX: CHECK_SHIFT }] }
+
+const StaticChecks = ({ isRead, color }: { isRead: boolean, color: string }) => (
+  <View style={styles.checks}>
+    <View style={[StyleSheet.absoluteFill, !isRead && sentCheckStyle]}>
+      <CheckLayer d={CHECK} color={color} />
+    </View>
+    {isRead && (
+      <View style={StyleSheet.absoluteFill}>
+        <CheckLayer d={HALF_CHECK} color={color} />
+      </View>
+    )}
+  </View>
+)
+
+/** The two checks moving from sent to read, `move` 0 -> 1. Mounted only for that move. */
+const AnimatedChecks = ({ color, move }: { color: string, move: SharedValue<number> }) => {
+  const checkStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: CHECK_SHIFT * (1 - move.value) }],
+  }))
+  const halfStyle = useAnimatedStyle(() => ({
+    opacity: move.value > 0 ? 1 : 0,
+    transform: [{ scale: 0.5 + 0.5 * move.value }],
+  }))
 
   return (
     <View style={styles.checks}>
@@ -160,7 +175,9 @@ export const MessageStatus = ({ status, color, errorColor }: MessageStatusProps)
     if (icons.check || icons.checkAll)
       return <Icon name={kind === 'read' ? 'checkAll' : 'check'} color={color} size={14} fallback={null} />
     if (Svg && Path)
-      return <AnimatedChecks isRead={kind === 'read'} color={color} move={move} />
+      return move
+        ? <AnimatedChecks color={color} move={move} />
+        : <StaticChecks isRead={kind === 'read'} color={color} />
     return <Ticks double={kind === 'read'} color={color} />
   }
 

@@ -38,12 +38,22 @@ export function AttachmentButton<TMessage extends IMessage = IMessage> ({
   wrapperStyle,
 }: AttachmentButtonProps<TMessage>) {
   const [isVisible, setIsVisible] = useState(false)
+  // The built-in menu mounts on the first open and stays: mounting it with every composer cost
+  // each chat opening a few milliseconds for a sheet most visits never open.
+  const [hasOpened, setHasOpened] = useState(false)
 
   const open = useCallback(() => {
     Keyboard.dismiss()
     onOpen?.()
-    setIsVisible(true)
-  }, [onOpen])
+    if (hasOpened) {
+      setIsVisible(true)
+      return
+    }
+    // Mounted already open, the sheet's first close left its picture on screen: it mounts
+    // closed and opens on the next frame, the path every later open takes.
+    setHasOpened(true)
+    requestAnimationFrame(() => setIsVisible(true))
+  }, [onOpen, hasOpened])
   const close = useCallback(() => setIsVisible(false), [])
 
   const onPick = config.onPick
@@ -61,7 +71,7 @@ export function AttachmentButton<TMessage extends IMessage = IMessage> ({
       <Actions onPressActionButton={open} icon={icon} wrapperStyle={wrapperStyle} />
       {config.renderAttachmentMenu
         ? renderComponentOrElement(config.renderAttachmentMenu, { visible: isVisible, onClose: close, tabs, onSend: send })
-        : <AttachmentMenu visible={isVisible} tabs={tabs} onClose={close} onSend={send} />}
+        : hasOpened && <AttachmentMenu visible={isVisible} tabs={tabs} onClose={close} onSend={send} />}
     </>
   )
 }

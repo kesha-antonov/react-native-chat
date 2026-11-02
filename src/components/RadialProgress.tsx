@@ -564,23 +564,24 @@ export function RadialProgress ({
     }
   )
 
-  // Each worklet reads the shared values itself: Reanimated subscribes a mapper only to the
-  // values in its own closure, so reading them in a shared helper would freeze the paths.
+  // The frame is computed once per change and read by each path. The values are read here, in
+  // the derived value's own worklet, so it is subscribed to all of them; the paths subscribe to
+  // the derived value. Computing the frame in each of the three paths (and once more for the
+  // fallback) built every SVG path string four times a frame while the ring spun.
+  const frame = useDerivedValue(() =>
+    radialFrame(current.value, next.value, t.value, saved.value, arc.value, rad.value, size, isMini))
   const arrowProps = useAnimatedProps(() => {
-    const r = radialFrame(current.value, next.value, t.value, saved.value, arc.value, rad.value, size, isMini)
+    const r = frame.value
     return { d: r.arrow || 'M0 0', opacity: r.arrowAlpha }
   })
   const crossProps = useAnimatedProps(() => {
-    const r = radialFrame(current.value, next.value, t.value, saved.value, arc.value, rad.value, size, isMini)
+    const r = frame.value
     return { d: r.cross || 'M0 0', opacity: r.crossAlpha }
   })
   const arcProps = useAnimatedProps(() => {
-    const r = radialFrame(current.value, next.value, t.value, saved.value, arc.value, rad.value, size, isMini)
+    const r = frame.value
     return { d: r.arc || 'M0 0', opacity: r.arcAlpha }
   })
-  // Only drawn without react-native-svg.
-  const frame = useDerivedValue(() =>
-    radialFrame(current.value, next.value, t.value, saved.value, arc.value, rad.value, size, isMini))
 
   const glyphStyle = useAnimatedStyle(() => {
     const result = radialFrame(current.value, next.value, t.value, saved.value, 0, 0, size, isMini)

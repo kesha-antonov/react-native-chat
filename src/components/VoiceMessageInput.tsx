@@ -131,6 +131,23 @@ export interface VoiceMessageInputProps {
   onExit?: (reason: RecordExitReason) => void
 }
 
+/**
+ * expo-audio's recording options for this platform, as `useAudioRecorder` builds them before
+ * creating its recorder (`createRecordingOptions`, which the package does not export).
+ */
+const platformRecordingOptions = (options: any) => {
+  const common = {
+    extension: options.extension,
+    sampleRate: options.sampleRate,
+    numberOfChannels: options.numberOfChannels,
+    bitRate: options.bitRate,
+    isMeteringEnabled: options.isMeteringEnabled ?? false,
+  }
+  if (Platform.OS === 'ios' || Platform.OS === 'android')
+    return { ...common, directory: options.directory, fileName: options.fileName, ...options[Platform.OS] }
+  return { ...common, ...options.web }
+}
+
 const IDLE_STATE: VoiceRecordingState = {
   active: false, locked: false, elapsed: 0, cancelArmed: false, levels: [], preview: null,
 }
@@ -157,7 +174,22 @@ function VoiceMessageInputInner (
     () => ({ ...expoAudio.RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true }),
     []
   )
-  const recorder = expoAudio.useAudioRecorder(recorderOptions)
+  // The recorder is built on the first take, not when the composer mounts: creating the native
+  // recorder cost about 30ms of every chat opening, for a feature most chats never use.
+  const recorderRef = useRef<any>(null)
+  const getRecorder = useCallback(() => {
+    if (!recorderRef.current)
+      recorderRef.current = new expoAudio.AudioModule.AudioRecorder(platformRecordingOptions(recorderOptions))
+    return recorderRef.current
+  }, [recorderOptions])
+  useEffect(() => () => {
+    try {
+      recorderRef.current?.release?.()
+    } catch {
+      // already released
+    }
+    recorderRef.current = null
+  }, [])
   const labels = useLabels()
 
   const [isRecording, setIsRecording] = useState(false)
@@ -260,6 +292,7 @@ function VoiceMessageInputInner (
       setIsLocked(false)
 
     try {
+      const recorder = getRecorder()
       await recorder.stop()
       const uri = recorder.uri
       const earlier = clipsRef.current
@@ -301,7 +334,7 @@ function VoiceMessageInputInner (
       setIsLocked(false)
       releaseAudioSession()
     }
-  }, [recorder, minDurationMs, onSend, config, clearTimer, releaseAudioSession])
+  }, [getRecorder, minDurationMs, onSend, config, clearTimer, releaseAudioSession])
 
   const stopTakeRef = useRef(stopTake)
   stopTakeRef.current = stopTake
@@ -336,6 +369,7 @@ function VoiceMessageInputInner (
       // Passing the options makes iOS build a new recorder, and so a new file.
       // Without them it reuses the last one and a resumed clip overwrites the
       // clip before it (Android makes a new file either way).
+      const recorder = getRecorder()
       await recorder.prepareToRecordAsync(recorderOptions)
 
       // The component may have unmounted while we were awaiting natives.
@@ -391,7 +425,7 @@ function VoiceMessageInputInner (
           stopTakeRef.current(pending.cancelled ? 'cancel' : 'send')
       }
     }
-  }, [recorder, recorderOptions, config, clearTimer, maxDurationMs, releaseAudioSession, takePendingFinish])
+  }, [getRecorder, recorderOptions, config, clearTimer, maxDurationMs, releaseAudioSession, takePendingFinish])
 
   // Tear the recorder down with the component: without this the mic stays hot
   // (and the iOS recording indicator lit) after navigating away mid-recording,
@@ -404,7 +438,7 @@ function VoiceMessageInputInner (
     if (isRecordingRef.current) {
       isRecordingRef.current = false
       try {
-        const stopped = recorder.stop() as unknown as Promise<void> | undefined
+        const stopped = recorderRef.current?.stop() as unknown as Promise<void> | undefined
         stopped?.catch?.(() => {})
       } catch {
         // already stopped
@@ -413,7 +447,7 @@ function VoiceMessageInputInner (
 
     releaseAudioSession()
     onStateChange?.(IDLE_STATE)
-  }, [clearTimer, recorder, releaseAudioSession, onStateChange])
+  }, [clearTimer, releaseAudioSession, onStateChange])
 
   const cancel = useCallback(() => {
     if (preview) {

@@ -60,6 +60,9 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - Voice and round-note progress runs on the UI thread between four-times-a-second syncs, instead of a JS callback every frame
 - **Chats open much faster.** Voice notes share one audio context made on first play (each one used to start its own worklet runtime, a few hundred ms of blocked JS per bubble); the long-press menu and the swipe-to-reply arrow mount on first use instead of with every row; the list and composer no longer wait a layout pass; the wallpaper and composer paint first and the messages follow a frame later
 - `ChatList` rows re-render only when their own chat changes
+- **Less work per message row.** The day check compares calendar-day numbers instead of parsing two dates through dayjs per row; formatted times are cached by timestamp, locale and format; themed styles are built once per theme and shared by every row; status ticks are plain views except during the sent-to-read slide; the swipe-to-reply progress and the round-note time shift are computed only in the rows that use them; the transfer ring derives its geometry once per frame instead of three times
+- **A screen-gradient bubble listens to its row's position only while it is mounted**, so a long scroll no longer leaves a live position listener for every message it passed
+- **Opening a chat no longer builds a native audio recorder** (about 30ms on an iPhone simulator): it is made on the first voice take. The built-in attachment menu mounts on its first open, and the action sheet behind `actions` is no longer mounted when the built-in menu replaces it
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes

@@ -157,6 +157,23 @@ const LiftedBubble = ({
   )
 }
 
+/**
+ * A round note's time pill. A note that grows to play moves its right edge; the sent time rides
+ * along at the circle's bottom-right, on the grow's own timing. Only round notes mount this, so
+ * the subscription, shared value and animated style it needs are not on every message row.
+ */
+const NoteMeta = ({ messageId, style, children }: { messageId: string | number | undefined, style: StyleProp<ViewStyle>, children: React.ReactNode }) => {
+  const shift = useNoteTimeShift(messageId)
+  const shiftSV = useSharedValue(shift)
+  useEffect(() => {
+    shiftSV.value = withTiming(shift, { duration: NOTE_GROW_MS, easing: noteGrowEasing })
+  }, [shift, shiftSV])
+  const shiftStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shiftSV.value }],
+  }))
+  return <Animated.View style={[style, shiftStyle]}>{children}</Animated.View>
+}
+
 export type PressableBubbleRowProps<TMessage extends IMessage> = {
   isGestureEnabled: boolean
   /** The overlay is showing a lifted copy, so the original is hidden. */
@@ -334,16 +351,6 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   // so it moves into a translucent pill over the circle instead.
   const isVideoNote = !!currentMessage?.videoNote && !!currentMessage?.video && !currentMessage?.text
 
-  // A round note that grows to play moves its right edge; the sent time rides
-  // along at the circle's bottom-right, on the grow's own timing.
-  const noteTimeShift = useNoteTimeShift(isVideoNote ? currentMessage?._id : undefined)
-  const noteTimeShiftSV = useSharedValue(noteTimeShift)
-  useEffect(() => {
-    noteTimeShiftSV.value = withTiming(noteTimeShift, { duration: NOTE_GROW_MS, easing: noteGrowEasing })
-  }, [noteTimeShift, noteTimeShiftSV])
-  const noteTimeStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: noteTimeShiftSV.value }],
-  }))
 
   // A bare voice note keeps its time on the duration's line, at the bubble's
   // bottom-right, rather than on a row of its own under
@@ -1088,25 +1095,30 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
         </View>
       )
 
-    return (
-      <Animated.View
-        style={[
-          styles.bottom,
-          isVideoNote && styles.noteMetaPill,
-          (isVoiceNote || isFileNote) && styles.voiceMeta,
-          bottomContainerStyle?.[position],
-          isVideoNote && noteTimeStyle,
-        ]}
-      >
-        {/* Faded on its own layer so the time keeps full strength. */}
-        {isVideoNote && <View style={styles.noteMetaBackground} />}
-        <View style={[styles.messageTimeAndStatusContainer, isVideoNote && styles.noteMetaInner]}>
-          {renderTime(isVideoNote ? 'note' : 'bubble')}
-          {renderTicks(isVideoNote ? 'note' : 'bubble')}
-        </View>
-      </Animated.View>
+    const metaStyle = [
+      styles.bottom,
+      isVideoNote && styles.noteMetaPill,
+      (isVoiceNote || isFileNote) && styles.voiceMeta,
+      bottomContainerStyle?.[position],
+    ]
+    const meta = (
+      <View style={[styles.messageTimeAndStatusContainer, isVideoNote && styles.noteMetaInner]}>
+        {renderTime(isVideoNote ? 'note' : 'bubble')}
+        {renderTicks(isVideoNote ? 'note' : 'bubble')}
+      </View>
     )
-  }, [metaMode, renderTicks, renderTime, styles, isRTL, position, bottomContainerStyle, isVideoNote, isVoiceNote, isFileNote, noteTimeStyle])
+
+    if (isVideoNote)
+      return (
+        <NoteMeta messageId={currentMessage?._id} style={metaStyle}>
+          {/* Faded on its own layer so the time keeps full strength. */}
+          <View style={styles.noteMetaBackground} />
+          {meta}
+        </NoteMeta>
+      )
+
+    return <View style={metaStyle}>{meta}</View>
+  }, [metaMode, renderTicks, renderTime, styles, isRTL, position, bottomContainerStyle, isVideoNote, isVoiceNote, isFileNote, currentMessage?._id])
 
   const renderBubbleBody = useCallback(() => (
     <>

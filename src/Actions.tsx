@@ -71,12 +71,17 @@ export function Actions ({
       >
         {renderIcon()}
       </TouchableOpacity>
-      <AttachmentSheet
-        visible={isSheetVisible}
-        actions={actions ?? []}
-        onClose={() => setIsSheetVisible(false)}
-        tintColor={actionSheetOptionTintColor}
-      />
+      {/* The sheet only serves `actions`. With a press handler (the built-in attachment menu) it
+        can never open, and a native sheet mounted in every composer for nothing slowed each
+        chat opening. */}
+      {!onPressActionButton && !!actions?.length && (
+        <AttachmentSheet
+          visible={isSheetVisible}
+          actions={actions}
+          onClose={() => setIsSheetVisible(false)}
+          tintColor={actionSheetOptionTintColor}
+        />
+      )}
     </View>
   )
 }

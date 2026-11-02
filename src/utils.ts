@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef } from 'react'
-import dayjs from 'dayjs'
 import { IMessage } from './Models'
 
 export function renderComponentOrElement<TProps extends Record<string, any>>(
@@ -43,13 +42,24 @@ export function isSameDay (
   if (!diffMessage || !diffMessage.createdAt)
     return false
 
-  const currentCreatedAt = dayjs(currentMessage.createdAt)
-  const diffCreatedAt = dayjs(diffMessage.createdAt)
+  const current = localDayKey(currentMessage.createdAt)
+  return !Number.isNaN(current) && current === localDayKey(diffMessage.createdAt)
+}
 
-  if (!currentCreatedAt.isValid() || !diffCreatedAt.isValid())
-    return false
-
-  return currentCreatedAt.isSame(diffCreatedAt, 'day')
+/**
+ * The local calendar day of a timestamp as one number (20261102), NaN when it is not a date.
+ * Grouping and the date separators compare neighbours' days for every message on each change
+ * to the list (a send, a status tick, every frame of a streamed reply); two dayjs objects and
+ * an `isSame('day')` per comparison made that the costliest part of a list update.
+ */
+export function localDayKey (value: Date | number | string | undefined) {
+  if (value == null)
+    return NaN
+  const date = value instanceof Date ? value : new Date(value)
+  const time = date.getTime()
+  if (Number.isNaN(time))
+    return NaN
+  return date.getFullYear() * 10000 + date.getMonth() * 100 + date.getDate()
 }
 
 export function isSameUser (

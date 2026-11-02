@@ -33,5 +33,21 @@ export function useTheme (): ChatTheme {
  */
 export function useThemedStyles<T> (factory: (theme: ChatTheme) => T): T {
   const theme = useTheme()
-  return useMemo(() => factory(theme), [factory, theme])
+  return useMemo(() => themedStyles(factory, theme), [factory, theme])
+}
+
+// One style sheet per factory and theme, shared by every component that asks for it. Every
+// message row asks for several (the bubble's alone is about forty styles), and building them per
+// mounted row was a large part of what a row costs to mount while a list scrolls.
+const styleCache = new WeakMap<(theme: ChatTheme) => unknown, WeakMap<ChatTheme, unknown>>()
+
+function themedStyles<T> (factory: (theme: ChatTheme) => T, theme: ChatTheme): T {
+  let byTheme = styleCache.get(factory)
+  if (!byTheme) {
+    byTheme = new WeakMap()
+    styleCache.set(factory, byTheme)
+  }
+  if (!byTheme.has(theme))
+    byTheme.set(theme, factory(theme))
+  return byTheme.get(theme) as T
 }

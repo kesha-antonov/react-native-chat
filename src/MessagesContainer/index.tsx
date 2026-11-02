@@ -203,7 +203,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // Where each screen-gradient bubble's row sits: one shared value per message, created when its
   // bubble asks, and fed by the list's own position listener for that row - so a row moving
   // re-runs its bubble's worklets and no other's.
-  const cellValuesRef = useRef(new Map<string, { value: SharedValue<{ y: number, height: number } | undefined>, unsubscribe?: () => void }>())
+  const cellValuesRef = useRef(new Map<string, { value: SharedValue<{ y: number, height: number } | undefined>, unsubscribe?: () => void, refs: number }>())
   const listState = useCallback((): ListState | undefined =>
     (forwardRef?.current as unknown as { getState?: () => ListState } | null)?.getState?.()
   , [forwardRef])
@@ -223,11 +223,29 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const cellLayout = useCallback((id: string) => {
     let entry = cellValuesRef.current.get(id)
     if (!entry) {
-      entry = { value: makeMutable<{ y: number, height: number } | undefined>(undefined) }
+      entry = { value: makeMutable<{ y: number, height: number } | undefined>(undefined), refs: 0 }
       cellValuesRef.current.set(id, entry)
       subscribeCell(id)
     }
     return entry.value
+  }, [subscribeCell])
+  // A bubble holds its row's entry while it is mounted; the last one to let go stops listening
+  // to the row, so a long scroll does not leave a live position listener per message it passed.
+  const retainCell = useCallback((id: string) => {
+    const entry = cellValuesRef.current.get(id)
+    if (!entry)
+      return () => {}
+    entry.refs++
+    if (!entry.unsubscribe)
+      subscribeCell(id)
+    return () => {
+      entry.refs--
+      if (entry.refs > 0)
+        return
+      // The entry (a shared value the bubble may still hold) stays; only the listener goes.
+      entry.unsubscribe?.()
+      entry.unsubscribe = undefined
+    }
   }, [subscribeCell])
   useEffect(() => () => {
     cellValuesRef.current.forEach(entry => entry.unsubscribe?.())
@@ -240,9 +258,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // whole gesture and only fades once scrolling fully stops.
   const isScrollActive = useSharedValue(false)
   const gradientStore = useMemo((): BubbleGradientStore | null => isScreenGradient
-    ? { scrolledY, listHeight, cellLayout, isInverted: false }
+    ? { scrolledY, listHeight, cellLayout, retainCell, isInverted: false }
     : null
-  , [isScreenGradient, scrolledY, listHeight, cellLayout])
+  , [isScreenGradient, scrolledY, listHeight, cellLayout, retainCell])
   // The floating day header's fade, shared with the inline separators it stands in for.
   const floatingDayOpacity = useScrollGatedOpacity(isScrollActive)
 
@@ -658,7 +676,10 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // Gradient bubbles that asked for their row before the list could report positions.
   useEffect(() => {
     if (isListLaidOut)
-      cellValuesRef.current.forEach((_, id) => subscribeCell(id))
+      cellValuesRef.current.forEach((entry, id) => {
+        if (entry.refs > 0)
+          subscribeCell(id)
+      })
   }, [isListLaidOut, subscribeCell])
 
   // A row that changes height (a reaction, a reply loaded) keeps its place but moves its

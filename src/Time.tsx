@@ -38,8 +38,27 @@ export function formatMessageTime (
   timeFormat: string,
   editedLabel: string
 ): string {
-  const time = dayjs(message.createdAt).locale(locale).format(timeFormat)
+  const time = formatTimeCached(message.createdAt, locale, timeFormat)
   return isMessageEdited(message) ? `${editedLabel} ${time}` : time
+}
+
+// Every row formats its time (twice: the visible label and the space it reserves on the last
+// line), and again whenever its message object changes - a status tick, a reaction, every frame
+// of a streamed reply. The label depends only on the timestamp, locale and format.
+const timeCache = new Map<string, string>()
+const TIME_CACHE_MAX = 2000
+
+function formatTimeCached (createdAt: IMessage['createdAt'], locale: string, timeFormat: string) {
+  const at = createdAt instanceof Date ? createdAt.getTime() : typeof createdAt === 'number' ? createdAt : String(createdAt)
+  const key = `${at}|${locale}|${timeFormat}`
+  let time = timeCache.get(key)
+  if (time === undefined) {
+    time = dayjs(createdAt).locale(locale).format(timeFormat)
+    if (timeCache.size >= TIME_CACHE_MAX)
+      timeCache.clear()
+    timeCache.set(key, time)
+  }
+  return time
 }
 
 export interface TimeProps<TMessage extends IMessage> {
