@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { GestureDetector, usePinchGesture } from 'react-native-gesture-handler'
 import Animated, {
   runOnJS,
@@ -45,6 +45,19 @@ interface VideoNoteCaptureViewProps {
 // every render, and the module never changes once resolved. VideoNoteCaptureView only mounts
 // when the native module is present.
 const visionCamera = getVisionCamera()
+
+/**
+ * The preview's current frame as a temporary JPEG, for the circle to hold while a take is paused.
+ * vision-camera snapshots the preview on Android only; elsewhere this resolves null and the live
+ * camera stays up, dimmed.
+ */
+const snapshotFrame = async (camera: { takeSnapshot?: () => Promise<any> } | null): Promise<string | null> => {
+  if (Platform.OS !== 'android' || !camera?.takeSnapshot)
+    return null
+  const image = await camera.takeSnapshot()
+  const path: string = await image.saveToTemporaryFileAsync('jpg', 80)
+  return path.startsWith('file://') ? path : `file://${path}`
+}
 const useCameraDevice: (position: 'front' | 'back') => any = visionCamera?.useCameraDevice
 const useCameraDevices: () => any[] = visionCamera?.useCameraDevices
 const useVideoOutput: (options: object) => any = visionCamera?.useVideoOutput
@@ -91,6 +104,27 @@ export function VideoNoteCaptureView ({
         cameraRef.current = null
     }
   }, [cameraRef, recorder])
+  // Paused: the circle holds the frame it paused on, as Telegram's does, over the live camera.
+  const previewRef = useRef<{ takeSnapshot?: () => Promise<any> } | null>(null)
+  const [frozenFrame, setFrozenFrame] = useState<string | null>(null)
+  useEffect(() => {
+    if (!isPaused) {
+      setFrozenFrame(null)
+      return
+    }
+    let isCurrent = true
+    snapshotFrame(previewRef.current)
+      .then(uri => {
+        if (isCurrent)
+          setFrozenFrame(uri)
+      })
+      // No snapshot: the dimmed live camera stands in.
+      .catch(() => {})
+    return () => {
+      isCurrent = false
+    }
+  }, [isPaused])
+
   const canFlip = !!front && !!back
   const isFront = device?.position === 'front'
   const { area, onLayout, roundSize, ringRadius, ringCircumference, ringBox } = useRoundLayout()
@@ -256,6 +290,7 @@ export function VideoNoteCaptureView ({
               {device
                 ? (
                   <Camera
+                    ref={previewRef}
                     style={StyleSheet.absoluteFill}
                     device={device}
                     // Stays live after a stop until the file is written.
@@ -270,6 +305,9 @@ export function VideoNoteCaptureView ({
                   />
                 )
                 : <Text style={styles.placeholderText}>{labels.noCamera}</Text>}
+              {isPaused && frozenFrame && (
+                <Image source={{ uri: frozenFrame }} style={StyleSheet.absoluteFill} pointerEvents='none' />
+              )}
               {isPaused && <View style={styles.pausedDim} pointerEvents='none' />}
             </Animated.View>
           </GestureDetector>
