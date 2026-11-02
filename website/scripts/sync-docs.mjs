@@ -26,6 +26,11 @@ const BRANCH = 'main'
  */
 const key = (text) => text.toLowerCase().replace(/[^a-z0-9]/g, '')
 
+/** The demo clip at the top of the README, reused as the site's opening image. */
+const SHOWCASE = `<p align="center">
+  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/${BRANCH}/media/showcase.gif" alt="Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive" />
+</p>`
+
 /** Pages, in sidebar order. `from` is either README sections or a whole file. */
 const PAGES = [
   {
@@ -36,6 +41,8 @@ const PAGES = [
     description:
       "A complete chat UI for React Native and Web with streaming AI messages, reactions and replies. The maintained successor to react-native-gifted-chat.",
     keywords: ["react native chat ui", "gifted chat alternative", "streaming ai chat react native"],
+    // The README's hero image sits above its first section, so the page adds it itself.
+    lead: SHOWCASE,
     sections: ["✨ Features", "Quick start"],
   },
   {
@@ -330,6 +337,7 @@ PAGES.forEach((page, index) => {
 
   body = normaliseHeadings(body, depth)
   body = rewriteLinks(body, page.id)
+  if (page.lead) body = `${page.lead}\n\n${body.trim()}`
 
   const source = page.file ?? 'README.md'
   const note = `<!-- Generated from ${source} by website/scripts/sync-docs.mjs - edit that file, not this one. -->\n`
