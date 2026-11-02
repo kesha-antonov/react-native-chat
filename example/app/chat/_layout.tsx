@@ -7,6 +7,7 @@ export default function ChatLayout () {
 
   return (
     <Stack
+      activityEnabled
       screenOptions={{
         headerShown: true,
         headerTitleAlign: 'center',

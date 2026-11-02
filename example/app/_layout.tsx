@@ -23,7 +23,9 @@ export default function RootLayout () {
           Chat detects it and does not mount a second one. */}
       <KeyboardProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack screenOptions={{ headerShown: false }}>
+          {/* A screen covered by another stops rendering but keeps its state (React Activity):
+              the tabs, and the chat list in them, do no work while a chat is open on top. */}
+          <Stack screenOptions={{ headerShown: false }} activityEnabled>
             <Stack.Screen name='(tabs)' />
             <Stack.Screen name='chat' />
             <Stack.Screen name='chats' />

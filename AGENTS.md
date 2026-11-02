@@ -194,6 +194,15 @@ already running on that port, `--port` and `--no-bundler` refuse to combine; bui
 Metro restart can sit on a blank screen while the bundle builds; warm it with
 `curl 'localhost:<n>/node_modules/expo-router/entry.bundle?platform=android&dev=true' -o /dev/null`.
 
+On iOS, a debug build looks for Metro on 8081 unless the port is baked into `Info.plist` as
+`RCTMetroPort`: `app.config.js` sets it from `RCT_METRO_PORT` at prebuild time
+(`RCT_METRO_PORT=<n> npx expo prebuild --clean`, then rebuild the app). Without that, launch
+with `-RCT_jsLocation localhost:<n>` to point one run at another port.
+
+A release APK holds all four ABIs (~235 MB). For a device-only build pass
+`-PreactNativeArchitectures=arm64-v8a` to `./gradlew app:assembleRelease`; it builds and
+installs far faster.
+
 The example runs react-native-worklets in **Bundle Mode** (for `react-native-streamdown`):
 the Babel plugin has `bundleMode: true` and `metro.config.js` is wrapped in
 `getBundleModeMetroConfig`. Changing either needs a Metro restart with `--clear` and a full app

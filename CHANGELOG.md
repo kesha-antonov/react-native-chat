@@ -96,6 +96,9 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10; TypeScript stays on 6.0 and Babel on 7 (see AGENTS.md)
 
 ### 📲 Example app
+- Native tabs (Expo Router 58): the platform tab bar, Liquid Glass on iOS 26+, instead of the JS one
+- Screens covered by another one stop rendering and keep their state (`activityEnabled` on the stacks and tabs), so the chat list does no work while a chat is open on top of it
+- `RCT_METRO_PORT` at prebuild bakes Metro's port into the iOS debug build (`RCTMetroPort`)
 - Chats: an AI Assistant bot whose replies stream in ("bot" in the header, typing while it thinks, markdown, tappable suggestions, an intro card with START after clearing the history)
 - Chats: who is typing shows in the chat header and the list (with a voice-note recording in the demo), not as a bubble in the chat
 - The Chats tab is built on `ChatList`, with its store as the backend

@@ -1,43 +1,31 @@
 import React from 'react'
-import { Tabs } from 'expo-router'
+import { NativeTabs } from 'expo-router/native-tabs'
 
-import { HapticTab } from '@/components/haptic-tab'
-import { IconSymbol } from '@/components/ui/icon-symbol'
 import { Colors } from '@/constants/theme'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 
+/**
+ * The platform's own tab bar (UITabBarController / BottomNavigationView): Liquid Glass on iOS 26+,
+ * Material on Android, and no JS on a tab switch. Hidden tabs keep their state but stop rendering
+ * (`activityEnabled`), so the chat list does no work while another tab is in front.
+ */
 export default function TabLayout () {
   const colorScheme = useColorScheme()
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}
-    >
-      <Tabs.Screen
-        name='index'
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name='house.fill' color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name='explore'
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name='paperplane.fill' color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name='chats'
-        options={{
-          title: 'Chats',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name='bubble.left.and.bubble.right.fill' color={color} />,
-        }}
-      />
-    </Tabs>
+    <NativeTabs tintColor={Colors[colorScheme].tint} activityEnabled>
+      <NativeTabs.Trigger name='index'>
+        <NativeTabs.Trigger.Icon sf='house.fill' md='home' />
+        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name='explore'>
+        <NativeTabs.Trigger.Icon sf='paperplane.fill' md='send' />
+        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name='chats'>
+        <NativeTabs.Trigger.Icon sf='bubble.left.and.bubble.right.fill' md='forum' />
+        <NativeTabs.Trigger.Label>Chats</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   )
 }
