@@ -76,6 +76,7 @@ export function useRightControl<TMessage extends IMessage> ({
           onFinish={videoSession.finish}
           onLock={videoSession.lock}
           onPause={videoSession.pause}
+          onResume={videoSession.resume}
           onSend={videoSession.send}
           onToggleViewOnce={videoSession.toggleViewOnce}
           isViewOnce={videoSession.isViewOnce}

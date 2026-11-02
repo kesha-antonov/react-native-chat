@@ -25,6 +25,8 @@ interface VideoNoteCaptureViewProps {
   facing: 'front' | 'back'
   isFlashOn: boolean
   isRecording: boolean
+  /** The take is paused: the camera stays live, dimmed, while the recording waits. */
+  isPaused?: boolean
   /** The take is over and the circle is shrinking away. */
   isClosing: boolean
   /** Closing flies the circle off to the left edge (takes over 300ms). */
@@ -57,6 +59,7 @@ export function VideoNoteCaptureView ({
   facing,
   isFlashOn,
   isRecording,
+  isPaused = false,
   isClosing,
   isSlideOut,
   isFlight,
@@ -267,6 +270,7 @@ export function VideoNoteCaptureView ({
                   />
                 )
                 : <Text style={styles.placeholderText}>{labels.noCamera}</Text>}
+              {isPaused && <View style={styles.pausedDim} pointerEvents='none' />}
             </Animated.View>
           </GestureDetector>
         </Animated.View>

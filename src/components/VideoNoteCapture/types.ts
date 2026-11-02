@@ -3,7 +3,8 @@ import React from 'react'
 import { Store } from '../../store'
 import { RecordButtonPhase } from '../RecordButton'
 
-export type Phase = 'idle' | 'preparing' | 'recording' | 'stopping' | 'preview' | 'finishing'
+/** `paused` holds the recorder's file open (Resume continues it); `preview` plays a finished one. */
+export type Phase = 'idle' | 'preparing' | 'recording' | 'paused' | 'stopping' | 'preview' | 'finishing'
 
 /** What the composer needs to drive and draw a round video note take. */
 export interface VideoNoteSession {
@@ -22,8 +23,10 @@ export interface VideoNoteSession {
   finish: (cancelled: boolean) => void
   /** Slid up past the lock threshold: keep recording hands-free. */
   lock: () => void
-  /** Locked: stop into the preview. Undefined when there is no player for it. */
+  /** Locked: pause the recording, holding it open. */
   pause?: () => void
+  /** Paused: carry on recording into the same video. */
+  resume?: () => void
   /** Send the take, recording or previewed. */
   send: () => void
   /** The take goes out as view-once (`voiceOnce`). */

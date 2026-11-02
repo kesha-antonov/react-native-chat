@@ -16,7 +16,7 @@ export function ringProgressOf (
   const progressPhase = phase === 'idle' ? closing?.fromPhase ?? 'idle' : phase
   // While recording, the ring reads the running time itself.
   let progress: RingProgress = 0
-  if (progressPhase === 'recording')
+  if (progressPhase === 'recording' || progressPhase === 'paused')
     progress = phase === 'idle'
       ? Math.min(1, (closing?.elapsed ?? 0) / maxMs)
       : { elapsed: elapsedStore, maxMs }
@@ -32,7 +32,7 @@ export const overlayKindOf = (phase: Phase, closing: ClosingTake | null, preview
     : phase === 'preview' && previewUri ? 'preview' : 'capture'
 
 export const buttonPhaseOf = (phase: Phase, isLocked: boolean): RecordButtonPhase =>
-  phase === 'preview'
+  phase === 'preview' || phase === 'paused'
     ? 'preview'
     : phase === 'preparing' || phase === 'recording'
       ? (isLocked ? 'locked' : 'recording')

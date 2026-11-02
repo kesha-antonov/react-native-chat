@@ -34,8 +34,9 @@ import { VideoNoteStage } from './VideoNoteStage'
  * button: hold to record, release to send, slide left to cancel, slide up to
  * lock. The camera opens
  * under the finger and starts recording as soon as it is initialized. A
- * locked take can be paused into a looping preview, and the time limit stops
- * into that preview instead of sending.
+ * locked take can be paused and resumed: the recorder holds its file open, so
+ * the take goes on in the same video. The time limit stops into a looping
+ * preview of the finished file instead of sending.
  *
  * Only used when vision-camera's native module is linked; the system-camera
  * fallback keeps its tap-to-open button.
@@ -245,6 +246,22 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     setPhase('preparing')
   }, [setPhase])
 
+  /** Runs the take's clock from `fromMs`, as recording starts or resumes. */
+  const startTicking = useCallback((fromMs: number) => {
+    startedAtRef.current = Date.now() - fromMs
+    setPhase('recording')
+    clearTimers()
+    timerRef.current = setInterval(() => {
+      const ms = Date.now() - startedAtRef.current
+      elapsedRef.current = ms
+      elapsedStore.set(ms)
+      setIsPastPauseLead(ms >= maxMs - PAUSE_HIDE_LEAD_MS)
+      // Out of time: stop into the preview, or send without a player for it.
+      if (ms >= maxMs - LIMIT_LEAD_MS)
+        stopTakeRef.current(canPreview ? 'preview' : 'send')
+    }, 100)
+  }, [clearTimers, setPhase, maxMs, elapsedStore])
+
   // The overlay's camera is ready: start the take. A flip mid-take
   // re-initializes the camera too, which this ignores.
   const onCameraReady = useCallback(() => {
@@ -289,22 +306,11 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
 
     // Tick when the round take actually starts recording.
     recordingHaptic()
-    startedAtRef.current = Date.now()
     elapsedRef.current = 0
     elapsedStore.set(0)
     setIsPastPauseLead(false)
-    setPhase('recording')
-    clearTimers()
-    timerRef.current = setInterval(() => {
-      const ms = Date.now() - startedAtRef.current
-      elapsedRef.current = ms
-      elapsedStore.set(ms)
-      setIsPastPauseLead(ms >= maxMs - PAUSE_HIDE_LEAD_MS)
-      // Out of time: stop into the preview, or send without a player for it.
-      if (ms >= maxMs - LIMIT_LEAD_MS)
-        stopTakeRef.current(canPreview ? 'preview' : 'send')
-    }, 100)
-  }, [close, clearTimers, setPhase, maxMs, sendVideo, elapsedStore])
+    startTicking(0)
+  }, [close, clearTimers, setPhase, sendVideo, elapsedStore, startTicking])
 
   const onCameraError = useCallback((error: unknown) => {
     abortedRef.current = true
@@ -319,6 +325,20 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   }, [])
 
   const finish = useCallback((cancelled: boolean) => {
+    // Paused with the recorder holding the file open: finish it, or drop it.
+    if (phaseRef.current === 'paused') {
+      if (cancelled) {
+        abortedRef.current = true
+        stopCapture()
+        close()
+        return
+      }
+      setPhase('finishing')
+      stopCapture()
+      finishTimeoutRef.current = setTimeout(() => close(), FINISH_TIMEOUT_MS)
+      return
+    }
+
     if (phaseRef.current === 'preview') {
       const isSent = !cancelled && !!previewUri
       if (isSent)
@@ -329,10 +349,33 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     }
 
     stopTake(cancelled ? 'cancel' : 'send')
-  }, [stopTake, previewUri, sendVideo, close])
+  }, [stopTake, previewUri, sendVideo, close, setPhase, stopCapture])
 
   const send = useCallback(() => finish(false), [finish])
-  const pause = useCallback(() => stopTake('preview'), [stopTake])
+
+  // Pause holds the recording open (vision-camera's recorder pauses natively), so Resume carries on
+  // in the same file: nothing can join two takes afterwards. The camera stays live meanwhile.
+  const pause = useCallback(() => {
+    if (phaseRef.current !== 'recording')
+      return
+    const duration = Date.now() - startedAtRef.current
+    durationRef.current = duration
+    setTakeDurationMs(duration)
+    elapsedRef.current = duration
+    elapsedStore.set(duration)
+    clearTimers()
+    setPhase('paused')
+    cameraRef.current?.pauseRecording().catch(error => configRef.current?.onError?.(error))
+  }, [clearTimers, setPhase, elapsedStore])
+
+  const resume = useCallback(() => {
+    if (phaseRef.current !== 'paused')
+      return
+    // The resume button plays its own tick.
+    setIsLocked(true)
+    startTicking(durationRef.current)
+    cameraRef.current?.resumeRecording().catch(error => configRef.current?.onError?.(error))
+  }, [startTicking])
 
   // Leaving the chat mid-take must not leave the camera recording into an
   // orphaned file.
@@ -366,6 +409,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   const isRecording = phase === 'recording'
   const isClosing = phase === 'idle' && !!closing
 
+  const isPaused = phase === 'paused'
   const progress = ringProgressOf(phase, closing, elapsedStore, maxMs)
 
   const overlayKind = overlayKindOf(phase, closing, previewUri)
@@ -392,6 +436,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
               facing={facing}
               isFlashOn={isFlashOn}
               isRecording={isRecording}
+              isPaused={isPaused}
               isClosing={isClosing}
               isSlideOut={!!closing?.isSlideOut}
               isFlight={!!closing?.isFlight}
@@ -407,18 +452,19 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
 
   const buttonPhase = buttonPhaseOf(phase, isLocked)
 
-  const canPause = canPreview && isRecording && !isPastPauseLead
+  const canPause = isRecording && !isPastPauseLead
 
   return {
-    isActive: phase === 'preparing' || phase === 'recording' || phase === 'preview',
+    isActive: phase === 'preparing' || phase === 'recording' || phase === 'preview' || isPaused,
     isLocked,
     isCapturing: isRecording,
     buttonPhase,
-    preview: phase === 'preview' ? { durationMs: takeDurationMs } : null,
+    preview: phase === 'preview' || isPaused ? { durationMs: takeDurationMs } : null,
     start,
     finish,
     lock,
     pause: canPause ? pause : undefined,
+    resume: isPaused ? resume : undefined,
     send,
     isViewOnce,
     toggleViewOnce: config?.isViewOnceEnabled ? toggleViewOnce : undefined,

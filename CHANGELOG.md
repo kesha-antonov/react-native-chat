@@ -28,6 +28,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - **`textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`**
 
 ### ✨ Features
+- **Round video notes resume after a pause**, as voice notes do. Pausing a locked take now holds the camera's recording open (vision-camera pauses natively), the circle dims, and the bar offers Delete, Send and Resume; Resume carries on in the same video, so the paused stretch is not in it. A paused take is no longer replayed before sending: nothing available can join two video files afterwards. Reaching the time limit still stops into a looping preview
 - **Swipe between a chat's photos**, as in Telegram: tapping a photo opens the viewer on it, and swiping left and right pages through every photo in the conversation (left for newer, right for older) with a "3 of 12" counter, the caption, the sender and when it was sent. Pinch or double-tap to zoom, panning a zoomed photo to its edge carries on to the next, and dragging up or down puts the viewer away. New labels `mediaViewerCounter` and `mediaViewerDate` in all 15 locales
 - **Slide along the emoji categories**: press the category strip and slide the finger across it to move through the categories, a haptic tick on each
 - **Reaction pills show who reacted**: up to three avatars in place of the count, as in Telegram - in one-to-one chats, and in groups while a message has three reactions or fewer. `reactions.getUser` resolves reactors (by default from the loaded messages); a count now shows even when it is 1
