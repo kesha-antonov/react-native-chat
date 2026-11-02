@@ -1,6 +1,7 @@
 import React, {
   forwardRef,
   useCallback,
+  useContext,
   useEffect,
   useImperativeHandle,
   useId,
@@ -22,6 +23,7 @@ import { claimPlayback, releasePlayback, stopAllPlayback } from './mediaPlayback
 import { PlayPauseIcon } from './PlayPauseIcon'
 import { RecordButton, RecordButtonPhase, RecordExitReason } from './RecordButton'
 import { confirmTrimOnResume, shouldConfirmTrimOnResume } from './recordingFeedback'
+import { createRecordingMeter, RecordingMeterContext } from './recordingMeter'
 import {
   clipsDuration,
   clipsLevels,
@@ -221,9 +223,14 @@ function VoiceMessageInputInner (
 
   const [isRecording, setIsRecording] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
   const [cancelArmed, setCancelArmed] = useState(false)
-  const [levels, setLevels] = useState<number[]>([])
+  // The running time and loudness tick ten times a second, so they go to the meter's stores
+  // (the composer's, inside one) instead of state: a tick re-renders the timer alone.
+  const contextMeter = useContext(RecordingMeterContext)
+  const [ownMeter] = useState(createRecordingMeter)
+  const meter = contextMeter ?? ownMeter
+  // The recent levels, oldest first, for `onStateChange`.
+  const levelsRef = useRef<number[]>([])
   const [preview, setPreview] = useState<VoiceRecordingPreview | null>(null)
   // Between the resume tap and the recorder going live, so the bar and the
   // button stay on the locked take instead of flashing the idle composer.
@@ -261,13 +268,24 @@ function VoiceMessageInputInner (
   const minDurationMs = config?.minDurationMs ?? DEFAULT_MIN_DURATION_MS
   const maxDurationMs = config?.maxDurationMs ?? 600000
 
-  const level = levels.length ? levels[levels.length - 1] : 0
-
   // Surface recording state to the toolbar (timer/cancel bar live there).
   const isActive = isRecording || isResuming || isJoining
+  const reportRef = useRef<() => void>(() => {})
+  useLayoutEffect(() => {
+    reportRef.current = () => onStateChange?.({
+      active: isActive,
+      locked: isLocked,
+      elapsed: meter.elapsed.get(),
+      cancelArmed,
+      levels: levelsRef.current,
+      preview,
+    })
+  })
   useEffect(() => {
-    onStateChange?.({ active: isActive, locked: isLocked, elapsed, cancelArmed, levels, preview })
-  }, [onStateChange, isActive, isLocked, elapsed, cancelArmed, levels, preview])
+    reportRef.current()
+  }, [onStateChange, isActive, isLocked, cancelArmed, preview])
+  // The running time still reaches `onStateChange` on every tick.
+  useEffect(() => meter.elapsed.subscribe(() => reportRef.current()), [meter])
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -406,8 +424,9 @@ function VoiceMessageInputInner (
       startedAtRef.current = Date.now()
       isRecordingRef.current = true
       allLevelsRef.current = []
-      setElapsed(baseElapsedRef.current)
-      setLevels([])
+      levelsRef.current = []
+      meter.level.set(0)
+      meter.elapsed.set(baseElapsedRef.current)
       setIsRecording(true)
 
       clearTimer()
@@ -415,17 +434,17 @@ function VoiceMessageInputInner (
       // enough while staying cheap.
       timerRef.current = setInterval(() => {
         const ms = baseElapsedRef.current + Date.now() - startedAtRef.current
-        setElapsed(ms)
 
         // The halo tracks real loudness rather than pulsing on a fixed loop.
         const next = normalizeMetering(recorder.getStatus?.()?.metering)
         allLevelsRef.current.push(next)
-        setLevels(previous => {
-          const kept = previous.length >= LEVEL_HISTORY
-            ? previous.slice(previous.length - LEVEL_HISTORY + 1)
-            : previous
-          return [...kept, next]
-        })
+        const previous = levelsRef.current
+        const kept = previous.length >= LEVEL_HISTORY
+          ? previous.slice(previous.length - LEVEL_HISTORY + 1)
+          : previous
+        levelsRef.current = [...kept, next]
+        meter.level.set(next)
+        meter.elapsed.set(ms)
 
         if (ms >= maxDurationMs)
           stopTakeRef.current('send')
@@ -452,7 +471,7 @@ function VoiceMessageInputInner (
             stopTakeRef.current(pending.cancelled ? 'cancel' : 'send')
         }
       })
-  }, [getRecorder, recorderOptions, config, clearTimer, maxDurationMs, takePendingFinish])
+  }, [getRecorder, recorderOptions, config, clearTimer, maxDurationMs, takePendingFinish, meter])
 
   // Tear the recorder down with the component: without this the mic stays hot
   // (and the iOS recording indicator lit) after navigating away mid-recording,
@@ -530,7 +549,7 @@ function VoiceMessageInputInner (
     const go = () => {
       clipsRef.current = trimmedClips()
       trimRef.current = { start: 0, end: 1 }
-      setElapsed(clipsDuration(clipsRef.current))
+      meter.elapsed.set(clipsDuration(clipsRef.current))
       setIsLocked(true)
       setIsResuming(true)
       start(true)
@@ -552,7 +571,7 @@ function VoiceMessageInputInner (
     }
 
     go()
-  }, [labels, start, trimmedClips])
+  }, [labels, start, trimmedClips, meter])
 
   const onSlideProgress = useCallback((progress: number) => {
     setCancelArmed(progress < CANCEL_ARMED_PROGRESS)
@@ -568,7 +587,7 @@ function VoiceMessageInputInner (
     <RecordButton
       mode='voice'
       phase={phase}
-      level={level}
+      levelStore={meter.level}
       onTap={onTap}
       onStart={() => start()}
       onFinish={cancelled => stopTake(cancelled ? 'cancel' : 'send')}

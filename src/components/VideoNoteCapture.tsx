@@ -15,10 +15,12 @@ import { useLabels } from '../hooks/useLabels'
 import { useTheme } from '../hooks/useTheme'
 import { IMessage, VideoRecordingProps } from '../Models'
 import { getExpoBlur, getExpoVideo, getSvg } from '../optional'
+import { createStore, Store, useStore } from '../store'
 import { FlashIcon, FlipCameraIcon } from './MediaControls'
 import { stopAllPlayback } from './mediaPlayback'
 import { RecordButtonPhase } from './RecordButton'
 import { recordingHaptic } from './recordingFeedback'
+import { sameNumber } from './recordingMeter'
 import {
   ROUND_FLIGHT_FADE_MS,
   ROUND_FLIGHT_MS,
@@ -119,7 +121,6 @@ export interface VideoNoteSession {
   isLocked: boolean
   /** The camera is actually recording, not just opening. */
   isCapturing: boolean
-  elapsed: number
   /** The record button's state for this take. */
   buttonPhase: RecordButtonPhase
   /** Set while a paused take plays back for review. */
@@ -156,13 +157,22 @@ export interface VideoNoteSession {
 export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   config,
   onSend,
+  elapsedStore: elapsedStoreProp,
 }: {
   config?: VideoRecordingProps
   onSend?: (message: Partial<TMessage>, shouldResetInputToolbar: boolean) => void
+  /**
+   * Where the running time goes, ten times a second: a store, so a tick re-renders only what
+   * shows it (the bar's timer, the ring) and not the composer. Kept after the take ends.
+   */
+  elapsedStore?: Store<number>
 }): VideoNoteSession {
   const [phase, setPhaseState] = useState<Phase>('idle')
   const [isLocked, setIsLocked] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
+  const [ownElapsedStore] = useState(() => createStore(0))
+  const elapsedStore = elapsedStoreProp ?? ownElapsedStore
+  // Flips once, near the limit, rather than reading the time on every render.
+  const [isPastPauseLead, setIsPastPauseLead] = useState(false)
   const [isFlashOn, setIsFlashOn] = useState(false)
   // A note starts on the front camera.
   const [facing, setFacing] = useState<'front' | 'back'>('front')
@@ -253,7 +263,6 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     setPhase('idle')
     setIsLocked(false)
     elapsedRef.current = 0
-    setElapsed(0)
     setIsFlashOn(false)
     setPreviewUri(null)
   }, [clearTimers, setPhase])
@@ -308,11 +317,12 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
 
     durationRef.current = duration
     setTakeDurationMs(duration)
+    elapsedStore.set(duration)
     clearTimers()
     setPhase(outcome === 'preview' ? 'stopping' : 'finishing')
     stopCapture()
     finishTimeoutRef.current = setTimeout(() => close(), FINISH_TIMEOUT_MS)
-  }, [close, clearTimers, setPhase, stopCapture, minDurationMs])
+  }, [close, clearTimers, setPhase, stopCapture, minDurationMs, elapsedStore])
 
   const stopTakeRef = useRef(stopTake)
   useLayoutEffect(() => {
@@ -404,18 +414,20 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     recordingHaptic()
     startedAtRef.current = Date.now()
     elapsedRef.current = 0
-    setElapsed(0)
+    elapsedStore.set(0)
+    setIsPastPauseLead(false)
     setPhase('recording')
     clearTimers()
     timerRef.current = setInterval(() => {
       const ms = Date.now() - startedAtRef.current
       elapsedRef.current = ms
-      setElapsed(ms)
+      elapsedStore.set(ms)
+      setIsPastPauseLead(ms >= maxMs - PAUSE_HIDE_LEAD_MS)
       // Out of time: stop into the preview, or send without a player for it.
       if (ms >= maxMs - LIMIT_LEAD_MS)
         stopTakeRef.current(canPreview ? 'preview' : 'send')
     }, 100)
-  }, [close, clearTimers, setPhase, maxMs, sendVideo])
+  }, [close, clearTimers, setPhase, maxMs, sendVideo, elapsedStore])
 
   const onCameraError = useCallback((error: unknown) => {
     abortedRef.current = true
@@ -479,10 +491,12 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
 
   // Closed: the ring holds the share it had when the take ended.
   const progressPhase = phase === 'idle' ? closing?.fromPhase ?? 'idle' : phase
-  const progressElapsed = phase === 'idle' ? closing?.elapsed ?? 0 : elapsed
-  let progress = 0
+  // While recording, the ring reads the running time itself.
+  let progress: RingProgress = 0
   if (progressPhase === 'recording')
-    progress = Math.min(1, progressElapsed / maxMs)
+    progress = phase === 'idle'
+      ? Math.min(1, (closing?.elapsed ?? 0) / maxMs)
+      : { elapsed: elapsedStore, maxMs }
   else if (progressPhase !== 'preparing' && progressPhase !== 'idle')
     progress = 1
 
@@ -531,13 +545,12 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
       ? (isLocked ? 'locked' : 'recording')
       : 'idle'
 
-  const canPause = canPreview && isRecording && elapsed < maxMs - PAUSE_HIDE_LEAD_MS
+  const canPause = canPreview && isRecording && !isPastPauseLead
 
   return {
     isActive: phase === 'preparing' || phase === 'recording' || phase === 'preview',
     isLocked,
     isCapturing: isRecording,
-    elapsed: phase === 'preview' ? takeDurationMs : elapsed,
     buttonPhase,
     preview: phase === 'preview' ? { durationMs: takeDurationMs } : null,
     start,
@@ -551,6 +564,48 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   }
 }
 
+/** The ring's share of the max length: fixed, or read from the running time while recording. */
+type RingProgress = number | { elapsed: Store<number>, maxMs: number }
+
+/**
+ * The elapsed arc around the camera. Its own component, so a tick of the running time
+ * re-renders the arc and not the camera view.
+ */
+function ProgressRing ({ progress, ringBox, ringRadius, ringCircumference, color, ringStyle }: {
+  progress: RingProgress
+  ringBox: number
+  ringRadius: number
+  ringCircumference: number
+  color: string
+  ringStyle: React.ComponentProps<typeof Animated.View>['style']
+}) {
+  const live = typeof progress === 'object' ? progress : undefined
+  const elapsed = useStore(live?.elapsed, sameNumber, 0)
+  const share = live ? Math.min(1, elapsed / live.maxMs) : (progress as number)
+  if (!SvgCircle || share <= 0)
+    return null
+
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, ringStyle]} pointerEvents='none'>
+      <Svg width={ringBox} height={ringBox} style={StyleSheet.absoluteFill} pointerEvents='none'>
+        {/* Only the elapsed arc, no track. */}
+        <SvgCircle
+          cx={ringBox / 2}
+          cy={ringBox / 2}
+          r={ringRadius}
+          stroke={color}
+          strokeWidth={RING_STROKE}
+          fill='none'
+          strokeLinecap='round'
+          strokeDasharray={ringCircumference}
+          strokeDashoffset={ringCircumference * (1 - share)}
+          transform={`rotate(-90 ${ringBox / 2} ${ringBox / 2})`}
+        />
+      </Svg>
+    </Animated.View>
+  )
+}
+
 interface VideoNoteCaptureViewProps {
   cameraRef: React.RefObject<VideoNoteRecorderController | null>
   facing: 'front' | 'back'
@@ -562,8 +617,8 @@ interface VideoNoteCaptureViewProps {
   isSlideOut: boolean
   /** Sent: closing flies the circle into the new note instead. */
   isFlight: boolean
-  /** Elapsed share of the max length, 0..1. */
-  progress: number
+  /** Elapsed share of the max length, 0..1, or the running time to read it from. */
+  progress: RingProgress
   onReady: () => void
   onError: (error: unknown) => void
   onToggleFlash: () => void
@@ -942,24 +997,15 @@ function VideoNoteCaptureView ({
     <View style={[styles.stage, isScreenFlash && styles.screenFlash]} onLayout={onLayout} pointerEvents='box-none'>
       {roundSize > 0 && (
         <Animated.View ref={roundRef} collapsable={false} style={[styles.ringWrapper, { width: ringBox, height: ringBox }, roundStyle]}>
-          {SvgCircle && progress > 0 && (
-            <Animated.View style={[StyleSheet.absoluteFill, ringStyle]} pointerEvents='none'>
-              <Svg width={ringBox} height={ringBox} style={StyleSheet.absoluteFill} pointerEvents='none'>
-                {/* Only the elapsed arc, no track. */}
-                <SvgCircle
-                  cx={ringBox / 2}
-                  cy={ringBox / 2}
-                  r={ringRadius}
-                  stroke={isScreenFlash ? '#3390EC' : '#FFFFFF'}
-                  strokeWidth={RING_STROKE}
-                  fill='none'
-                  strokeLinecap='round'
-                  strokeDasharray={ringCircumference}
-                  strokeDashoffset={ringCircumference * (1 - progress)}
-                  transform={`rotate(-90 ${ringBox / 2} ${ringBox / 2})`}
-                />
-              </Svg>
-            </Animated.View>
+          {SvgCircle && (
+            <ProgressRing
+              progress={progress}
+              ringBox={ringBox}
+              ringRadius={ringRadius}
+              ringCircumference={ringCircumference}
+              color={isScreenFlash ? '#3390EC' : '#FFFFFF'}
+              ringStyle={ringStyle}
+            />
           )}
           <GestureDetector gesture={pinchGesture}>
             <Animated.View style={[styles.round, { width: roundSize, height: roundSize, borderRadius: roundSize / 2 }, flipStyle]}>

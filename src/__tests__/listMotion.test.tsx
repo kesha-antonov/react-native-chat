@@ -6,6 +6,7 @@ import { Chat, IMessage } from '..'
 import { RecordingBar } from '../components/RecordingBar'
 import { MessageProps } from '../Message'
 import { LIST_ITEM_DURATION } from '../MessagesContainer/listTransitions'
+import { createStore } from '../store'
 import { TypingIndicator, TypingIndicatorListAnimationContext } from '../TypingIndicator'
 import { render as renderPlain } from './renderWithGestureRoot'
 import { waitForRows } from './waitForRows'
@@ -76,7 +77,7 @@ describe('TypingIndicator inside an animated list', () => {
 
 describe('RecordingBar', () => {
   const baseProps = {
-    elapsed: 3_400,
+    elapsed: createStore(3_400),
     isBlinking: true,
     isCancelled: false,
     slideProgress: { value: 1 } as never,
@@ -91,6 +92,17 @@ describe('RecordingBar', () => {
     // The composer clears the lock as it cancels; the bar must not fall back to its unlocked look.
     await rerender(<RecordingBar {...baseProps} isLocked={false} isCancelled />)
     expect(queryByText('CANCEL')).not.toBeNull()
+  })
+
+  it('ticks its timer from the meter store', async () => {
+    const elapsed = createStore(3_400)
+    const { getByLabelText } = await renderPlain(<RecordingBar {...baseProps} elapsed={elapsed} isLocked={false} />)
+    expect(getByLabelText('0:03,4')).toBeTruthy()
+
+    await act(async () => {
+      elapsed.set(5_600)
+    })
+    expect(getByLabelText('0:05,6')).toBeTruthy()
   })
 
   it('drops CANCEL for an unlocked take', async () => {

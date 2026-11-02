@@ -17,6 +17,7 @@ import { EmojiIcon, TrashIcon } from './components/MediaControls'
 import { RecordButton, RecordExitReason, useRecordSlideDistance } from './components/RecordButton'
 import { CANCEL_LINGER_MS, RecordingBar } from './components/RecordingBar'
 import { getLastRecordMode, setLastRecordMode } from './components/recordingFeedback'
+import { createRecordingMeter, RecordingMeterContext } from './components/recordingMeter'
 import { ReplyPreview, ReplyPreviewProps } from './components/ReplyPreview'
 import { useVideoNoteSession } from './components/VideoNoteCapture'
 import { VideoRecordButton, isVideoRecordingAvailable } from './components/VideoRecordButton'
@@ -504,6 +505,21 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const [voiceState, setVoiceState] = useState<VoiceRecordingState>({
     active: false, locked: false, elapsed: 0, cancelArmed: false, levels: [], preview: null,
   })
+  // The running time and loudness of a take, ticking ten times a second: the timer and the
+  // record button read them from here, so a tick does not re-render the composer.
+  const [meter] = useState(createRecordingMeter)
+  // The voice input reports its whole state on every tick; only a change in what the bar
+  // shows (not the time or the level) is worth a render here.
+  const updateVoiceState = useCallback((next: VoiceRecordingState) => {
+    setVoiceState(prev =>
+      prev.active === next.active &&
+      prev.locked === next.locked &&
+      prev.cancelArmed === next.cancelArmed &&
+      prev.preview === next.preview
+        ? prev
+        : next
+    )
+  }, [])
   const voiceRef = useRef<VoiceMessageInputHandle>(null)
   const trimVoicePreview = useCallback((start: number, end: number) => {
     voiceRef.current?.trim(start, end)
@@ -549,7 +565,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const canToggleMode = showVoice && showVideo
   const mode = canToggleMode ? recordMode : (isVoiceEnabled ? 'voice' : 'video')
 
-  const videoSession = useVideoNoteSession<TMessage>({ config: videoConfig, onSend })
+  const videoSession = useVideoNoteSession<TMessage>({ config: videoConfig, onSend, elapsedStore: meter.elapsed })
 
   // The camera preview is drawn over the message list by `Chat`; outside a
   // Chat it falls back to sitting above the toolbar.
@@ -566,7 +582,6 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     ? {
       active: !videoSession.preview,
       locked: videoSession.isLocked,
-      elapsed: videoSession.elapsed,
     }
     : voiceState
   const voicePreview = isVideoTake ? null : voiceState.preview ?? null
@@ -589,11 +604,6 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   useLayoutEffect(() => {
     isRecordingActiveRef.current = isRecordingActive
   })
-  // The lingering bar keeps showing the time the take ended at.
-  const [lastElapsed, setLastElapsed] = useState(0)
-  if (isRecordingActive && recording.elapsed !== lastElapsed)
-    setLastElapsed(recording.elapsed)
-
   const startCancelLinger = useCallback(() => {
     // Only a bar that is showing has anything to animate out.
     if (!isRecordingActiveRef.current)
@@ -718,17 +728,19 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
 
     if (showVoice && mode === 'voice')
       return (
-        <VoiceMessageInput
-          ref={voiceRef}
-          config={audioConfig}
-          onSend={onSend as VoiceMessageInputProps['onSend']}
-          onStateChange={setVoiceState}
-          onTap={canToggleMode ? toggleRecordMode : undefined}
-          slideProgressValue={slideProgress}
-          onExit={onRecordExit}
-          hint={recordHint}
-          onQuickRelease={canToggleMode ? undefined : onVoiceQuickRelease}
-        />
+        <RecordingMeterContext.Provider value={meter}>
+          <VoiceMessageInput
+            ref={voiceRef}
+            config={audioConfig}
+            onSend={onSend as VoiceMessageInputProps['onSend']}
+            onStateChange={updateVoiceState}
+            onTap={canToggleMode ? toggleRecordMode : undefined}
+            slideProgressValue={slideProgress}
+            onExit={onRecordExit}
+            hint={recordHint}
+            onQuickRelease={canToggleMode ? undefined : onVoiceQuickRelease}
+          />
+        </RecordingMeterContext.Provider>
       )
 
     // Video through the system camera: a tap-to-open button in the same slot.
@@ -761,6 +773,8 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     onVoiceQuickRelease,
     videoConfig,
     sendFragment,
+    meter,
+    updateVoiceState,
   ])
 
   // Which control the right slot holds; a change swaps them with the scale morph above.
@@ -907,7 +921,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
                 : isRecordingActive || isCancelLingering
                   ? (
                     <RecordingBar
-                      elapsed={isRecordingActive ? recording.elapsed : lastElapsed}
+                      elapsed={meter.elapsed}
                       isLocked={isRecordingActive && recording.locked}
                       isBlinking={!isVideoTake || videoSession.isCapturing}
                       isCancelled={!isRecordingActive}

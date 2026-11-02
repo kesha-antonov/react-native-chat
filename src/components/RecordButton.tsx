@@ -22,6 +22,7 @@ import Animated, {
 import { useIsRTL } from '../hooks/useIsRTL'
 import { useLabels } from '../hooks/useLabels'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
+import { Store } from '../store'
 import { ChatTheme } from '../Theme'
 import { Icon } from './Icon'
 import { CameraIcon, ChevronIcon, LockIcon, MicIcon, PauseIcon } from './MediaControls'
@@ -136,8 +137,8 @@ export function useRecordSlideDistance () {
 export interface RecordButtonProps {
   mode: 'voice' | 'video'
   phase: RecordButtonPhase
-  /** Microphone loudness, 0..1, for the circle and its blobs. */
-  level?: number
+  /** Microphone loudness, 0..1, for the circle and its blobs; read without a render. */
+  levelStore?: Store<number>
   /**
    * Video only: the camera has actually started recording. The blobs wait for
    * it.
@@ -194,7 +195,7 @@ export interface RecordButtonProps {
 export function RecordButton ({
   mode,
   phase,
-  level = 0,
+  levelStore,
   isCapturing = true,
   onTap,
   onStart,
@@ -260,9 +261,14 @@ export function RecordButton ({
     modeSV.set(withTiming(mode === 'video' ? 1 : 0, { duration: 150, reduceMotion: ReduceMotion.System }))
   }, [mode, modeSV])
 
+  // Each new level moves the circle straight from the store, ten times a second, without
+  // re-rendering the button.
   useEffect(() => {
-    circle.amplitude.set(phase === 'recording' || phase === 'locked' ? levelToAmplitude(level) : 0)
-  }, [phase, level, circle.amplitude])
+    const isLive = phase === 'recording' || phase === 'locked'
+    const apply = () => circle.amplitude.set(isLive && levelStore ? levelToAmplitude(levelStore.get()) : 0)
+    apply()
+    return isLive && levelStore ? levelStore.subscribe(apply) : undefined
+  }, [phase, levelStore, circle.amplitude])
 
   useEffect(() => {
     showWaves.set(isCapturing ? 1 : 0)

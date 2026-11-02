@@ -19,9 +19,11 @@ import Animated, {
 import { useIsRTL } from '../hooks/useIsRTL'
 import { useLabels } from '../hooks/useLabels'
 import { useThemedStyles } from '../hooks/useTheme'
+import { Store, useStore } from '../store'
 import { ChatTheme } from '../Theme'
 import { ChevronIcon } from './MediaControls'
 import { formatRecordingTime } from './recordingFeedback'
+import { sameNumber } from './recordingMeter'
 
 /** How long the cancelled bar stays up for the trash can (`recordDeleteImageView`). */
 export const CANCEL_LINGER_MS = 900
@@ -68,7 +70,8 @@ const clamp01 = (value: number) => {
 }
 
 export interface RecordingBarProps {
-  elapsed: number
+  /** The take's running time; only the timer reads it, so a tick re-renders the timer alone. */
+  elapsed: Store<number>
   isLocked: boolean
   /** The dot blinks once the take really records; a round one waits for its camera. */
   isBlinking: boolean
@@ -177,7 +180,7 @@ export function RecordingBar ({
       </Animated.View>
       <Animated.View entering={partIn} style={isRTL ? styles.timerRTL : styles.timerLTR}>
         <Animated.View style={timerStyle}>
-          <RollingTimer text={formatRecordingTime(elapsed)} style={styles.timerText} />
+          <RecordingTime elapsed={elapsed} style={styles.timerText} />
         </Animated.View>
       </Animated.View>
       {/* Clipped so the hint never slides over the timer. */}
@@ -213,6 +216,11 @@ export function RecordingBar ({
  * swaps the last one in place - rolled ten times a second, it never sat still
  * long enough to read and the timer looked like it was shaking.
  */
+function RecordingTime ({ elapsed, style }: { elapsed: Store<number>, style: StyleProp<TextStyle> }) {
+  const ms = useStore(elapsed, sameNumber, 0)
+  return <RollingTimer text={formatRecordingTime(ms)} style={style} />
+}
+
 function RollingTimer ({ text, style }: { text: string, style: StyleProp<TextStyle> }) {
   const styles = useThemedStyles(createStyles)
   const chars = text.split('')
