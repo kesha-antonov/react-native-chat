@@ -1,5 +1,10 @@
 # Changelog
 
+## [6.0.1] - 2026-11-03
+
+### 📝 Docs
+- The README (and so the npm page) opens with a showcase of the example app's Chats demo
+
 ## [6.0.0] - 2026-11-02
 
 A new default look and built-in messenger features: emoji keyboard, attachment menu, link previews, multi-select, media transfer states, and reworked voice and round video notes.
