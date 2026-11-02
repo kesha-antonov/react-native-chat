@@ -100,13 +100,17 @@ describe('Chat.toggleReaction', () => {
     expect(toggleReaction(both, 1, '❤️', ME._id)[0].reactions).toEqual([{ emoji: '❤️', userIds: [2] }])
   })
 
-  it('replaces the user\'s reaction by default, unless more are allowed', () => {
+  it('keeps up to three of the user\'s reactions by default, replacing the oldest past that', () => {
+    let messages = toggleReaction(base, 1, '👍', ME._id)
+    messages = toggleReaction(messages, 1, '🔥', ME._id)
+    messages = toggleReaction(messages, 1, '❤️', ME._id)
+    expect(messages[0].reactions?.map(reaction => reaction.emoji)).toEqual(['👍', '🔥', '❤️'])
+    expect(toggleReaction(messages, 1, '🎉', ME._id)[0].reactions?.map(reaction => reaction.emoji)).toEqual(['🔥', '❤️', '🎉'])
+  })
+
+  it('replaces the user\'s reaction with maxPerUser 1', () => {
     const first = toggleReaction(base, 1, '👍', ME._id)
-    expect(toggleReaction(first, 1, '🔥', ME._id)[0].reactions).toEqual([{ emoji: '🔥', userIds: [1] }])
-    expect(toggleReaction(first, 1, '🔥', ME._id, { maxPerUser: Infinity })[0].reactions).toEqual([
-      { emoji: '👍', userIds: [1] },
-      { emoji: '🔥', userIds: [1] },
-    ])
+    expect(toggleReaction(first, 1, '🔥', ME._id, { maxPerUser: 1 })[0].reactions).toEqual([{ emoji: '🔥', userIds: [1] }])
   })
 })
 

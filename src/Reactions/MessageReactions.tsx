@@ -2,9 +2,10 @@ import React, { useCallback } from 'react'
 import { Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
+import { ChatAvatar } from '../ChatAvatar'
 import { multiplyAlpha } from '../colorUtils'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
-import { IMessage } from '../Models'
+import { IMessage, User } from '../Models'
 import { ChatTheme } from '../Theme'
 import { MessageReactionsDisplayProps } from './types'
 
@@ -13,10 +14,16 @@ const PRESS_IN = { duration: 60, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
 const PRESS_OUT = { duration: 350, easing: Easing.out(Easing.back(5)) }
 // An unchosen pill is its accent at 15.6%.
 const UNCHOSEN_ALPHA = 0.156
+// Up to three reactors' avatars stand in for the count, as in Telegram: one-to-one chats always,
+// groups while the message has this many reactions or fewer.
+const MAX_AVATARS = 3
+const AVATAR_SIZE = 20
 
 interface ReactionPillProps {
   emoji: string
   count: number
+  /** Shown instead of the count. */
+  avatars?: User[]
   isChosen: boolean
   background: string
   textColor: string
@@ -26,7 +33,7 @@ interface ReactionPillProps {
   countStyle?: StyleProp<TextStyle>
 }
 
-const ReactionPill = ({ emoji, count, isChosen, background, textColor, onPress, style, textStyle, countStyle }: ReactionPillProps) => {
+const ReactionPill = ({ emoji, count, avatars, isChosen, background, textColor, onPress, style, textStyle, countStyle }: ReactionPillProps) => {
   const styles = useThemedStyles(createStyles)
   const scale = useSharedValue(1)
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
@@ -48,13 +55,23 @@ const ReactionPill = ({ emoji, count, isChosen, background, textColor, onPress, 
       accessibilityState={{ selected: isChosen }}
       accessibilityLabel={count > 1 ? `${emoji} ${count}` : emoji}
     >
-      <Animated.View style={[styles.pill, count > 1 && styles.pillWithCount, { backgroundColor: background }, style, pressStyle]}>
+      <Animated.View style={[styles.pill, !avatars && styles.pillWithCount, { backgroundColor: background }, style, pressStyle]}>
         <Text style={[styles.emoji, textStyle]}>{emoji}</Text>
-        {count > 1 && (
-          <Text style={[styles.count, { color: textColor }, countStyle]}>
-            {count}
-          </Text>
-        )}
+        {avatars
+          ? (
+            <View style={styles.avatars}>
+              {avatars.map((user, index) => (
+                <View key={String(user._id)} style={[styles.avatar, index > 0 && styles.avatarOverlap, { zIndex: avatars.length - index }]}>
+                  <ChatAvatar user={user} avatarStyle={styles.avatarImage} textStyle={styles.avatarText} />
+                </View>
+              ))}
+            </View>
+          )
+          : (
+            <Text style={[styles.count, { color: textColor }, countStyle]}>
+              {count}
+            </Text>
+          )}
       </Animated.View>
     </Pressable>
   )
@@ -80,6 +97,8 @@ export const MessageReactions = <TMessage extends IMessage = IMessage>(
     reactionCountStyle,
     trailing,
     hasContentAbove = false,
+    getUser,
+    isGroupChat = false,
   } = props
 
   const theme = useTheme()
@@ -93,14 +112,23 @@ export const MessageReactions = <TMessage extends IMessage = IMessage>(
   const chosenText = position === 'right' ? theme.colors.outgoingReactionTextChosen : theme.colors.incomingReactionTextChosen
   const unchosenBackground = multiplyAlpha(accent, UNCHOSEN_ALPHA)
 
-  const pills = reactions.map(reaction => {
+  // Avatars replace the counts only when every reactor is known, so a pill never mixes the two.
+  const reactionCount = reactions.reduce((total, reaction) => total + reaction.userIds.length, 0)
+  const reactorsByEmoji = getUser && (!isGroupChat || reactionCount <= MAX_AVATARS)
+    ? reactions.map(reaction => reaction.userIds.map(getUser))
+    : null
+  const canShowAvatars = !!reactorsByEmoji && reactorsByEmoji.every(users => users.every(Boolean))
+
+  const pills = reactions.map((reaction, index) => {
     const isChosen = currentUserId != null && reaction.userIds.includes(currentUserId)
+    const avatars = canShowAvatars ? (reactorsByEmoji![index] as User[]).slice(-MAX_AVATARS).reverse() : undefined
 
     return (
       <ReactionPill
         key={reaction.emoji}
         emoji={reaction.emoji}
         count={reaction.userIds.length}
+        avatars={avatars}
         isChosen={isChosen}
         background={isChosen ? accent : unchosenBackground}
         textColor={isChosen ? chosenText : unchosenText}
@@ -161,6 +189,27 @@ const createStyles = (theme: ChatTheme) =>
     // 8 + 20 + 4 + count + 8.
     pillWithCount: {
       paddingRight: 8,
+    },
+    // 8 + 20 + 6 + avatars + 3: the avatars sit as far from the end as from the top and bottom.
+    avatars: {
+      flexDirection: 'row',
+      marginLeft: 6,
+    },
+    avatar: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+    },
+    // Each next one overlaps the one before by a fifth.
+    avatarOverlap: {
+      marginLeft: -AVATAR_SIZE * 0.2,
+    },
+    avatarImage: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+    },
+    avatarText: {
+      fontSize: 8,
     },
     emoji: {
       width: 20,

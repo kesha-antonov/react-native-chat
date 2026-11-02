@@ -377,6 +377,53 @@ export const createMediaPlaybackController = (): MediaPlaybackController => {
 export const MediaPlaybackContext = createContext<MediaPlaybackController | null>(null)
 
 /**
+ * Inside the long-press copy of a message: the chat's playback, to show (never drive). The copy
+ * sits over its hidden original while the menu is open; its media mirrors what the original is
+ * playing, as Telegram's lifted message does, instead of starting a player of its own.
+ */
+export const LiftedPlaybackContext = createContext<MediaPlaybackController | null>(null)
+
+/**
+ * The horizontal shift of each grown round note, by its player key, so a lifted copy of it sits
+ * exactly over the original.
+ */
+export const noteGrowShifts = new Map<string, number>()
+
+// Media a lifted copy is showing, by player key. On Android a player draws into one view at a
+// time, so the hidden original lets go of it while the copy holds it, and takes it back after.
+const liftedMedia = new Set<string>()
+const liftedListeners = new Set<() => void>()
+const subscribeLifted = (listener: () => void) => {
+  liftedListeners.add(listener)
+  return () => {
+    liftedListeners.delete(listener)
+  }
+}
+
+/** A lifted copy started (or stopped) showing the media under `key`. */
+export const setMediaLifted = (key: string, isLifted: boolean) => {
+  if (isLifted)
+    liftedMedia.add(key)
+  else
+    liftedMedia.delete(key)
+  liftedListeners.forEach(listener => listener())
+}
+
+/** Whether a lifted copy is showing the media under `key`. */
+export const useIsMediaLifted = (key: string) => useSyncExternalStore(
+  subscribeLifted,
+  () => liftedMedia.has(key),
+  () => false
+)
+
+/** The chat's controller, or, inside a lifted copy, the one it mirrors. Read-only uses only. */
+const useReadablePlayback = () => {
+  const controller = useContext(MediaPlaybackContext)
+  const lifted = useContext(LiftedPlaybackContext)
+  return controller ?? lifted
+}
+
+/**
  * Registers a player for auto-play-next and returns the `onEnded` callback it
  * should fire when its note finishes on its own. A no-op outside a `Chat`, or
  * when the message id is unknown.
@@ -428,7 +475,7 @@ const noSubscription = () => () => {}
 
 /** Whether this message's round note is grown to play; false outside a `Chat`. */
 export const useIsNoteGrown = (messageId: string | number | undefined) => {
-  const controller = useContext(MediaPlaybackContext)
+  const controller = useReadablePlayback()
   return useSyncExternalStore(
     controller?.subscribeGrownNote ?? noSubscription,
     () => messageId != null && controller?.getGrownNote() === messageId,
@@ -459,7 +506,7 @@ export const useReportNoteGrown = (messageId: string | number | undefined, isGro
 
 /** How far this message's grown round note moved its right edge; 0 at rest. */
 export const useNoteTimeShift = (messageId: string | number | undefined) => {
-  const controller = useContext(MediaPlaybackContext)
+  const controller = useReadablePlayback()
   return useSyncExternalStore(
     controller?.subscribeGrownNote ?? noSubscription,
     () => messageId != null && controller?.getGrownNote() === messageId ? controller.getGrownTimeShift() : 0,

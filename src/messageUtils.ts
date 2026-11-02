@@ -3,8 +3,8 @@ import { IMessage, MessageReaction } from './Models'
 export interface ToggleReactionOptions {
   /**
    * How many different reactions one user may leave on a message. Picking another emoji past
-   * the limit replaces the oldest of the user's own. Pass `Infinity`
-   * to let a user add every emoji. Default 1.
+   * the limit replaces the oldest of the user's own. Default 3, Telegram's limit; pass `1` for
+   * one reaction each (a new pick replaces it), or `Infinity` for no limit.
    */
   maxPerUser?: number
 }
@@ -18,7 +18,7 @@ export function toggleReaction<TMessage extends IMessage> (
   messageId: TMessage['_id'],
   emoji: string,
   userId: string | number,
-  { maxPerUser = 1 }: ToggleReactionOptions = {}
+  { maxPerUser = 3 }: ToggleReactionOptions = {}
 ): TMessage[] {
   return messages.map(message => {
     if (message._id !== messageId)

@@ -1,7 +1,7 @@
 import React from 'react'
 import { StyleProp, TextStyle, ViewStyle } from 'react-native'
 
-import { IMessage, MessageReaction } from '../Models'
+import { IMessage, MessageReaction, User } from '../Models'
 
 /** Props passed to the reactions display: the built-in one draws pills inside the bubble, a custom `renderReactions` one renders below it */
 export interface MessageReactionsDisplayProps<TMessage extends IMessage> {
@@ -22,6 +22,10 @@ export interface MessageReactionsDisplayProps<TMessage extends IMessage> {
   trailing?: React.ReactNode
   /** Text sits above the pills, so they need no top inset of their own. */
   hasContentAbove?: boolean
+  /** Who a user id is, for the avatars a pill shows in place of its count (see `ReactionsProps.getUser`). */
+  getUser?: (userId: string | number) => User | undefined
+  /** A group chat shows reactors' avatars only while a message has three reactions or fewer. */
+  isGroupChat?: boolean
 }
 
 /** Props passed to the default (or custom) reaction-picker component shown on long-press */
@@ -83,6 +87,15 @@ export interface ReactionsProps<TMessage extends IMessage> {
    * reaction pill.  Toggle logic is left to the consumer.
    */
   onReactionPress?: (message: TMessage, emoji: string) => void
+  /**
+   * Who reacted, by user id. As in Telegram, a pill shows the reactors' avatars instead of a count
+   * in a one-to-one chat, and in a group while the message has three reactions or fewer - when
+   * every reactor is known. Defaults to the senders of the loaded messages (and you); pass your
+   * own to resolve people who have not written in them.
+   */
+  getUser?: (userId: string | number) => User | undefined
+  /** @internal Set by `Chat`. */
+  isGroupChat?: boolean
   /** Override the reactions-display component rendered below the bubble */
   renderReactions?: (props: MessageReactionsDisplayProps<TMessage>) => React.ReactNode
   /**

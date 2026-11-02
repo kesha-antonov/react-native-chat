@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useId, useRef, useState } from 'react'
 import { Keyboard, Platform, Pressable, StyleProp, StyleSheet, View, ViewStyle, useWindowDimensions } from 'react-native'
 import { GestureDetector, GestureStateManager, usePanGesture } from 'react-native-gesture-handler'
 import Animated, { cancelAnimation, Easing, ReduceMotion, SharedValue, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -14,10 +14,16 @@ import {
   transferLabel,
 } from './components/MediaLoader'
 import {
+  LiftedPlaybackContext,
+  MediaPlaybackController,
   StopReason,
   claimPlayback,
   detachRoundNoteFromRow,
+  noteGrowShifts,
   releasePlayback,
+  setMediaLifted,
+  useIsMediaLifted,
+  useIsNoteGrown,
   useIsNoteFloating,
   useMediaPlaybackController,
   useNotePlaybackOptions,
@@ -113,18 +119,35 @@ interface RoundNotePlayerProps {
   transcription?: string
 }
 
+// Inline (not round) video players, by message, so the long-press copy of a message shows the
+// player its original is playing instead of a fresh one stopped at the start.
+const inlineVideoPlayers = new Map<string, unknown>()
+
+const videoPlayerKey = (messageId: string | number | undefined, uri: string) =>
+  messageId != null ? `${String(messageId)}\u0000${uri}` : undefined
+
 // Only mounted when expo-video resolved, so the hooks below are always called
 // in a stable order.
-const ExpoVideoPlayer = ({ uri, style, videoProps }: InlinePlayerProps) => {
+const ExpoVideoPlayer = ({ uri, style, videoProps, playerKey }: InlinePlayerProps & { playerKey?: string }) => {
   const player = expoVideo.useVideoPlayer(uri, (p: any) => {
     p.loop = false
   })
   const VideoView = expoVideo.VideoView
+  useEffect(() => {
+    if (!playerKey)
+      return
+    inlineVideoPlayers.set(playerKey, player)
+    return () => {
+      if (inlineVideoPlayers.get(playerKey) === player)
+        inlineVideoPlayers.delete(playerKey)
+    }
+  }, [playerKey, player])
+  const isLifted = useIsMediaLifted(playerKey ?? '')
 
   return (
     <VideoView
       style={style}
-      player={player}
+      player={isLifted && Platform.OS === 'android' ? null : player}
       fullscreenOptions={{ enable: true }}
       allowsPictureInPicture
       nativeControls
@@ -646,7 +669,19 @@ const RoundNotePlayer = ({
   // it - even when it mounts again off screen - so the floating circle keeps
   // the picture; once that is gone the row attaches it again.
   const isFloating = useIsNoteFloating(messageId)
-  const viewPlayer = isFloating && Platform.OS === 'android' ? null : player
+  // The same while a long-press copy of this message shows the note over this (hidden) row.
+  const isLifted = useIsMediaLifted(playerKey)
+  const viewPlayer = (isFloating || isLifted) && Platform.OS === 'android' ? null : player
+  // Where the grown circle sits, for that copy to sit exactly over it.
+  useEffect(() => {
+    if (growShift)
+      noteGrowShifts.set(playerKey, growShift)
+    else
+      noteGrowShifts.delete(playerKey)
+  }, [growShift, playerKey])
+  useEffect(() => () => {
+    noteGrowShifts.delete(playerKey)
+  }, [playerKey])
 
   // Declared last so it runs after the cleanups above have released the claim
   // and cleared the bar: a note still current as its row unmounts keeps going,
@@ -885,6 +920,91 @@ const VideoTransferOverlay = ({ message }: { message: IMessage }) => {
   )
 }
 
+/**
+ * A round note inside the long-press copy of its message: the original's own player, at the size
+ * and place the original has, still playing - as Telegram's lifted message is. It only shows the
+ * player; it never claims playback or changes it, so the original carries on as if nothing
+ * happened when the menu closes.
+ */
+const MirroredRoundNote = ({
+  uri,
+  videoProps,
+  videoStyle,
+  noteSize,
+  playingNoteSize,
+  messageId,
+  isIncoming,
+  controller,
+}: Pick<RoundNotePlayerProps, 'uri' | 'videoProps' | 'videoStyle' | 'noteSize' | 'playingNoteSize' | 'messageId' | 'isIncoming'> & {
+  controller: MediaPlaybackController
+}) => {
+  const playerKey = videoPlayerKey(messageId, uri)!
+  const cache = controller.notePlayers
+  const [player] = useState(() => cache.get(playerKey, () => {
+    const created = expoVideo.createVideoPlayer(uri)
+    created.muted = true
+    return created
+  }))
+  useEffect(() => {
+    cache.retain(playerKey)
+    setMediaLifted(playerKey, true)
+    return () => {
+      setMediaLifted(playerKey, false)
+      cache.release(playerKey)
+    }
+  }, [cache, playerKey])
+
+  const isGrown = useIsNoteGrown(messageId)
+  const size = isGrown ? playingNoteSize : noteSize
+  const shift = isGrown ? noteGrowShifts.get(playerKey) ?? 0 : 0
+  const VideoView = expoVideo.VideoView
+
+  return (
+    <View style={isIncoming ? styles.noteColumnLeft : styles.noteColumnRight}>
+      <View style={[styles.noteWrapper, { transform: [{ translateX: shift }] }]}>
+        <View style={[styles.note, { width: size, height: size, borderRadius: size / 2 }, videoStyle]}>
+          <VideoView
+            style={StyleSheet.absoluteFill}
+            player={player}
+            fullscreenOptions={{ enable: false }}
+            allowsPictureInPicture={false}
+            nativeControls={false}
+            contentFit='cover'
+            {...videoProps}
+          />
+        </View>
+      </View>
+    </View>
+  )
+}
+
+/** An inline video inside the long-press copy of its message: the original's player, if mounted. */
+const MirroredInlineVideo = ({ uri, style, videoProps, playerKey }: InlinePlayerProps & { playerKey: string }) => {
+  const player = inlineVideoPlayers.get(playerKey)
+  useEffect(() => {
+    if (!player)
+      return
+    setMediaLifted(playerKey, true)
+    return () => setMediaLifted(playerKey, false)
+  }, [player, playerKey])
+
+  if (!player)
+    return <ExpoVideoPlayer uri={uri} style={style} videoProps={videoProps} />
+
+  const VideoView = expoVideo.VideoView
+  return (
+    <VideoView
+      style={style}
+      player={player}
+      fullscreenOptions={{ enable: true }}
+      allowsPictureInPicture
+      nativeControls
+      contentFit='cover'
+      {...videoProps}
+    />
+  )
+}
+
 export function MessageVideo<TMessage extends IMessage = IMessage> ({
   currentMessage,
   position = 'left',
@@ -893,6 +1013,8 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
   videoProps,
 }: Partial<MessageVideoProps<TMessage>>) {
   const { width, height } = useWindowDimensions()
+  // Inside a long-press copy: show what the original plays (see `MirroredRoundNote`).
+  const lifted = useContext(LiftedPlaybackContext)
   const shortSide = Math.min(width, height)
   const noteSize = shortSide * NOTE_SIZE_RATIO
   const playingNoteSize = shortSide - PLAYING_NOTE_INSET
@@ -917,29 +1039,44 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
     >
       {isExpoVideoAvailable && (!isNote || isRoundNotePlayerAvailable)
         ? isNote
-          ? (
-            <RoundNotePlayer
+          ? lifted && currentMessage?._id != null
+            ? (
+              <MirroredRoundNote
+                uri={uri}
+                videoProps={videoProps}
+                videoStyle={videoStyle}
+                noteSize={noteSize}
+                playingNoteSize={playingNoteSize}
+                messageId={currentMessage._id}
+                isIncoming={position === 'left'}
+                controller={lifted}
+              />
+            )
+            : (
+              <RoundNotePlayer
               // A new note in this bubble (the uri changed) gets a fresh player and state
               // rather than inheriting the previous one's.
-              key={`${String(currentMessage?._id)}:${uri}`}
-              uri={uri}
-              videoProps={videoProps}
-              videoStyle={videoStyle}
-              duration={currentMessage?.duration}
-              noteSize={noteSize}
-              playingNoteSize={playingNoteSize}
-              messageId={currentMessage?._id}
-              isIncoming={position === 'left'}
-              isMediaUnread={currentMessage?.isMediaUnread}
-              animateAppear={isFreshOutgoingNote(position, currentMessage?.createdAt)}
-              message={currentMessage}
-              isViewOnce={!!currentMessage?.isViewOnce}
-              transcription={currentMessage?.transcription}
-            />
-          )
+                key={`${String(currentMessage?._id)}:${uri}`}
+                uri={uri}
+                videoProps={videoProps}
+                videoStyle={videoStyle}
+                duration={currentMessage?.duration}
+                noteSize={noteSize}
+                playingNoteSize={playingNoteSize}
+                messageId={currentMessage?._id}
+                isIncoming={position === 'left'}
+                isMediaUnread={currentMessage?.isMediaUnread}
+                animateAppear={isFreshOutgoingNote(position, currentMessage?.createdAt)}
+                message={currentMessage}
+                isViewOnce={!!currentMessage?.isViewOnce}
+                transcription={currentMessage?.transcription}
+              />
+            )
           : (
             <View>
-              <ExpoVideoPlayer uri={uri} style={[styles.video, videoStyle]} videoProps={videoProps} />
+              {lifted && videoPlayerKey(currentMessage?._id, uri)
+                ? <MirroredInlineVideo uri={uri} style={[styles.video, videoStyle]} videoProps={videoProps} playerKey={videoPlayerKey(currentMessage?._id, uri)!} />
+                : <ExpoVideoPlayer uri={uri} style={[styles.video, videoStyle]} videoProps={videoProps} playerKey={videoPlayerKey(currentMessage?._id, uri)} />}
               {currentMessage && <VideoTransferOverlay message={currentMessage} />}
             </View>
           )

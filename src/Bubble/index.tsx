@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import {
   ImageStyle,
   Keyboard,
@@ -27,7 +27,7 @@ import { BubbleTail, GradientBubbleBackground } from '../components/BubbleBackgr
 import { ContextMenu } from '../components/ContextMenu'
 import { impactHaptic } from '../components/haptics'
 import { LinkPreviewCard, useLinkPreview } from '../components/LinkPreviewCard'
-import { MediaPlaybackContext, useNoteTimeShift } from '../components/mediaPlayback'
+import { LiftedPlaybackContext, MediaPlaybackContext, useNoteTimeShift } from '../components/mediaPlayback'
 import { BubbleHighlightTint, useMessageHighlightToken } from '../components/messageHighlight'
 import { PRESS_HOLD_MS } from '../components/messagePress'
 import { MessageReply } from '../components/MessageReply'
@@ -143,11 +143,16 @@ const LiftedBubble = ({
     }
   }, [onLiftChange])
 
+  // The copy must not drive playback (claim it, register notes, report a grown one), so it sees no
+  // controller; its media reads the chat's through `LiftedPlaybackContext` to mirror the original.
+  const playback = useContext(MediaPlaybackContext)
   return (
     <MediaPlaybackContext.Provider value={null}>
-      <View style={style}>
-        {children}
-      </View>
+      <LiftedPlaybackContext.Provider value={playback}>
+        <View style={style}>
+          {children}
+        </View>
+      </LiftedPlaybackContext.Provider>
     </MediaPlaybackContext.Provider>
   )
 }
@@ -952,6 +957,8 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       reactionActiveStyle: reactions?.reactionActiveStyle,
       reactionTextStyle: reactions?.reactionTextStyle,
       reactionCountStyle: reactions?.reactionCountStyle,
+      getUser: reactions?.getUser,
+      isGroupChat: reactions?.isGroupChat,
     }
   }, [currentMessage, position, props.user, reactions])
 

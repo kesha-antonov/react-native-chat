@@ -1223,7 +1223,7 @@ const handleReactionPress = useCallback((message: IChatMessage, emoji: string) =
 />
 ```
 
-`Chat.toggleReaction` (also exported as `toggleReaction`) returns a new array and leaves other messages untouched. A user has one reaction per message by default - picking another replaces it; pass `{ maxPerUser: Infinity }` (or any limit) as a fifth argument to allow more.
+`Chat.toggleReaction` (also exported as `toggleReaction`) returns a new array and leaves other messages untouched. A user can leave up to three different reactions on a message by default, as in Telegram - a fourth replaces their oldest; pass `{ maxPerUser: 1 }` as a fifth argument for one reaction each, or any other limit (`Infinity` for none).
 
 For a prototype, `useChatMessages({ initialMessages, user })` keeps the messages in local state and returns `chatProps` wired to sending, reactions, editing and deleting: `<Chat {...chatProps} />`.
 
@@ -1232,6 +1232,7 @@ For a prototype, `useChatMessages({ initialMessages, user })` keeps the messages
 - **`isEnabled`** _(Bool)_ - Enable emoji reactions; default is on whenever `onReactionPress` is passed
 - **`emojis`** _(String[])_ - Emojis shown in the quick picker (default `['👍', '❤️', '😂', '😮', '😢', '👎']`)
 - **`onReactionPress`** _(Function)_ - `(message, emoji) => void` called when an emoji is selected or a pill is tapped. Apply it with `Chat.toggleReaction`
+- **`getUser`** _(Function)_ - `(userId) => User | undefined`, who reacted. As in Telegram, a pill shows up to three reactors' avatars instead of a count in a one-to-one chat, and in a group while the message has three reactions or fewer, when every reactor is known. Defaults to the senders of the loaded messages (and you)
 - **`renderReactions`** _(Function)_ - Override the reactions-display component rendered below the bubble
 - **`renderReactionPicker`** _(Function)_ - Override the picker shown on long-press (use for a full emoji browser). It receives [`ReactionPickerProps`](src/Reactions/types.ts): `visible`, `message`, `emojis`, `onSelect`, `onDismiss`, `position`, the bubble's on-screen box (`pageX`, `pageY`, `bubbleWidth`, `bubbleHeight`), the two picker styles and:
   - **`messagePreview`** _(ReactNode, optional)_ - A copy of the pressed bubble to draw lifted above your backdrop at the bubble's box. While it is mounted the original bubble is hidden, so the message seems to rise out of the list; if you never render it, the original simply stays put. The easiest way to get the built-in look is to render the exported `ContextMenu` with `items={[]}` (see [Message actions](#message-actions-long-press-context-menu) for its props)

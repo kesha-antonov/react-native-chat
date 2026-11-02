@@ -28,6 +28,9 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - **`textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`**
 
 ### ✨ Features
+- **Reaction pills show who reacted**: up to three avatars in place of the count, as in Telegram - in one-to-one chats, and in groups while a message has three reactions or fewer. `reactions.getUser` resolves reactors (by default from the loaded messages); a count now shows even when it is 1
+- **A message can carry up to three reactions from one person** (Telegram's limit): `Chat.toggleReaction` keeps up to three of a user's reactions and replaces the oldest past that. Pass `{ maxPerUser: 1 }` for the previous one-each behaviour
+- **A round note keeps playing through a long-press**: the lifted message shows the note grown and playing, from the same player, instead of a stopped copy; the same goes for an inline video
 - **`TypingStatus`**: who is typing, for a chat header or list row: animated dots before "typing" / "Anna is typing" / "Anna and Max are typing", and its own animation and text for recording a note, sending media or choosing a sticker (`TypingAction`, `getTypingText`, `ChatListItem.typingAction`)
 - **Drafts**: `onDraftChange` reports the unsent text; editing a message sets the draft aside and restores it after saving or cancelling
 - **`ChatList`**: a ready chat list (search, selection actions, archive folder, swipe to archive, draggable pinned chats, unread counters, typing, drafts, loading placeholder) for your backend's chats (`ChatListItem`), plus `useChatList` for local state, `ChatListCell`, `ChatListAvatar`, `ChatListShimmer`, `theme.chatList` and new labels
@@ -59,6 +62,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- A tap outside the expanded emoji picker (or Android's back) folds it back into the reactions bar and leaves the menu open, as in Telegram for Android, instead of closing the menu
 - A chat opens with its messages already in place: on Android the rows used to slide into position each time a chat opened, as the list corrected its estimated row heights
 - **A custom `renderChatEmpty` was drawn upside down** in the default inverted list (and mirrored on Android); it is flipped back the way the list flips its rows
 - **Streamed markdown replies show their words as they arrive.** With `react-native-streamdown`, a reply that grew every few milliseconds showed only the cursor until it ended (each new text dropped the previous one's rendering); the text now reaches it at most every 250ms
