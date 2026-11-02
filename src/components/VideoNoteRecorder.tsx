@@ -157,13 +157,13 @@ function RecorderChrome ({
   const shutterGesture = usePanGesture({
     enabled: !isDisabled,
     onBegin: () => {
-      if (lockedSV.value > 0)
+      if (lockedSV.get() > 0)
         return
 
       runOnJS(onStart)()
     },
     onUpdate: event => {
-      if (lockedSV.value > 0)
+      if (lockedSV.get() > 0)
         return
 
       const x = Math.max(-cancelThreshold, Math.min(0, event.translationX))
@@ -173,7 +173,7 @@ function RecorderChrome ({
 
       // Same rule as the record button: releasing past 55% of the slide cancels.
       const armed = x <= -cancelThreshold * 0.55 ? 1 : 0
-      if (armed !== cancelArmed.value) {
+      if (armed !== cancelArmed.get()) {
         cancelArmed.set(armed)
         runOnJS(setIsCancelArmed)(armed > 0)
       }
@@ -187,7 +187,7 @@ function RecorderChrome ({
     },
     onFinalize: () => {
       // Locked: the finger lifts but recording continues.
-      if (lockedSV.value > 0) {
+      if (lockedSV.get() > 0) {
         translateX.set(withTiming(0, { duration: 150 }))
         translateY.set(withTiming(0, { duration: 150 }))
         cancelArmed.set(0)

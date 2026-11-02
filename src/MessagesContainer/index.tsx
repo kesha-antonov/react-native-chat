@@ -369,6 +369,32 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   // list pins it natively while its day scrolls under it (`stickyHeaderIndices`).
   const { items: listItems, dayIndices } = useMemo(() => withDayItems(orderedData), [orderedData])
 
+  // Only the pinned day and its neighbours are sticky: the next one pushes it off, the previous
+  // one takes over when scrolling back. The list keeps a container per sticky item and
+  // re-renders every one of them, rebuilding its UI-thread style, each time a row is measured -
+  // in a long chat that was a dozen and more containers on every frame of a fling. The window
+  // follows the pinned day by its key, so days loading above it do not move it.
+  const [pinnedDayId, setPinnedDayId] = useState<string | undefined>(undefined)
+  const stickyIndices = useMemo(() => {
+    if (!isDayAnimationEnabled || dayIndices.length === 0)
+      return undefined
+    const pinned = pinnedDayId == null ? -1 : dayIndices.findIndex(index => listItems[index]._id === pinnedDayId)
+    // Before the list reports one, it opens at the newest day.
+    const center = pinned >= 0 ? pinned : dayIndices.length - 1
+    return dayIndices.slice(Math.max(0, center - 1), center + 2)
+  }, [isDayAnimationEnabled, dayIndices, listItems, pinnedDayId])
+  const onPinnedIndex = useCallback((index: number) => {
+    const item = listItems[index]
+    if (item && isDayItem(item))
+      setPinnedDayId(item._id)
+  }, [listItems])
+  useAnimatedReaction(
+    () => activeStickyIndex.get(),
+    (index, previous) => {
+      if (index >= 0 && index !== previous)
+        runOnJS(onPinnedIndex)(index)
+    })
+
   // A chat with unread messages opens on its "Unread Messages" bar, at the top of the screen,
   // and one without them at the newest message. Decided once, when the list first renders.
   const [initialScroll] = useState(() => {
@@ -482,7 +508,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     // The list follows a new message with an animated scroll, so the distance is not back to 0
     // yet when it lands; whether the list is following the end is what says it was seen.
     const state = listState()
-    const isAtNewest = state ? state.isFollowingEnd || state.isNearEnd : distanceFromNewestSV.value <= NEWEST_SLOP
+    const isAtNewest = state ? state.isFollowingEnd || state.isNearEnd : distanceFromNewestSV.get() <= NEWEST_SLOP
     if (isFromMe || isAtNewest) {
       unreadIdsRef.current.clear()
       setUnreadCount(0)
@@ -714,7 +740,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const onContentSizeChange = useCallback((_width: number, height: number) => {
     contentHeight.set(height)
     // The space holding a short chat at the bottom makes its content exactly as tall as the list.
-    const isShort = height <= listHeight.value + 1
+    const isShort = height <= listHeight.get() + 1
     setIsContentShort(previous => previous === isShort ? previous : isShort)
   }, [contentHeight, listHeight])
   const onMetricsChange = useCallback((metrics: { footerSize: number }) => {
@@ -781,7 +807,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       data={listItems as TMessage[]}
       renderItem={renderItem}
       getItemType={getItemType}
-      stickyHeaderIndices={isDayAnimationEnabled ? dayIndices : undefined}
+      stickyHeaderIndices={stickyIndices}
       stickyHeaderConfig={STICKY_DAY_CONFIG}
       estimatedItemSize={64}
       // Oldest first, top to bottom: no inverted list, no flipped rows.
@@ -815,7 +841,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       viewabilityConfigCallbackPairs={viewabilityPairs}
       onLayout={onLayoutList}
     />
-  ), [forwardRef, keyExtractor, listItems, renderItem, getItemType, isDayAnimationEnabled, dayIndices, alignItemsAtEnd, isLayoutAnimated, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, onScrollBeginDrag, onScrollEndDrag, onMomentumScrollBegin, onMomentumScrollEnd, onContentSizeChange, onItemSizeChanged, onMetricsChange, viewabilityPairs, onLayoutList])
+  ), [forwardRef, keyExtractor, listItems, renderItem, getItemType, stickyIndices, alignItemsAtEnd, isLayoutAnimated, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, onScrollBeginDrag, onScrollEndDrag, onMomentumScrollBegin, onMomentumScrollEnd, onContentSizeChange, onItemSizeChanged, onMetricsChange, viewabilityPairs, onLayoutList])
 
   const list = (
     <View

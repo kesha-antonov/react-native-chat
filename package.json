@@ -50,7 +50,7 @@
   ],
   "scripts": {
     "typecheck": "yarn tsc --noEmit",
-    "build": "rm -rf lib && yarn tsc --emitDeclarationOnly && yarn babel src --out-dir lib --extensions .ts,.tsx --config-file ./babel.build.cjs --no-babelrc --ignore 'src/__tests__/**' --source-maps --quiet",
+    "build": "rm -rf lib && yarn tsc --emitDeclarationOnly && yarn babel src --out-dir lib --extensions .ts,.tsx --config-file ./babel.build.cjs --no-babelrc --ignore 'src/__tests__/**' --source-maps --quiet && node scripts/check-compiled.cjs",
     "tsc:watch": "yarn typecheck --watch",
     "lint": "yarn eslint src example",
     "lint:fix": "yarn eslint --cache --fix src example",

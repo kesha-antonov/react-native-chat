@@ -108,8 +108,10 @@ Style is enforced by ESLint (`@stylistic`), so run `yarn lint:fix` rather than m
 and the build fails on a component it cannot compile (see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 for the rules the library is built to). ESLint runs the compiler's own checks over `src/`. In practice:
 
-- shared values from JS code (effects, handlers, render) are read with `.get()` and written with
-  `.set()`, not `.value`
+- shared values from JS code (effects, handlers, gesture-hook configs) are read with `.get()` and
+  written with `.set()`, not `.value`: the compiler turns a `.value` read inside a callback into
+  a memo dependency and reads it on every render, and the build fails when it finds one
+  (`scripts/check-compiled.cjs`)
 - no `ref.current` reads during render, and no "latest value" writes in the render body - write
   the ref in a `useLayoutEffect` (or `useInsertionEffect` when another layout effect reads it)
 - no `eslint-disable` of `react-hooks` rules: one suppression makes the compiler skip the whole

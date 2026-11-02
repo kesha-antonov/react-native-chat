@@ -56,7 +56,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - New theme tokens, icons, exports (`ChatEmpty`, `countEmojiOnly`, `findFirstUrl`, `formatFileSize`...) and labels in all 15 locales
 
 ### ⚡ Performance
-- **The pinned day date costs no JavaScript while scrolling**: the list pins and pushes the date items on the UI thread. Gone are a position listener per day, a copy of every day's position on each change, a JS re-render on every day change and a worklet per inline date
+- **The pinned day date costs no JavaScript while scrolling**: the list pins and pushes the date items on the UI thread. Gone are a position listener per day, a copy of every day's position on each change, a JS re-render on every day change and a worklet per inline date. Only the pinned day and its neighbours are sticky at a time: the list re-renders every sticky container whenever a row is measured, and in a long chat that was a dozen and more of them on each frame of a fling
 - **Rows render only what changed.** Each row subscribes to its own message by id: a send, a status tick, a reaction or a streamed token re-renders that row (plus a neighbour only when grouping changes), while the list and the composer stay put. Shared row props reach rows through a context kept stable between renders: inline event handlers go through stable proxies and inline style/config objects are compared by content, so only a new render function re-renders every row. On a Pixel 7 debug build a send went from three ~220ms commits re-rendering all 17 visible rows to ~60–110ms commits touching only the new row; a status change is a ~30ms commit of one row
 - **The screen gradient costs less per frame**: each outgoing bubble now slides its gradient with one worklet (a derived value in between doubled the work), and its tail's colour is snapped to 20 steps so the SVG only redraws when the colour changes. Fling jank in a 60-day chat on a Pixel 7: 19-21% (FlatList with the same gradient: 33-47%)
 - The composer is memoized and no longer receives `messages`, so incoming messages and status changes no longer re-render it
@@ -72,6 +72,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- Reanimated no longer warns "Reading from `value` during component render" while scrolling a chat or recording a round note in an app that uses the React Compiler: three callbacks read shared values with `.value`, which the compiler turns into render-time reads
 - A shown photo no longer announces "cancel download" to screen readers on Android
 - **A photo grouped under its sender's previous message poked past the bubble's corner**: in a group chat its top corners took the 4pt radius meant for a photo under the sender's name, though no name is drawn there, so the photo's corner showed outside the bubble's 17pt curve. The corners now follow whether a name is actually shown
 - **`ChatList` avatars and photo thumbnails that fail to load** no longer leave a blank circle or an empty gap before "Photo": the avatar falls back to the initials and the thumbnail is dropped. `getInitials` no longer throws on a chat without a title
