@@ -5,6 +5,7 @@ import { Chat, FetchLinkPreview, IMessage, LinkMatcher, LinkPreview } from '@kes
 import { setStringAsync } from 'expo-clipboard'
 import { isValidPhoneNumber, parsePhoneNumberWithError } from 'libphonenumber-js'
 import { photo } from '@/constants/photos'
+import { useDemoSend } from './useDemoSend'
 
 // A stand-in for a server that reads a page's Open Graph tags; a real app would call its backend
 // here (fetching pages straight from the device runs into CORS on web and leaks the user's IP).
@@ -139,9 +140,7 @@ const LinksExample: React.FC = () => {
     name: 'Developer',
   }), [])
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   const getValidPhoneNumber = useCallback((text: string): string | undefined => {
     const cleaned = text.replace(/[\-\(\)\s\.]/g, '')

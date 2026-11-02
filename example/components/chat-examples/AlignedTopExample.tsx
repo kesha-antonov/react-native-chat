@@ -3,6 +3,7 @@ import { StyleSheet, TextInput, View } from 'react-native'
 import { Bubble, BubbleProps, Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
 import { OptionChips } from './OptionChips'
+import { useDemoSend } from './useDemoSend'
 
 type AlignMode = 'bottom' | 'top' | 'auto'
 
@@ -42,9 +43,7 @@ export default function AlignedTopExample () {
   const [isTallBubbleEnabled, setIsTallBubbleEnabled] = useState(false)
   const [isCustomToolbarEnabled, setIsCustomToolbarEnabled] = useState(false)
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   // Reproduces the bubble padding from
   // https://github.com/FaridSafi/react-native-gifted-chat/issues/2617 - three messages

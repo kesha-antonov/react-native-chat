@@ -1,7 +1,8 @@
-import React, { useCallback, useState } from 'react'
+import React, { useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
 import messagesData from '../../example-expo/data/messages'
+import { useDemoSend } from './useDemoSend'
 
 const USER = { _id: 1, name: 'Developer' }
 
@@ -10,9 +11,7 @@ const USER = { _id: 1, name: 'Developer' }
 export default function ReplyExample () {
   const [messages, setMessages] = useState<IMessage[]>(messagesData)
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   return (
     <Chat

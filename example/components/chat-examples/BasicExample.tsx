@@ -3,6 +3,7 @@ import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
 import earlierMessages from '../../example-expo/data/earlierMessages'
 import messagesData from '../../example-expo/data/messages'
+import { useDemoSend } from './useDemoSend'
 
 const USER = { _id: 1, name: 'Developer' }
 
@@ -13,9 +14,7 @@ export default function BasicExample () {
   const [messages, setMessages] = useState<IMessage[]>(messagesData)
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   const onPressLoadEarlierMessages = useCallback(() => {
     setIsLoadingEarlier(true)

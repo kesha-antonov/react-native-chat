@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react'
 import { Alert } from 'react-native'
 import { Chat, IMessage, MessageMenuItem } from '@kesha-antonov/react-native-chat'
 import Info from 'lucide-react-native/icons/info'
+import { useDemoSend } from './useDemoSend'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Bot' }
@@ -15,9 +16,7 @@ const INITIAL_MESSAGES: IMessage[] = [
 export default function ContextMenuExample () {
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previous => Chat.append(previous, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   const onReactionPress = useCallback((message: IMessage, emoji: string) => {
     setMessages(previous => Chat.toggleReaction(previous, message._id, emoji, USER._id))

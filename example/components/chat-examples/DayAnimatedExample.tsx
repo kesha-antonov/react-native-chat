@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { useDemoSend } from './useDemoSend'
 
 // Generates a labelled chat spanning several days so the floating/animated day
 // header and the inline day separators can be exercised. Each "day" is a fixed
@@ -44,9 +45,7 @@ export default function DayAnimatedExample () {
   const [oldestDayOffset, setOldestDayOffset] = useState(INITIAL_DAYS - 1)
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   const onPressLoadEarlierMessages = useCallback(() => {
     setIsLoadingEarlier(true)

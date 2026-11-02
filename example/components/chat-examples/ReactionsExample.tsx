@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
 import messagesData from '../../example-expo/data/messages'
+import { useDemoSend } from './useDemoSend'
 
 const USER = { _id: 1, name: 'Developer' }
 // The quick bar's emojis are yours to pick; the chevron after them opens the built-in full
@@ -11,9 +12,7 @@ const QUICK_REACTIONS = ['🔥', '🎉', '😍', '🤯', '👏', '🙏', '💯']
 export default function ReactionsExample () {
   const [messages, setMessages] = useState<IMessage[]>(messagesData)
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   // Reactions live in your messages, so toggling one is yours too: `Chat.toggleReaction`
   // adds or removes the current user's pick (one per user).

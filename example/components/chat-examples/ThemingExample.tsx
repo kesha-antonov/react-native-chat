@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Chat, ChatIcons, IMessage, PartialChatTheme } from '@kesha-antonov/react-native-chat'
 
 import { OptionChips } from './OptionChips'
+import { useDemoSend } from './useDemoSend'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Theme Bot' }
@@ -85,9 +86,7 @@ export default function ThemingExample () {
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
   const [presetId, setPresetId] = useState('default')
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previous => Chat.append(previous, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   const activePreset = useMemo(() => PRESETS.find(p => p.id === presetId) ?? PRESETS[0], [presetId])
 

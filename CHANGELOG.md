@@ -121,6 +121,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10; TypeScript stays on 6.0 and Babel on 7 (see AGENTS.md)
 
 ### 📲 Example app
+- Messages you send in the demo screens go through Telegram's states, voice notes and files included: a clock while sending, one check once sent, two once read (`useDemoSend`). Before, only the Chats tab did, so most demos showed sent messages with no status at all
 - Demo photos come from Unsplash's image CDN instead of picsum.photos, which answers "Geoblocked" in some regions and left the demo's photos, link previews and photo avatars blank there
 - Chats: tapping a chat's avatar or name opens its profile, as in Telegram: the photo, name and status, Message / Mute / Call, a username, a bot's description or a group's members, and the media, files and links shared in the chat
 - Archived Chats opens as a screen of its own, as in Telegram, through `ChatList`'s controlled `isArchiveOpen`

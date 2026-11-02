@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { useDemoSend } from './useDemoSend'
 
 /**
  * Minimal chat screen, exactly as reported in issue #11: the app mounts
@@ -24,9 +25,7 @@ export default function KeyboardProviderExample () {
 
   const user = useMemo(() => ({ _id: 1 }), [])
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previousMessages => Chat.append(previousMessages, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   return (
     <View style={styles.container}>

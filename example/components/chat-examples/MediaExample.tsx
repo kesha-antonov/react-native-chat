@@ -1,5 +1,6 @@
-import React, { useCallback, useState } from 'react'
+import React, { useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { useDemoSend } from './useDemoSend'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Media Bot' }
@@ -73,9 +74,7 @@ const VIDEO_RECORDING = { maxDuration: 30 }
 export default function MediaExample () {
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    setMessages(previous => Chat.append(previous, newMessages))
-  }, [])
+  const onSend = useDemoSend(setMessages)
 
   // Playback works out of the box with the optional peers installed: expo-audio for voice,
   // expo-video for video and round notes, expo-sharing to open files.
