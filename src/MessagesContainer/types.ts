@@ -93,7 +93,7 @@ export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
   typingIndicatorStyle?: StyleProp<ViewStyle>
   /** Whether incoming messages leave room for an avatar; the typing bubble lines up with them */
   isAvatarVisible?: boolean
-  /** Enable animated day label that appears on scroll; default is true */
+  /** Pin each day's date at the top while its messages scroll under it; default is true */
   isDayAnimationEnabled?: boolean
   /** Reply functionality configuration */
   reply?: ReplyProps<TMessage>
@@ -106,15 +106,4 @@ export interface State {
   hasScrolled: boolean
 }
 
-interface ViewLayout {
-  x: number
-  y: number
-  width: number
-  height: number
-}
 
-// `dayKey` is the local calendar day as a sortable integer (YYYYMMDD-ish). It is
-// computed once, on the JS side, where a Date is already in hand - the worklet that
-// compares entries runs on every cell layout, and constructing Dates there to compare
-// them allocated two objects per entry per layout.
-export type DaysPositions = { [key: string]: ViewLayout & { createdAt: number, dayKey: number } }

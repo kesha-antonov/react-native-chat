@@ -13,9 +13,8 @@ export interface DayProps {
   /** Props to pass to the Text component (e.g., style, allowFontScaling, numberOfLines) */
   textProps?: Partial<TextProps>
   /**
-   * `true` when rendered as the floating/animated day header that sticks to the
-   * top while scrolling, `false`/`undefined` for the inline day separators.
-   * Use this in a custom `renderDay` to give the floating header a different look.
+   * @deprecated Always `false`: the date pinned at the top while scrolling is the separator
+   * itself, pinned by the list, not a second header.
    */
   isAnimated?: boolean
 }

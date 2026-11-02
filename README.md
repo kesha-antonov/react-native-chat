@@ -833,10 +833,10 @@ Avatars and sender names show in group chats only: a one-to-one chat has neither
   />
   ```
 
-  `isAnimated` is `true` for the floating header that sticks to the top while scrolling and `false` for the inline separators, so one function can style them differently.
+  The pinned date at the top is the same separator, pinned by the list, so one style serves both (`isAnimated` is always `false`).
 - **`renderTime`** _(Component | Function)_ - Custom time inside a message
 - **`timeTextStyle`** _(Object)_ - Custom text style for time inside messages (supports left/right styles)
-- **`isDayAnimationEnabled`** _(Bool)_ - Enable animated day label that appears on scroll; default is `true`
+- **`isDayAnimationEnabled`** _(Bool)_ - Pin each day's date at the top while its messages scroll under it, the next day's pushing it off, shown while scrolling and faded out at rest; default is `true`. Off, dates are plain separators
 
 ### System Messages
 

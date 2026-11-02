@@ -1,8 +1,7 @@
 import { useCallback } from 'react'
 import { runOnJS, useAnimatedReaction, useSharedValue, withTiming } from 'react-native-reanimated'
-import { DAY_DEBUG } from './debug'
 
-// The floating date fades in over 150ms while scrolling and out over 150ms after
+// The pinned date fades in over 150ms while scrolling and out over 150ms after
 // 1000ms of idle.
 const FADE_IN_DURATION = 150
 const FADE_OUT_DURATION = 150
@@ -21,13 +20,13 @@ export function useScrollGatedOpacity (isScrollActive: { value: boolean }) {
   const fadeOut = useCallback(() => {
     'worklet'
 
-    opacity.set(withTiming(0, { duration: FADE_OUT_DURATION * DAY_DEBUG.timeScale }))
+    opacity.set(withTiming(0, { duration: FADE_OUT_DURATION }))
   }, [opacity])
 
   const scheduleFadeOut = useCallback(() => {
     clearTimeout(fadeOutTimeoutId.get())
 
-    fadeOutTimeoutId.set(setTimeout(fadeOut, FADE_OUT_DELAY * DAY_DEBUG.timeScale))
+    fadeOutTimeoutId.set(setTimeout(fadeOut, FADE_OUT_DELAY))
   }, [fadeOut, fadeOutTimeoutId])
 
   useAnimatedReaction(
@@ -38,7 +37,7 @@ export function useScrollGatedOpacity (isScrollActive: { value: boolean }) {
 
       if (active) {
         clearTimeout(fadeOutTimeoutId.get())
-        opacity.set(withTiming(1, { duration: FADE_IN_DURATION * DAY_DEBUG.timeScale }))
+        opacity.set(withTiming(1, { duration: FADE_IN_DURATION }))
       } else {
         runOnJS(scheduleFadeOut)()
       }

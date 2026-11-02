@@ -3,7 +3,7 @@ import { ChatTheme } from '../Theme'
 
 // The date pill: 14 Medium white on the service color, radius 11,
 // 8 either side and 3 above and below the line. The cell leaves 7 to the bubbles around it.
-// Keep `marginTop` in step with `DAY_MARGIN_TOP` (MessagesContainer/components/dayLayout).
+// A pinned date's row sits 9 below the list's top, so its pill pins at 10 (STICKY_DAY_CONFIG).
 export const createDayStyles = (theme: ChatTheme) =>
   StyleSheet.create({
     container: {

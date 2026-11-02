@@ -1,120 +1,27 @@
-import React, { useContext, useMemo } from 'react'
+import React, { useContext } from 'react'
 import { View } from 'react-native'
-import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated'
 import { UnreadSeparator } from '../../../components/UnreadSeparator'
-import { Day } from '../../../Day'
 import { Message, MessageProps } from '../../../Message'
 import { IMessage } from '../../../Models'
-import { isSameDay } from '../../../utils'
 import { MessageRowConfigContext } from '../../rowConfig'
 import { useRowEntry } from '../../rowStore'
-import { DAY_HANDOFF_OFFSET, dayPositionScreenTop, findDayPosition } from '../dayLayout'
 import { ItemProps } from './types'
 
 export * from './types'
 
-const DayWrapper = <TMessage extends IMessage>(props: MessageProps<TMessage>) => {
-  const {
-    renderDay: renderDayProp,
-    currentMessage,
-    previousMessage,
-  } = props
-
-  if (!currentMessage?.createdAt || isSameDay(currentMessage, previousMessage))
-    return null
-
-  const {
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    containerStyle,
-    onMessageLayout,
-    /* eslint-enable @typescript-eslint/no-unused-vars */
-    ...rest
-  } = props
-
-  return (
-    <View>
-      {
-        renderDayProp
-          ? renderDayProp({ ...rest, createdAt: currentMessage.createdAt, isAnimated: false })
-          : <Day {...rest} createdAt={currentMessage.createdAt} isAnimated={false} />
-      }
-    </View>
-  )
-}
-
-const AnimatedDayWrapper = <TMessage extends IMessage>(props: ItemProps<TMessage>) => {
-  const {
-    scrolledY,
-    daysPositions,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    listHeight: _listHeight,
-    floatingRenderedDate,
-    floatingDayOpacity,
-    ...rest
-  } = props
-
-  const createdAt = useMemo(() =>
-    new Date(props.currentMessage.createdAt).getTime()
-  , [props.currentMessage.createdAt])
-
-  // This day's measured position. Deliberately derived from `daysPositions` alone and
-  // NOT from `scrolledY`: the lookup is an O(days) scan that allocates (Object.values),
-  // and reading scroll here would re-run it once per mounted row on every frame. Cell
-  // layout is the only thing that can change the answer, so that is what it tracks.
-  const dayPosition = useDerivedValue(() =>
-    findDayPosition(daysPositions.value, createdAt))
-
-  const style = useAnimatedStyle(() => {
-    // The inline separator is the in-conversation date marker. It is shown while its
-    // day is below the handoff line, and hidden once its day is the one the floating
-    // header is actually rendering at the pin - a hard step (no fade) so the date
-    // goes floating(1) <-> inline(1) at the same pixel with no dip and no duplicate.
-    //
-    // Hiding on `floatingRenderedDate` (the header's *rendered* date) rather than on
-    // position alone is what kills the 1-frame flash when scrolling into a newer day:
-    // the worklet picks the new stuck day instantly but the header's text only
-    // updates ~1 frame later on the JS thread; until it does, this inline separator
-    // stays up and shows the correct date, so the header never flashes the old one.
-    // Only the arithmetic is per-frame; the lookup it needs was resolved at layout.
-    // Infinity (treated as below the pin, i.e. visible) until the day is measured.
-    const day = dayPosition.value
-    const separatorScreenTop = day
-      ? dayPositionScreenTop(scrolledY.value, day)
-      : Infinity
-
-    const belowHandoff = separatorScreenTop > DAY_HANDOFF_OFFSET
-    const headerShowsThisDay = floatingRenderedDate != null && floatingRenderedDate.value === createdAt
-
-    if (belowHandoff || !headerShowsThisDay)
-      return { opacity: 1 }
-
-    // Past the line the header stands in for this separator - but only while it is
-    // showing. At rest it fades out (the floating date hides when idle), and the
-    // separator fades back in where it really is; otherwise a list that settles with a
-    // date just under the top - or that a growing row nudges past the line - shows none.
-    return {
-      opacity: floatingDayOpacity ? 1 - floatingDayOpacity.value : 0,
-    }
-  })
-
-  return (
-    <Animated.View style={style}>
-      <DayWrapper<TMessage> {...rest as MessageProps<TMessage>} />
-    </Animated.View>
-  )
-}
-
 const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) => {
   const {
     renderMessage: renderMessageProp,
-    isDayAnimationEnabled,
     reply,
     firstUnreadMessageId,
     renderUnreadSeparator,
     /* eslint-disable @typescript-eslint/no-unused-vars */
+    // The list's own values, for the day rows: no message reads them.
+    isDayAnimationEnabled: _isDayAnimationEnabled,
     scrolledY: _scrolledY,
-    daysPositions: _daysPositions,
     listHeight: _listHeight,
+    floatingDayOpacity: _floatingDayOpacity,
+    activeStickyIndex: _activeStickyIndex,
     /* eslint-enable @typescript-eslint/no-unused-vars */
     ...rest
   } = props
@@ -133,26 +40,15 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
     } : undefined,
   }
 
-  // A day separator belongs only to the first message of its day. Deciding that here, rather than
-  // inside the wrappers, is what keeps `AnimatedDayWrapper` off the other rows: it runs a
-  // useDerivedValue and a useAnimatedStyle, so mounting it around every row put two UI-thread
-  // worklets on each message on screen - roughly six out of seven of them to render null.
-  const isDayBoundary = props.currentMessage?.createdAt != null &&
-    !isSameDay(props.currentMessage, props.previousMessage)
-
-  // The unread bar is a row of its own right above the first unread message, under its
-  // date if it opens a day.
+  // The unread bar sits right above the first unread message, under its day's date (a row of
+  // the list of its own, see `withDayItems`).
   const isFirstUnread = firstUnreadMessageId != null && props.currentMessage._id === firstUnreadMessageId
   const unreadSeparator = isFirstUnread
     ? renderUnreadSeparator === undefined ? <UnreadSeparator /> : renderUnreadSeparator?.()
     : null
 
   return (
-    // do not remove key. it helps to get correct position of the day container
-    <View key={props.currentMessage._id.toString()}>
-      {isDayBoundary && (isDayAnimationEnabled
-        ? <AnimatedDayWrapper<TMessage> {...props} />
-        : <DayWrapper<TMessage> {...messageProps as MessageProps<TMessage>} />)}
+    <View>
       {unreadSeparator}
       {
         renderMessageProp

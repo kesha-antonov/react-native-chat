@@ -18,17 +18,17 @@ import { LoadEarlierMessages } from '../LoadEarlierMessages'
 import { IMessage } from '../Models'
 import stylesCommon from '../styles'
 import { TypingIndicator, TypingIndicatorListAnimationContext } from '../TypingIndicator'
-import { isSameDay } from '../utils'
-import { DayAnimated } from './components/DayAnimated'
-import { useScrollGatedOpacity } from './components/DayAnimated/useScrollGatedOpacity'
+import { DayRow } from './components/DayRow'
 import { MessageRow } from './components/Item'
 import { PageDownCounter } from './components/PageDownCounter'
+import { useScrollGatedOpacity } from './components/useScrollGatedOpacity'
+import { isDayItem, withDayItems } from './dayItems'
 import { listCellTransition } from './listTransitions'
 import { PageDownReturnContext } from './pageDownReturn'
 import { MessageRowConfigContext, useStableRowConfig } from './rowConfig'
 import { MessageRowStore, MessageRowStoreContext, sameOrder } from './rowStore'
 import styles, { createThemedStyles } from './styles'
-import { MessagesContainerProps, DaysPositions } from './types'
+import { MessagesContainerProps } from './types'
 
 
 const LAYOUT_SETTLE_MS = 500
@@ -70,6 +70,9 @@ const overshoot = (tension: number) => (t: number) => {
 }
 const SCROLL_BUTTON_PRESS_IN = { duration: 80 }
 const SCROLL_BUTTON_PRESS_OUT = { duration: 350, easing: overshoot(2) }
+// A pinned date sits 9pt below the list's top, its pill (1pt into the row) at 10, where the
+// floating header used to pin it.
+const STICKY_DAY_CONFIG = { offset: 9 }
 
 type ViewableItemsChanged = NonNullable<ViewabilityConfigCallbackPair['onViewableItemsChanged']>
 
@@ -90,7 +93,7 @@ function createViewabilityRelay (
     const ids: (string | number)[] = []
     for (const token of viewableItems) {
       const id = (token.item as IMessage | undefined)?._id
-      if (id != null)
+      if (id != null && !isDayItem(token.item))
         ids.push(id)
     }
     mediaController?.setViewableMessages(ids)
@@ -130,7 +133,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     renderLoadEarlier: renderLoadEarlierProp,
     forwardRef,
     scrollToBottomComponent: scrollToBottomComponentProp,
-    renderDay: renderDayProp,
     isDayAnimationEnabled = true,
     firstUnreadMessageId,
   } = props
@@ -206,12 +208,13 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     ],
   }))
 
-  const daysPositions = useSharedValue<DaysPositions>({})
   const listHeight = useSharedValue(0)
   const contentHeight = useSharedValue(0)
   // The list's scroll offset, from the top, kept on the UI thread by the list itself.
   const scrollOffset = useSharedValue(0)
-  const sharedValues = useMemo(() => ({ scrollOffset }), [scrollOffset])
+  // Which day's pill the list has pinned at the top, for its fade at rest (see DayRow).
+  const activeStickyIndex = useSharedValue(-1)
+  const sharedValues = useMemo(() => ({ scrollOffset, activeStickyIndex }), [scrollOffset, activeStickyIndex])
   // Rows' positions count from the first row; the scroll offset counts from the very top, above
   // the list's header ("Load earlier") and, in a conversation shorter than the list, the space
   // that holds it at the bottom. The rows end where the content does, less the footer and the
@@ -221,10 +224,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const footerSize = useSharedValue(0)
   const scrolledY = useDerivedValue(() =>
     scrollOffset.value - (contentHeight.value - rowsHeight.value - footerSize.value - CONTENT_PADDING_BOTTOM))
-  // The date (createdAt ms) the floating day header is currently rendering. Used to
-  // keep the inline separator visible until the header's text has caught up, hiding
-  // the 1-frame JS-thread lag of the header on each day change.
-  const floatingRenderedDate = useSharedValue<number | undefined>(undefined)
   // Where each screen-gradient bubble's row sits: one shared value per message, created when its
   // bubble asks, and fed by the list's own position listener for that row - so a row moving
   // re-runs its bubble's worklets and no other's. A row keeps its listener once subscribed:
@@ -366,15 +365,20 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     setPreviousListData(listData)
   // The list renders oldest first; `messages` comes newest first unless `isInverted` is off.
   const orderedData = useMemo(() => isInverted ? [...listData].reverse() : listData, [listData, isInverted])
+  // Each day's date pill is an item of its own, right before the day's first message, and the
+  // list pins it natively while its day scrolls under it (`stickyHeaderIndices`).
+  const { items: listItems, dayIndices } = useMemo(() => withDayItems(orderedData), [orderedData])
 
   // A chat with unread messages opens on its "Unread Messages" bar, at the top of the screen,
   // and one without them at the newest message. Decided once, when the list first renders.
   const [initialScroll] = useState(() => {
-    const index = firstUnreadMessageId != null
-      ? orderedData.findIndex(message => message._id === firstUnreadMessageId)
+    const unreadIndex = firstUnreadMessageId != null
+      ? listItems.findIndex(item => !isDayItem(item) && item._id === firstUnreadMessageId)
       : -1
-    // The newest message already is the first unread one: the list starts there anyway.
-    return index >= 0 && index < orderedData.length - 1
+    // The newest message already is the first unread one: the list starts there anyway. When
+    // the unread message opens its day, the list starts at its date instead, above the bar.
+    const index = unreadIndex > 0 && isDayItem(listItems[unreadIndex - 1]) ? unreadIndex - 1 : unreadIndex
+    return unreadIndex >= 0 && unreadIndex < listItems.length - 1
       ? { initialScrollIndex: { index, viewPosition: 0 } }
       : { initialScrollAtEnd: true }
   })
@@ -413,15 +417,18 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const rowConfig = useMemo(() => ({
     ...stableRowProps,
     scrolledY,
-    daysPositions,
     listHeight,
-    floatingRenderedDate,
     floatingDayOpacity,
-  }), [stableRowProps, scrolledY, daysPositions, listHeight, floatingRenderedDate, floatingDayOpacity])
+    activeStickyIndex,
+    cellLayout,
+  }), [stableRowProps, scrolledY, listHeight, floatingDayOpacity, activeStickyIndex, cellLayout])
 
-  const renderItem = useCallback(({ item }: { item: unknown }): React.ReactElement =>
-    <MessageRow id={String((item as TMessage)._id)} />
+  const renderItem = useCallback(({ item, index }: { item: unknown, index: number }): React.ReactElement =>
+    isDayItem(item)
+      ? <DayRow item={item} index={index} />
+      : <MessageRow id={String((item as TMessage)._id)} />
   , [])
+  const getItemType = useCallback((item: unknown) => (isDayItem(item) ? 'day' : 'message'), [])
 
   const emptyContent = useMemo(() => {
     if (!renderChatEmptyProp)
@@ -633,73 +640,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   const keyExtractor = useCallback((item: unknown) => (item as TMessage)._id.toString(), [])
 
-  // Where each day's opening message sits, for the floating day header: the list reports a
-  // row's position whenever it changes, so only the rows that open a day are followed, and
-  // their moves reach the UI thread once a frame.
-  const dayStartIds = useMemo(() => {
-    const ids: string[] = []
-    for (let i = 0; i < messages.length; i++) {
-      const previous = isInverted ? messages[i + 1] : messages[i - 1]
-      if (!previous || !isSameDay(messages[i], previous))
-        ids.push(messages[i]._id.toString())
-    }
-    return ids
-  }, [messages, isInverted])
-
-  useEffect(() => {
-    const state = isListLaidOut && isDayAnimationEnabled ? listState() : undefined
-    if (!state)
-      return
-
-    let pending: Record<string, DaysPositions[string]> | null = null
-    let frame: number | null = null
-    const flush = () => {
-      frame = null
-      const batch = pending
-      pending = null
-      if (batch)
-        daysPositions.modify(value => {
-          'worklet'
-
-          for (const key in batch)
-            value[key] = batch[key]
-          return value
-        })
-    }
-
-    const initial: DaysPositions = {}
-    const unsubscribes = dayStartIds.map(id => {
-      const message = rowStore.getMessage(id)
-      const date = new Date(message?.createdAt ?? 0)
-      const entry = (y: number): DaysPositions[string] => ({
-        x: 0,
-        width: 0,
-        y,
-        height: state.sizes.get(id) ?? 0,
-        createdAt: date.getTime(),
-        dayKey: date.getFullYear() * 10000 + date.getMonth() * 100 + date.getDate(),
-      })
-      const y = state.positionByKey(id)
-      if (y != null)
-        initial[id] = entry(y)
-      return state.listenToPosition(id, position => {
-        if (pending == null)
-          pending = {}
-        pending[id] = entry(position)
-        if (frame == null)
-          frame = requestAnimationFrame(flush)
-      })
-    })
-    // The days this list shows now, replacing any that went with a deleted or earlier message.
-    daysPositions.set(initial)
-
-    return () => {
-      unsubscribes.forEach(unsubscribe => unsubscribe())
-      if (frame != null)
-        cancelAnimationFrame(frame)
-    }
-  }, [dayStartIds, isListLaidOut, isDayAnimationEnabled, listState, daysPositions, rowStore])
-
   // Gradient bubbles that asked for their row before the list could report positions.
   useEffect(() => {
     if (isListLaidOut)
@@ -836,8 +776,13 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     <AnimatedLegendList
       ref={forwardRef}
       keyExtractor={keyExtractor}
-      data={orderedData}
+      // Messages and the day items between them; `listProps` is typed for the messages it
+      // mostly sees.
+      data={listItems as TMessage[]}
       renderItem={renderItem}
+      getItemType={getItemType}
+      stickyHeaderIndices={isDayAnimationEnabled ? dayIndices : undefined}
+      stickyHeaderConfig={STICKY_DAY_CONFIG}
       estimatedItemSize={64}
       // Oldest first, top to bottom: no inverted list, no flipped rows.
       alignItemsAtEnd={alignItemsAtEnd}
@@ -870,7 +815,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       viewabilityConfigCallbackPairs={viewabilityPairs}
       onLayout={onLayoutList}
     />
-  ), [forwardRef, keyExtractor, orderedData, renderItem, alignItemsAtEnd, isLayoutAnimated, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, onScrollBeginDrag, onScrollEndDrag, onMomentumScrollBegin, onMomentumScrollEnd, onContentSizeChange, onItemSizeChanged, onMetricsChange, viewabilityPairs, onLayoutList])
+  ), [forwardRef, keyExtractor, listItems, renderItem, getItemType, isDayAnimationEnabled, dayIndices, alignItemsAtEnd, isLayoutAnimated, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, onScrollBeginDrag, onScrollEndDrag, onMomentumScrollBegin, onMomentumScrollEnd, onContentSizeChange, onItemSizeChanged, onMetricsChange, viewabilityPairs, onLayoutList])
 
   const list = (
     <View
@@ -880,20 +825,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     >
       {listEngine}
       {scrollToBottomButton}
-      {isDayAnimationEnabled && (
-        <DayAnimated
-          scrolledY={scrolledY}
-          daysPositions={daysPositions}
-          listHeight={listHeight}
-          isScrollActive={isScrollActive}
-          floatingRenderedDate={floatingRenderedDate}
-          opacity={floatingDayOpacity}
-          renderDay={renderDayProp}
-          isLoading={loadEarlierMessagesProps?.isLoading ?? false}
-          dateFormat={props.dateFormat}
-          dateFormatCalendar={props.dateFormatCalendar}
-        />
-      )}
     </View>
   )
 
