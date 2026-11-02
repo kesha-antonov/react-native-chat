@@ -104,6 +104,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10; TypeScript stays on 6.0 and Babel on 7 (see AGENTS.md)
 
 ### 📲 Example app
+- Chats: tapping a chat's avatar or name opens its profile, as in Telegram: the photo, name and status, Message / Mute / Call, a username, a bot's description or a group's members, and the media, files and links shared in the chat
 - Archived Chats opens as a screen of its own, as in Telegram, through `ChatList`'s controlled `isArchiveOpen`
 - Native tabs (Expo Router 58): the platform tab bar, Liquid Glass on iOS 26+, instead of the JS one
 - Screens covered by another one stop rendering and keep their state (`activityEnabled` on the stacks and tabs), so the chat list does no work while a chat is open on top of it

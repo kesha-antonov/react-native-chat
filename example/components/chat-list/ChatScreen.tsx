@@ -3,7 +3,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { Chat, defaultDarkTheme, defaultLightTheme, IMessage, Reply, TypingAction, TypingStatus, User } from '@kesha-antonov/react-native-chat'
 import { ChatListAvatar } from '@kesha-antonov/react-native-chat'
-import { useFocusEffect, useRouter } from 'expo-router'
+import { Href, useFocusEffect, useRouter } from 'expo-router'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -112,13 +112,8 @@ function ChatHeader ({ dialog, typingUser, typingAction }: { dialog: Dialog, typ
   const router = useRouter()
 
   const isActive = !!typingUser || !!dialog.isOnline
-  const subtitle = dialog.isBot
-    ? 'bot'
-    : dialog.kind === 'group'
-      ? `${(dialog.members?.length ?? 0) + 1} members`
-      : dialog.kind === 'channel'
-        ? formatSubscribers(dialog.subscribers ?? 0)
-        : dialog.isOnline ? 'online' : dialog.lastSeen ?? 'last seen recently'
+  const subtitle = dialogSubtitle(dialog)
+  const openProfile = () => router.push(`/chats/profile/${dialog.id}` as Href)
 
   const openMenu = () => {
     Alert.alert(dialog.title, undefined, [
@@ -135,33 +130,36 @@ function ChatHeader ({ dialog, typingUser, typingAction }: { dialog: Dialog, typ
         <Pressable onPress={() => router.back()} hitSlop={4} style={styles.headerButton} accessibilityRole='button' accessibilityLabel='Back'>
           <MaterialCommunityIcons name='arrow-left' size={24} color={colors.headerIcon} />
         </Pressable>
-        <View style={styles.headerAvatar}>
-          <ChatListAvatar id={dialog.id} title={dialog.title} uri={dialog.avatar} size={42} ringColor={colors.headerBackground} />
-        </View>
-        <View style={styles.headerText}>
-          <View style={styles.headerTitleRow}>
-            <Text style={[styles.headerTitle, { color: colors.headerTitle }]} numberOfLines={1}>{dialog.title}</Text>
-            {dialog.isVerified && <MaterialCommunityIcons name='check-decagram' size={16} color={colors.verified} style={styles.headerTitleIcon} />}
-            {dialog.isMuted && <MaterialCommunityIcons name='volume-off' size={15} color={colors.muteIcon} style={styles.headerTitleIcon} />}
+        {/* The avatar and name open the profile, as in Telegram. */}
+        <Pressable onPress={openProfile} style={styles.headerProfile} accessibilityRole='button' accessibilityLabel={`${dialog.title}, profile`}>
+          <View style={styles.headerAvatar}>
+            <ChatListAvatar id={dialog.id} title={dialog.title} uri={dialog.avatar} size={42} ringColor={colors.headerBackground} />
           </View>
-          {typingUser
-            ? (
-              <Animated.View key='typing' entering={FadeIn.duration(200)} exiting={FadeOut.duration(100)}>
-                <TypingStatus users={[typingUser]} action={typingAction} isGroup={dialog.kind === 'group'} color={colors.subtitleActive} textStyle={styles.headerSubtitle} />
-              </Animated.View>
-            )
-            : (
-              <Animated.Text
-                key={subtitle}
-                entering={FadeIn.duration(200)}
-                exiting={FadeOut.duration(100)}
-                style={[styles.headerSubtitle, { color: isActive ? colors.subtitleActive : colors.subtitle }]}
-                numberOfLines={1}
-              >
-                {subtitle}
-              </Animated.Text>
-            )}
-        </View>
+          <View style={styles.headerText}>
+            <View style={styles.headerTitleRow}>
+              <Text style={[styles.headerTitle, { color: colors.headerTitle }]} numberOfLines={1}>{dialog.title}</Text>
+              {dialog.isVerified && <MaterialCommunityIcons name='check-decagram' size={16} color={colors.verified} style={styles.headerTitleIcon} />}
+              {dialog.isMuted && <MaterialCommunityIcons name='volume-off' size={15} color={colors.muteIcon} style={styles.headerTitleIcon} />}
+            </View>
+            {typingUser
+              ? (
+                <Animated.View key='typing' entering={FadeIn.duration(200)} exiting={FadeOut.duration(100)}>
+                  <TypingStatus users={[typingUser]} action={typingAction} isGroup={dialog.kind === 'group'} color={colors.subtitleActive} textStyle={styles.headerSubtitle} />
+                </Animated.View>
+              )
+              : (
+                <Animated.Text
+                  key={subtitle}
+                  entering={FadeIn.duration(200)}
+                  exiting={FadeOut.duration(100)}
+                  style={[styles.headerSubtitle, { color: isActive ? colors.subtitleActive : colors.subtitle }]}
+                  numberOfLines={1}
+                >
+                  {subtitle}
+                </Animated.Text>
+              )}
+          </View>
+        </Pressable>
         {dialog.kind === 'user' && !dialog.isBot && (
           <Pressable style={styles.headerButton} hitSlop={4} accessibilityRole='button' accessibilityLabel='Call' onPress={() => Alert.alert('Calls are not part of this demo')}>
             <MaterialCommunityIcons name='phone-outline' size={24} color={colors.headerIcon} />
@@ -176,6 +174,15 @@ function ChatHeader ({ dialog, typingUser, typingAction }: { dialog: Dialog, typ
 }
 
 const BOT_TEXT_PROPS = { markdown: true }
+
+/** The line under a chat's name: online or last seen, members, subscribers, or "bot". */
+export const dialogSubtitle = (dialog: Dialog) => dialog.isBot
+  ? 'bot'
+  : dialog.kind === 'group'
+    ? `${(dialog.members?.length ?? 0) + 1} members`
+    : dialog.kind === 'channel'
+      ? formatSubscribers(dialog.subscribers ?? 0)
+      : dialog.isOnline ? 'online' : dialog.lastSeen ?? 'last seen recently'
 
 /** A bot's card in an empty chat: what it can do. */
 function BotIntro ({ dialog }: { dialog: Dialog }) {
@@ -243,6 +250,12 @@ const styles = StyleSheet.create({
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerProfile: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
   },
   headerAvatar: {
     marginStart: 4,
