@@ -170,29 +170,52 @@ function CustomInputToolbar<TProps extends Record<string, any>> ({ render, props
 }
 
 const sameText = (text: string) => text
+const sameValue = <T, >(value: T) => value
 
 /**
  * The composer, and the only part of the chat a keystroke re-renders: the typed text lives in a
  * store this host reads, not in `Chat`'s state, so typing leaves `Chat`, the keyboard-avoiding
  * view and the overlay provider alone. A controlled `text` prop still wins over the store.
  */
-function ComposerHost<TProps extends Record<string, any>> ({ textStore, controlledText, render, props }: {
+function ComposerHost<TProps extends Record<string, any>> ({
+  textStore,
+  controlledText,
+  replyStore,
+  controlledReply,
+  editStore,
+  render,
+  props,
+}: {
   textStore: Store<string>
   controlledText: string | undefined
+  replyStore: Store<ReplyMessage | null>
+  /** The app's `reply.message`; `undefined` leaves the reply to the store. */
+  controlledReply: ReplyMessage | null | undefined
+  editStore: Store<IMessage | null>
   render: Parameters<typeof renderComponentOrElement<TProps>>[0] | undefined
   props: TProps
 }) {
   const storedText = useStore(textStore, sameText, '')
   const text = controlledText === undefined ? storedText : controlledText
+  const storedReply = useStore(replyStore, sameValue, null)
+  const replyMessage = controlledReply === undefined ? storedReply : controlledReply
+  const editMessage = useStore(editStore, sameValue, null)
 
   if (render)
-    return <CustomInputToolbar render={render} props={{ ...props, text }} />
+    return <CustomInputToolbar render={render} props={{ ...props, text, replyMessage, editMessage }} />
 
   // The built-in composer has no use for the messages, and leaving them out lets its memo
   // skip the render a new message would otherwise cost it.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { messages: _messages, ...composerProps } = props
-  return <MemoInputToolbar {...(composerProps as unknown as InputToolbarProps<IMessage>)} text={text} />
+  return (
+    <MemoInputToolbar
+      {...(composerProps as unknown as InputToolbarProps<IMessage>)}
+      text={text}
+      replyMessage={replyMessage}
+      editMessage={editMessage}
+    />
+  )
 }
 
 // The input's ref may be the app's (a prop), so the compiler cannot tell a `.current` read inside
@@ -346,9 +369,11 @@ function Chat<TMessage extends IMessage = IMessage> (
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
   // The typed text, read by `ComposerHost` alone: a keystroke must not re-render `Chat`.
   const [textStore] = useState(() => createStore<string>(props.text || props.initialText || ''))
-  const [internalReplyMessage, setInternalReplyMessage] = useState<ReplyMessage | null>(null)
+  // The reply (when the app does not control it) and the message being edited live in stores
+  // the composer reads, so starting or dropping either re-renders the composer and not `Chat`.
+  const [replyStore] = useState(() => createStore<ReplyMessage | null>(null))
   // The message being edited in the composer (edit mode), or null.
-  const [editingMessage, setEditingMessage] = useState<TMessage | null>(null)
+  const [editStore] = useState(() => createStore<TMessage | null>(null))
   const [highlightStore] = useState(createMessageHighlightStore)
   const [composerPanels] = useState(createComposerPanelsStore)
   const [selectionStore] = useState(createMessageSelectionStore)
@@ -383,7 +408,11 @@ function Chat<TMessage extends IMessage = IMessage> (
   }, [isSelecting, selectionStore])
 
   // Use controlled or uncontrolled reply state
-  const replyMessage = replyMessageProp !== undefined ? replyMessageProp : internalReplyMessage
+  const isReplyControlled = replyMessageProp !== undefined
+  const getReplyMessage = useCallback(
+    () => (isReplyControlled ? replyMessageProp : replyStore.get()) ?? null,
+    [isReplyControlled, replyMessageProp, replyStore]
+  )
 
   const getTextFromProp = useCallback(
     (fallback: string) => {
@@ -429,7 +458,7 @@ function Chat<TMessage extends IMessage = IMessage> (
 
       if (replyMessageProp === undefined)
         // Uncontrolled mode: manage state internally
-        setInternalReplyMessage({
+        replyStore.set({
           _id: message._id,
           text: message.text,
           user: message.user,
@@ -440,7 +469,7 @@ function Chat<TMessage extends IMessage = IMessage> (
       onReplyRef.current?.(message)
       focusComposer()
     },
-    [replyMessageProp, focusComposer]
+    [replyMessageProp, focusComposer, replyStore]
   )
 
   const handleSwipeToReply = useCallback(
@@ -454,10 +483,10 @@ function Chat<TMessage extends IMessage = IMessage> (
   const clearReply = useCallback(() => {
     if (replyMessageProp === undefined)
       // Uncontrolled mode: manage state internally
-      setInternalReplyMessage(null)
+      replyStore.set(null)
 
     onClearReply?.()
-  }, [replyMessageProp, onClearReply])
+  }, [replyMessageProp, onClearReply, replyStore])
 
   // Read through a ref: these end up in the reply config every row gets, and depending on
   // `messages` re-rendered every mounted row each time a message was sent or arrived.
@@ -535,10 +564,10 @@ function Chat<TMessage extends IMessage = IMessage> (
     if (!isEditingRef.current)
       stashedDraftRef.current = textStore.get()
     isEditingRef.current = true
-    setEditingMessage(message)
+    editStore.set(message)
     changeTextRef.current(message.text ?? '')
     focusComposer()
-  }, [focusComposer, textStore])
+  }, [focusComposer, textStore, editStore])
 
   /** Leaves edit mode and gives the composer back the draft from before it. */
   const restoreDraft = useCallback(() => {
@@ -549,13 +578,13 @@ function Chat<TMessage extends IMessage = IMessage> (
   }, [])
 
   const stopEdit = useCallback(() => {
-    setEditingMessage(null)
+    editStore.set(null)
     restoreDraft()
-  }, [restoreDraft])
+  }, [restoreDraft, editStore])
 
   useInsertionEffect(() => {
     cancelEdit.current = () => {
-      if (editingMessage)
+      if (editStore.get())
         stopEdit()
     }
   })
@@ -671,7 +700,7 @@ function Chat<TMessage extends IMessage = IMessage> (
         onPin: hasPin ? m => actionCallbacksRef.current.onPinMessage?.(m) : undefined,
         onDelete: hasDelete
           ? m => {
-            if (editingMessage?._id === m._id)
+            if (editStore.get()?._id === m._id)
               stopEdit()
             const { onDeleteMessage, onDeleteMessages } = actionCallbacksRef.current
             if (onDeleteMessage)
@@ -695,7 +724,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     startReply,
     startEdit,
     stopEdit,
-    editingMessage,
+    editStore,
     hasEdit,
     hasDelete,
     hasForward,
@@ -853,6 +882,7 @@ function Chat<TMessage extends IMessage = IMessage> (
 
       // In edit mode the composer saves the edited text instead of posting a message.
       const [edit] = messages
+      const editingMessage = editStore.get()
       if (
         editingMessage &&
         messages.length === 1 &&
@@ -863,12 +893,13 @@ function Chat<TMessage extends IMessage = IMessage> (
         if (shouldResetInputToolbar === true)
           resetInputToolbar()
 
-        setEditingMessage(null)
+        editStore.set(null)
         restoreDraft()
         actionCallbacksRef.current.onEditMessage?.(editingMessage, edit.text)
         return
       }
 
+      const replyMessage = getReplyMessage()
       const newMessages: TMessage[] = messages.map(message => {
         return {
           ...message,
@@ -893,7 +924,7 @@ function Chat<TMessage extends IMessage = IMessage> (
       clearTimeout(scrollAfterSendTimeout.current)
       scrollAfterSendTimeout.current = setTimeout(() => scrollToBottom(), 10)
     },
-    [messageIdGenerator, onSend, user, resetInputToolbar, scrollToBottom, replyMessage, clearReply, editingMessage, restoreDraft]
+    [messageIdGenerator, onSend, user, resetInputToolbar, scrollToBottom, getReplyMessage, clearReply, editStore, restoreDraft]
   )
 
   const _onChangeText = useCallback(
@@ -911,7 +942,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     changeTextRef.current = _onChangeText
     sendRef.current = messages => _onSend(messages, false)
     clearReplyRef.current = () => {
-      if (replyMessage)
+      if (getReplyMessage())
         clearReply()
     }
   })
@@ -991,6 +1022,7 @@ function Chat<TMessage extends IMessage = IMessage> (
     if (!hasDelete)
       return undefined
     return (selected: TMessage[]) => {
+      const editingMessage = editStore.get()
       if (editingMessage && selected.some(message => message._id === editingMessage._id))
         stopEdit()
       const { onDeleteMessage, onDeleteMessages } = actionCallbacksRef.current
@@ -1000,7 +1032,7 @@ function Chat<TMessage extends IMessage = IMessage> (
         selected.forEach(message => onDeleteMessage?.(message))
       selectionStore.clear()
     }
-  }, [hasDelete, editingMessage, stopEdit, selectionStore])
+  }, [hasDelete, editStore, stopEdit, selectionStore])
 
   // The composer's send keeps one identity: it is an event handler, and a new one each time
   // the app's `onSend` or the reply/edit state changed re-rendered the whole composer.
@@ -1020,19 +1052,12 @@ function Chat<TMessage extends IMessage = IMessage> (
 
   const isSelectionBarShown = isSelecting && renderSelectionBar !== null
   const inputToolbarFragment = useMemo(() => {
-    // The selection bar takes the composer's place (below), and needs `messages`, which this
-    // memo is kept clear of.
-    if (isSelectionBarShown)
-      return null
-
     const inputToolbarProps = {
       ...props,
       onSend: composerOnSend,
       textInputProps: composerTextInputProps,
       // Reply preview props
-      replyMessage,
       onClearReply: clearReply,
-      editMessage: editingMessage,
       onCancelEdit: stopEdit,
       renderReplyPreview,
       replyPreviewContainerStyle,
@@ -1043,6 +1068,9 @@ function Chat<TMessage extends IMessage = IMessage> (
       <ComposerHost
         textStore={textStore}
         controlledText={props.text}
+        replyStore={replyStore}
+        controlledReply={replyMessageProp}
+        editStore={editStore as unknown as Store<IMessage | null>}
         render={renderInputToolbar}
         props={inputToolbarProps}
       />
@@ -1053,14 +1081,14 @@ function Chat<TMessage extends IMessage = IMessage> (
     props,
     renderInputToolbar,
     composerTextInputProps,
-    replyMessage,
+    replyStore,
+    replyMessageProp,
     clearReply,
-    editingMessage,
+    editStore,
     stopEdit,
     renderReplyPreview,
     replyPreviewContainerStyle,
     replyPreviewTextStyle,
-    isSelectionBarShown,
   ])
 
   const contextValues = useMemo(
@@ -1131,19 +1159,27 @@ function Chat<TMessage extends IMessage = IMessage> (
                       <MediaGalleryContext.Provider value={mediaGallery}>
                         <ChatOverlayProvider>
                           {isListMounted ? renderMessages : <View style={stylesCommon.fill} />}
-                          {isSelectionBarShown
-                            ? (
-                              <ChatSelectionBar<TMessage>
-                                store={selectionStore}
-                                messages={messages}
-                                canCopy={hasClipboard}
-                                onCopy={copySelection}
-                                onForward={forwardSelection}
-                                onDelete={deleteSelection}
-                                renderSelectionBar={renderSelectionBar}
-                              />
-                            )
-                            : inputToolbarFragment}
+                          {isSelectionBarShown && (
+                            <ChatSelectionBar<TMessage>
+                              store={selectionStore}
+                              messages={messages}
+                              canCopy={hasClipboard}
+                              onCopy={copySelection}
+                              onForward={forwardSelection}
+                              onDelete={deleteSelection}
+                              renderSelectionBar={renderSelectionBar}
+                            />
+                          )}
+                          {/*
+                            The selection bar takes the composer's place, but the composer stays
+                            mounted under it, out of layout: leaving selection used to rebuild the
+                            whole composer (its recorder, panels and animations) from scratch.
+                            collapsable={false} keeps this view's native node stable while its
+                            `display` flips (see the note on TEST_ID.CONTENT above).
+                          */}
+                          <View collapsable={false} style={isSelectionBarShown ? styles.composerAway : undefined}>
+                            {inputToolbarFragment}
+                          </View>
                           <MediaViewerHost gallery={mediaGallery} />
                         </ChatOverlayProvider>
                       </MediaGalleryContext.Provider>

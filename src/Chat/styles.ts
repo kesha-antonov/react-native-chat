@@ -10,6 +10,10 @@ export default StyleSheet.create({
   hidden: {
     opacity: 0,
   },
+  // The composer under the selection bar: still mounted, out of layout.
+  composerAway: {
+    display: 'none',
+  },
   // Centers the empty-chat card in the list's area, above the composer.
   emptyOverlay: {
     ...StyleSheet.absoluteFill,

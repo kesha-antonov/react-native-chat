@@ -59,7 +59,8 @@ Each phase lands as its own commits with the gate green, benchmarked where it to
    with the easings now copied across files.
 4. **Composer store.** Text, reply, edit and mode leave `Chat`; recording ticks move to shared
    values; the selection bar stops remounting the composer.
-   *Text: done* (`ComposerHost` reads it from a store; a keystroke renders only the composer).
+   *Done*: text, reply and edit live in stores `ComposerHost` reads; recording ticks go to a
+   meter only the timer, halo and ring read; the composer stays mounted under the selection bar.
 5. **Row settings by selector.** Replace the spread row config with `useRowSettings(selector)`;
    split `Bubble` into parts (layout, content, meta, menu, reactions).
 6. **Decompose the remaining large files** (`MessageVideo`, `InputToolbar`, `RecordButton`,

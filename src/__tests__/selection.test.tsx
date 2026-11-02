@@ -162,6 +162,27 @@ describe('multi-select', () => {
     expect(utils.queryByTestId('selection-bar')).toBeNull()
   })
 
+  it('keeps the composer mounted under the bar', async () => {
+    // Leaving selection used to rebuild the whole composer from scratch.
+    let mounts = 0
+    const Accessory = () => {
+      React.useEffect(() => {
+        mounts++
+      }, [])
+      return <View testID='composer-accessory' />
+    }
+    const utils = await mountChat(<Chat messages={MESSAGES} onSend={() => {}} user={ME} renderAccessory={Accessory} />)
+    expect(mounts).toBe(1)
+
+    await startSelecting(utils)
+    expect(utils.getByTestId('selection-bar')).toBeTruthy()
+    await fireEvent.press(utils.getByLabelText('Cancel selection'))
+    await settle()
+
+    expect(utils.getByTestId('composer-accessory')).toBeTruthy()
+    expect(mounts).toBe(1)
+  })
+
   it('takes a custom bar, or none', async () => {
     const custom = await mountChat(
       <Chat
