@@ -613,11 +613,33 @@ export const ContextMenu = ({
 
   const handleExpand = useCallback(() => {
     selectionHaptic()
+    isCollapsingRef.current = false
     setIsExpanded(true)
     expand.value = withTiming(1, EXPAND)
     // The actions make way for the panel.
     menuFade.value = withTiming(0, timing(150))
   }, [expand, menuFade])
+
+  // A tap outside the expanded panel (or Android's back) folds it back into the bar and keeps
+  // the menu up, as Telegram's emoji window does on Android; only a second tap closes the menu.
+  // The panel stays mounted until it has folded away.
+  const isCollapsingRef = useRef(false)
+  const finishCollapse = useCallback(() => {
+    if (isCollapsingRef.current)
+      setIsExpanded(false)
+    isCollapsingRef.current = false
+  }, [])
+  const handleCollapse = useCallback(() => {
+    if (isCollapsingRef.current)
+      return
+    isCollapsingRef.current = true
+    expand.value = withTiming(0, EXPAND, finished => {
+      if (finished)
+        runOnJS(finishCollapse)()
+    })
+    menuFade.value = withTiming(1, timing(150))
+  }, [expand, menuFade, finishCollapse])
+  const handleOutsidePress = isExpanded ? handleCollapse : handleDismiss
 
   const scrimStyle = useAnimatedStyle(() => ({ opacity: scrim.value }))
   const closeStyle = useCloseStyle(closing)
@@ -660,12 +682,12 @@ export const ContextMenu = ({
   const smallTailX = isRTL ? tailX - TAIL_BIG : tailX + TAIL_BIG
 
   return (
-    <Modal transparent visible animationType='none' onRequestClose={handleDismiss} statusBarTranslucent>
+    <Modal transparent visible animationType='none' onRequestClose={handleOutsidePress} statusBarTranslucent>
       {/* The lit copy can carry gesture-driven content (a waveform's scrubber); a Modal is its
           own native root, so it needs its own. */}
       <GestureHandlerRootView style={styles.root}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, scrimStyle]} pointerEvents='none' />
-        <Pressable style={StyleSheet.absoluteFill} onPress={handleDismiss} accessibilityLabel='dismiss' />
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleOutsidePress} accessibilityLabel='dismiss' />
 
         {messagePreview != null && (
           <View
