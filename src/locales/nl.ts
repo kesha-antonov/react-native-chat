@@ -73,6 +73,8 @@ export const nl: Partial<ChatLabels> = {
   emptyChatTitle: 'Nog geen berichten hier...',
   emptyChatText: 'Stuur een bericht of tik op de begroeting hieronder.',
   unreadMessages: 'Ongelezen berichten',
+  mediaViewerCounter: '{index} van {count}',
+  mediaViewerDate: '{date} om {time}',
   actionSelect: 'Selecteren',
   cancelSelection: 'Selectie annuleren',
   chatListTitle: 'Chats',

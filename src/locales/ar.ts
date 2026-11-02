@@ -73,6 +73,8 @@ export const ar: Partial<ChatLabels> = {
   emptyChatTitle: 'لا توجد رسائل هنا بعد...',
   emptyChatText: 'أرسل رسالة أو انقر على التحية أدناه.',
   unreadMessages: 'رسائل غير مقروءة',
+  mediaViewerCounter: '{index} من {count}',
+  mediaViewerDate: '{date} في {time}',
   actionSelect: 'تحديد',
   cancelSelection: 'إلغاء التحديد',
   chatListTitle: 'الدردشات',

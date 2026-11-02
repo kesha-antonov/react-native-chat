@@ -73,6 +73,8 @@ export const ru: Partial<ChatLabels> = {
   emptyChatTitle: 'Здесь пока нет сообщений...',
   emptyChatText: 'Отправьте сообщение или нажмите на приветствие ниже.',
   unreadMessages: 'Непрочитанные сообщения',
+  mediaViewerCounter: '{index} из {count}',
+  mediaViewerDate: '{date} в {time}',
   actionSelect: 'Выбрать',
   cancelSelection: 'Отменить выделение',
   chatListTitle: 'Чаты',

@@ -21,6 +21,7 @@ exports[`MessageImage should  render <MessageImage /> and compare with snapshot 
     }
   >
     <RNGestureHandlerButton
+      accessibilityLabel="photo"
       delayLongPress={400}
       needsOffscreenAlphaCompositing={true}
       testID="message-image-touchable"
@@ -48,7 +49,6 @@ exports[`MessageImage should  render <MessageImage /> and compare with snapshot 
           >
             <Image
               onError={[Function]}
-              onLayout={[Function]}
               onLoad={[Function]}
               onLoadStart={[Function]}
               onProgress={[Function]}

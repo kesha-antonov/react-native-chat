@@ -28,6 +28,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - **`textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`**
 
 ### ✨ Features
+- **Swipe between a chat's photos**, as in Telegram: tapping a photo opens the viewer on it, and swiping left and right pages through every photo in the conversation (left for newer, right for older) with a "3 of 12" counter, the caption, the sender and when it was sent. Pinch or double-tap to zoom, panning a zoomed photo to its edge carries on to the next, and dragging up or down puts the viewer away. New labels `mediaViewerCounter` and `mediaViewerDate` in all 15 locales
 - **Slide along the emoji categories**: press the category strip and slide the finger across it to move through the categories, a haptic tick on each
 - **Reaction pills show who reacted**: up to three avatars in place of the count, as in Telegram - in one-to-one chats, and in groups while a message has three reactions or fewer. `reactions.getUser` resolves reactors (by default from the loaded messages); a count now shows even when it is 1
 - **A message can carry up to three reactions from one person** (Telegram's limit): `Chat.toggleReaction` keeps up to three of a user's reactions and replaces the oldest past that. Pass `{ maxPerUser: 1 }` for the previous one-each behaviour
@@ -69,6 +70,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- A shown photo no longer announces "cancel download" to screen readers on Android
 - **A photo grouped under its sender's previous message poked past the bubble's corner**: in a group chat its top corners took the 4pt radius meant for a photo under the sender's name, though no name is drawn there, so the photo's corner showed outside the bubble's 17pt curve. The corners now follow whether a name is actually shown
 - **`ChatList` avatars and photo thumbnails that fail to load** no longer leave a blank circle or an empty gap before "Photo": the avatar falls back to the initials and the thumbnail is dropped. `getInitials` no longer throws on a chat without a title
 - **Chat list rows clipped their text on Android**: the name and the preview line had a fixed height but no line height, and Roboto with its font padding is taller, so descenders and emoji were cut and the typing / recording icon sat above the text's middle. Both lines now take a fixed 20pt; on Android the text draws in a 24pt line box with the extra given back as margins, so glyphs are never clipped

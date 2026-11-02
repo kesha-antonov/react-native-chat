@@ -156,6 +156,10 @@ export interface ChatLabels {
   emptyChatText: string
   /** The bar above the first unread message. */
   unreadMessages: string
+  /** Media viewer: which photo is open; `{index}` counts from the oldest, `{count}` is all. */
+  mediaViewerCounter: string
+  /** Media viewer: when the open photo was sent; `{date}` and `{time}` are formatted for the locale. */
+  mediaViewerDate: string
   /** Message context menu: start selecting messages. */
   actionSelect: string
   /** Selection bar: accessibility label of the button that leaves selection. */
@@ -303,6 +307,8 @@ export const defaultLabels: ChatLabels = {
   emptyChatTitle: 'No messages here yet...',
   emptyChatText: 'Send a message or tap the greeting below.',
   unreadMessages: 'Unread Messages',
+  mediaViewerCounter: '{index} of {count}',
+  mediaViewerDate: '{date} at {time}',
   actionSelect: 'Select',
   cancelSelection: 'Cancel selection',
   chatListTitle: 'Chats',

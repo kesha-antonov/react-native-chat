@@ -73,6 +73,8 @@ export const pt: Partial<ChatLabels> = {
   emptyChatTitle: 'Ainda não há mensagens aqui...',
   emptyChatText: 'Envie uma mensagem ou toque na saudação abaixo.',
   unreadMessages: 'Mensagens não lidas',
+  mediaViewerCounter: '{index} de {count}',
+  mediaViewerDate: '{date} às {time}',
   actionSelect: 'Selecionar',
   cancelSelection: 'Cancelar seleção',
   chatListTitle: 'Conversas',

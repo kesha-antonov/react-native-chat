@@ -36,6 +36,8 @@ import {
   subscribePlaybackRate,
 } from '../components/mediaPlayback'
 import { createMediaTransferController, MediaTransferContext } from '../components/mediaTransfer'
+import { createMediaGallery, MediaGalleryContext } from '../components/mediaViewer/gallery'
+import { MediaViewerHost } from '../components/mediaViewer/MediaViewerHost'
 import { createMessageHighlightStore, MessageHighlightContext } from '../components/messageHighlight'
 import {
   createMessageSelectionStore,
@@ -241,6 +243,16 @@ function Chat<TMessage extends IMessage = IMessage> (
   const [mediaTransferController] = useState(createMediaTransferController)
   mediaTransferController.set(mediaTransfer)
 
+  // The latest messages, for what reads them only when it needs them: the selection, and the
+  // photos the media viewer pages through (read when it opens, so nothing re-renders as
+  // messages arrive).
+  const messagesRef = useRef(messages)
+  const [mediaGallery] = useState(createMediaGallery)
+  useInsertionEffect(() => {
+    messagesRef.current = messages
+    mediaGallery.setMessages(messages)
+  })
+
   // A round note kept playing past its row is stopped with the chat, and rows
   // unmounting along with it stop theirs rather than floating them.
   useEffect(() => {
@@ -316,10 +328,6 @@ function Chat<TMessage extends IMessage = IMessage> (
   useEffect(() => () => highlightStore.dispose(), [highlightStore])
 
   // The selection's messages are looked up by id when it changes; deleted ones drop out of it.
-  const messagesRef = useRef(messages)
-  useInsertionEffect(() => {
-    messagesRef.current = messages
-  })
   useEffect(() => {
     selectionStore.retain(new Set(messages.map(message => message._id)))
   }, [messages, selectionStore])
@@ -1095,22 +1103,25 @@ function Chat<TMessage extends IMessage = IMessage> (
                 <MessageHighlightContext.Provider value={highlightStore}>
                   <MessageSelectionContext.Provider value={selectionStore}>
                     <ComposerPanelsContext.Provider value={composerPanels}>
-                      <ChatOverlayProvider>
-                        {isListMounted ? renderMessages : <View style={stylesCommon.fill} />}
-                        {isSelectionBarShown
-                          ? (
-                            <ChatSelectionBar<TMessage>
-                              store={selectionStore}
-                              messages={messages}
-                              canCopy={hasClipboard}
-                              onCopy={copySelection}
-                              onForward={forwardSelection}
-                              onDelete={deleteSelection}
-                              renderSelectionBar={renderSelectionBar}
-                            />
-                          )
-                          : inputToolbarFragment}
-                      </ChatOverlayProvider>
+                      <MediaGalleryContext.Provider value={mediaGallery}>
+                        <ChatOverlayProvider>
+                          {isListMounted ? renderMessages : <View style={stylesCommon.fill} />}
+                          {isSelectionBarShown
+                            ? (
+                              <ChatSelectionBar<TMessage>
+                                store={selectionStore}
+                                messages={messages}
+                                canCopy={hasClipboard}
+                                onCopy={copySelection}
+                                onForward={forwardSelection}
+                                onDelete={deleteSelection}
+                                renderSelectionBar={renderSelectionBar}
+                              />
+                            )
+                            : inputToolbarFragment}
+                          <MediaViewerHost gallery={mediaGallery} />
+                        </ChatOverlayProvider>
+                      </MediaGalleryContext.Provider>
                     </ComposerPanelsContext.Provider>
                   </MessageSelectionContext.Provider>
                 </MessageHighlightContext.Provider>

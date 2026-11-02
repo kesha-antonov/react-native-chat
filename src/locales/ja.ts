@@ -73,6 +73,8 @@ export const ja: Partial<ChatLabels> = {
   emptyChatTitle: 'まだメッセージはありません...',
   emptyChatText: 'メッセージを送信するか、下のあいさつをタップしてください。',
   unreadMessages: '未読メッセージ',
+  mediaViewerCounter: '{index}/{count}',
+  mediaViewerDate: '{date} {time}',
   actionSelect: '選択',
   cancelSelection: '選択を解除',
   chatListTitle: 'チャット',

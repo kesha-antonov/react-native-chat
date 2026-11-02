@@ -73,6 +73,8 @@ export const tr: Partial<ChatLabels> = {
   emptyChatTitle: 'Burada henüz mesaj yok...',
   emptyChatText: 'Bir mesaj gönderin veya aşağıdaki selama dokunun.',
   unreadMessages: 'Okunmamış Mesajlar',
+  mediaViewerCounter: '{index}/{count}',
+  mediaViewerDate: '{date} {time}',
   actionSelect: 'Seç',
   cancelSelection: 'Seçimi iptal et',
   chatListTitle: 'Sohbetler',

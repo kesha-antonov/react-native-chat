@@ -73,6 +73,8 @@ export const zh: Partial<ChatLabels> = {
   emptyChatTitle: '这里还没有消息...',
   emptyChatText: '发送一条消息，或点按下方的问候。',
   unreadMessages: '未读消息',
+  mediaViewerCounter: '{index}/{count}',
+  mediaViewerDate: '{date} {time}',
   actionSelect: '选择',
   cancelSelection: '取消选择',
   chatListTitle: '聊天',

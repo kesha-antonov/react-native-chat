@@ -73,6 +73,8 @@ export const hi: Partial<ChatLabels> = {
   emptyChatTitle: 'यहाँ अभी कोई संदेश नहीं है...',
   emptyChatText: 'संदेश भेजें या नीचे दिए अभिवादन पर टैप करें।',
   unreadMessages: 'अपठित संदेश',
+  mediaViewerCounter: '{count} में से {index}',
+  mediaViewerDate: '{date}, {time}',
   actionSelect: 'चुनें',
   cancelSelection: 'चयन रद्द करें',
   chatListTitle: 'चैट',

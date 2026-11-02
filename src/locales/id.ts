@@ -73,6 +73,8 @@ export const id: Partial<ChatLabels> = {
   emptyChatTitle: 'Belum ada pesan di sini...',
   emptyChatText: 'Kirim pesan atau ketuk salam di bawah.',
   unreadMessages: 'Pesan Belum Dibaca',
+  mediaViewerCounter: '{index} dari {count}',
+  mediaViewerDate: '{date} pukul {time}',
   actionSelect: 'Pilih',
   cancelSelection: 'Batalkan pilihan',
   chatListTitle: 'Chat',

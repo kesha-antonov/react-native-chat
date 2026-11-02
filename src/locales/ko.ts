@@ -73,6 +73,8 @@ export const ko: Partial<ChatLabels> = {
   emptyChatTitle: '아직 메시지가 없습니다...',
   emptyChatText: '메시지를 보내거나 아래 인사를 탭하세요.',
   unreadMessages: '읽지 않은 메시지',
+  mediaViewerCounter: '{index}/{count}',
+  mediaViewerDate: '{date} {time}',
   actionSelect: '선택',
   cancelSelection: '선택 취소',
   chatListTitle: '채팅',
