@@ -19,7 +19,7 @@ calling `setState` on every token janks the list. The hook coalesces them.
 ## Minimal usage
 
 ```tsx
-import { Chat, IMessage, useStreamingMessages } from '@kesha-antonov/react-native-chat'
+import { Chat, IMessage, Send, SendProps, useStreamingMessages } from '@kesha-antonov/react-native-chat'
 
 const USER = { _id: 1 }
 const BOT = { _id: 2, name: 'Assistant' }
@@ -38,7 +38,14 @@ function Bot () {
     })
   }, [append, startStream])
 
-  return <Chat messages={messages} onSend={onSend} user={USER} />
+  // While a reply streams, the send button becomes a Stop button.
+  const renderSend = useCallback(
+    (sendProps: SendProps<IMessage>) =>
+      isStreaming ? <MyStopButton onPress={stop} /> : <Send {...sendProps} />,
+    [isStreaming, stop]
+  )
+
+  return <Chat messages={messages} onSend={onSend} user={USER} renderSend={renderSend} />
 }
 ```
 

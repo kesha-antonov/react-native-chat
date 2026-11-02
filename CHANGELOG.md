@@ -85,6 +85,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 ### 📝 Docs
 - New README screenshots; README covers the new features, peers and permissions
 - Troubleshooting: iOS 26 blur, "Cannot read property 'Chat' of undefined", bare React Native setup
+- README, streaming guide and migration guide cover the photo viewer, round-note pause, app-owned status, Stop button, `forceRTL`, theme tokens and building blocks
 
 ## [5.0.1] - 2026-09-15
 

@@ -134,6 +134,7 @@ That is the whole setup - everything below is optional.
 - ⌨️ **[Emoji keyboard](#emoji-keyboard-and-attachment-menu)** - a full emoji panel in the keyboard's place, with search, recents and skin tones
 - 📎 **[Attachment menu](#emoji-keyboard-and-attachment-menu)** - photo grid with numbered selection and a caption, files and location
 - 🎥 **[Video & audio messages](#-whats-new-vs-react-native-gifted-chat)** - real inline playback, with a tappable fallback
+- 🖼️ **[Photo viewer](#message-bubbles--content)** - tap a photo, then swipe through every photo in the chat; pinch or double-tap to zoom
 - 🎙️ **[Voice & video recording](#-whats-new-vs-react-native-gifted-chat)** - hold-to-record voice and round video notes, on once their peers are installed
 - 👋 **[Empty chat greeting](#messages--message-container)** - a "No messages here yet..." card with a tap-to-send 👋
 - 😍 **[Big emoji](#theming--dark-mode)** - emoji-only messages drop the bubble and draw large
@@ -253,9 +254,10 @@ Recording and playback work like this:
 
 - **Hold** the record button to record, release to send. With both voice and video enabled, a **tap** switches it between mic and camera, and the choice is remembered. With only video, the camera sits in the record button's place.
 - **Slide left** to cancel: all the way across cancels at once; releasing past about half the way cancels too. **Slide up** to lock and keep recording hands-free. The two exclude each other: no lock once the cancel slide is under way. "Slide up to lock" is shown for the first few takes.
-- **Locked**, the bar shows a `m:ss,t` timer and a CANCEL button, and the lock turns into a **pause** button: pausing stops the take into a preview - the voice note's waveform with play, or the round note looping in its circle (tap to hear it) - to send or delete.
-- In a paused voice take, the mic above send **resumes** recording onto its end, and the handles at either end of the waveform **trim** it. Resuming needs `react-native-audio-api`; trimming also needs `expo-file-system`, and a trimmed take is sent as a WAV. Round video takes can't be resumed or trimmed.
-- A round note records on the first hold, with the camera drawn over a blurred chat (when `expo-blur` is installed). Switch camera and flash work while recording (the screen lights up for the front camera, the torch for the back one), and you can pinch to zoom. At its 60s limit the take stops into the preview instead of sending.
+- **Locked**, the bar shows a `m:ss,t` timer and a CANCEL button, and the lock turns into a **pause** button.
+- A paused **voice** take turns into a preview: its waveform with play, to send or delete. The mic above send **resumes** recording onto its end, and the handles at either end of the waveform **trim** it. Resuming needs `react-native-audio-api`; trimming also needs `expo-file-system`, and a trimmed take is sent as a WAV.
+- A paused **round video** take holds the recording open: the circle shows the frame it paused on (Android; iOS keeps the live camera, dimmed), the bar offers delete and send, and the camera above send **resumes** into the same video. Round takes can't be trimmed.
+- A round note records on the first hold, with the camera drawn over a blurred chat (when `expo-blur` is installed). Switch camera and flash work while recording (the screen lights up for the front camera, the torch for the back one), and you can pinch to zoom. At its 60s limit the take stops into a looping preview (tap to hear it) instead of sending.
 - Haptic ticks on start, stop, lock and mode switch when `expo-haptics` is installed.
 - Starting a recording pauses any note that is playing.
 - Only one note plays at a time. When a voice or round video note plays to its end, the next newer one in the chat starts.
@@ -383,6 +385,7 @@ Overridable names: `send`, `mic`, `camera`, `play`, `pause`, `check`, `checkAll`
   - [Localization (i18n)](#localization-i18n)
   - [Message Status](#message-status)
   - [TypeScript](#typescript)
+  - [Building blocks](#building-blocks)
 - [Platform Notes](#-platform-notes)
 - [Performance](#-performance)
 - [Testing](#-testing)
@@ -708,7 +711,7 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 
 - **`renderBubble`** _(Component | Function(`props: BubbleProps`))_ - Custom message bubble. Receives [BubbleProps](src/Bubble/types.ts) as parameter.
 - **`renderMessageText`** _(Component | Function)_ - Custom message text
-- **`renderMessageImage`** _(Component | Function)_ - Custom message image
+- **`renderMessageImage`** _(Component | Function)_ - Custom message image. The built-in one opens the photo viewer on tap: it pages through every photo in the chat, oldest first, with a "3 of 12" counter, the caption, sender and date; pinch or double-tap zooms, and a swipe up or down closes it
 - **`renderMessageVideo`** _(Component | Function)_ - Custom message video
 - **`renderMessageAudio`** _(Component | Function)_ - Custom message audio
 - **`renderMessageLocation`** _(Component | Function)_ - Custom renderer for `IMessage.location`; defaults to a map card that opens the system maps app on tap
@@ -919,6 +922,8 @@ const chats: ChatListItem[] = conversations.map(c => ({
   isPinned: c.pinned,                // pinned chats show first, in the order you pass them
   isMuted: c.muted,
   isArchived: c.archived,
+  isOnline: c.online,                // green dot on the avatar
+  isVerified: c.verified,            // check badge after the name
   typingUsers: c.typing,             // User[]
   typingAction: c.action,            // 'typing' | 'recordingVoice' | 'sendingPhoto' | ...
   draft: drafts[c.id],
@@ -1113,14 +1118,14 @@ Render AI assistant replies token-by-token. Incoming chunks are batched with `re
 <details>
 <summary><strong>useStreamingMessages, stop control and a full example</strong></summary>
 
-The reply above streams in token-by-token (note the caret `▋`) and renders as **markdown** - bold, italics, lists, inline and fenced code - while the composer's send button turns into a **Stop** control mid-stream. See [Markdown rendering for AI replies](#markdown-rendering-for-ai-replies) to enable markdown.
+The reply above streams in token-by-token (note the caret `▋`) and renders as **markdown** - bold, italics, lists, inline and fenced code - while the app swaps the send button for a **Stop** control mid-stream (with `renderSend`, below). See [Markdown rendering for AI replies](#markdown-rendering-for-ai-replies) to enable markdown.
 
 - **`IMessage.streaming`** - flag a message as streaming (shows the caret)
 - **`useStreamingMessages(...)`** - owns the message list, rAF-batches `push()`, and supports stop via `AbortController`. It returns `{ messages, setMessages, append, startStream, isStreaming, stop }`; `setMessages` is there for anything the hook does not cover, so you can patch a message with a plain `map`.
 
 ```tsx
 import { useCallback } from 'react'
-import { Chat, IMessage, useStreamingMessages } from '@kesha-antonov/react-native-chat'
+import { Chat, IMessage, Send, SendProps, useStreamingMessages } from '@kesha-antonov/react-native-chat'
 
 function Bot () {
   const { messages, append, startStream, isStreaming, stop } = useStreamingMessages<IMessage>()
@@ -1136,7 +1141,14 @@ function Bot () {
     })
   }, [append, startStream])
 
-  return <Chat messages={messages} onSend={onSend} user={{ _id: 1 }} />
+  // While a reply streams, the send button becomes a Stop button.
+  const renderSend = useCallback(
+    (sendProps: SendProps<IMessage>) =>
+      isStreaming ? <MyStopButton onPress={stop} /> : <Send {...sendProps} />,
+    [isStreaming, stop]
+  )
+
+  return <Chat messages={messages} onSend={onSend} user={{ _id: 1 }} renderSend={renderSend} />
 }
 ```
 
@@ -1393,6 +1405,8 @@ const MyBadge = () => {
 
 Also exported: `defaultLightTheme`, `defaultDarkTheme`, `ChatWallpaper`, and the `ChatTheme` / `PartialChatTheme` types.
 
+The built-in panels have their own token groups: `emojiKeyboard`, `contextMenu`, `attachments` and `chatList`. The full set of tokens and their default values is the `ChatTheme` type and `defaultLightTheme` / `defaultDarkTheme`.
+
 </details>
 
 ### Localization (i18n)
@@ -1410,6 +1424,8 @@ All built-in UI strings (composer placeholder, send/cancel, load earlier, today,
 />
 ```
 
+Right-to-left layout follows the locale (Arabic, Hebrew, Persian, Urdu and a few others). `forceRTL` overrides the guess: `true` for an RTL language not in that set, `false` to keep a left-to-right layout.
+
 Exported helpers: `ChatLabels` (type), `defaultLabels`, `translations`, `resolveLabels`, and the `useLabels` hook for reading the resolved labels in custom components.
 
 </details>
@@ -1419,7 +1435,7 @@ Exported helpers: `ChatLabels` (type), `defaultLabels`, `translations`, `resolve
 <details>
 <summary><strong>Tick indicators for sent / delivered / read</strong></summary>
 
-Set `sent`, `received`, `pending` or `isFailed` on a message to show its delivery status. They render beside the time: one check once sent, two once received (read), a spinning clock while pending, a red badge when sending failed. `isEdited` or `editedAt` prefix the time with "edited":
+Set `sent`, `received`, `pending` or `isFailed` on a message to show its delivery status. The status is yours to set: add a message with `pending: true` in `onSend`, then set `sent` and `received` as your backend confirms. Every outgoing message shows it, voice notes, round notes, files and photos included. They render beside the time: one check once sent, two once received (read), a spinning clock while pending, a red badge when sending failed. `isEdited` or `editedAt` prefix the time with "edited":
 
 ```tsx
 const message: IMessage = {
@@ -1463,6 +1479,25 @@ interface MyMessage extends IMessage {
   user={{ _id: 1 }}
 />
 ```
+
+</details>
+
+### Building blocks
+
+<details>
+<summary><strong>Lower-level components and helpers</strong></summary>
+
+`Chat` is assembled from exported parts, so you can reuse them in your own screens or render props:
+
+- **Rows and bubbles**: `Message`, `Bubble`, `MessageText`, `MessageImage`, `MessageVideo`, `MessageAudio`, `MessageFile`, `MessageLocation`, `MessageReply`, `SystemMessage`, `Day`, `Time`, `Avatar`, `ChatAvatar`, `UnreadSeparator`, `ChatEmpty`, `LinkPreviewCard`, `MediaCard`
+- **Composer**: `InputToolbar`, `Composer`, `Send`, `Actions`, `ReplyPreview`, `EmojiGrid`, `AttachmentMenu`, `AttachmentSheet`
+- **Voice and video**: `VoiceMessageInput`, `WaveformPlayer`, `VideoRecordButton`, `VideoNoteRecorder`, with `isVoiceRecordingAvailable`, `isWaveformAvailable`, `isVideoRecordingAvailable`, `isVisionCameraAvailable`
+- **Menus and status**: `ContextMenu`, `TypingStatus` (`getTypingText`), `StreamingCursor`, `MarkdownMessageText` (`isMarkdownAvailable`), `BasicMarkdown`
+- **Lists**: `MessagesContainer`, `ChatList`, `ChatListCell`, `ChatListAvatar`, `ChatListShimmer`
+- **Hooks**: `useTheme`, `useThemedStyles`, `useColorScheme`, `useIcons`, `useLabels`, `useIsRTL`, `useChatContext`, `useStreamingMessages`, `useChatMessages`, `useChatList`
+- **Helpers**: `toggleReaction`, `getChatCapabilities`, `buildAttachmentMessages`, `getAttachmentTabs`, `formatFileSize`, `findFirstUrl`, `countEmojiOnly`, `isRTLLocale`, `mirrorPosition`, `formatChatListDate`, `getChatPreview`, `sortChats`, `matchesChatQuery`, `DEFAULT_MESSAGE_ACTION_KEYS`, `EMOJI_CATEGORY_KEYS`, `DEFAULT_RECENT_EMOJIS`
+
+Components rendered outside `Chat` need a `GestureHandlerRootView` above them.
 
 </details>
 
