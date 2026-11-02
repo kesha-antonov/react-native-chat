@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Image, StyleSheet, Text, View, ViewStyle } from 'react-native'
 import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated'
 
@@ -38,6 +38,10 @@ export function ChatListAvatar ({ id, title, uri, size, isArchive, isOnline, isS
   const index = getUserColorIndex(id, palette.length)
   const ring = ringColor ?? colors.background
   const circle = { width: size, height: size, borderRadius: radius }
+  // A photo that fails to load (offline, blocked, gone) falls back to the initials rather than
+  // leaving a blank circle.
+  const [failedUri, setFailedUri] = useState<string>()
+  const photoUri = uri && uri !== failedUri ? uri : undefined
 
   return (
     <View style={{ width: size, height: size }}>
@@ -48,8 +52,8 @@ export function ChatListAvatar ({ id, title, uri, size, isArchive, isOnline, isS
             <Icon name='archiveFolder' color='#FFFFFF' size={Math.round(size * 0.46)} fallback={null} />
           </View>
         )
-        : uri
-          ? <Image source={{ uri }} style={[circle, { backgroundColor: paletteEnd[index] ?? palette[index] }]} />
+        : photoUri
+          ? <Image source={{ uri: photoUri }} onError={() => setFailedUri(photoUri)} style={[circle, { backgroundColor: paletteEnd[index] ?? palette[index] }]} />
           : (
             <View style={[styles.center, circle, gradient(palette[index], paletteEnd[index])]}>
               <Text style={[styles.initials, { color: theme.avatar.textColor, fontSize: Math.round(size * 0.35) }]}>{getInitials(title)}</Text>

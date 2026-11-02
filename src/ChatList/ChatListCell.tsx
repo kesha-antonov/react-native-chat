@@ -1,4 +1,4 @@
-import React, { memo, useEffect } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { I18nManager, Image, Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { GestureDetector, Touchable, useCompetingGestures, usePanGesture } from 'react-native-gesture-handler'
 import Animated, {
@@ -202,6 +202,9 @@ function ChatListCellInner<TChat extends ChatListItem> ({
 
   const lastMessage = chat.lastMessage
   const preview = getChatPreview(chat, labels, user)
+  // A thumbnail that fails to load is dropped, so "Photo" does not sit after an empty gap.
+  const [failedThumbnail, setFailedThumbnail] = useState<string>()
+  const thumbnail = preview.thumbnail && preview.thumbnail !== failedThumbnail ? preview.thumbnail : undefined
   const typingUsers = chat.typingUsers ?? []
   const isOutgoing = !!user && lastMessage?.user?._id === user._id && chat.kind !== 'channel' && !lastMessage?.system
   const unreadCount = chat.unreadCount ?? 0
@@ -307,7 +310,7 @@ function ChatListCellInner<TChat extends ChatListItem> ({
                           : (
                             <>
                               {!!preview.prefix && <Text style={[styles.message, styles.noShrink, { color: colors.senderPrefix }]}>{preview.prefix}</Text>}
-                              {!!preview.thumbnail && <Image source={{ uri: preview.thumbnail }} style={styles.thumbnail} />}
+                              {!!thumbnail && <Image source={{ uri: thumbnail }} onError={() => setFailedThumbnail(thumbnail)} style={styles.thumbnail} />}
                               <Text style={[styles.message, styles.shrink, { color: colors.message }]} numberOfLines={1}>
                                 {preview.attachment ? <Text style={{ color: colors.attachment }}>{preview.attachment}</Text> : preview.text}
                               </Text>

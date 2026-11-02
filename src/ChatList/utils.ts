@@ -41,8 +41,9 @@ export function formatChatListDate (date: Date | number, locale?: string): strin
 }
 
 /** Initials: the first letters of the first two words. */
-export function getInitials (title: string): string {
-  const words = title.replace(/[^\p{L}\p{N}\s]/gu, '').trim().split(/\s+/).filter(Boolean)
+export function getInitials (title: string | undefined): string {
+  // A chat whose title has not loaded yet draws an empty circle rather than throwing.
+  const words = (title ?? '').replace(/[^\p{L}\p{N}\s]/gu, '').trim().split(/\s+/).filter(Boolean)
   return words.slice(0, 2).map(word => word[0]).join('').toUpperCase()
 }
 
