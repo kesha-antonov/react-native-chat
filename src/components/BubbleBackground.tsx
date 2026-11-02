@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo } from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import Animated, {
   interpolateColor,
@@ -40,8 +40,6 @@ export interface BubbleGradientStore {
    * worklets and no other's.
    */
   cellLayout: (messageId: string) => SharedValue<{ y: number, height: number } | undefined>
-  /** Holds the row's entry while the bubble is mounted; returns the release. */
-  retainCell?: (messageId: string) => () => void
   isInverted: boolean
 }
 
@@ -173,8 +171,6 @@ const evenStops = (count: number) => {
 const ScreenGradientBackground = ({ stops, messageId, bottomGap, cornerStyle, tailSide, store }: GradientBackgroundProps & { store: BubbleGradientStore }) => {
   const { scrolledY, listHeight, isInverted } = store
   const cellLayout = useMemo(() => store.cellLayout(String(messageId)), [store, messageId])
-  const { retainCell } = store
-  useEffect(() => retainCell?.(String(messageId)), [retainCell, messageId])
   const positions = evenStops(stops.length)
 
   // The gradient slides with the scroll on every frame, so it is one worklet that computes the
