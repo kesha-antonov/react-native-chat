@@ -6,7 +6,7 @@ import {
 import type { ViewabilityConfigCallbackPair, ViewToken } from '@legendapp/list/react-native'
 import { AnimatedLegendList } from '@legendapp/list/reanimated'
 import { Pressable } from 'react-native-gesture-handler'
-import Animated, { Easing, makeMutable, runOnJS, SharedValue, useAnimatedReaction, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { cancelAnimation, Easing, makeMutable, runOnJS, SharedValue, useAnimatedReaction, useAnimatedStyle, useDerivedValue, useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 import { BubbleGradientContext, BubbleGradientStore } from '../components/BubbleBackground'
 import { useComposerPanels } from '../components/composerPanels'
 import { GlassSurface } from '../components/GlassSurface'
@@ -30,6 +30,9 @@ import { MessageRowStore, MessageRowStoreContext, sameOrder } from './rowStore'
 import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions } from './types'
 
+
+const GRADIENT_SETTLE_DELAY = 150
+const GRADIENT_SETTLE = { duration: 220, easing: Easing.out(Easing.cubic) }
 
 /** The parts of Legend List's state the container reads. */
 interface ListState {
@@ -222,14 +225,37 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   }, [])
   const isScreenGradient = !!theme.bubble.outgoingGradient && theme.bubble.outgoingGradient.length > 1 &&
     theme.bubble.outgoingGradientMode === 'screen'
-  const gradientStore = useMemo((): BubbleGradientStore | null => isScreenGradient
-    ? { scrolledY, listHeight, cellLayout, isInverted: false }
-    : null
-  , [isScreenGradient, scrolledY, listHeight, cellLayout])
   // true while the user is actively scrolling (finger down dragging or momentum
   // running). Drives the floating day header visibility so it stays opaque for the
   // whole gesture and only fades once scrolling fully stops.
   const isScrollActive = useSharedValue(false)
+  // The scroll offset the screen gradient is drawn for. It holds still while the user scrolls
+  // and catches up once the list comes to rest: a gradient that slides inside every bubble on
+  // every frame of a fling roughly doubled the dropped frames on Android (Pixel 7: ~20% janky
+  // against ~13%), and a moving list hides that the colours travel with the bubbles for a moment.
+  // Scrolls the list makes itself (following a new message) keep it tracking.
+  const gradientScrolledY = useSharedValue(0)
+  useAnimatedReaction(
+    () => ({ y: scrolledY.value, isActive: isScrollActive.value }),
+    (current, previous) => {
+      if (!isScreenGradient)
+        return
+      if (current.isActive) {
+        if (!previous?.isActive)
+          cancelAnimation(gradientScrolledY)
+        return
+      }
+      if (previous?.isActive) {
+        gradientScrolledY.value = withDelay(GRADIENT_SETTLE_DELAY, withTiming(current.y, GRADIENT_SETTLE))
+        return
+      }
+      if (current.y !== previous?.y)
+        gradientScrolledY.value = current.y
+    })
+  const gradientStore = useMemo((): BubbleGradientStore | null => isScreenGradient
+    ? { scrolledY: gradientScrolledY, listHeight, cellLayout, isInverted: false }
+    : null
+  , [isScreenGradient, gradientScrolledY, listHeight, cellLayout])
   // The floating day header's fade, shared with the inline separators it stands in for.
   const floatingDayOpacity = useScrollGatedOpacity(isScrollActive)
 
