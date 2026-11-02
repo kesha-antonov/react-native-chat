@@ -28,6 +28,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - **`textInputRef` is typed `RefObject<ComponentRef<typeof TextInput> | null>`**
 
 ### ✨ Features
+- **Slide along the emoji categories**: press the category strip and slide the finger across it to move through the categories, a haptic tick on each
 - **Reaction pills show who reacted**: up to three avatars in place of the count, as in Telegram - in one-to-one chats, and in groups while a message has three reactions or fewer. `reactions.getUser` resolves reactors (by default from the loaded messages); a count now shows even when it is 1
 - **A message can carry up to three reactions from one person** (Telegram's limit): `Chat.toggleReaction` keeps up to three of a user's reactions and replaces the oldest past that. Pass `{ maxPerUser: 1 }` for the previous one-each behaviour
 - **A round note keeps playing through a long-press**: the lifted message shows the note grown and playing, from the same player, instead of a stopped copy; the same goes for an inline video
@@ -62,6 +63,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- **Emoji categories answer a tap mid-scroll**: in the reactions panel a category tapped while the grid was still flinging only stopped the fling. The category strip is now one native gesture, so it fires either way. `EmojiGrid` rendered outside `Chat` needs a `GestureHandlerRootView` above it
 - **Gradient bubbles were all one colour on iOS**: the list's row height was read only on change, and on iOS it settles before the list subscribes, so every bubble sampled the gradient a content height off. It is now read when the list subscribes too
 - A tap outside the expanded emoji picker (or Android's back) folds it back into the reactions bar and leaves the menu open, as in Telegram for Android, instead of closing the menu
 - A chat opens with its messages already in place: on Android the rows used to slide into position each time a chat opened, as the list corrected its estimated row heights

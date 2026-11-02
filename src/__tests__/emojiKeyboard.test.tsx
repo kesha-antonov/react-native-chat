@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { View } from 'react-native'
-import { fireEvent, render } from '@testing-library/react-native'
+import { fireEvent } from '@testing-library/react-native'
 
 import { Chat, EmojiGrid, IMessage } from '..'
 import {
@@ -13,6 +13,7 @@ import {
   withoutSkinTone,
 } from '../emoji/emojiStore'
 import { deleteBackward, insertText, previousCharacterStart } from '../emoji/textEditing'
+import { render } from './renderWithGestureRoot'
 
 const ME = { _id: 1, name: 'Me' }
 const PLACEHOLDER = 'Type a message...'

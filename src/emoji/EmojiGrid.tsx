@@ -12,7 +12,8 @@ import {
   View,
   ListViewToken,
 } from 'react-native'
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { GestureDetector, GestureStateManager, usePanGesture } from 'react-native-gesture-handler'
+import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { selectionHaptic } from '../components/haptics'
 import { Icon } from '../components/Icon'
@@ -171,10 +172,12 @@ const EmojiRow = memo(({ emojis, cellSize, fontSize, isRTL, onPress, onLongPress
 EmojiRow.displayName = 'EmojiRow'
 
 /** The tab strip with its sliding indicator; owns the active tab so a scroll re-renders only it. */
-const TabStrip = memo(({ tabs, activeRef, onPress, styles, theme, isRTL }: {
+const TabStrip = memo(({ tabs, activeRef, onPress, onScrubEnd, styles, theme, isRTL }: {
   tabs: Tab[]
   activeRef: React.MutableRefObject<(index: number) => void>
-  onPress: (index: number) => void
+  /** A tab was touched (`isScrub` false) or the finger slid onto it along the strip. */
+  onPress: (index: number, isScrub: boolean) => void
+  onScrubEnd: () => void
   styles: Styles
   theme: ChatTheme
   isRTL: boolean
@@ -199,39 +202,81 @@ const TabStrip = memo(({ tabs, activeRef, onPress, styles, theme, isRTL }: {
     transform: [{ translateX: position.value * step * direction }],
   }))
 
+  // One native gesture over the whole strip, not a pressable per tab: React Native's responder
+  // system lets a moving list claim the next touch to stop itself, so inside the reactions panel
+  // a tab tapped mid-fling only stopped the fling. A gesture-handler pan is recognised natively
+  // and fires either way. It activates on touch-down, so a touch picks the tab under the finger,
+  // and sliding along the strip moves through the categories, a haptic tick on each.
+  const lastTouchedRef = useRef(-1)
+  const touchAt = useCallback((x: number, isFirst: boolean) => {
+    const slot = Math.min(tabs.length - 1, Math.max(0, Math.floor(x / step)))
+    const index = isRTL ? tabs.length - 1 - slot : slot
+    if (!isFirst && index === lastTouchedRef.current)
+      return
+    if (!isFirst)
+      selectionHaptic()
+    lastTouchedRef.current = index
+    select(index)
+    onPress(index, !isFirst)
+  }, [tabs.length, step, isRTL, select, onPress])
+  const endTouch = useCallback(() => {
+    lastTouchedRef.current = -1
+    onScrubEnd()
+  }, [onScrubEnd])
+  const gesture = usePanGesture({
+    manualActivation: true,
+    onTouchesDown: event => {
+      GestureStateManager.activate(event.handlerTag)
+      runOnJS(touchAt)(event.changedTouches[0].x, true)
+    },
+    onUpdate: event => {
+      runOnJS(touchAt)(event.x, false)
+    },
+    onFinalize: () => {
+      runOnJS(endTouch)()
+    },
+  })
+
   return (
     <View style={styles.tabs}>
-      <View style={[styles.tabRow, isRTL && styles.rowReverse]}>
-        <Animated.View style={[styles.indicator, isRTL ? styles.indicatorRTL : null, indicatorStyle]} />
-        {tabs.map((tab, index) => {
-          const color = index === active ? theme.emojiKeyboard.iconSelected : theme.emojiKeyboard.icon
-          return (
-            <Pressable
-              key={tab.key}
-              onPress={() => {
-                select(index)
-                onPress(index)
-              }}
-              style={styles.tab}
-              hitSlop={4}
-              accessibilityRole='tab'
-              accessibilityState={{ selected: index === active }}
-              accessibilityLabel={tab.label}
-            >
-              <Icon
-                name={TAB_ICONS[tab.key]}
-                color={color}
-                size={TAB_ICON}
-                fallback={<Text style={[styles.tabFallback, index !== active && styles.tabFallbackIdle]}>{TAB_FALLBACK[tab.key]}</Text>}
-              />
-            </Pressable>
-          )
-        })}
-      </View>
+      <GestureDetector gesture={gesture}>
+        <View style={[styles.tabRow, isRTL && styles.rowReverse]}>
+          <Animated.View style={[styles.indicator, isRTL ? styles.indicatorRTL : null, indicatorStyle]} />
+          {tabs.map((tab, index) => {
+            const color = index === active ? theme.emojiKeyboard.iconSelected : theme.emojiKeyboard.icon
+            const activate = () => {
+              select(index)
+              onPress(index, false)
+            }
+            return (
+              <View
+                key={tab.key}
+                style={styles.tab}
+                accessible
+                accessibilityRole='tab'
+                accessibilityState={{ selected: index === active }}
+                accessibilityLabel={tab.label}
+                accessibilityActions={TAB_ACCESSIBILITY_ACTIONS}
+                onAccessibilityAction={activate}
+                onAccessibilityTap={activate}
+              >
+                <Icon
+                  name={TAB_ICONS[tab.key]}
+                  color={color}
+                  size={TAB_ICON}
+                  fallback={<Text style={[styles.tabFallback, index !== active && styles.tabFallbackIdle]}>{TAB_FALLBACK[tab.key]}</Text>}
+                />
+              </View>
+            )
+          })}
+        </View>
+      </GestureDetector>
     </View>
   )
 })
 TabStrip.displayName = 'TabStrip'
+
+const TAB_ACCESSIBILITY_ACTIONS = [{ name: 'activate' }]
 
 interface TonePopupState {
   emoji: string
@@ -444,17 +489,34 @@ export const EmojiGrid = ({
       activeTabRef.current(first.tab)
   }).current
 
-  const scrollToTab = useCallback((tab: number) => {
+  const jumpEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollToTab = useCallback((tab: number, isScrub = false) => {
     const index = firstItemOfTab[tab]
     if (index === undefined)
       return
     isJumpingRef.current = true
-    // Smooth-scroll to the tab; the rows are fixed height, so the offset is exact.
-    listRef.current?.scrollToOffset({ offset: offsets[index] ?? 0, animated: true })
-    setTimeout(() => {
+    if (jumpEndTimerRef.current)
+      clearTimeout(jumpEndTimerRef.current)
+    // A tap smooth-scrolls to the tab; while the finger slides along the strip each category is
+    // jumped to at once, to keep up with it. The rows are fixed height, so the offset is exact.
+    listRef.current?.scrollToOffset({ offset: offsets[index] ?? 0, animated: !isScrub })
+    if (!isScrub)
+      jumpEndTimerRef.current = setTimeout(() => {
+        isJumpingRef.current = false
+      }, 400)
+  }, [firstItemOfTab, offsets])
+  // The visible rows take the indicator back once the slide along the strip has ended.
+  const endScrub = useCallback(() => {
+    if (jumpEndTimerRef.current)
+      clearTimeout(jumpEndTimerRef.current)
+    jumpEndTimerRef.current = setTimeout(() => {
       isJumpingRef.current = false
     }, 400)
-  }, [firstItemOfTab, offsets])
+  }, [])
+  useEffect(() => () => {
+    if (jumpEndTimerRef.current)
+      clearTimeout(jumpEndTimerRef.current)
+  }, [])
 
   const handleSelect = useCallback((emoji: string) => {
     emojiRecents.add(emoji)
@@ -580,11 +642,11 @@ export const EmojiGrid = ({
   return (
     <View ref={containerRef} testID='emoji-grid' style={styles.container} onLayout={onLayout}>
       {isKeyboard && showTabs && (
-        <TabStrip tabs={tabs} activeRef={activeTabRef} onPress={scrollToTab} styles={styles} theme={theme} isRTL={isRTL} />
+        <TabStrip tabs={tabs} activeRef={activeTabRef} onPress={scrollToTab} onScrubEnd={endScrub} styles={styles} theme={theme} isRTL={isRTL} />
       )}
       {showFixedSearch && renderSearchPill(true)}
       {!isKeyboard && showTabs && (
-        <TabStrip tabs={tabs} activeRef={activeTabRef} onPress={scrollToTab} styles={styles} theme={theme} isRTL={isRTL} />
+        <TabStrip tabs={tabs} activeRef={activeTabRef} onPress={scrollToTab} onScrubEnd={endScrub} styles={styles} theme={theme} isRTL={isRTL} />
       )}
       {cellSize > 0 && (
         <FlatList
