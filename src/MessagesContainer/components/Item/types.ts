@@ -17,4 +17,6 @@ export interface ItemProps<TMessage extends IMessage> extends MessagesContainerP
   // back as it fades out at rest.
   floatingDayOpacity?: { value: number }
   isDayAnimationEnabled?: boolean
+  /** The unread bar goes right above this row (`firstUnreadMessageId` is this message). */
+  isFirstUnread?: boolean
 }

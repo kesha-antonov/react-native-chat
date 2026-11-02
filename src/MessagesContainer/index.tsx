@@ -16,6 +16,7 @@ import { useIsKeyboardVisible } from '../hooks/useIsKeyboardVisible'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { LoadEarlierMessages } from '../LoadEarlierMessages'
 import { IMessage } from '../Models'
+import { createStore } from '../store'
 import stylesCommon from '../styles'
 import { TypingIndicator, TypingIndicatorListAnimationContext } from '../TypingIndicator'
 import { isSameDay } from '../utils'
@@ -25,7 +26,7 @@ import { MessageRow } from './components/Item'
 import { PageDownCounter } from './components/PageDownCounter'
 import { listCellTransition } from './listTransitions'
 import { PageDownReturnContext } from './pageDownReturn'
-import { MessageRowConfigContext, useStableRowConfig } from './rowConfig'
+import { MessageRowConfigContext, RowTargets, RowTargetsContext, useStableRowConfig } from './rowConfig'
 import { MessageRowStore, MessageRowStoreContext, sameOrder } from './rowStore'
 import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions } from './types'
@@ -400,6 +401,8 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     isScrollToBottomEnabled: _isScrollToBottomEnabled,
     isScrollToBottomBadgeEnabled: _isScrollToBottomBadgeEnabled,
     isAlignedTop: _isAlignedTop,
+    // Concerns two rows at most: read through `useRowSettings` (rowTargets below).
+    firstUnreadMessageId: _firstUnreadMessageId,
     /* eslint-enable @typescript-eslint/no-unused-vars */
     ...sharedRowProps
   } = props
@@ -418,6 +421,12 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     floatingRenderedDate,
     floatingDayOpacity,
   }), [stableRowProps, scrolledY, daysPositions, listHeight, floatingRenderedDate, floatingDayOpacity])
+
+  const [rowTargets] = useState(() => createStore<RowTargets>({ firstUnreadMessageId }))
+  // Before paint, so the bar never shows on both rows or neither.
+  useLayoutEffect(() => {
+    rowTargets.set(prev => prev.firstUnreadMessageId === firstUnreadMessageId ? prev : { ...prev, firstUnreadMessageId })
+  }, [rowTargets, firstUnreadMessageId])
 
   const renderItem = useCallback(({ item }: { item: unknown }): React.ReactElement =>
     <MessageRow id={String((item as TMessage)._id)} />
@@ -910,7 +919,9 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
     <BubbleGradientContext.Provider value={gradientStore}>
       <MessageRowStoreContext.Provider value={rowStore as unknown as MessageRowStore}>
         <MessageRowConfigContext.Provider value={rowConfig}>
-          {animatedList}
+          <RowTargetsContext.Provider value={rowTargets}>
+            {animatedList}
+          </RowTargetsContext.Provider>
         </MessageRowConfigContext.Provider>
       </MessageRowStoreContext.Provider>
     </BubbleGradientContext.Provider>

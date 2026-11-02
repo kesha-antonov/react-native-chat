@@ -6,7 +6,7 @@ import { Day } from '../../../Day'
 import { Message, MessageProps } from '../../../Message'
 import { IMessage } from '../../../Models'
 import { isSameDay } from '../../../utils'
-import { MessageRowConfigContext } from '../../rowConfig'
+import { MessageRowConfigContext, useRowSettings } from '../../rowConfig'
 import { useRowEntry } from '../../rowStore'
 import { DAY_HANDOFF_OFFSET, dayPositionScreenTop, findDayPosition } from '../dayLayout'
 import { ItemProps } from './types'
@@ -109,7 +109,7 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
     renderMessage: renderMessageProp,
     isDayAnimationEnabled,
     reply,
-    firstUnreadMessageId,
+    isFirstUnread,
     renderUnreadSeparator,
     /* eslint-disable @typescript-eslint/no-unused-vars */
     scrolledY: _scrolledY,
@@ -142,7 +142,6 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
 
   // The unread bar is a row of its own right above the first unread message, under its
   // date if it opens a day.
-  const isFirstUnread = firstUnreadMessageId != null && props.currentMessage._id === firstUnreadMessageId
   const unreadSeparator = isFirstUnread
     ? renderUnreadSeparator === undefined ? <UnreadSeparator /> : renderUnreadSeparator?.()
     : null
@@ -171,6 +170,9 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
  */
 const MessageRowComponent = ({ id }: { id: string }) => {
   const entry = useRowEntry(id)
+  // Only this row's answer: the bar moving re-renders the two rows it concerns, not all of them.
+  const isFirstUnread = useRowSettings(targets =>
+    targets.firstUnreadMessageId != null && String(targets.firstUnreadMessageId) === id)
   const config = useContext(MessageRowConfigContext) as unknown as Omit<ItemProps<IMessage>, 'currentMessage' | 'position'>
 
   if (!entry)
@@ -186,6 +188,7 @@ const MessageRowComponent = ({ id }: { id: string }) => {
       previousMessage={entry.previousMessage}
       nextMessage={entry.nextMessage}
       position={position}
+      isFirstUnread={isFirstUnread}
     />
   )
 }

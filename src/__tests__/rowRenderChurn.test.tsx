@@ -281,6 +281,14 @@ describe('row store', () => {
     expect(rendered).toEqual([])
   })
 
+  it('moves the unread bar by re-rendering only the two rows it leaves and reaches', async () => {
+    const { rendered, bump } = await setup(tick => ({ firstUnreadMessageId: tick === 0 ? 15 : 17 }))
+    await act(async () => {
+      bump()
+    })
+    expect(new Set(rendered)).toEqual(new Set([15, 17]))
+  })
+
   it('re-renders the rows when a new render function is passed', async () => {
     const { rendered, bump } = await setup(tick => ({ renderTime: () => <View testID={`time-${tick}`} /> }))
     await act(async () => {

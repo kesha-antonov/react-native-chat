@@ -1,5 +1,7 @@
-import { createContext, useInsertionEffect, useState } from 'react'
+import { createContext, useContext, useInsertionEffect, useState } from 'react'
 import { isSharedValue } from 'react-native-reanimated'
+
+import { Store, useStore } from '../store'
 
 /**
  * The props every message row shares (render functions, styles, actions, labels...), handed to
@@ -123,4 +125,24 @@ export function useStableRowConfig (config: RowConfig): RowConfig {
   if (next !== stable)
     setStable(next)
   return next
+}
+
+/**
+ * Row settings that concern only some rows, kept out of the shared config: a change there would
+ * re-render every row, while each row only needs to know whether it is the one concerned. A row
+ * reads them through `useRowSettings(selector)`, so it re-renders only when its own answer
+ * changes (the unread bar moving re-renders the row it leaves and the row it reaches).
+ */
+export interface RowTargets {
+  firstUnreadMessageId?: string | number | null
+}
+
+export const RowTargetsContext = createContext<Store<RowTargets> | null>(null)
+
+const NO_TARGETS: RowTargets = {}
+
+/** A slice of the row targets; return a primitive, so only a changed answer re-renders. */
+export function useRowSettings<S> (selector: (targets: RowTargets) => S): S {
+  const store = useContext(RowTargetsContext)
+  return useStore(store, selector, selector(NO_TARGETS))
 }
