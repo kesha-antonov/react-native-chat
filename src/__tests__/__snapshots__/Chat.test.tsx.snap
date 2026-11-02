@@ -741,7 +741,6 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                     }
                     estimatedItemSize={64}
                     initialScrollAtEnd={true}
-                    itemLayoutAnimation={BaseAnimationMock {}}
                     keyboardDismissMode="interactive"
                     keyboardShouldPersistTaps="handled"
                     maintainScrollAtEnd={
@@ -1742,7 +1741,6 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                     }
                     estimatedItemSize={64}
                     initialScrollAtEnd={true}
-                    itemLayoutAnimation={BaseAnimationMock {}}
                     keyboardDismissMode="interactive"
                     keyboardShouldPersistTaps="handled"
                     maintainScrollAtEnd={

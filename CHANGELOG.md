@@ -59,6 +59,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - The expanded reactions panel lays out once instead of on every frame
 
 ### 🐛 Fixes
+- A chat opens with its messages already in place: on Android the rows used to slide into position each time a chat opened, as the list corrected its estimated row heights
 - **A custom `renderChatEmpty` was drawn upside down** in the default inverted list (and mirrored on Android); it is flipped back the way the list flips its rows
 - **Streamed markdown replies show their words as they arrive.** With `react-native-streamdown`, a reply that grew every few milliseconds showed only the cursor until it ended (each new text dropped the previous one's rendering); the text now reaches it at most every 250ms
 - Chat list previews show markdown as plain text
@@ -96,6 +97,7 @@ A new default look and built-in messenger features: emoji keyboard, attachment m
 - Toolchain: React Native 0.88.1, React 19.3.1, gesture-handler 3.4.0, Reanimated 4.7.1, worklets 0.13.1, Jest 30, ESLint 10; TypeScript stays on 6.0 and Babel on 7 (see AGENTS.md)
 
 ### 📲 Example app
+- Archived Chats opens as a screen of its own, as in Telegram, through `ChatList`'s controlled `isArchiveOpen`
 - Native tabs (Expo Router 58): the platform tab bar, Liquid Glass on iOS 26+, instead of the JS one
 - Screens covered by another one stop rendering and keep their state (`activityEnabled` on the stacks and tabs), so the chat list does no work while a chat is open on top of it
 - `RCT_METRO_PORT` at prebuild bakes Metro's port into the iOS debug build (`RCTMetroPort`)

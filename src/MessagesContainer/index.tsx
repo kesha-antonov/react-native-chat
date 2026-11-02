@@ -31,6 +31,7 @@ import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions } from './types'
 
 
+const LAYOUT_SETTLE_MS = 500
 const GRADIENT_SETTLE_DELAY = 150
 const GRADIENT_SETTLE = { duration: 220, easing: Easing.out(Easing.cubic) }
 
@@ -159,6 +160,17 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
   const lastScrolledY = useSharedValue(0)
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false)
   const [isListLaidOut, setIsListLaidOut] = useState(false)
+  // Rows slide when they move, but not while the list first lays itself out: it places rows at
+  // an estimated height and moves them once they are measured, and on Android those corrections
+  // played as messages sliding in each time a chat opened. A chat should open with everything
+  // already in place, as Telegram's does, so the slide starts once the first layout has settled.
+  const [isLayoutAnimated, setIsLayoutAnimated] = useState(false)
+  useEffect(() => {
+    if (!isListLaidOut || isLayoutAnimated)
+      return
+    const timer = setTimeout(() => setIsLayoutAnimated(true), LAYOUT_SETTLE_MS)
+    return () => clearTimeout(timer)
+  }, [isListLaidOut, isLayoutAnimated])
   const scrollToBottomPressScale = useSharedValue(1)
   // The pressed state is the icon color at 15% over the circle.
   const scrollToBottomPressed = useSharedValue(0)
@@ -803,7 +815,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       maintainVisibleContentPosition
       // Rows that move (a message arriving, a row growing a reaction, the typing bubble
       // coming or going) slide to their new place instead of jumping there.
-      itemLayoutAnimation={listCellTransition}
+      itemLayoutAnimation={isLayoutAnimated ? listCellTransition : undefined}
       sharedValues={sharedValues}
       style={stylesCommon.fill}
       contentContainerStyle={styles.messagesContainer}
@@ -827,7 +839,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       viewabilityConfigCallbackPairs={viewabilityPairs}
       onLayout={onLayoutList}
     />
-  ), [forwardRef, keyExtractor, orderedData, renderItem, alignItemsAtEnd, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, onScrollBeginDrag, onScrollEndDrag, onMomentumScrollBegin, onMomentumScrollEnd, onContentSizeChange, onItemSizeChanged, onMetricsChange, viewabilityPairs, onLayoutList])
+  ), [forwardRef, keyExtractor, orderedData, renderItem, alignItemsAtEnd, isLayoutAnimated, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, onScrollBeginDrag, onScrollEndDrag, onMomentumScrollBegin, onMomentumScrollEnd, onContentSizeChange, onItemSizeChanged, onMetricsChange, viewabilityPairs, onLayoutList])
 
   const list = (
     <View

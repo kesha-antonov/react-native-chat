@@ -11,12 +11,13 @@ let hasLoadedDialogs = false
 
 /**
  * The library's `ChatList` on top of the demo's store: the store is the "backend", and each
- * list action is one call into it.
+ * list action is one call into it. `archived` shows the Archived Chats folder: it is a screen of
+ * its own, as in Telegram, which the main list pushes when the folder row is tapped.
  */
-export default function ChatListScreen () {
+export default function ChatListScreen ({ archived = false }: { archived?: boolean }) {
   const router = useRouter()
   const chats = useChatListItems()
-  const [isLoading, setIsLoading] = useState(!hasLoadedDialogs)
+  const [isLoading, setIsLoading] = useState(!archived && !hasLoadedDialogs)
 
   useEffect(() => {
     startChatListDemo()
@@ -33,11 +34,21 @@ export default function ChatListScreen () {
     router.push(`/chats/${chat.id}` as Href)
   }, [router])
 
+  // The list asks to open the folder (its row) or to close it (its back arrow, Android's back).
+  const onArchiveOpenChange = useCallback((isOpen: boolean) => {
+    if (isOpen && !archived)
+      router.push('/chats/archived' as Href)
+    else if (!isOpen && archived)
+      router.back()
+  }, [archived, router])
+
   return (
     <ChatList<DialogItem>
       chats={chats}
       user={ME}
       isLoading={isLoading}
+      isArchiveOpen={archived}
+      onArchiveOpenChange={onArchiveOpenChange}
       onPressChat={onPressChat}
       onPressNewChat={() => router.push('/chats/new' as Href)}
       onPinChats={(selection, isPinned) => selection.forEach(chat => {
