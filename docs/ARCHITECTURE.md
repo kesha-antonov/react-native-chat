@@ -71,3 +71,7 @@ Each phase lands as its own commits with the gate green, benchmarked where it to
 6. **Decompose the remaining large files** (`MessageVideo`, `InputToolbar`, `RecordButton`,
    `ContextMenu`, `WaveformPlayer`, `VideoNoteCapture`) and share the gesture primitives with
    `ChatList`.
+   *Done*: each is now a folder of parts (most under 300 lines; the two state-machine hooks,
+   `useVideoNoteSession` and `useRoundNotePlayback`, stay whole). Swipe-to-reply and the chat
+   list's swipe-to-archive share `src/gestures/useRowSwipe.ts`. Still large: `Chat`,
+   `MessagesContainer`, `VoiceMessageInput`, `AttachmentMenu`, `EmojiGrid`, `VideoNoteRecorder`.
