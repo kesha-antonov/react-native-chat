@@ -347,10 +347,14 @@ Land the content first as normal commits, then cut the release as its own commit
 5. Annotated tag: `git tag -a vX.Y.Z -m "X.Y.Z - short summary"` (the `v` prefix from 4.3.0 on;
    4.2.0 and earlier have none)
 6. `git push origin main && git push origin vX.Y.Z`
+7. Publish a GitHub Release on the tag, with that version's CHANGELOG section as the notes:
+   `gh release create vX.Y.Z --title X.Y.Z --notes-file <section>`
 
-There is **no publish-on-tag workflow** - `.github/workflows/main.yml` only runs checks on
-pushes to `main` and PRs. Publishing to npm is a manual `npm publish` from the root, which
-re-runs `prepublishOnly` on the way out.
+Publishing the release is what ships to npm: `.github/workflows/release.yml` runs on
+`release: published`, re-runs lint, typecheck, test and build, and runs
+`npm publish --provenance` through npm trusted publishing (OIDC - there is no `NPM_TOKEN`).
+Pushing the tag alone publishes nothing. Do not `npm publish` by hand; watch the run with
+`gh run watch` and check `npm view @kesha-antonov/react-native-chat version` afterwards.
 
 ## Before you finish
 
