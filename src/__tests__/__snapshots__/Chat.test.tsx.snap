@@ -740,7 +740,6 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                       }
                     }
                     estimatedItemSize={64}
-                    getItemType={[Function]}
                     initialScrollAtEnd={true}
                     keyboardDismissMode="interactive"
                     keyboardShouldPersistTaps="handled"
@@ -762,23 +761,10 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                     onStartReachedThreshold={0.1}
                     sharedValues={
                       {
-                        "activeStickyIndex": {
-                          "value": -1,
-                        },
                         "scrollOffset": {
                           "value": 0,
                         },
                       }
-                    }
-                    stickyHeaderConfig={
-                      {
-                        "offset": 9,
-                      }
-                    }
-                    stickyHeaderIndices={
-                      [
-                        0,
-                      ]
                     }
                     style={
                       {
@@ -798,68 +784,62 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                   >
                     <View>
                       <View>
-                        <View
-                          pointerEvents="box-none"
-                          style={
-                            [
-                              {
-                                "alignItems": "stretch",
-                              },
-                              {
-                                "opacity": 1,
-                              },
-                            ]
-                          }
-                        >
+                        <View>
                           <View
                             style={
-                              [
-                                {
-                                  "alignItems": "center",
-                                  "justifyContent": "center",
-                                },
-                                {
-                                  "marginBottom": 7,
-                                  "marginTop": 1,
-                                },
-                                undefined,
-                              ]
+                              {
+                                "opacity": 1,
+                              }
                             }
                           >
-                            <View
-                              style={
-                                [
-                                  {
-                                    "backgroundColor": "rgba(53, 66, 81, 0.51)",
-                                    "borderRadius": 11,
-                                    "paddingHorizontal": 8,
-                                    "paddingVertical": 3,
-                                  },
-                                  undefined,
-                                ]
-                              }
-                            >
-                              <Text
+                            <View>
+                              <View
                                 style={
                                   [
                                     {
-                                      "color": "#FFFFFF",
-                                      "fontSize": 14,
-                                      "fontWeight": "500",
-                                      "lineHeight": 17,
+                                      "alignItems": "center",
+                                      "justifyContent": "center",
+                                    },
+                                    {
+                                      "marginBottom": 7,
+                                      "marginTop": 1,
                                     },
                                     undefined,
                                   ]
                                 }
                               >
-                                1 January 2024
-                              </Text>
+                                <View
+                                  style={
+                                    [
+                                      {
+                                        "backgroundColor": "rgba(53, 66, 81, 0.51)",
+                                        "borderRadius": 11,
+                                        "paddingHorizontal": 8,
+                                        "paddingVertical": 3,
+                                      },
+                                      undefined,
+                                    ]
+                                  }
+                                >
+                                  <Text
+                                    style={
+                                      [
+                                        {
+                                          "color": "#FFFFFF",
+                                          "fontSize": 14,
+                                          "fontWeight": "500",
+                                          "lineHeight": 17,
+                                        },
+                                        undefined,
+                                      ]
+                                    }
+                                  >
+                                    1 January 2024
+                                  </Text>
+                                </View>
+                              </View>
                             </View>
                           </View>
-                        </View>
-                      </View>
-                      <View>
-                        <View>
                           <View>
                             <View
                               handlerTags={
@@ -1760,7 +1740,6 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                       }
                     }
                     estimatedItemSize={64}
-                    getItemType={[Function]}
                     initialScrollAtEnd={true}
                     keyboardDismissMode="interactive"
                     keyboardShouldPersistTaps="handled"
@@ -1782,23 +1761,10 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                     onStartReachedThreshold={0.1}
                     sharedValues={
                       {
-                        "activeStickyIndex": {
-                          "value": -1,
-                        },
                         "scrollOffset": {
                           "value": 0,
                         },
                       }
-                    }
-                    stickyHeaderConfig={
-                      {
-                        "offset": 9,
-                      }
-                    }
-                    stickyHeaderIndices={
-                      [
-                        0,
-                      ]
                     }
                     style={
                       {
@@ -1818,68 +1784,62 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                   >
                     <View>
                       <View>
-                        <View
-                          pointerEvents="box-none"
-                          style={
-                            [
-                              {
-                                "alignItems": "stretch",
-                              },
-                              {
-                                "opacity": 1,
-                              },
-                            ]
-                          }
-                        >
+                        <View>
                           <View
                             style={
-                              [
-                                {
-                                  "alignItems": "center",
-                                  "justifyContent": "center",
-                                },
-                                {
-                                  "marginBottom": 7,
-                                  "marginTop": 1,
-                                },
-                                undefined,
-                              ]
+                              {
+                                "opacity": 1,
+                              }
                             }
                           >
-                            <View
-                              style={
-                                [
-                                  {
-                                    "backgroundColor": "rgba(0, 0, 0, 0.18)",
-                                    "borderRadius": 11,
-                                    "paddingHorizontal": 8,
-                                    "paddingVertical": 3,
-                                  },
-                                  undefined,
-                                ]
-                              }
-                            >
-                              <Text
+                            <View>
+                              <View
                                 style={
                                   [
                                     {
-                                      "color": "#FFFFFF",
-                                      "fontSize": 14,
-                                      "fontWeight": "500",
-                                      "lineHeight": 17,
+                                      "alignItems": "center",
+                                      "justifyContent": "center",
+                                    },
+                                    {
+                                      "marginBottom": 7,
+                                      "marginTop": 1,
                                     },
                                     undefined,
                                   ]
                                 }
                               >
-                                1 January 2024
-                              </Text>
+                                <View
+                                  style={
+                                    [
+                                      {
+                                        "backgroundColor": "rgba(0, 0, 0, 0.18)",
+                                        "borderRadius": 11,
+                                        "paddingHorizontal": 8,
+                                        "paddingVertical": 3,
+                                      },
+                                      undefined,
+                                    ]
+                                  }
+                                >
+                                  <Text
+                                    style={
+                                      [
+                                        {
+                                          "color": "#FFFFFF",
+                                          "fontSize": 14,
+                                          "fontWeight": "500",
+                                          "lineHeight": 17,
+                                        },
+                                        undefined,
+                                      ]
+                                    }
+                                  >
+                                    1 January 2024
+                                  </Text>
+                                </View>
+                              </View>
                             </View>
                           </View>
-                        </View>
-                      </View>
-                      <View>
-                        <View>
                           <View>
                             <View
                               handlerTags={

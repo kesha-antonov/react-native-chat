@@ -72,9 +72,8 @@ describe('unread messages bar', () => {
     )
     await waitForRows()
 
-    // The list renders oldest first, after the day's date item, so message 26 is at index 26;
-    // viewPosition 0 is the top.
-    expect(getByTestId('message-list').props.initialScrollIndex).toEqual({ index: 26, viewPosition: 0 })
+    // The list renders oldest first, so message 26 is at index 25; viewPosition 0 is the top.
+    expect(getByTestId('message-list').props.initialScrollIndex).toEqual({ index: 25, viewPosition: 0 })
     expect(getByTestId('message-list').props.initialScrollAtEnd).toBeUndefined()
   })
 

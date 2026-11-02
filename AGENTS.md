@@ -56,8 +56,8 @@ src/                     library source - the only thing published (as compiled 
   ChatList/              <ChatList>, the list of chats, and useChatList
   MessagesContainer/     the message list (Legend List, oldest first), day header, scroll handling
   Bubble/ Message/       a single message row and its bubble
-  Day/                   the date pill; the list places one before each day's first message
-                         (MessagesContainer/dayItems.ts) and pins it (components/DayRow)
+  Day/                   the date separator; the animated floating header lives in
+                         MessagesContainer/components/DayAnimated
   Reactions/ Reply/      emoji reactions, swipe-to-reply
   TypingIndicator/       the three-dot bubble
   components/            shared leaf components (Icon, TouchableOpacity, ContextMenu, markdown, voice…)
@@ -80,10 +80,9 @@ expoSnack/               single-file demo for snack.expo.dev; not linted or buil
 docs/                    MIGRATION.md, STREAMING.md
 ```
 
-A day's date is an item of the list itself (`MessagesContainer/dayItems.ts`), right before the
-day's first message, and the list pins it at the top while its day scrolls under it
-(`stickyHeaderIndices`, so the list's indexes count these items too). A custom `renderMessage`
-must not render its own `<Day>` - it would print a pill above every message.
+A day separator is rendered by the list itself (`MessagesContainer/components/Item`), guarded
+by `isSameDay`, *around* whatever `renderMessage` returns. A custom `renderMessage` must not
+render its own `<Day>` - it would print a pill above every message.
 
 ## Conventions
 

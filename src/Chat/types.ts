@@ -239,7 +239,7 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    * `true`.
    */
   enableGestureHandlerRootView?: boolean
-  /** Pin each day's date at the top while its messages scroll under it; default is true */
+  /** Enable animated day label that appears on scroll; default is true */
   isDayAnimationEnabled?: boolean
 
   /** Reply functionality configuration */
