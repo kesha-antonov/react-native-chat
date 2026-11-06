@@ -27,3 +27,14 @@
   overflow-x: auto;
   max-width: 100%;
 }
+
+/* The feature showcase: a GIF in the README, the live scene here. Once the
+   scene mounts (data-live) the GIF it replaces is hidden. */
+.chat-showcase {
+  margin: 0 auto 2rem;
+  max-width: 760px;
+}
+
+.chat-showcase[data-live] > p {
+  display: none;
+}

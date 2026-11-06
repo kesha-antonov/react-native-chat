@@ -1,0 +1,1523 @@
+/* @kesha-antonov/react-native-chat in its default look: the day theme and the
+   "Dark Blue" night theme, colors from src/Theme.ts. Everything is nested
+   under .rc. Inside the phone, 1px is 1pt. */
+.rc {
+  --rc-accent: #229af0;
+  --rc-ui: cubic-bezier(0.3, 0.75, 0.1, 1);
+  --rc-theme: 0.7s cubic-bezier(0.45, 0, 0.1, 1);
+
+  .ss-stage {
+    overflow: hidden;
+    border-radius: 20px;
+    background: #edf1f4;
+  }
+
+  .ss-stage[data-theme='dark'] {
+    background: #161c23;
+  }
+
+  /* ---- The phone: off the top, the composer and the newest messages in
+     view, a gutter from the right and the bottom ---- */
+  .rc-phone {
+    position: absolute;
+    top: -155px;
+    left: 380px;
+  }
+
+  .ss-stage[data-layout='compact'] .rc-phone {
+    top: -161px;
+    left: 16px;
+  }
+
+  .ss-phone__content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ss-phone__screen {
+    background: #b5c99c;
+    transition: background-color var(--rc-theme);
+  }
+
+  .ss-phone[data-dark] .ss-phone__screen {
+    background: #0f171e;
+  }
+
+  .rc-screen {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* The day wallpaper is the library's four-color gradient; the night one
+     fades in over it */
+  .rc-wall {
+    position: absolute;
+    inset: -80px 0 0;
+    pointer-events: none;
+  }
+
+  .rc-wall--day {
+    background:
+      radial-gradient(70% 45% at 10% 8%, #dbddbb 0%, transparent 72%),
+      radial-gradient(70% 50% at 95% 30%, #6ba587 0%, transparent 72%),
+      radial-gradient(75% 50% at 8% 72%, #88b884 0%, transparent 72%),
+      radial-gradient(70% 45% at 92% 98%, #d5d88d 0%, transparent 72%),
+      #a9c690;
+  }
+
+  .rc-wall--night {
+    background:
+      radial-gradient(70% 45% at 10% 8%, #172431 0%, transparent 72%),
+      radial-gradient(70% 50% at 95% 40%, #141c2b 0%, transparent 72%),
+      radial-gradient(70% 45% at 20% 90%, #172431 0%, transparent 72%),
+      #0f171e;
+    opacity: 0;
+    transition: opacity var(--rc-theme);
+  }
+
+  .rc-screen[data-dark] .rc-wall--night {
+    opacity: 1;
+  }
+
+  /* ---- The thread ---- */
+  .rc-thread {
+    --ss-them: #fff;
+    --ss-them-text: #000;
+    --ss-me: #efffde;
+    --ss-me-text: #000;
+    --rc-in-meta: #a1aab3;
+    --rc-out-meta: #70b15c;
+    --rc-ticks: #5db050;
+    --rc-quote-line: #6eb969;
+    --rc-quote-name: #55ab4f;
+    --rc-quote-bg: rgba(110, 185, 105, 0.12);
+    position: relative;
+    flex: 1;
+    gap: 4px;
+    padding: 12px 10px 8px;
+  }
+
+  .rc-screen[data-dark] .rc-thread {
+    --ss-them: #232e3b;
+    --ss-them-text: #fafafa;
+    --ss-me: #4b6ee0;
+    --ss-me-text: #fff;
+    --rc-in-meta: rgba(128, 145, 160, 0.85);
+    --rc-out-meta: rgba(255, 255, 255, 0.82);
+    --rc-ticks: #fff;
+    --rc-quote-line: #fff;
+    --rc-quote-name: #fff;
+    --rc-quote-bg: rgba(255, 255, 255, 0.12);
+  }
+
+  .ss-bubble {
+    max-width: 82%;
+    padding: 6px 10px 6px 12px;
+    border-radius: 18px;
+    line-height: 22px;
+    letter-spacing: -0.02em;
+    transition:
+      background-color var(--rc-theme),
+      color var(--rc-theme),
+      width 0.45s var(--rc-ui),
+      height 0.45s var(--rc-ui);
+  }
+
+  .ss-bubble__tail {
+    width: 15px;
+    height: 14px;
+    transition: fill var(--rc-theme), opacity 0.2s ease;
+  }
+
+  [data-from='me'] > .ss-bubble > .ss-bubble__tail {
+    right: -5px;
+  }
+
+  [data-from='them'] > .ss-bubble > .ss-bubble__tail {
+    left: -5px;
+  }
+
+  /* The night theme's outgoing bubbles run purple high on the screen to
+     blue low; each takes the color at its height */
+  .rc-screen[data-dark] .rc-out--top > .ss-bubble {
+    --ss-me: #7450da;
+  }
+
+  .rc-screen[data-dark] .rc-out--mid > .ss-bubble {
+    --ss-me: #5f62dc;
+  }
+
+  .rc-screen[data-dark] .rc-out--low > .ss-bubble {
+    --ss-me: #4a74e0;
+  }
+
+  .rc-screen[data-dark] .rc-out--bottom > .ss-bubble {
+    --ss-me: #3a7fe2;
+  }
+
+  .ss-bubble[data-gone],
+  .rc-note[data-gone] {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .rc-day {
+    align-self: center;
+    margin: 4px 0 6px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.18);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+    transition: background-color var(--rc-theme);
+  }
+
+  .rc-screen[data-dark] .rc-day {
+    background: rgba(53, 66, 81, 0.6);
+  }
+
+  /* Time and ticks inside the bubble, low on the last line */
+  .rc-meta {
+    position: relative;
+    top: 5px;
+    display: inline-flex;
+    float: right;
+    align-items: center;
+    gap: 4px;
+    margin: 0 -2px 0 10px;
+    color: var(--rc-in-meta);
+    font-size: 12px;
+    letter-spacing: 0;
+    line-height: 22px;
+    white-space: nowrap;
+    transition: color var(--rc-theme), opacity 0.3s ease;
+  }
+
+  .rc-meta[data-hide] {
+    opacity: 0;
+  }
+
+  [data-from='me'] .rc-meta {
+    color: var(--rc-out-meta);
+  }
+
+  .rc-ticks {
+    flex: none;
+    fill: none;
+    stroke: var(--rc-ticks);
+    stroke-width: 1.35;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    overflow: visible;
+    transition: stroke var(--rc-theme);
+  }
+
+  .rc-ticks__clock {
+    transform-origin: 6px 5.5px;
+    transition: opacity 0.2s ease, transform 0.3s var(--rc-ui);
+  }
+
+  .rc-ticks__one,
+  .rc-ticks__two {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .rc-ticks:not([data-state='clock']) .rc-ticks__clock {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  .rc-ticks:not([data-state='clock']) .rc-ticks__one,
+  .rc-ticks[data-state='read'] .rc-ticks__two {
+    stroke-dashoffset: 0;
+  }
+
+  /* ---- The answer: it presses in on a long press, slides while swiped.
+     Its fill is on the sliding layer, with the tail drawn on it ---- */
+  .rc-answer {
+    position: relative;
+    display: flex;
+  }
+
+  .rc-swipe {
+    position: relative;
+    display: block;
+    max-width: 82%;
+    padding: 6px 10px 6px 12px;
+    border-radius: 18px 18px 18px 6px;
+    background: var(--ss-them);
+    color: var(--ss-them-text);
+    line-height: 22px;
+    letter-spacing: -0.02em;
+    will-change: transform;
+    transition:
+      transform 0.42s cubic-bezier(0.25, 1.25, 0.5, 1),
+      scale 0.3s var(--rc-ui),
+      background-color var(--rc-theme),
+      color var(--rc-theme);
+  }
+
+  .rc-swipe[data-pressed] {
+    scale: 0.97;
+  }
+
+  .rc-swipe::after {
+    position: absolute;
+    bottom: 0;
+    left: -5px;
+    width: 15px;
+    height: 14px;
+    background: var(--ss-them);
+    clip-path: path('M15 0H5V7.5C5 11.2 3.3 13.2 0.4 14C2.6 14.6 5 14.4 7 13.4L15 13.2Z');
+    content: '';
+    transition: background-color var(--rc-theme);
+  }
+
+  .rc-lift {
+    display: block;
+  }
+
+  .rc-swipe-icon {
+    position: absolute;
+    top: 50%;
+    right: -46px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    margin-top: -16px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    pointer-events: none;
+  }
+
+  /* The answer's time is pinned to the bubble's corner, on a line of its
+     own under the words; a reaction pill takes that line's left end, which
+     grows only by the pill's extra height */
+  .rc-foot {
+    display: flex;
+    align-items: flex-end;
+    height: 22px;
+    transition: height 0.4s var(--rc-ui);
+  }
+
+  .rc-foot[data-on] {
+    height: 32px;
+  }
+
+  .rc-meta-pin {
+    position: absolute;
+    right: 10px;
+    bottom: 6px;
+
+    .rc-meta {
+      float: none;
+      top: 0;
+      margin: 0;
+    }
+  }
+
+  .rc-pill {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 28px;
+    border-radius: 14px;
+    background: var(--rc-accent);
+    font-size: 16px;
+    line-height: 1;
+    opacity: 0;
+    transform: scale(0.4);
+    transform-origin: 20% 50%;
+    transition: opacity 0.2s ease, transform 0.25s ease, background-color var(--rc-theme);
+  }
+
+  .rc-foot[data-on] .rc-pill {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.2s ease 0.08s, transform 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) 0.08s, background-color var(--rc-theme);
+  }
+
+  .rc-screen[data-dark] .rc-pill {
+    background: #609dd2;
+  }
+
+  /* The picker opens over the answer from a long press */
+  .rc-picker {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    z-index: 5;
+    display: flex;
+    gap: 2px;
+    padding: 6px 8px;
+    border-radius: 26px;
+    background: #fff;
+    box-shadow:
+      0 0 0 0.5px rgba(0, 0, 0, 0.06),
+      0 8px 24px -6px rgba(20, 40, 30, 0.35);
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+    transform-origin: 30% 100%;
+    transition: opacity 0.18s ease, transform 0.3s var(--rc-ui);
+    pointer-events: none;
+  }
+
+  .rc-picker[data-show] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .rc-picker__emoji {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-size: 26px;
+    line-height: 1;
+  }
+
+  .rc-picker__emoji[data-pressed] {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  /* A reply quotes the message it answers */
+  .rc-quote {
+    display: grid;
+    gap: 1px;
+    margin: 2px -4px 4px -6px;
+    padding: 4px 8px 5px 10px;
+    border-radius: 6px;
+    background: var(--rc-quote-bg);
+    box-shadow: inset 3px 0 var(--rc-quote-line);
+    font-size: 15px;
+    line-height: 19px;
+    transition: background-color var(--rc-theme), box-shadow var(--rc-theme);
+  }
+
+  .rc-quote__name {
+    color: var(--rc-quote-name);
+    font-weight: 600;
+    transition: color var(--rc-theme);
+  }
+
+  .rc-quote__text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .rc-stream {
+    display: inline;
+  }
+
+  /* An emoji-only message: no bubble, drawn large, its time on a chip */
+  .rc-big {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-right: 4px;
+  }
+
+  .rc-big__emoji {
+    font-size: 56px;
+    line-height: 64px;
+  }
+
+  .rc-big[data-from='me'] .rc-chip.rc-big__meta {
+    position: static;
+    top: 0;
+    margin-top: 2px;
+  }
+
+  /* Quick replies under the greeting, the chosen one filled */
+  .rc-quick {
+    display: flex;
+    gap: 6px;
+    padding: 2px 0 4px 2px;
+  }
+
+  .rc-quick__btn {
+    padding: 5px 12px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 0 0 1px var(--rc-accent);
+    color: var(--rc-accent);
+    font-size: 15px;
+    line-height: 20px;
+    transition: background-color var(--rc-theme), color var(--rc-theme);
+  }
+
+  .rc-quick__btn[data-chosen] {
+    background: var(--rc-accent);
+    color: #fff;
+  }
+
+  .rc-screen[data-dark] .rc-quick__btn:not([data-chosen]) {
+    background: rgba(35, 46, 59, 0.85);
+    color: #64b5ef;
+    box-shadow: inset 0 0 0 1px #64b5ef;
+  }
+
+  /* A link in the streamed answer, then the page's preview under it */
+  .rc-link {
+    color: var(--rc-accent);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .rc-link[data-show] {
+    opacity: 1;
+  }
+
+  .rc-screen[data-dark] .rc-link {
+    color: #64b5ef;
+  }
+
+  .rc-preview {
+    display: flex;
+    gap: 10px;
+    margin: 6px 0 2px;
+    padding: 5px 6px 6px 10px;
+    border-radius: 6px;
+    background: rgba(34, 154, 240, 0.08);
+    box-shadow: inset 3px 0 var(--rc-accent);
+    line-height: 19px;
+  }
+
+  .rc-preview__words {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+  }
+
+  .rc-preview__site {
+    color: var(--rc-accent);
+    font-weight: 600;
+  }
+
+  .rc-preview__title {
+    font-weight: 600;
+  }
+
+  .rc-preview__img {
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 6px;
+  }
+
+  .rc-screen[data-dark] .rc-preview {
+    background: rgba(100, 181, 239, 0.12);
+    box-shadow: inset 3px 0 #64b5ef;
+  }
+
+  .rc-screen[data-dark] .rc-preview__site {
+    color: #64b5ef;
+  }
+
+  /* ---- The composer: an optional reply banner, then the pill field and
+     the round mic that becomes send ---- */
+  .rc-compose {
+    position: relative;
+    z-index: 3;
+    margin: 0 0 34px;
+  }
+
+  .rc-reply {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 0.32s var(--rc-ui), opacity 0.2s ease;
+  }
+
+  .rc-reply[data-open] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .rc-reply__inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 0;
+    overflow: hidden;
+    margin: 0 12px 8px;
+    padding: 0 12px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+    transition: background-color var(--rc-theme);
+  }
+
+  .rc-reply__icon {
+    flex: none;
+    color: var(--rc-accent);
+  }
+
+  .rc-reply__line {
+    flex: none;
+    align-self: stretch;
+    width: 3px;
+    margin: 8px 0;
+    border-radius: 2px;
+    background: var(--rc-accent);
+  }
+
+  .rc-reply__words {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+    min-width: 0;
+    padding: 8px 0;
+  }
+
+  .rc-reply__name {
+    color: var(--rc-accent);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+
+  .rc-reply__text {
+    overflow: hidden;
+    color: #000;
+    font-size: 15px;
+    line-height: 19px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .rc-reply__close {
+    flex: none;
+    color: #858a84;
+  }
+
+  .rc-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .rc-field {
+    position: relative;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    height: 46px;
+    padding: 0 12px;
+    border-radius: 23px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+    font-size: 17px;
+    letter-spacing: -0.02em;
+    transition: background-color var(--rc-theme);
+  }
+
+  .rc-field__icon {
+    flex: none;
+    color: #7a8085;
+    transition: color var(--rc-theme);
+  }
+
+  .rc-field__text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: #000;
+    white-space: nowrap;
+  }
+
+  .rc-caret {
+    display: inline-block;
+    width: 2px;
+    height: 21px;
+    margin-left: 1px;
+    border-radius: 1px;
+    background: #54a1db;
+    vertical-align: -4px;
+  }
+
+  .rc-field__ph {
+    position: absolute;
+    left: 44px;
+    color: #858a84;
+    pointer-events: none;
+    transition: opacity 0.2s ease 0.3s, color var(--rc-theme);
+  }
+
+  .rc-field__ph[data-hide] {
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+
+  .rc-action {
+    position: relative;
+    display: grid;
+    flex: none;
+    width: 46px;
+    height: 46px;
+
+    > * {
+      grid-area: 1 / 1;
+    }
+  }
+
+  .rc-round {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--rc-accent);
+    color: #fff;
+    transition: opacity 0.18s ease, transform 0.3s var(--rc-ui);
+  }
+
+  .rc-mic[data-off] {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  .rc-send {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  .rc-send[data-on] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .rc-send[data-pressed] {
+    transform: scale(0.9);
+  }
+
+  /* Night composer */
+  .rc-screen[data-dark] .rc-field,
+  .rc-screen[data-dark] .rc-reply__inner {
+    background: rgba(33, 45, 59, 0.9);
+  }
+
+  .rc-screen[data-dark] .rc-field__icon {
+    color: #a3a9b0;
+  }
+
+  .rc-screen[data-dark] .rc-field__ph {
+    color: rgba(219, 239, 255, 0.43);
+  }
+
+  .rc-screen[data-dark] .rc-field__text,
+  .rc-screen[data-dark] .rc-reply__text {
+    color: #fff;
+  }
+
+  /* ---- A voice note: the play button, the take's bars and its length ---- */
+  .rc-voice > .ss-bubble {
+    padding: 7px 10px 7px 8px;
+    --rc-voice-fill: #78c272;
+    --rc-voice-track: #bbe3ac;
+  }
+
+  .rc-voice .ss-bubble__text {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rc-screen[data-dark] .rc-voice > .ss-bubble {
+    --rc-voice-fill: #fff;
+    --rc-voice-track: rgba(255, 255, 255, 0.4);
+  }
+
+  .rc-voice__play {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--rc-voice-fill);
+    color: #fff;
+    transition: background-color var(--rc-theme), color var(--rc-theme);
+
+    svg {
+      margin-left: 3px;
+    }
+  }
+
+  .rc-screen[data-dark] .rc-voice__play {
+    color: #4a74e0;
+  }
+
+  .rc-voice__body {
+    display: grid;
+    gap: 3px;
+  }
+
+  .rc-voice__bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 20px;
+
+    i {
+      width: 2.5px;
+      border-radius: 2px;
+      background: var(--rc-voice-track);
+      transition: background-color var(--rc-theme);
+    }
+  }
+
+  .rc-voice__len {
+    color: var(--rc-out-meta);
+    font-size: 12px;
+    line-height: 14px;
+    transition: color var(--rc-theme);
+  }
+
+  .rc-voice .rc-meta {
+    align-self: flex-end;
+    top: 4px;
+    margin-left: 0;
+  }
+
+  /* ---- A round note: no bubble, the take in a circle, two chips ---- */
+  .rc-note {
+    display: flex;
+    justify-content: flex-end;
+    padding: 2px 0;
+  }
+
+  .rc-note__disc {
+    position: relative;
+    display: block;
+    width: 220px;
+    height: 220px;
+    overflow: hidden;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    animation: rc-land 0.5s cubic-bezier(0.3, 1.25, 0.5, 1) both;
+  }
+
+  .rc-note__art,
+  .rc-cam__art,
+  .rc-photo__img,
+  .rc-cell__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .rc-chip {
+    padding: 0 7px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    color: #fff;
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  .rc-chip.rc-meta,
+  [data-from='me'] .rc-chip.rc-meta {
+    position: absolute;
+    top: auto;
+    float: none;
+    margin: 0;
+    color: #fff;
+    --rc-ticks: #fff;
+  }
+
+  .rc-note__len {
+    position: absolute;
+    bottom: 22px;
+    left: 30px;
+  }
+
+  .rc-note__meta {
+    right: 30px;
+    bottom: 22px;
+  }
+
+  /* ---- A photo: the picture inside the bubble, its time over it ---- */
+  .rc-photo > .ss-bubble {
+    padding: 3px;
+  }
+
+  .rc-photo__img {
+    width: 236px;
+    height: 176px;
+    border-radius: 15px;
+  }
+
+  .rc-photo__meta {
+    right: 10px;
+    bottom: 10px;
+  }
+
+  /* ---- Recording: the field turns into the take's timer, the mic grows
+     under the finger with a lock above it ---- */
+  .rc-rec {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    border-radius: 23px;
+    background: #fff;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    pointer-events: none;
+  }
+
+  .rc-rec[data-show] {
+    opacity: 1;
+  }
+
+  .rc-rec__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #db3535;
+    animation: rc-blink 1s ease-in-out infinite;
+  }
+
+  .rc-rec__time {
+    width: 44px;
+    color: #000;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rc-rec__hint {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    color: #858a84;
+    font-size: 15px;
+    animation: rc-nudge 1.6s ease-in-out infinite;
+  }
+
+  .rc-screen[data-dark] .rc-rec {
+    background: #212d3b;
+  }
+
+  .rc-screen[data-dark] .rc-rec__time {
+    color: #fff;
+  }
+
+  .rc-field__clip {
+    display: grid;
+  }
+
+  .rc-mic {
+    position: relative;
+    z-index: 1;
+  }
+
+  .rc-action[data-pressed] .rc-mic:not([data-rec]) {
+    transform: scale(0.9);
+  }
+
+  .rc-mic[data-rec] {
+    transform: scale(1.5);
+  }
+
+  .rc-mic__glyph {
+    display: grid;
+    grid-area: 1 / 1;
+    opacity: 0;
+    transform: scale(0.4) rotate(-40deg);
+    transition: opacity 0.18s ease, transform 0.3s var(--rc-ui);
+  }
+
+  .rc-mic__glyph[data-on] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .rc-mic[data-rec] .rc-mic__glyph {
+    scale: 0.8;
+  }
+
+  .rc-halo {
+    border-radius: 50%;
+    background: rgba(34, 154, 240, 0.22);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.2s ease, transform 0.3s var(--rc-ui);
+  }
+
+  .rc-halo[data-on] {
+    opacity: 1;
+    animation: rc-level 0.9s ease-in-out infinite alternate;
+  }
+
+  .rc-lock {
+    position: absolute;
+    bottom: 76px;
+    left: 50%;
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    width: 36px;
+    margin-left: -18px;
+    padding: 8px 0 6px;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.12);
+    color: #858a84;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.2s ease, transform 0.35s var(--rc-ui);
+  }
+
+  .rc-lock[data-show] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .rc-screen[data-dark] .rc-lock {
+    background: #212d3b;
+  }
+
+  /* The camera: a circle over the dimmed chat, its ring the take's length */
+  .rc-cam {
+    position: absolute;
+    inset: 0 0 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    padding-bottom: 60px;
+    background: rgba(255, 255, 255, 0.35);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
+
+  .rc-cam[data-show] {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+
+  .rc-cam__disc {
+    position: relative;
+    display: block;
+    width: 260px;
+    height: 260px;
+    overflow: hidden;
+    border-radius: 50%;
+    transform: scale(0.7);
+    transition: transform 0.4s var(--rc-ui);
+  }
+
+  .rc-cam[data-show] .rc-cam__disc {
+    transform: none;
+  }
+
+  .rc-cam[data-show] .rc-cam__art {
+    animation: rc-pan 4s ease-in-out both;
+  }
+
+  .rc-cam__ring {
+    position: absolute;
+    inset: 0;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transform: rotate(-90deg);
+  }
+
+  .rc-cam[data-show] .rc-cam__ring {
+    animation: rc-ring 12s linear both;
+  }
+
+  /* ---- The attachment sheet ---- */
+  .rc-dim {
+    position: absolute;
+    inset: -80px 0 0;
+    z-index: 4;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .rc-dim[data-show] {
+    opacity: 1;
+  }
+
+  .rc-sheet {
+    position: absolute;
+    top: 46%;
+    right: 0;
+    bottom: -40px;
+    left: 0;
+    z-index: 5;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+    background: #fff;
+    transform: translateY(105%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  .rc-sheet[data-show] {
+    transform: none;
+    transition: transform 0.5s cubic-bezier(0.2, 1.1, 0.4, 1);
+  }
+
+  .rc-screen[data-dark] .rc-sheet {
+    background: #1d2733;
+  }
+
+  .rc-sheet__handle {
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 9px auto;
+    border-radius: 2px;
+    background: #d6d8da;
+  }
+
+  .rc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    padding: 0 2px;
+  }
+
+  .rc-cell {
+    position: relative;
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #eee;
+  }
+
+  .rc-cell:first-child {
+    border-top-left-radius: 16px;
+  }
+
+  .rc-cell:nth-child(3) {
+    border-top-right-radius: 16px;
+  }
+
+  .rc-cell--camera {
+    display: grid;
+    place-items: center;
+    background: #2b3138;
+    color: #fff;
+  }
+
+  .rc-cell__img {
+    transition: scale 0.2s ease;
+  }
+
+  .rc-cell[data-picked] .rc-cell__img {
+    scale: 0.787;
+  }
+
+  .rc-check {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 1.5px solid #fff;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.12);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .rc-cell[data-picked] .rc-check {
+    background: var(--rc-accent);
+    animation: rc-pop 0.3s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  }
+
+  .rc-sheet__foot {
+    position: absolute;
+    right: 0;
+    bottom: 74px;
+    left: 0;
+    display: grid;
+    height: 56px;
+    padding: 0 14px;
+
+    > * {
+      grid-area: 1 / 1;
+    }
+  }
+
+  .rc-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    justify-self: center;
+    padding: 0 6px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.14);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  .rc-tabs[data-off] {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+
+  .rc-tab {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 1px;
+    width: 78px;
+    margin: 4px 0;
+    border-radius: 24px;
+    color: #8a9095;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .rc-tab[data-on] {
+    background: rgba(34, 154, 240, 0.09);
+    color: var(--rc-accent);
+  }
+
+  .rc-screen[data-dark] .rc-tabs {
+    background: rgba(40, 52, 66, 0.95);
+  }
+
+  .rc-caption-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+  }
+
+  .rc-caption-bar[data-on] {
+    opacity: 1;
+  }
+
+  .rc-caption-bar__field {
+    flex: 1;
+    height: 46px;
+    padding: 0 16px;
+    border-radius: 23px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.14);
+    color: #858a84;
+    font-size: 17px;
+    line-height: 46px;
+  }
+
+  .rc-sheet-send {
+    width: 48px;
+    height: 48px;
+    transform: scale(0.2);
+  }
+
+  .rc-caption-bar[data-on] .rc-sheet-send {
+    transform: none;
+  }
+
+  .rc-sheet-send[data-pressed] {
+    transform: scale(0.9);
+  }
+
+  /* ---- The feature list beside the phone ---- */
+  .rc-features {
+    position: absolute;
+    top: 50%;
+    left: 40px;
+    display: grid;
+    gap: 2px;
+    width: 300px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    transform: translateY(-50%);
+  }
+
+  .rc-feature {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 5px 12px;
+    border-radius: 14px;
+    transition: background-color 0.35s ease, box-shadow 0.35s ease;
+  }
+
+  .rc-feature[data-state='on'] {
+    background: var(--ss-surface);
+    box-shadow: var(--ss-shadow-card);
+  }
+
+  .rc-feature__tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: var(--ss-line);
+    color: var(--ss-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .rc-feature[data-state='done'] .rc-feature__tile {
+    background: rgba(34, 154, 240, 0.14);
+    color: var(--rc-accent);
+  }
+
+  .rc-feature[data-state='on'] .rc-feature__tile {
+    background: var(--rc-accent);
+    color: #fff;
+  }
+
+  .rc-feature__words {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .rc-feature__title {
+    color: var(--ss-text);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+    transition: color 0.3s ease;
+  }
+
+  .rc-feature[data-state='on'] .rc-feature__title,
+  .rc-feature[data-state='done'] .rc-feature__title {
+    color: var(--ss-text-strong);
+  }
+
+  .rc-feature__line {
+    color: var(--ss-text-faint);
+    transition: color 0.3s ease;
+    font-size: 12.5px;
+    line-height: 16px;
+  }
+
+  .rc-feature[data-state='on'] .rc-feature__line,
+  .rc-feature[data-state='done'] .rc-feature__line {
+    color: var(--ss-text);
+  }
+
+  .rc-more {
+    display: grid;
+    gap: 7px;
+    margin: 6px 12px 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--ss-line);
+  }
+
+  .rc-more__head {
+    color: var(--ss-text-strong);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+
+  .rc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .rc-xchip {
+    padding: 1px 7px;
+    border-radius: 9px;
+    background: var(--ss-surface);
+    box-shadow: 0 0 0 1px var(--ss-line);
+    color: var(--ss-text);
+    font-size: 11.5px;
+    line-height: 16px;
+    white-space: nowrap;
+    transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .rc-xchip[data-state='done'] {
+    background: rgba(34, 154, 240, 0.12);
+    box-shadow: none;
+    color: var(--rc-accent);
+  }
+
+  .rc-xchip[data-state='on'] {
+    background: var(--rc-accent);
+    box-shadow: none;
+    color: #fff;
+  }
+
+  /* ---- Compact: the feature in play as a caption at the top ---- */
+  .rc-caption {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    z-index: 4;
+    display: grid;
+    padding: 8px 14px;
+    border-radius: 18px;
+    background: var(--ss-surface);
+    box-shadow: var(--ss-shadow-card);
+    color: var(--ss-text-strong);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, -6px);
+    transition: opacity 0.3s ease, transform 0.4s var(--rc-ui);
+  }
+
+  .rc-caption[data-show] {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .rc-caption__item {
+    display: flex;
+    grid-area: 1 / 1;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+
+    svg {
+      color: var(--rc-accent);
+    }
+  }
+
+  .rc-caption__item[data-on] {
+    opacity: 1;
+    transition: opacity 0.25s ease 0.14s;
+  }
+}
+
+@keyframes rc-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rc-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+/* The kit draws each bubble's fill on its own layer: fade it with the text */
+.rc .rc-thread .ss-bubble::before {
+  transition: background-color var(--rc-theme);
+}
+
+@keyframes rc-land {
+  from {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes rc-blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes rc-nudge {
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+@keyframes rc-level {
+  from {
+    transform: scale(1.9);
+  }
+  to {
+    transform: scale(2.25);
+  }
+}
+
+@keyframes rc-pan {
+  from {
+    transform: scale(1.15) translateX(4%);
+  }
+  to {
+    transform: scale(1.15) translateX(-4%);
+  }
+}
+
+@keyframes rc-ring {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* On the mic the press shows on the button itself (it shrinks, then grows
+   under the held finger), so the finger's dot would only darken it */
+.rc .ss-stage:is([data-mark='voice'], [data-mark='round']) .ss-cursor__dot {
+  opacity: 0 !important;
+}
+
+/* The typing bubble: 35pt tall like the library's, three 8pt dots in the
+   incoming meta color, each pulsing in scale over 800ms, 150ms apart
+   (src/TypingIndicator), with room around them so it reads as a bubble */
+.rc .rc-thread .ss-bubble[data-typing] {
+  padding: 13.5px 18px;
+}
+
+.rc .rc-thread .ss-bubble__dots {
+  gap: 6px;
+}
+
+.rc .rc-thread .ss-bubble__dots i {
+  width: 8px;
+  height: 8px;
+  background: var(--rc-in-meta);
+  opacity: 1;
+  animation: rc-dot 0.8s ease-out infinite;
+}
+
+.rc .rc-thread .ss-bubble__dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.rc .rc-thread .ss-bubble__dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes rc-dot {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.57);
+  }
+  40% {
+    transform: scale(1);
+  }
+}

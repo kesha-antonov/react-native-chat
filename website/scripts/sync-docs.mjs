@@ -308,6 +308,20 @@ function rewriteLinks (markdown, pageId) {
   return out
 }
 
+/**
+ * The README shows the feature showcase as a GIF between `chat-showcase`
+ * comments. On the site that block becomes a `.chat-showcase` slot: the live
+ * scene (src/components/ChatShowcase) mounts into it and hides the GIF, which
+ * stays inside as the fallback before scripts run. The block is kept free of
+ * blank lines so CommonMark reads it as one HTML block.
+ */
+function liveShowcase (markdown) {
+  return markdown.replace(
+    /<!-- chat-showcase:start -->\n([\s\S]*?)\n<!-- chat-showcase:end -->/g,
+    (_match, inner) => `<div class="chat-showcase">\n${inner.replace(/\n\s*\n/g, '\n')}\n</div>`
+  )
+}
+
 function frontmatter (page, index) {
   const fields = [
     `title: ${JSON.stringify(page.title)}`,
@@ -337,6 +351,7 @@ PAGES.forEach((page, index) => {
 
   body = normaliseHeadings(body, depth)
   body = rewriteLinks(body, page.id)
+  body = liveShowcase(body)
   if (page.lead) body = `${page.lead}\n\n${body.trim()}`
 
   const source = page.file ?? 'README.md'

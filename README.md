@@ -127,6 +127,15 @@ That is the whole setup - everything below is optional.
 
 ## ✨ Features
 
+<!-- chat-showcase:start -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/features-dark.gif" />
+    <img width="760" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/features-light.gif" alt="A chat with an assistant, opened on a big waving emoji and quick replies: a long press adds a heart reaction, a swipe quotes the message in the composer, the reply is sent and its ticks turn to read, the assistant's answer streams in word by word with a link preview, a held mic sends a voice note, a round video note is filmed and sent, a photo is picked from the attachment sheet, then the same chat switches to the dark theme. Beside it, the features list and the other built-in features" />
+  </picture>
+</p>
+<!-- chat-showcase:end -->
+
 - 💬 **[Chat list](#chat-list)** - the list of chats with search, selection actions, archive, swipe to archive and draggable pinned chats; plug in your backend
 - 🌗 **[Dark mode & theming](#theming--dark-mode)** - full light/dark token system, switchable at runtime
 - 🤖 **[Streaming AI messages](#streaming-ai-messages)** - token-by-token replies with a typing caret and stop control
