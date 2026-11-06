@@ -1,5 +1,10 @@
 # Changelog
 
+## [6.1.5] - 2026-11-07
+
+### 📝 Docs
+- The README shows the dark feature showcase by default (npm included) and the light one in a light theme
+
 ## [6.1.4] - 2026-11-07
 
 ### 📝 Docs
