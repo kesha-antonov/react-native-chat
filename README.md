@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/main/media/showcase.gif" alt="Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive" />
+  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/v6.1.3/media/showcase.gif" alt="Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive" />
 </p>
 
 <p align="center">

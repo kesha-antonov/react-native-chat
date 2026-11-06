@@ -14,6 +14,9 @@ const OUT = join(HERE, '..', 'docs')
 
 const REPO = 'https://github.com/kesha-antonov/react-native-chat'
 const BRANCH = 'main'
+// GIFs load from the release tag, not main: GitHub and npm cache images by
+// URL, so a GIF re-recorded under the same main URL keeps showing the old one
+const TAG = `v${JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version}`
 
 /**
  * Canonical key for a heading or a link anchor.
@@ -28,7 +31,7 @@ const key = (text) => text.toLowerCase().replace(/[^a-z0-9]/g, '')
 
 /** The demo clip at the top of the README, reused as the site's opening image. */
 const SHOWCASE = `<p align="center">
-  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/${BRANCH}/media/showcase.gif" alt="Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive" />
+  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/${TAG}/media/showcase.gif" alt="Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive" />
 </p>`
 
 /** Pages, in sidebar order. `from` is either README sections or a whole file. */

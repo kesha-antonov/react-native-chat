@@ -340,11 +340,11 @@ Land the content first as normal commits, then cut the release as its own commit
    prop or opt-out involved. Causes, measurements and investigation go in the commit message
 2. Bump `version` in `package.json`. On a **major**, also bump the range in
    `expoSnack/package.json` - it is a caret on the library, so `^4.x` will not resolve `5.0.0`
-   and the Snack would silently keep installing the old major. Point the README's two feature
-   showcase GIFs (`media/features-light.gif`, `media/features-dark.gif`) at the new tag,
+   and the Snack would silently keep installing the old major. Point the README's three GIFs
+   (`media/showcase.gif`, `media/features-light.gif`, `media/features-dark.gif`) at the new tag,
    `.../react-native-chat/vX.Y.Z/media/...`: GitHub and npm cache README images by URL, so a
    GIF re-recorded under the same `main` URL keeps showing the old one, and a tag URL also gives
-   each npm version the GIF it shipped with
+   each npm version the GIF it shipped with. The website reads the tag from `package.json` itself
 3. `yarn prepublishOnly` (lint + test + build) must pass
 4. Commit as `chore: release X.Y.Z`, touching only those files (and the README's GIF URLs), with a body explaining the
    version choice and a `Verified:` line
