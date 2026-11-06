@@ -1,5 +1,10 @@
 # Changelog
 
+## [6.1.1] - 2026-11-06
+
+### 📝 Docs
+- The README's Features section (and so the npm page) and the website's intro play an animated showcase of the chat's features, in light and dark
+
 ## [6.1.0] - 2026-11-06
 
 ### ✨ Features
