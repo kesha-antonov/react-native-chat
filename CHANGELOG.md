@@ -1,5 +1,28 @@
 # Changelog
 
+## [6.1.0] - 2026-11-06
+
+### ✨ Features
+- `ChatHeader`: the chat screen's bar to match `ChatList` (back arrow, avatar, name, "online" / "typing" status line, buttons); its status colors are `theme.chatList.headerSubtitle` / `headerSubtitleActive`
+- `chatRef` with `scrollToMessage(id, { animated, viewPosition, isHighlighted })`, to move to a message from outside the chat
+- `highlightText` / `highlightTextStyle` mark words in every message's text, e.g. a search query
+- `onRetryMessage` adds "Retry" to your own failed messages
+- `theme.textScale` multiplies every text size, for an app's own text-size setting
+- `bottomInset` for a host that knows the composer's bottom inset better than the measurement
+- `attachments.pickers` (`gallery`, `camera`, `file`) use the app's own pickers instead of the Expo ones, and `attachments.isGalleryGridEnabled: false` leaves Gallery to the system picker (no `READ_MEDIA_IMAGES` needed)
+- `ChatList`: `timeFormat` / `dateFormat` for the rows' time and date, `headerRightPosition: 'afterSearch'`
+- A custom `renderFooter` gets the typing indicator as its second argument
+
+### 🐛 Fixes
+- `ChatList`: a failed last message shows the red error badge instead of a check that read as sent
+- Android: the send and attach buttons' press ripple is round instead of a square around the circle
+- With voice and video notes off, the send button stays in its slot (disabled while empty) instead of leaving a blank space
+- `ChatList`: swiping or dragging a row no longer copies the whole chat to the UI thread, which failed on a `Date` in `lastMessage.createdAt`
+- `listProps` handlers the list uses itself (drag, momentum, content size, item size, metrics) run after its own instead of being dropped, and `contentContainerStyle` adds to its padding
+- The chat measures its place in the window again as the keyboard opens, so a chat in a panel that slides in with a transform keeps the composer on the keyboard
+- Android: the composer's text no longer drops a little on the first typed letter
+- `Chat` is memoized: a parent re-render with the same props no longer renders the conversation again
+
 ## [6.0.1] - 2026-11-03
 
 ### 📝 Docs
