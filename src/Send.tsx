@@ -102,6 +102,8 @@ export const Send = <TMessage extends IMessage = IMessage>({
       <TouchableOpacity
         testID={TEST_ID.SEND_TOUCHABLE}
         style={styles.touchable}
+        // Android's press ripple takes the button's shape: the circle, not its square box
+        buttonStyle={styles.button}
         onPress={handleOnPress}
         enabled={canSend}
         accessible
@@ -131,6 +133,10 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   },
   touchable: {
     justifyContent: 'center',
+  },
+  button: {
+    borderRadius: theme.sendButton.size / 2,
+    overflow: 'hidden',
   },
   // A solid 36 circle in the accent color.
   circle: {

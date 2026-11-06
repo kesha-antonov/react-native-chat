@@ -42,6 +42,7 @@ export const zh: Partial<ChatLabels> = {
   actionEdit: '编辑',
   actionForward: '转发',
   actionDelete: '删除',
+  actionRetry: '重试',
   emojiSearch: '搜索表情',
   emojiRecent: '最近使用',
   emojiSmileys: '笑脸和人物',

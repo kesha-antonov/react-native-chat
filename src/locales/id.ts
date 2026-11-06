@@ -42,6 +42,7 @@ export const id: Partial<ChatLabels> = {
   actionEdit: 'Edit',
   actionForward: 'Teruskan',
   actionDelete: 'Hapus',
+  actionRetry: 'Coba lagi',
   emojiSearch: 'Cari emoji',
   emojiRecent: 'Baru digunakan',
   emojiSmileys: 'Smiley & orang',

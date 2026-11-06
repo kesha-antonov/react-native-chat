@@ -11,6 +11,12 @@ import { AudioRecordingProps, IMessage, ReplyMessage, VideoRecordingProps } from
 import { SendProps } from '../Send'
 
 export interface InputToolbarProps<TMessage extends IMessage> {
+  /**
+   * The space the composer keeps below itself for the home indicator. Measured by default; pass it
+   * when the host already knows it, e.g. a chat inside a panel whose own inset arrives late. It is
+   * still given up as the keyboard or the emoji panel covers it.
+   */
+  bottomInset?: number
   actions?: AttachmentAction[]
   actionSheetOptionTintColor?: string
   containerStyle?: StyleProp<ViewStyle>

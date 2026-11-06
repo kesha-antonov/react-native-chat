@@ -44,14 +44,14 @@ export function useComposerFragment<TMessage extends IMessage> (
 }
 
 /** The send button, built-in or `renderSend`. */
-export function useSendFragment<TMessage extends IMessage> (props: InputToolbarProps<TMessage>) {
+export function useSendFragment<TMessage extends IMessage> (props: InputToolbarProps<TMessage>, isSendButtonAlwaysVisible?: boolean) {
   const renderSend = props.renderSend
   return useMemo(() => {
     if (renderSend)
       return renderComponentOrElement(renderSend, props)
 
-    return <Send {...props} />
-  }, [renderSend, props])
+    return <Send {...props} isSendButtonAlwaysVisible={isSendButtonAlwaysVisible ?? props.isSendButtonAlwaysVisible} />
+  }, [renderSend, props, isSendButtonAlwaysVisible])
 }
 
 /** Whatever `renderAccessory` draws under the island. */

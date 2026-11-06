@@ -17,6 +17,18 @@ export type PickedAttachment =
   | { type: 'file', uri: string, name: string, size?: number, mimeType?: string }
   | { type: 'location', latitude: number, longitude: number, accuracy?: number }
 
+/**
+ * Your own pickers for the menu's system tabs, for an app that picks with other libraries than the
+ * Expo ones. Each resolves to what was picked, or an empty array when the user cancels. A tab
+ * with a picker here shows even when its Expo peer is not installed. The gallery picker opens
+ * from the Gallery tab when there is no in-sheet grid (`expo-media-library`).
+ */
+export interface AttachmentPickers {
+  gallery?: () => Promise<PickedAttachment[]>
+  camera?: () => Promise<PickedAttachment[]>
+  file?: () => Promise<PickedAttachment[]>
+}
+
 /** What `attachments.onPick` can return. */
 export type AttachmentPickResult<TMessage extends IMessage> =
   | Partial<TMessage>[]
@@ -43,6 +55,14 @@ export interface AttachmentsProps<TMessage extends IMessage = IMessage> {
   isEnabled?: boolean
   /** Which tabs to offer, in order. Default: Gallery, File, Location (+ Camera without a grid). */
   tabs?: AttachmentTab[]
+  /** Pickers to use instead of `expo-image-picker` and `expo-document-picker`. */
+  pickers?: AttachmentPickers
+  /**
+   * Show the newest photos in the sheet (`expo-media-library`). Default true. `false` leaves the
+   * Gallery tab to the system picker, which needs no access to the whole library: for an app that
+   * does not hold Android's `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO`.
+   */
+  isGalleryGridEnabled?: boolean
   /**
    * Intercept picked attachments, e.g. to upload them first. Return the messages to send, `null`
    * to send nothing (you handle it), or nothing for the default: one message per image, video

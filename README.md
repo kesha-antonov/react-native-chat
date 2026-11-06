@@ -620,6 +620,7 @@ Every group below is collapsed - open the one you need.
 
 - **`messagesContainerRef`** _(`LegendListRef`)_ - Ref to the message list, a [Legend List](https://legendapp.com/open-source/list/) ref: `scrollToEnd`, `scrollToKey` (keys are message `_id`s as strings), `scrollToIndex`, `getState`. Indexes count from the oldest message
 - **`textInputRef`** _(TextInput ref)_ - Ref to the text input
+- **`chatRef`** _(`ChatHandle` ref)_ - `chatRef.current.scrollToMessage(id, { animated, viewPosition, isHighlighted })` scrolls to a message, also one far up the history, and with `isHighlighted` flashes it the way a tapped quote does. For a search result or a deep link
 
 </details>
 
@@ -628,6 +629,7 @@ Every group below is collapsed - open the one you need.
 
 ### Keyboard & Layout
 
+- **`bottomInset`** _(Number)_ - The composer's space for the home indicator; measured by default. Pass it when the host already knows it, e.g. a chat inside a sliding panel whose own inset arrives late. It is still given up while the keyboard or the emoji panel covers it
 - **`keyboardProviderProps`** _(Object)_ - Props to be passed to the [`KeyboardProvider`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/keyboard-provider) for keyboard handling. No defaults are applied - in particular Chat does **not** set `statusBarTranslucent` / `navigationBarTranslucent`, because on Android those change the *activity window* and the change outlives the chat screen ([#2755](https://github.com/FaridSafi/react-native-gifted-chat/issues/2755)). `react-native-keyboard-controller` turns them on by itself when the app is genuinely edge-to-edge, so there is nothing to set in a normal app.
 
   Only used when Chat mounts the provider itself. If your app already mounts a `KeyboardProvider` (the setup `react-native-keyboard-controller` recommends - once, at the root), Chat detects it and reuses it instead of nesting a second one, and this prop is ignored. Configure the provider where you mount it.
@@ -663,7 +665,7 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`text`** _(String)_ - Input text; default is `undefined`, but if specified, it will override Chat's internal state. Useful for managing text state outside of Chat (e.g. with Redux). Don't forget to implement `textInputProps.onChangeText` to update the text state.
 - **`initialText`** _(String)_ - Initial text to display in the input field
 - **`onDraftChange`** _(Function)_ - `(draft: string) => void`, the user's unsent text as it changes (`''` once sent). Editing a message sets the draft aside and brings it back afterwards, without reporting the edited text. Save it with the chat and pass it back as `initialText`
-- **`isSendButtonAlwaysVisible`** _(Bool)_ - Always show send button in input text composer; default `false`, show only when text input is not empty
+- **`isSendButtonAlwaysVisible`** _(Bool)_ - Always show send button in input text composer, disabled while there is nothing to send. By default it shows only with text when voice or video notes can be recorded (their button takes the slot while the composer is empty), and always when neither can
 - **`isTextOptional`** _(Bool)_ - Allow sending messages without text (useful for media-only messages); default `false`. Use with `isSendButtonAlwaysVisible` for media attachments.
 - **`isMultiline`** _(Bool)_ - Whether the composer accepts multiple lines; default `true`. With `true` the return key inserts a newline and you send with the send button. Set `false` for a single-line composer whose **return key sends the message** (the keyboard's return key becomes "send" and stays open afterwards).
 - **`renderInputToolbar`** _(Component | Function)_ - Custom message composer container
@@ -682,7 +684,7 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 
 ### Actions & Action Sheet
 
-- **`attachments`** _(Bool | Object)_ - The built-in attachment menu behind the composer's paperclip, on by default; the paperclip shows when at least one tab's peer is installed. Tabs: `gallery` (an in-sheet grid with `expo-media-library`, the system picker with `expo-image-picker` otherwise), `camera` (`expo-image-picker`; a tab of its own only without the grid, which has a camera tile), `file` (`expo-document-picker`) and `location` (`expo-location`). Picks are sent through `onSend`: one `image` / `video` message per photo or video with the caption on the first, a `file` message per document, a `location` message. `false` hides the paperclip. An object configures it: `{ isEnabled?, tabs?, onPick?, renderAttachmentMenu? }` - `tabs` picks and orders them; `onPick(attachments, { caption })` intercepts the picks (`PickedAttachment[]`) and returns the messages to send, `null` to send nothing, or nothing for the default; `renderAttachmentMenu({ visible, onClose, tabs, onSend })` draws your own menu. Colors live in `theme.attachments`. `actions`, `onPressActionButton` and `renderActions` take precedence. See [Emoji keyboard and attachment menu](#emoji-keyboard-and-attachment-menu) for the permissions each peer needs.
+- **`attachments`** _(Bool | Object)_ - The built-in attachment menu behind the composer's paperclip, on by default; the paperclip shows when at least one tab's peer is installed. Tabs: `gallery` (an in-sheet grid with `expo-media-library`, the system picker with `expo-image-picker` otherwise), `camera` (`expo-image-picker`; a tab of its own only without the grid, which has a camera tile), `file` (`expo-document-picker`) and `location` (`expo-location`). Picks are sent through `onSend`: one `image` / `video` message per photo or video with the caption on the first, a `file` message per document, a `location` message. `false` hides the paperclip. An object configures it: `{ isEnabled?, tabs?, pickers?, onPick?, renderAttachmentMenu? }` - `tabs` picks and orders them; `pickers` (`{ gallery?, camera?, file? }`, each an `async () => PickedAttachment[]` that returns `[]` on cancel) replaces the Expo pickers with your own, for an app that picks with other libraries, and shows that tab without its Expo peer; `isGalleryGridEnabled: false` leaves Gallery to the system picker instead of the in-sheet grid, for an app without Android's `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO`; `onPick(attachments, { caption })` intercepts the picks (`PickedAttachment[]`) and returns the messages to send, `null` to send nothing, or nothing for the default; `renderAttachmentMenu({ visible, onClose, tabs, onSend })` draws your own menu. Colors live in `theme.attachments`. `actions`, `onPressActionButton` and `renderActions` take precedence. See [Emoji keyboard and attachment menu](#emoji-keyboard-and-attachment-menu) for the permissions each peer needs.
 - **`actions`** _(Array)_ - Action options for the composer "+" button. Array of `{ title, action }`; add `icon` (and optional `color`) to an action to render an attachment **grid** (tiles) instead of a list. Opens the built-in themed `AttachmentSheet` - no extra dependency.
 - **`onPressActionButton`** _(Function)_ - Callback when the "+" button is pressed (if set, the built-in `AttachmentSheet` is not shown)
 - **`actionSheet`** _(Function)_ - Escape hatch for a custom system action sheet. **The bundled `@expo/react-native-action-sheet` dependency was removed**, so `context.actionSheet()` defaults to a no-op; pass your own implementation (with `ActionSheetProvider` in your tree) if you relied on it.
@@ -705,7 +707,7 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`firstUnreadMessageId`** _(String | Number | null)_ - The first message the user has not read. A full-width "Unread Messages" bar is drawn above it and the chat opens scrolled so the bar is at the top. Keep it fixed while the chat is open (the bar stays until you leave), e.g. computed once from the unread count when the screen mounts.
 - **`renderUnreadSeparator`** _(Function | null)_ - Custom "Unread Messages" bar, or `null` to only scroll to the first unread message. The default is exported as `UnreadSeparator`.
 - **`renderChatFooter`** _(Component | Function)_ - Custom component to render below the MessagesContainer (separate from the ListView)
-- **`listProps`** _(Object)_ - Extra props for the message list, an [`AnimatedLegendList`](https://legendapp.com/open-source/list/api/props/) (e.g. `drawDistance`, `maintainScrollAtEnd`, `onViewableItemsChanged`). The list renders oldest first, not inverted, so `onEndReached` fires at the newest message.
+- **`listProps`** _(Object)_ - Extra props for the message list, an [`AnimatedLegendList`](https://legendapp.com/open-source/list/api/props/) (e.g. `drawDistance`, `maintainScrollAtEnd`, `onViewableItemsChanged`). The list renders oldest first, not inverted, so `onEndReached` fires at the newest message. Handlers the list uses itself (`onScrollBeginDrag` / `onScrollEndDrag`, `onMomentumScrollBegin` / `onMomentumScrollEnd`, `onContentSizeChange`, `onItemSizeChanged`, `onMetricsChange`, `onLayout`, the viewability callbacks) run after its own, and `contentContainerStyle` goes on top of its padding.
 
 ### Message Bubbles & Content
 
@@ -720,6 +722,8 @@ If you do, sanity-check it on device: a toolbar behind the keyboard means the va
 - **`defaultMessageActions`** _(Bool | `MessageActionKey[]`)_ - The built-in actions, in this order: `reply`, `copy`, `forward`, `pin`, `edit`, `select`, `delete`. Default `true` (all that can work); an array picks and orders them; `false` turns them off. Each shows only when it can work: Reply when `reply.isEnabled` is not `false`; Copy for messages with text when `expo-clipboard` or `@react-native-clipboard/clipboard` is installed; Edit on your own text messages when `onEditMessage` is set; Forward / Pin / Delete when their callbacks are set; Select when a selection can be acted on (a clipboard, Forward or Delete). They are also off when `onLongPressMessage` is set and `messageActions` is not, so an app that handles long-press itself keeps doing so.
 - **`onEditMessage`** _(Function(`message`, `text`))_ - Turns on the "Edit" action for your own text messages. Edit puts the text in the composer under an "Editing" banner; sending then calls this instead of `onSend`. Closing the banner cancels the edit.
 - **`onDeleteMessage`** _(Function(`message`))_ - Turns on the "Delete" action (not red).
+- **`onRetryMessage`** _(Function(`message`))_ - Turns on "Retry" for your own messages that failed to send (`isFailed`), first in their menu above Delete, whatever `defaultMessageActions` lists.
+- **`highlightText`** _(String)_ / **`highlightTextStyle`** _(TextStyle)_ - Words to mark in every message's text, links included (case-insensitive), e.g. the query of a search in the chat; yellow behind black text by default.
 - **`onForwardMessage`** _(Function(`message`))_ - Turns on the "Forward" action.
 - **`onForwardMessages`** _(Function(`messages`))_ - Forwards the messages checked in selection mode, oldest first (also turns on "Forward"). Without it the selection bar's Forward calls `onForwardMessage` once per message.
 - **`onDeleteMessages`** _(Function(`messages`))_ - Deletes the messages checked in selection mode, oldest first (also turns on "Delete"). Without it the selection bar's Delete calls `onDeleteMessage` once per message.
@@ -869,7 +873,7 @@ Avatars and sender names show in group chats only: a one-to-one chat has neither
 - **`isTyping`** _(Bool)_ - Typing Indicator state; default `false`. If you use `renderFooter` it will override this.
 - **`renderTypingIndicator`** _(Component | Function)_ - Custom typing indicator component
 - **`typingIndicatorStyle`** _(StyleProp<ViewStyle>)_ - Custom style for the TypingIndicator component.
-- **`renderFooter`** _(Component | Function)_ - Custom footer component on the ListView, e.g. `'User is typing...'`; see [CustomizedRenderingExample.tsx](example/components/chat-examples/CustomizedRenderingExample.tsx) for an example. Overrides default typing indicator that triggers when `isTyping` is true.
+- **`renderFooter`** _(Component | Function)_ - Custom footer component on the ListView, e.g. `'User is typing...'`; see [CustomizedRenderingExample.tsx](example/components/chat-examples/CustomizedRenderingExample.tsx) for an example. Overrides default typing indicator that triggers when `isTyping` is true; the indicator comes as the second argument, `renderFooter(props, typingIndicator)`, to keep it next to your own footer.
 - **`TypingStatus`** _(Component)_ - The messenger way to show it: in your chat header, three dots that swell in turn before "typing" (waves for a recording, arrows for an upload). `<TypingStatus users={typingUsers} action='recordingVoice' isGroup color={accent} />` reads "typing", "Anna is typing", "Anna and Max are typing", "recording a voice message"... `ChatList` rows use it for `typingUsers` / `typingAction`, and `getTypingText` gives the text alone
 
 ### Quick Replies
@@ -963,12 +967,29 @@ const list = useChatList(initialChats)
 | `isSortEnabled` | Pinned first, then by newest message (default `true`) |
 | `isDeleteConfirmed` / `isSwipeEnabled` | Ask before deleting; swipe to archive (both default `true`) |
 | `isHeaderVisible` / `title` / `renderHeaderRight` / `isTopInsetApplied` | The built-in header (hide it to use your navigator's) |
+| `headerRightPosition` | `renderHeaderRight` before the search button (default) or `'afterSearch'`, e.g. for a close button |
+| `timeFormat` / `dateFormat` | dayjs formats for a row's time today (`'HH:mm'` for a 24-hour clock) and its date before this week (`'DD.MM.YY'`) |
 | `isSearchEnabled` / `filterChat` / `onSearchChange` | Search; a custom match; a server-side search |
 | `isArchiveOpen` / `onArchiveOpenChange` | Control which list shows |
 | `renderChat` / `renderEmpty` / `listProps` / `style` | A custom row (`ChatListCell` is the built-in one), the empty text, FlatList props (`onEndReached`, `refreshControl`...) |
 | `theme` / `darkTheme` / `colorScheme` / `locale` / `labels` / `icons` | As on `Chat`; the list's colors are `theme.chatList` |
 
 `ChatListCell`, `ChatListAvatar`, `ChatListShimmer`, `sortChats`, `getChatPreview` and `formatChatListDate` are exported for building your own row or screen.
+
+`ChatHeader` is the chat screen's bar to match: back arrow, a 42 avatar, the name with a status line under it ("online" and "typing" in the accent color) and your buttons at the end, in `theme.chatList`'s header colors.
+
+```tsx
+<ChatHeader
+  title='Anna Petrova'
+  subtitle={isOnline ? 'online' : 'last seen recently'}
+  isSubtitleActive={isOnline}
+  typingUsers={typingUsers}
+  avatar={{ id: chat.id, uri: chat.avatar }}
+  onBack={navigation.goBack}
+  onPressTitle={openProfile}
+  renderRight={() => <CallButton />}
+/>
+```
 
 ### Reply to Messages
 
@@ -1385,6 +1406,8 @@ Token groups: `colors`, `radii`, `spacing`, `typography`, `avatar`, `sendButton`
 - **`wallpaper`** - `isEnabled`, `colors` (three or four, for the swirl gradient), `isAnimated` (one step per outgoing message), `pattern` (an image tiled over the gradient; no pattern is bundled), `patternOpacity`, `patternColor`. Off, the chat shows `colors.background`. Replace it entirely with the `renderWallpaper` prop, or draw it elsewhere with the exported `ChatWallpaper` component.
 - **`nameColors`** - the seven sender-name colors, picked per user id. Empty uses `colors.senderName`.
 - **`avatar.palette` / `avatar.paletteEnd`** - initials avatar gradient stops, picked per user id. An empty `paletteEnd` draws flat colors.
+- **`textScale`** - the text size the user picked, a multiplier of every `typography` size (1 by default): messages, times, names, day and service pills, quotes and the composer grow together, e.g. `theme={{ textScale: 1.2 }}`.
+- **`chatList.headerSubtitle` / `chatList.headerSubtitleActive`** - `ChatHeader`'s status line, grey and in the accent color.
 
 A few behaviours follow from the tokens: setting `colors.outgoingBubble` turns the gradient off, setting `colors.senderName` empties `nameColors`, and setting `avatar.palette` without `paletteEnd` draws flat avatars - so an app that picks its own colors keeps seeing them. Bubbles in a run (same sender, at most five minutes apart, `utils.isSameGroup`) share one tail and one name, 2pt apart (`spacing.withinGroup`), with 6pt between runs (`spacing.betweenGroups`).
 

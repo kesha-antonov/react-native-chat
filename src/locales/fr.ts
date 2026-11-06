@@ -42,6 +42,7 @@ export const fr: Partial<ChatLabels> = {
   actionEdit: 'Modifier',
   actionForward: 'Transférer',
   actionDelete: 'Supprimer',
+  actionRetry: 'Réessayer',
   emojiSearch: 'Rechercher un emoji',
   emojiRecent: 'Récents',
   emojiSmileys: 'Smileys et personnes',

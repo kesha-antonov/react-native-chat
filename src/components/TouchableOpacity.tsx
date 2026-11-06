@@ -10,6 +10,11 @@ import Animated, {
 export type TouchableOpacityProps = Omit<React.ComponentProps<typeof BaseButton>, 'onPress'> & {
   activeOpacity?: number
   onPress?: () => void
+  /**
+   * The button's own style, around the content: its shape is the shape of Android's press ripple,
+   * e.g. a `borderRadius` for a round one. `style` goes on the content.
+   */
+  buttonStyle?: React.ComponentProps<typeof BaseButton>['style']
 } & React.ComponentProps<typeof Animated.View>
 
 // Built on gesture-handler's `BaseButton`, not the `Touchable` 3.0 recommends in
@@ -21,6 +26,7 @@ export type TouchableOpacityProps = Omit<React.ComponentProps<typeof BaseButton>
 export const TouchableOpacity: React.FC<TouchableOpacityProps> = ({
   children,
   style,
+  buttonStyle,
   activeOpacity = 0.2,
   onPress,
   ...rest
@@ -73,6 +79,7 @@ export const TouchableOpacity: React.FC<TouchableOpacityProps> = ({
   return (
     <BaseButton
       {...rest}
+      style={buttonStyle}
       onPress={handlePress}
       onActiveStateChange={handleActiveStateChange}
     >

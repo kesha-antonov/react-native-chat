@@ -19,10 +19,10 @@ import { useWindowInsets } from '../../components/windowInsets'
 import { useColorScheme } from '../../hooks/useColorScheme'
 import { useThemedStyles } from '../../hooks/useTheme'
 import { warning } from '../../logging'
-import { hasMediaLibrary } from '../../optional'
+import { hasImagePickerCamera, hasMediaLibrary } from '../../optional'
 import { CurrentLocation, getCurrentLocation, pickDocuments, pickFromSystemGallery, takePhoto } from '../buildMessages'
 import { GalleryAsset, toPickedAttachment, useGallery } from '../gallery'
-import { AttachmentTab, PickedAttachment } from '../types'
+import { AttachmentPickers, AttachmentTab, PickedAttachment } from '../types'
 import { CaptionBar } from './CaptionBar'
 import {
   CAPTION_SWAP_MS,
@@ -51,6 +51,10 @@ export interface AttachmentMenuProps {
   onClose: () => void
   /** Called with the picks and the caption; the menu closes itself first. */
   onSend: (attachments: PickedAttachment[], caption: string) => void
+  /** The app's own pickers, used instead of the Expo ones. */
+  pickers?: AttachmentPickers
+  /** `false` leaves the Gallery tab to the system picker instead of the in-sheet grid. */
+  isGalleryGridEnabled?: boolean
 }
 
 /**
@@ -58,13 +62,16 @@ export interface AttachmentMenuProps {
  * over a floating pill of tabs. Picking photos numbers them and swaps the tabs for a caption and
  * a "Send N" button; File, Camera and (without the grid) Gallery hand over to the system pickers.
  */
-export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMenuProps) {
+export function AttachmentMenu ({ visible, tabs, onClose, onSend, pickers, isGalleryGridEnabled = true }: AttachmentMenuProps) {
+  const pickFile = pickers?.file ?? pickDocuments
+  const pickCamera = pickers?.camera ?? (hasImagePickerCamera() ? takePhoto : undefined)
+  const pickGallery = pickers?.gallery ?? pickFromSystemGallery
   const styles = useThemedStyles(createStyles)
   const isDark = useColorScheme() === 'dark'
   const insets = useWindowInsets()
   const { width: screenWidth, height: screenHeight } = useWindowDimensions()
 
-  const hasGrid = tabs.includes('gallery') && hasMediaLibrary()
+  const hasGrid = isGalleryGridEnabled && tabs.includes('gallery') && hasMediaLibrary()
   const contentTabs = useMemo(() => tabs.filter(tab => (tab === 'gallery' && hasGrid) || tab === 'location' || tab === 'gallery'), [tabs, hasGrid])
   const initialTab: AttachmentTab = contentTabs[0] ?? tabs[0] ?? 'gallery'
   const [activeTab, setActiveTab] = useState<AttachmentTab>(initialTab)
@@ -147,11 +154,11 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
 
   const onTabPress = useCallback((tab: AttachmentTab) => {
     if (tab === 'file')
-      return runPicker(pickDocuments)
+      return runPicker(pickFile)
     if (tab === 'camera')
-      return runPicker(takePhoto)
+      return runPicker(pickCamera ?? takePhoto)
     if (tab === 'gallery' && !hasGrid && activeTab === 'gallery')
-      return runPicker(pickFromSystemGallery)
+      return runPicker(pickGallery)
     if (tab === activeTab)
       return
     setActiveTab(tab)
@@ -159,7 +166,7 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
     contentShift.set(withSpring(0, TAB_CONTENT_SPRING))
     if (tab === 'location' && (location == null || (typeof location === 'object' && location.status !== 'located')))
       fetchLocation()
-  }, [runPicker, hasGrid, activeTab, contentShift, location, fetchLocation])
+  }, [runPicker, pickFile, pickCamera, pickGallery, hasGrid, activeTab, contentShift, location, fetchLocation])
 
   // The location tab finds the position as soon as it opens.
   useEffect(() => {
@@ -240,6 +247,7 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
                 onDismiss={dismiss}
                 onToggle={toggleAsset}
                 runPicker={runPicker}
+                pickCamera={pickCamera}
               />
             </Animated.View>
           )
@@ -252,6 +260,7 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend }: AttachmentMe
                 hasGrid={hasGrid}
                 galleryStatus={gallery.status}
                 runPicker={runPicker}
+                pickGallery={pickers?.gallery}
               />
             </Animated.View>
           )}

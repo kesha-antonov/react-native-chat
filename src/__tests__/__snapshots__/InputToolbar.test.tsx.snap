@@ -340,10 +340,12 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
                         "color": "#000000",
                         "fontSize": 18,
                         "fontWeight": "400",
+                        "includeFontPadding": false,
                         "lineHeight": 21,
                         "paddingBottom": 11.5,
                         "paddingHorizontal": 0,
                         "paddingTop": 11.5,
+                        "textAlignVertical": "center",
                       },
                       {
                         "outlineStyle": "none",
@@ -417,6 +419,12 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
             accessible={true}
             enabled={false}
             needsOffscreenAlphaCompositing={true}
+            style={
+              {
+                "borderRadius": 18,
+                "overflow": "hidden",
+              }
+            }
             testID="GC_SEND_TOUCHABLE"
           >
             <View
@@ -449,10 +457,10 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
                       "backgroundColor": "#858A84",
                     },
                     {
-                      "opacity": 0,
+                      "opacity": 1,
                       "transform": [
                         {
-                          "scale": 0.1,
+                          "scale": 1,
                         },
                       ],
                     },

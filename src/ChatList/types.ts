@@ -54,6 +54,10 @@ export interface ChatListCellProps<TChat extends ChatListItem = ChatListItem> {
   reorder?: ChatListReorder<TChat>
   /** Selecting with more than one chat pinned: pinned rows show a reorder handle. */
   isReordering?: boolean
+  /** The row's time today (dayjs format); the locale's own by default. */
+  timeFormat?: string
+  /** The row's date before this week (dayjs format); the month name this year, the locale's date before. */
+  dateFormat?: string
 }
 
 /** A pinned row's part in a drag. */
@@ -108,8 +112,20 @@ export interface ChatListProps<TChat extends ChatListItem = ChatListItem> {
   isHeaderVisible?: boolean
   /** Header title. Default the `chatListTitle` label. */
   title?: string
-  /** Extra header buttons, before the search button. */
+  /** Extra header buttons, before the search button (or after it, see `headerRightPosition`). */
   renderHeaderRight?: () => React.ReactNode
+  /** Where `renderHeaderRight` goes: 'beforeSearch' (default) or 'afterSearch', e.g. for a close button. */
+  headerRightPosition?: 'beforeSearch' | 'afterSearch'
+  /**
+   * The rows' time today, as a dayjs format: 'HH:mm' for a 24-hour clock whatever the locale.
+   * Default the locale's own ('LT').
+   */
+  timeFormat?: string
+  /**
+   * The rows' date for chats older than a week, as a dayjs format, e.g. 'DD.MM.YY' for digits only.
+   * Default the month name this year ('MMM D') and the locale's date before ('L').
+   */
+  dateFormat?: string
   /** Pads the header below the status bar. Default true. */
   isTopInsetApplied?: boolean
 

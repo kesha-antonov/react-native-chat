@@ -91,6 +91,10 @@ export function ChatMessageList<TMessage extends IMessage> ({
     actionSheetOptionTintColor: _actionSheetOptionTintColor,
     emojiKeyboard: _emojiKeyboard,
     attachments: _attachments,
+    bottomInset: _bottomInset,
+    chatRef: _chatRef,
+    highlightText: _highlightText,
+    highlightTextStyle: _highlightTextStyle,
     keyboardProviderProps: _keyboardProviderProps,
     keyboardAvoidingViewProps: _keyboardAvoidingViewProps,
     /* eslint-enable @typescript-eslint/no-unused-vars */

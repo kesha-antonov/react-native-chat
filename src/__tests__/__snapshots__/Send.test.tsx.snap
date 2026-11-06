@@ -43,6 +43,12 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
       accessible={true}
       enabled={false}
       needsOffscreenAlphaCompositing={true}
+      style={
+        {
+          "borderRadius": 18,
+          "overflow": "hidden",
+        }
+      }
       testID="GC_SEND_TOUCHABLE"
     >
       <View
@@ -166,6 +172,12 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
       accessible={true}
       enabled={false}
       needsOffscreenAlphaCompositing={true}
+      style={
+        {
+          "borderRadius": 18,
+          "overflow": "hidden",
+        }
+      }
       testID="GC_SEND_TOUCHABLE"
     >
       <View
@@ -289,6 +301,12 @@ exports[`Send should render <Send /> where there is input and compare with snaps
       accessible={true}
       enabled={true}
       needsOffscreenAlphaCompositing={true}
+      style={
+        {
+          "borderRadius": 18,
+          "overflow": "hidden",
+        }
+      }
       testID="GC_SEND_TOUCHABLE"
     >
       <View

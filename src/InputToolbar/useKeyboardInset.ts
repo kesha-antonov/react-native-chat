@@ -8,7 +8,7 @@ import { useTheme } from '../hooks/useTheme'
  * The toolbar's bottom padding: the home indicator's inset, given up as the keyboard or the
  * emoji panel (`emojiOpen`) covers it.
  */
-export function useKeyboardInset (emojiOpen: SharedValue<number>) {
+export function useKeyboardInset (emojiOpen: SharedValue<number>, bottomInsetProp?: number) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
 
@@ -18,7 +18,7 @@ export function useKeyboardInset (emojiOpen: SharedValue<number>) {
   const noKeyboard = useSharedValue(0)
   // Guarded for mocks that return nothing.
   const keyboardHeight = keyboard?.height ?? noKeyboard
-  const bottomInset = insets.bottom
+  const bottomInset = bottomInsetProp ?? insets.bottom
   const bottomGap = theme.spacing.inputToolbarPaddingV
   // Driven by how much of the inset the keyboard actually covers, not by its progress: a
   // floating or split keyboard on Android (or a hardware keyboard's suggestion strip) reports

@@ -1,5 +1,6 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
+import { KeyboardEvents } from 'react-native-keyboard-controller'
 import { useSafeAreaFrame } from 'react-native-safe-area-context'
 
 /**
@@ -33,6 +34,12 @@ import { useSafeAreaFrame } from 'react-native-safe-area-context'
  * otherwise showed as the toolbar sitting under the keyboard for a frame when
  * the keyboard was already up as the chat mounted.
  * See https://github.com/kesha-antonov/react-native-chat/issues/12
+ *
+ * It is measured again as the keyboard starts to open. A chat in a panel that slides in with a
+ * transform is laid out once, while still parked off screen, and a transform never fires
+ * `onLayout` again - so the first measurement was about a screen too low, and the
+ * KeyboardAvoidingView padded the chat away to nothing. By the time the keyboard opens the panel
+ * has settled, and `measureInWindow` sees the transform.
  */
 export interface KeyboardVerticalOffset {
   ref: React.RefObject<React.ComponentRef<typeof View> | null>
@@ -61,6 +68,12 @@ export function useKeyboardVerticalOffset (): KeyboardVerticalOffset {
   // after a layout event and a native round trip.
   useLayoutEffect(() => {
     onLayout()
+  }, [onLayout])
+
+  useEffect(() => {
+    // Guarded for mocks that return nothing.
+    const subscription = KeyboardEvents.addListener?.('keyboardWillShow', onLayout)
+    return () => subscription?.remove()
   }, [onLayout])
 
   return {

@@ -45,10 +45,29 @@ import { SystemMessageProps } from '../SystemMessage'
 import { PartialChatTheme } from '../Theme'
 import { TimeProps } from '../Time'
 
+/** What `chatRef` reaches: moving to a message from outside the chat, e.g. a search result. */
+export interface ChatHandle {
+  /**
+   * Scrolls to a message, also one far up that is not measured yet, and with `isHighlighted` flashes
+   * it the way a tapped quote does. `viewPosition` 0 puts it at the top, 1 at the bottom
+   * (default 0.5).
+   */
+  scrollToMessage: (messageId: string | number, options?: { animated?: boolean, viewPosition?: number, isHighlighted?: boolean }) => void
+}
+
 export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<MessagesContainerProps<TMessage>, 'messageReplyContainerStyle'>>,
   Pick<BubbleProps<TMessage>, 'fetchLinkPreview' | 'renderLinkPreview' | 'onPressLinkPreview'> {
   /* Messages container ref */
   messagesContainerRef?: RefObject<AnimatedList>
+  /**
+   * Words to mark in every message's text, e.g. the query of a search in the chat
+   * (case-insensitive, links included). Empty or undefined marks nothing.
+   */
+  highlightText?: string
+  /** The marked words' style; yellow behind black text by default. */
+  highlightTextStyle?: StyleProp<TextStyle>
+  /** A handle for moving to a message from outside the chat; see `ChatHandle`. */
+  chatRef?: React.Ref<ChatHandle | null>
   /* text input ref */
   textInputRef?: RefObject<React.ComponentRef<typeof TextInput> | null>
   /**
@@ -199,6 +218,8 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   /* Custom component to render below the MessagesContainer */
   renderChatFooter?: () => React.ReactNode
   /* Custom message composer container. Can be a component, element, render function, or null */
+  /** The composer's space for the home indicator, when the host knows it better (see `InputToolbar`). */
+  bottomInset?: number
   renderInputToolbar?: React.ComponentType<InputToolbarProps<TMessage>> | React.ReactElement | ((props: InputToolbarProps<TMessage>) => React.ReactNode) | null
   /*  Custom text input message composer */
   renderComposer?: (props: ComposerProps) => React.ReactNode
@@ -274,6 +295,11 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   onEditMessage?: (message: TMessage, text: string) => void
   /** Turns on the "Delete" action. */
   onDeleteMessage?: (message: TMessage) => void
+  /**
+   * Turns on "Retry" for your own messages that failed to send (`isFailed`): it comes first in
+   * their menu, above Delete, whatever `defaultMessageActions` lists.
+   */
+  onRetryMessage?: (message: TMessage) => void
   /** Turns on the "Forward" action. */
   onForwardMessage?: (message: TMessage) => void
   /**

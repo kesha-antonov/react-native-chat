@@ -62,7 +62,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     useComposerEditing(props.text ?? '', props.textInputProps?.onChangeText)
 
   // The emoji panel covers the indicator just as the keyboard does.
-  const insetStyle = useKeyboardInset(emoji.open)
+  const insetStyle = useKeyboardInset(emoji.open, props.bottomInset)
 
   const containerStyles = useMemo(() => [
     styles.container,
@@ -86,7 +86,6 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   })
 
   const composerFragment = useComposerFragment(props, emoji.onComposerFocus, rememberSelection)
-  const sendFragment = useSendFragment(props)
 
   // onSend is forwarded from Chat at runtime; it isn't part of the public
   // InputToolbarProps surface, so read it through a typed cast.
@@ -107,6 +106,11 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
     isVideoHoldEnabled,
     canToggleMode,
   } = resolveRecordingOptions(props, hasText)
+
+  // With no voice or video note to record, an empty composer would leave the send button's slot
+  // blank: the button stays instead, disabled until there is something to send.
+  const isSendAlwaysVisible = props.isSendButtonAlwaysVisible ?? (!isVoiceEnabled && !showVideo)
+  const sendFragment = useSendFragment(props, isSendAlwaysVisible)
 
   const take = useRecordTake<TMessage>({ videoConfig, onSend, closeEmoji })
   const {

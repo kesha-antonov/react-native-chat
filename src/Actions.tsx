@@ -68,6 +68,8 @@ export function Actions ({
         accessibilityRole='button'
         accessibilityLabel={labels.attachButton}
         style={[styles.button, buttonStyle]}
+        // Android's press ripple takes the button's shape: a circle around the icon
+        buttonStyle={styles.ripple}
       >
         {renderIcon()}
       </TouchableOpacity>
@@ -97,6 +99,10 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     height: theme.composer.minHeight,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  ripple: {
+    borderRadius: 22,
+    overflow: 'hidden',
   },
   // Inset attachment icon: borderless, in the island's icon color (`glass_defaultIcon`).
   iconText: {

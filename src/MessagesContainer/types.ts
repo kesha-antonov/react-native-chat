@@ -73,8 +73,11 @@ export interface MessagesContainerProps<TMessage extends IMessage = IMessage>
   firstUnreadMessageId?: string | number | null
   /** Custom "Unread Messages" bar, or `null` to only scroll to the first unread message. */
   renderUnreadSeparator?: (() => React.ReactNode) | null
-  /** Custom footer component on the ListView, e.g. 'User is typing...' */
-  renderFooter?: (props: MessagesContainerProps<TMessage>) => React.ReactNode
+  /**
+   * Custom footer at the newest end of the list, in place of the typing indicator. The indicator
+   * comes as the second argument, to draw it along with the footer's own content.
+   */
+  renderFooter?: (props: MessagesContainerProps<TMessage>, typingIndicator: React.ReactNode) => React.ReactNode
   /** Custom message container */
   renderMessage?: (props: MessageProps<TMessage>) => React.ReactElement
   /** Custom day above a message */

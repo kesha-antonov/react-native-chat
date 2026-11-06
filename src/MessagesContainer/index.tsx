@@ -18,6 +18,7 @@ import { MessageRowStore, MessageRowStoreContext } from './rowStore'
 import styles, { createThemedStyles } from './styles'
 import { MessagesContainerProps, DaysPositions } from './types'
 import { useCellLayouts } from './useCellLayouts'
+import { useChained } from './useChained'
 import { useDaysPositions } from './useDaysPositions'
 import { useListChrome } from './useListChrome'
 import { useListMetrics, useRowsHeight } from './useListMetrics'
@@ -160,6 +161,21 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   const { onListTouchStart, onListTouchEnd } = useTapToClosePanels()
 
+  // The list's own handlers run first, then the app's from `listProps` (they used to be dropped).
+  const handleScrollBeginDrag = useChained(onScrollBeginDrag, listProps?.onScrollBeginDrag)
+  const handleScrollEndDrag = useChained(onScrollEndDrag, listProps?.onScrollEndDrag)
+  const handleMomentumScrollBegin = useChained(onMomentumScrollBegin, listProps?.onMomentumScrollBegin)
+  const handleMomentumScrollEnd = useChained(onMomentumScrollEnd, listProps?.onMomentumScrollEnd)
+  const handleContentSizeChange = useChained(onContentSizeChange, listProps?.onContentSizeChange)
+  const handleItemSizeChanged = useChained(onItemSizeChanged, listProps?.onItemSizeChanged)
+  const handleMetricsChange = useChained(onMetricsChange, listProps?.onMetricsChange)
+  // The app's padding goes on top of the list's own, rather than in its place.
+  const listContentStyle = listProps?.contentContainerStyle
+  const contentContainerStyle = useMemo(
+    () => (listContentStyle ? [styles.messagesContainer, listContentStyle] : styles.messagesContainer),
+    [listContentStyle]
+  )
+
   // Memoized, so a render of the container that leaves the list's inputs alone - a status
   // change or a reaction, which keep the data's identity - does not walk the list's rows.
   const listEngine = useMemo(() => (
@@ -179,7 +195,6 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       itemLayoutAnimation={isLayoutAnimated ? listCellTransition : undefined}
       sharedValues={sharedValues}
       style={stylesCommon.fill}
-      contentContainerStyle={styles.messagesContainer}
       ListEmptyComponent={renderChatEmpty}
       ListHeaderComponent={ListHeaderComponent}
       ListFooterComponent={ListFooterComponent}
@@ -188,19 +203,20 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       keyboardDismissMode='interactive'
       keyboardShouldPersistTaps='handled'
       {...listProps}
-      onScrollBeginDrag={onScrollBeginDrag}
-      onScrollEndDrag={onScrollEndDrag}
-      onMomentumScrollBegin={onMomentumScrollBegin}
-      onMomentumScrollEnd={onMomentumScrollEnd}
-      onContentSizeChange={onContentSizeChange}
-      onItemSizeChanged={onItemSizeChanged}
-      onMetricsChange={onMetricsChange}
+      contentContainerStyle={contentContainerStyle}
+      onScrollBeginDrag={handleScrollBeginDrag}
+      onScrollEndDrag={handleScrollEndDrag}
+      onMomentumScrollBegin={handleMomentumScrollBegin}
+      onMomentumScrollEnd={handleMomentumScrollEnd}
+      onContentSizeChange={handleContentSizeChange}
+      onItemSizeChanged={handleItemSizeChanged}
+      onMetricsChange={handleMetricsChange}
       onViewableItemsChanged={undefined}
       viewabilityConfig={undefined}
       viewabilityConfigCallbackPairs={viewabilityPairs}
       onLayout={onLayoutList}
     />
-  ), [forwardRef, keyExtractor, orderedData, renderItem, alignItemsAtEnd, isLayoutAnimated, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, onScrollBeginDrag, onScrollEndDrag, onMomentumScrollBegin, onMomentumScrollEnd, onContentSizeChange, onItemSizeChanged, onMetricsChange, viewabilityPairs, onLayoutList])
+  ), [forwardRef, keyExtractor, orderedData, renderItem, alignItemsAtEnd, isLayoutAnimated, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, contentContainerStyle, handleScrollBeginDrag, handleScrollEndDrag, handleMomentumScrollBegin, handleMomentumScrollEnd, handleContentSizeChange, handleItemSizeChanged, handleMetricsChange, viewabilityPairs, onLayoutList])
 
   const list = (
     <View

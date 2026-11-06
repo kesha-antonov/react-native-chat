@@ -42,6 +42,7 @@ export const tr: Partial<ChatLabels> = {
   actionEdit: 'Düzenle',
   actionForward: 'İlet',
   actionDelete: 'Sil',
+  actionRetry: 'Tekrar dene',
   emojiSearch: 'Emoji ara',
   emojiRecent: 'Son kullanılanlar',
   emojiSmileys: 'İfadeler ve insanlar',

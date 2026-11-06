@@ -1,6 +1,7 @@
 import React, {
   createRef,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useState,
   RefObject,
@@ -9,6 +10,7 @@ import { TextInput, View } from 'react-native'
 import { ChatContext } from '../ChatContext'
 import { createComposerPanelsStore } from '../components/composerPanels'
 import { MediaViewerHost } from '../components/mediaViewer/MediaViewerHost'
+import { TextHighlightContext } from '../components/textHighlight'
 import { TEST_ID } from '../Constant'
 import { AnimatedList } from '../MessagesContainer'
 import { IMessage, User } from '../Models'
@@ -87,6 +89,18 @@ export function Chat<TMessage extends IMessage = IMessage> (
     mediaController,
   })
 
+  useImperativeHandle(props.chatRef, () => ({
+    scrollToMessage: (messageId, options) => {
+      messagesContainerRef.current?.scrollToKey({
+        key: String(messageId),
+        animated: options?.animated ?? true,
+        viewPosition: options?.viewPosition ?? 0.5,
+      })
+      if (options?.isHighlighted)
+        highlightStore.highlight(messageId)
+    },
+  }), [messagesContainerRef, highlightStore])
+
   // Rebuilt on the way down to the list, so it has to keep its identity across renders that
   // change nothing: it is passed through `MessagesContainer` into every row, and `Item`'s memo
   // compares it by reference, so a fresh object here re-renders every mounted row whenever the
@@ -152,26 +166,34 @@ export function Chat<TMessage extends IMessage = IMessage> (
 
   const isSelectionBarShown = isSelecting && renderSelectionBar !== null
 
+  const highlightText = props.highlightText
+  const highlightTextStyle = props.highlightTextStyle
+  const textHighlight = useMemo(
+    () => (highlightText?.trim() ? { text: highlightText, style: highlightTextStyle } : null),
+    [highlightText, highlightTextStyle]
+  )
+
   return (
     <ChatContext.Provider value={contextValues}>
-      <View
-        testID={TEST_ID.WRAPPER}
-        ref={keyboardOffsetRef}
-        style={[stylesCommon.fill, styles.contentContainer, { backgroundColor: resolvedTheme.colors.background }]}
-        onLayout={onInitialLayoutViewLayout}
-      >
-        <ChatBackground
-          messages={messages}
-          userId={userId}
-          isInverted={isInverted}
-          theme={resolvedTheme}
-          renderWallpaper={renderWallpaper}
-        />
-        <ChatKeyboardAvoidingView
-          keyboardVerticalOffset={keyboardVerticalOffset}
-          keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}
+      <TextHighlightContext.Provider value={textHighlight}>
+        <View
+          testID={TEST_ID.WRAPPER}
+          ref={keyboardOffsetRef}
+          style={[stylesCommon.fill, styles.contentContainer, { backgroundColor: resolvedTheme.colors.background }]}
+          onLayout={onInitialLayoutViewLayout}
         >
-          {/*
+          <ChatBackground
+            messages={messages}
+            userId={userId}
+            isInverted={isInverted}
+            theme={resolvedTheme}
+            renderWallpaper={renderWallpaper}
+          />
+          <ChatKeyboardAvoidingView
+            keyboardVerticalOffset={keyboardVerticalOffset}
+            keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}
+          >
+            {/*
             collapsable={false}: `opacity` is the only paint prop this view ever
             carries, and it's conditional on `isReady` - a plain `{flex:1}` view is
             eligible for Fabric's shadow-node flattening, but one with `opacity`
@@ -182,62 +204,63 @@ export function Chat<TMessage extends IMessage = IMessage> (
             (`YGNodeGetOwner(childYogaNode) == &yogaNode_`). Pinning collapsable
             keeps this node's shadow-tree identity stable across the flip.
           */}
-          <View
-            testID={TEST_ID.CONTENT}
-            collapsable={false}
-            style={[stylesCommon.fill, !isReady && styles.hidden]}
-          >
-            <ChatProviders
-              mediaController={mediaController}
-              mediaTransferController={mediaTransferController}
-              highlightStore={highlightStore}
-              selectionStore={selectionStore}
-              composerPanels={composerPanels}
-              mediaGallery={mediaGallery}
+            <View
+              testID={TEST_ID.CONTENT}
+              collapsable={false}
+              style={[stylesCommon.fill, !isReady && styles.hidden]}
             >
-              <ChatMessageList<TMessage>
-                isMounted={isListMounted}
-                chatProps={props}
-                messages={messages}
-                isInverted={isInverted}
-                messagesContainerRef={messagesContainerRef}
-                replyForList={replyForList}
-                pageDownReturn={pageDownReturn}
-                getSenderName={getSenderName}
-                scrollToMessage={scrollToMessage}
-                resolvedMessageActions={resolvedMessageActions}
-                resolvedReactions={resolvedReactions}
-                isAvatarVisible={isAvatarVisible}
-                isUsernameVisible={isUsernameVisible}
-                sendGreeting={sendGreeting}
-              />
-              {isSelectionBarShown && (
-                <ChatSelectionBar<TMessage>
-                  store={selectionStore}
+              <ChatProviders
+                mediaController={mediaController}
+                mediaTransferController={mediaTransferController}
+                highlightStore={highlightStore}
+                selectionStore={selectionStore}
+                composerPanels={composerPanels}
+                mediaGallery={mediaGallery}
+              >
+                <ChatMessageList<TMessage>
+                  isMounted={isListMounted}
+                  chatProps={props}
                   messages={messages}
-                  canCopy={hasClipboard}
-                  onCopy={copySelection}
-                  onForward={forwardSelection}
-                  onDelete={deleteSelection}
-                  renderSelectionBar={renderSelectionBar}
+                  isInverted={isInverted}
+                  messagesContainerRef={messagesContainerRef}
+                  replyForList={replyForList}
+                  pageDownReturn={pageDownReturn}
+                  getSenderName={getSenderName}
+                  scrollToMessage={scrollToMessage}
+                  resolvedMessageActions={resolvedMessageActions}
+                  resolvedReactions={resolvedReactions}
+                  isAvatarVisible={isAvatarVisible}
+                  isUsernameVisible={isUsernameVisible}
+                  sendGreeting={sendGreeting}
                 />
-              )}
-              {/*
+                {isSelectionBarShown && (
+                  <ChatSelectionBar<TMessage>
+                    store={selectionStore}
+                    messages={messages}
+                    canCopy={hasClipboard}
+                    onCopy={copySelection}
+                    onForward={forwardSelection}
+                    onDelete={deleteSelection}
+                    renderSelectionBar={renderSelectionBar}
+                  />
+                )}
+                {/*
                 The selection bar takes the composer's place, but the composer stays
                 mounted under it, out of layout: leaving selection used to rebuild the
                 whole composer (its recorder, panels and animations) from scratch.
                 collapsable={false} keeps this view's native node stable while its
                 `display` flips (see the note on TEST_ID.CONTENT above).
               */}
-              <View collapsable={false} style={isSelectionBarShown ? styles.composerAway : undefined}>
-                {inputToolbarFragment}
-              </View>
-              <MediaViewerHost gallery={mediaGallery} />
-            </ChatProviders>
-          </View>
-          {!isReady && renderComponentOrElement(renderLoading, {})}
-        </ChatKeyboardAvoidingView>
-      </View>
+                <View collapsable={false} style={isSelectionBarShown ? styles.composerAway : undefined}>
+                  {inputToolbarFragment}
+                </View>
+                <MediaViewerHost gallery={mediaGallery} />
+              </ChatProviders>
+            </View>
+            {!isReady && renderComponentOrElement(renderLoading, {})}
+          </ChatKeyboardAvoidingView>
+        </View>
+      </TextHighlightContext.Provider>
     </ChatContext.Provider>
   )
 }

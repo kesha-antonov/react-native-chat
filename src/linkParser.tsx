@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { Text, TextStyle, StyleProp, Linking } from 'react-native'
+import { splitHighlights } from './components/textHighlight'
 
 export type LinkType = 'url' | 'email' | 'phone' | 'mention' | 'hashtag'
 
@@ -51,7 +52,12 @@ interface LinkParserProps {
   stripPrefix?: boolean
   textStyle?: StyleProp<TextStyle>
   TextComponent?: React.ComponentType<any>
+  /** Words to mark in the text, links included (case-insensitive) */
+  highlight?: string
+  highlightStyle?: StyleProp<TextStyle>
 }
+
+const HIGHLIGHT_STYLE: TextStyle = { backgroundColor: 'rgba(255, 214, 10, 0.6)', color: '#000000' }
 
 const DEFAULT_MATCHERS: LinkMatcher[] = [
   {
@@ -237,7 +243,21 @@ function LinkParserComponent({
   stripPrefix = true,
   textStyle,
   TextComponent = Text,
+  highlight,
+  highlightStyle,
 }: LinkParserProps): React.ReactElement {
+  // A piece of text with the highlighted words wrapped in a marked span.
+  const marked = (value: string, key: string) => {
+    if (!highlight)
+      return value
+    const parts = splitHighlights(value, highlight)
+    if (parts.length === 1 && !parts[0].isMatch)
+      return value
+    return parts.map((part, index) => part.isMatch
+      ? <TextComponent key={`${key}-${index}`} style={[HIGHLIGHT_STYLE, highlightStyle]}>{part.text}</TextComponent>
+      : part.text)
+  }
+
   // Parsing is the expensive part of rendering a message body - matcher assembly plus a
   // scan per matcher - and it depends only on the text and the matcher configuration.
   // Left in the render body it re-ran on every render of every message.
@@ -284,7 +304,7 @@ function LinkParserComponent({
   }, [text, customMatchers, url, email, phone, hashtag, mention, hashtagUrl, mentionUrl])
 
   if (links.length === 0)
-    return <TextComponent style={textStyle}>{text}</TextComponent>
+    return <TextComponent style={textStyle}>{marked(text, 'text')}</TextComponent>
 
 
   const elements: React.ReactNode[] = []
@@ -295,7 +315,7 @@ function LinkParserComponent({
     if (link.index > lastIndex)
       elements.push(
         <TextComponent key={`text-${index}`} style={textStyle}>
-          {text.substring(lastIndex, link.index)}
+          {marked(text.substring(lastIndex, link.index), `text-${index}`)}
         </TextComponent>
       )
 
@@ -331,7 +351,7 @@ function LinkParserComponent({
           style={[linkStyle, matcher?.style]}
           onPress={handlePress}
         >
-          {displayText}
+          {marked(displayText, `link-${index}`)}
         </TextComponent>
       )
     }
@@ -343,7 +363,7 @@ function LinkParserComponent({
   if (lastIndex < text.length)
     elements.push(
       <TextComponent key='text-end' style={textStyle}>
-        {text.substring(lastIndex)}
+        {marked(text.substring(lastIndex), 'text-end')}
       </TextComponent>
     )
 

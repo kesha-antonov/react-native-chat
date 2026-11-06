@@ -34,6 +34,7 @@ export type {
   AttachmentTab,
   AttachmentsProps,
   AttachmentMenuRenderProps,
+  AttachmentPickers,
   AttachmentPickResult,
   PickedAttachment
 } from './attachments/types'
@@ -56,6 +57,8 @@ export { MessagesContainer } from './MessagesContainer'
 export { Send } from './Send'
 export { Time } from './Time'
 export { ChatAvatar } from './ChatAvatar'
+export { ChatHeader } from './ChatHeader'
+export type { ChatHeaderProps } from './ChatHeader'
 export { MessageAudio } from './MessageAudio'
 export { MessageVideo } from './MessageVideo'
 export { MessageReply } from './components/MessageReply'

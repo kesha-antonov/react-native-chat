@@ -127,6 +127,10 @@ const createStyles = (theme: ChatTheme) => {
       paddingBottom: paddingVertical,
       paddingHorizontal: 0,
       color: theme.colors.inputText,
+      // Android adds font padding above the text and re-measures on the first glyph, so the text
+      // dropped a little once you started typing; without it the placeholder and the text share a line.
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
   })
 }

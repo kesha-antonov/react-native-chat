@@ -37,10 +37,12 @@ export function useListChrome<TMessage extends IMessage> (props: MessagesContain
 
   // Only a custom footer is handed the props, so only then does it depend on them - the
   // typing indicator would otherwise be rebuilt, and the list with it, on every render.
+  // A custom footer takes the typing indicator's place and gets it as the second argument, to keep
+  // it next to its own content.
   const footerProps = renderFooterProp ? props : undefined
   const ListFooterComponent = useMemo(() => (
     <>
-      {renderFooterProp ? renderFooterProp(footerProps!) : renderTypingIndicator()}
+      {renderFooterProp ? renderFooterProp(footerProps!, renderTypingIndicator()) : renderTypingIndicator()}
     </>
   ), [renderFooterProp, renderTypingIndicator, footerProps])
 

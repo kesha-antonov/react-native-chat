@@ -44,10 +44,12 @@ exports[`should render <Composer /> and compare with snapshot 1`] = `
             "color": "#000000",
             "fontSize": 18,
             "fontWeight": "400",
+            "includeFontPadding": false,
             "lineHeight": 21,
             "paddingBottom": 11.5,
             "paddingHorizontal": 0,
             "paddingTop": 11.5,
+            "textAlignVertical": "center",
           },
           {
             "outlineStyle": "none",

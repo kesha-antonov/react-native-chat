@@ -10,6 +10,7 @@ import {
 import { BasicMarkdown } from './components/BasicMarkdown'
 import { MarkdownMessageText, canUseStreamdown } from './components/MarkdownMessageText'
 import { StreamingCursor } from './components/StreamingCursor'
+import { useTextHighlight } from './components/textHighlight'
 import { useThemedStyles } from './hooks/useTheme'
 import { LinkParser, LinkMatcher, LinkType } from './linkParser'
 import { LeftRightStyle, IMessage } from './Models'
@@ -79,6 +80,7 @@ export function MessageText<TMessage extends IMessage>({
   trailing,
 }: MessageTextProps<TMessage>) {
   const styles = useThemedStyles(createStyles)
+  const highlight = useTextHighlight()
 
   const linkStyle = useMemo(() => StyleSheet.flatten([
     styles.link,
@@ -158,6 +160,8 @@ export function MessageText<TMessage extends IMessage>({
       stripPrefix={stripPrefix}
       linkStyle={linkStyle}
       textStyle={style}
+      highlight={highlight?.text}
+      highlightStyle={highlight?.style}
       onPress={onPressProp ? handlePress : undefined}
       TextComponent={Text}
     />

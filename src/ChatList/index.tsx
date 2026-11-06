@@ -115,6 +115,9 @@ function ChatListContent<TChat extends ChatListItem> ({
   isHeaderVisible = true,
   title,
   renderHeaderRight,
+  headerRightPosition = 'beforeSearch',
+  timeFormat,
+  dateFormat,
   isTopInsetApplied = true,
   isSearchEnabled = true,
   filterChat = matchesChatQuery,
@@ -327,9 +330,11 @@ function ChatListContent<TChat extends ChatListItem> ({
       isLast: index === rows.length - 1,
       reorder: reorderFor(item),
       isReordering: isSelectionMode && canReorder && pinnedIds.length > 1 && !!item.isPinned,
+      timeFormat,
+      dateFormat,
     }
     return renderChat ? <>{renderChat(cellProps)}</> : <ChatListCell<TChat> {...cellProps} />
-  }, [archivedChats, setIsArchiveOpen, user, selectedIds, isSelectionMode, onPressRow, onLongPressRow, onArchiveChats, isSwipeEnabled, onSwipeRow, rows.length, reorderFor, canReorder, pinnedIds.length, renderChat])
+  }, [archivedChats, setIsArchiveOpen, user, selectedIds, isSelectionMode, onPressRow, onLongPressRow, onArchiveChats, isSwipeEnabled, onSwipeRow, rows.length, reorderFor, canReorder, pinnedIds.length, renderChat, timeFormat, dateFormat])
 
   const isAllPinned = selectedChats.length > 0 && selectedChats.every(chat => chat.isPinned)
   const isAllMuted = selectedChats.length > 0 && selectedChats.every(chat => chat.isMuted)
@@ -401,8 +406,9 @@ function ChatListContent<TChat extends ChatListItem> ({
                       {headerTitle}
                     </Text>
                     <View style={styles.spacer} />
-                    {renderHeaderRight?.()}
+                    {headerRightPosition === 'beforeSearch' && renderHeaderRight?.()}
                     {isSearchEnabled && <HeaderButton icon='search' color={colors.headerText} onPress={() => setQuery('')} label={labels.chatListSearch} />}
+                    {headerRightPosition === 'afterSearch' && renderHeaderRight?.()}
                   </Animated.View>
                 )}
           </View>

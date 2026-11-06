@@ -9,7 +9,7 @@ import {
   hasLocation,
   hasMediaLibrary,
 } from '../optional'
-import { AttachmentTab, AttachmentsProps, PickedAttachment } from './types'
+import { AttachmentPickers, AttachmentTab, AttachmentsProps, PickedAttachment } from './types'
 
 /**
  * The messages the built-in menu sends: one per image, video and file (there are no albums
@@ -66,15 +66,19 @@ export async function resolveAttachmentMessages<TMessage extends IMessage = IMes
 
 const DEFAULT_ORDER: AttachmentTab[] = ['gallery', 'camera', 'file', 'location']
 
-/** Whether a tab can work with the installed peers. */
-export const isAttachmentTabAvailable = (tab: AttachmentTab): boolean => {
+/** Whether a tab can work with the installed peers or a picker the app gave. */
+export const isAttachmentTabAvailable = (
+  tab: AttachmentTab,
+  pickers?: Partial<Record<keyof AttachmentPickers, unknown>>,
+  isGalleryGridEnabled = true
+): boolean => {
   switch (tab) {
     case 'gallery':
-      return hasMediaLibrary() || hasImagePicker()
+      return (isGalleryGridEnabled && hasMediaLibrary()) || hasImagePicker() || !!pickers?.gallery
     case 'camera':
-      return hasImagePickerCamera()
+      return hasImagePickerCamera() || !!pickers?.camera
     case 'file':
-      return hasDocumentPicker()
+      return hasDocumentPicker() || !!pickers?.file
     case 'location':
       return hasLocation()
   }
@@ -85,9 +89,14 @@ export const isAttachmentTabAvailable = (tab: AttachmentTab): boolean => {
  * The tabs to show: the requested ones (or Gallery, File, Location) that have their
  * peer. Camera gets a tab of its own only when there is no in-sheet grid to hold its tile.
  */
-export const getAttachmentTabs = (requested?: AttachmentTab[]): AttachmentTab[] => {
-  const tabs = requested ?? DEFAULT_ORDER.filter(tab => tab !== 'camera' || !hasMediaLibrary())
-  return tabs.filter((tab, index) => tabs.indexOf(tab) === index && isAttachmentTabAvailable(tab))
+export const getAttachmentTabs = (
+  requested?: AttachmentTab[],
+  pickers?: Partial<Record<keyof AttachmentPickers, unknown>>,
+  isGalleryGridEnabled = true
+): AttachmentTab[] => {
+  const hasGrid = isGalleryGridEnabled && hasMediaLibrary()
+  const tabs = requested ?? DEFAULT_ORDER.filter(tab => tab !== 'camera' || !hasGrid)
+  return tabs.filter((tab, index) => tabs.indexOf(tab) === index && isAttachmentTabAvailable(tab, pickers, isGalleryGridEnabled))
 }
 
 /* ------------------------------------------------------------------------------------------ */

@@ -42,6 +42,7 @@ export const ja: Partial<ChatLabels> = {
   actionEdit: '編集',
   actionForward: '転送',
   actionDelete: '削除',
+  actionRetry: '再送信',
   emojiSearch: '絵文字を検索',
   emojiRecent: '最近使った項目',
   emojiSmileys: 'スマイリーと人',

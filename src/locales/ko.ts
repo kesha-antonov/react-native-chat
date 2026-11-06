@@ -42,6 +42,7 @@ export const ko: Partial<ChatLabels> = {
   actionEdit: '편집',
   actionForward: '전달',
   actionDelete: '삭제',
+  actionRetry: '다시 보내기',
   emojiSearch: '이모지 검색',
   emojiRecent: '최근 사용',
   emojiSmileys: '스마일리 및 사람',

@@ -132,7 +132,7 @@ backend confirms. Voice notes, files and media show the same clock / ✓ / ✓�
 - Attachment menu behind the paperclip: photo grid with numbered picks + caption (`expo-media-library`),
   system photo picker / camera (`expo-image-picker`), File (`expo-document-picker`), Location
   (`expo-location`) - each tab only when its peer is installed. Picks arrive in `onSend` as `image`,
-  `video`, `file` or `location` messages. `attachments={{ tabs, onPick, renderAttachmentMenu }}`
+  `video`, `file` or `location` messages. `attachments={{ tabs, pickers, isGalleryGridEnabled, onPick, renderAttachmentMenu }}`
   configures it (`onPick` can upload first and return the messages to send); `attachments={false}`
   hides it; `actions` / `onPressActionButton` / `renderActions` replace it. iOS needs the usage strings
   (`NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription`, `NSLocationWhenInUseUsageDescription`);

@@ -42,6 +42,7 @@ export const ru: Partial<ChatLabels> = {
   actionEdit: 'Изменить',
   actionForward: 'Переслать',
   actionDelete: 'Удалить',
+  actionRetry: 'Повторить',
   emojiSearch: 'Поиск эмодзи',
   emojiRecent: 'Недавние',
   emojiSmileys: 'Смайлики и люди',

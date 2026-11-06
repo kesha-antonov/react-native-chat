@@ -7,8 +7,6 @@ import { CameraIcon } from '../../components/MediaControls'
 import { useIsRTL } from '../../hooks/useIsRTL'
 import { useLabels } from '../../hooks/useLabels'
 import { useThemedStyles } from '../../hooks/useTheme'
-import { hasImagePickerCamera } from '../../optional'
-import { takePhoto } from '../buildMessages'
 import { GalleryAsset } from '../gallery'
 import { PickedAttachment } from '../types'
 import { COLUMNS, HEADER } from './constants'
@@ -29,6 +27,7 @@ export function GalleryGrid ({
   onDismiss,
   onToggle,
   runPicker,
+  pickCamera,
 }: {
   assets: GalleryAsset[]
   selected: GalleryAsset[]
@@ -40,14 +39,16 @@ export function GalleryGrid ({
   onDismiss: () => void
   onToggle: (asset: GalleryAsset) => void
   runPicker: (picker: () => Promise<PickedAttachment[]>) => void
+  /** Takes a photo from the grid's first cell; no camera cell without it. */
+  pickCamera?: () => Promise<PickedAttachment[]>
 }) {
   const styles = useThemedStyles(createStyles)
   const labels = useLabels()
   const isRTL = useIsRTL()
 
   const gridItems = useMemo<GridItem[]>(
-    () => (hasImagePickerCamera() ? ['camera' as const, ...assets] : assets),
-    [assets]
+    () => (pickCamera ? ['camera' as const, ...assets] : assets),
+    [assets, pickCamera]
   )
   const selectionIndex = useMemo(() => new Map(selected.map((asset, index) => [asset.id, index + 1])), [selected])
 
@@ -63,7 +64,7 @@ export function GalleryGrid ({
     if (item === 'camera')
       return (
         <Pressable
-          onPress={() => runPicker(takePhoto)}
+          onPress={() => pickCamera && runPicker(pickCamera)}
           style={[styles.cell, styles.cameraCell, { width: cellSize, height: cellSize }, cornerFor(index)]}
           accessibilityRole='button'
           accessibilityLabel={labels.attachCamera}
@@ -82,7 +83,7 @@ export function GalleryGrid ({
         styles={styles}
       />
     )
-  }, [styles, cellSize, cornerFor, labels, runPicker, selectionIndex, onToggle, isRTL])
+  }, [styles, cellSize, cornerFor, labels, runPicker, pickCamera, selectionIndex, onToggle, isRTL])
 
   const onScrollEndDrag = useCallback((event: { nativeEvent: { contentOffset: { y: number } } }) => {
     // Pulled down past the top: the sheet goes.

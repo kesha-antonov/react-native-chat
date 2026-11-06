@@ -28,13 +28,19 @@ export function matchesChatQuery (chat: ChatListItem, query: string): boolean {
  * The time on a row: the time today, the weekday within a week, the day and month this year,
  * and the full date before that.
  */
-export function formatChatListDate (date: Date | number, locale?: string): string {
+export function formatChatListDate (
+  date: Date | number,
+  locale?: string,
+  formats?: { timeFormat?: string, dateFormat?: string }
+): string {
   const value = locale ? dayjs(date).locale(locale) : dayjs(date)
   const now = dayjs()
   if (value.isSame(now, 'day'))
-    return value.format('LT')
+    return value.format(formats?.timeFormat ?? 'LT')
   if (now.diff(value, 'day') < 7)
     return value.format('ddd')
+  if (formats?.dateFormat)
+    return value.format(formats.dateFormat)
   if (value.isSame(now, 'year'))
     return value.format('MMM D')
   return value.format('L')

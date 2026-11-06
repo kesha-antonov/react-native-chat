@@ -42,6 +42,7 @@ export const hi: Partial<ChatLabels> = {
   actionEdit: 'संपादित करें',
   actionForward: 'फ़ॉरवर्ड करें',
   actionDelete: 'हटाएँ',
+  actionRetry: 'फिर से भेजें',
   emojiSearch: 'इमोजी खोजें',
   emojiRecent: 'हाल ही में उपयोग किए गए',
   emojiSmileys: 'स्माइली और लोग',

@@ -42,6 +42,7 @@ export const ar: Partial<ChatLabels> = {
   actionEdit: 'تعديل',
   actionForward: 'إعادة توجيه',
   actionDelete: 'حذف',
+  actionRetry: 'إعادة المحاولة',
   emojiSearch: 'البحث عن رمز تعبيري',
   emojiRecent: 'المستخدمة مؤخرًا',
   emojiSmileys: 'الوجوه والأشخاص',

@@ -72,6 +72,8 @@ function ChatListCellInner<TChat extends ChatListItem> ({
   isLast,
   reorder,
   isReordering = false,
+  timeFormat,
+  dateFormat,
 }: ChatListCellProps<TChat>) {
   // The gesture callbacks read shared values; React Compiler would memoize them into render.
   'use no memo'
@@ -80,6 +82,13 @@ function ChatListCellInner<TChat extends ChatListItem> ({
   const labels = useLabels()
   const { getLocale } = useChatContext()
   const { width } = useWindowDimensions()
+
+  // The worklets below call these JS functions with no arguments. Handing `chat` itself to a worklet
+  // would copy the whole item to the UI thread, which fails on anything it cannot copy (a Date in
+  // `lastMessage.createdAt`, an app's own objects) - so the row's chat stays here, on the JS side.
+  const swipeChat = () => onSwipe?.(chat)
+  const startDrag = () => reorder?.onStart?.(chat)
+  const dropChat = (to: number) => reorder?.onDrop?.(chat, to)
 
   // The row swipes towards the start edge, revealing the action at the end.
   const direction = I18nManager.isRTL ? 1 : -1
@@ -105,7 +114,7 @@ function ChatListCellInner<TChat extends ChatListItem> ({
       if (onSwipe && (isPast || isFling)) {
         rowOffset.value = withTiming(width * direction, SWIPE_CANCEL, isFinished => {
           if (isFinished)
-            runOnJS(onSwipe)(chat)
+            runOnJS(swipeChat)()
         })
         return
       }
@@ -133,7 +142,7 @@ function ChatListCellInner<TChat extends ChatListItem> ({
       drag.y.set(0)
       drag.isActive.set(true)
       if (onDragStart)
-        runOnJS(onDragStart)(chat)
+        runOnJS(startDrag)()
     },
     onUpdate: event => {
       if (!drag)
@@ -149,7 +158,7 @@ function ChatListCellInner<TChat extends ChatListItem> ({
       const to = hoverIndex(drag, count)
       drag.y.set(withTiming((to - index) * ROW_HEIGHT, SETTLE, () => {
         if (onDrop)
-          runOnJS(onDrop)(chat, to)
+          runOnJS(dropChat)(to)
       }))
     },
   })
@@ -272,11 +281,18 @@ function ChatListCellInner<TChat extends ChatListItem> ({
                 </View>
                 {isOutgoing && !chat.draft && (
                   <View style={styles.checks}>
-                    <Icon name={statusIcon} size={16} color={colors.check} fallback={null} />
+                    {lastMessage?.isFailed
+                      // Not sent: the bubble's red badge, not a check that reads as delivered
+                      ? (
+                        <View testID='chat-list-failed-badge' style={[styles.failed, { backgroundColor: theme.colors.error }]}>
+                          <Text style={styles.failedText} allowFontScaling={false}>!</Text>
+                        </View>
+                      )
+                      : <Icon name={statusIcon} size={16} color={colors.check} fallback={null} />}
                   </View>
                 )}
                 {lastMessage?.createdAt != null && (
-                  <Text style={[styles.time, { color: colors.date }]}>{formatChatListDate(lastMessage.createdAt, getLocale())}</Text>
+                  <Text style={[styles.time, { color: colors.date }]}>{formatChatListDate(lastMessage.createdAt, getLocale(), { timeFormat, dateFormat })}</Text>
                 )}
               </View>
 
@@ -363,6 +379,8 @@ const arePropsEqual = (previous: ChatListCellProps, next: ChatListCellProps) =>
   previous.onSwipe === next.onSwipe &&
   previous.isLast === next.isLast &&
   previous.isReordering === next.isReordering &&
+  previous.timeFormat === next.timeFormat &&
+  previous.dateFormat === next.dateFormat &&
   isSameReorder(previous.reorder, next.reorder)
 
 /**
@@ -444,6 +462,19 @@ const styles = StyleSheet.create({
   },
   nameIcon: {
     marginStart: 4,
+  },
+  failed: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  failedText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '700',
   },
   // The checks sit 5 before the time.
   checks: {

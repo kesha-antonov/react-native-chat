@@ -31,6 +31,7 @@ const iconRenderer = (name: IconName, Fallback?: DrawnIcon): IconRenderer => {
 
 // Built once: a fresh renderer per menu would be a fresh prop per row.
 const ICONS: Record<MessageActionKey | 'unpin', IconRenderer> = {
+  retry: iconRenderer('send'),
   reply: iconRenderer('reply', ReplyArrowIcon),
   copy: iconRenderer('copy'),
   forward: iconRenderer('forward'),
@@ -54,6 +55,8 @@ export interface DefaultMessageActionsOptions<TMessage extends IMessage> {
   onPin?: (message: TMessage) => void
   onSelect?: (message: TMessage) => void
   onDelete?: (message: TMessage) => void
+  /** Sends a failed message again; offered first for your own failed messages. */
+  onRetry?: (message: TMessage) => void
 }
 
 /**
@@ -73,6 +76,7 @@ export function buildDefaultMessageActions<TMessage extends IMessage> ({
   onPin,
   onSelect,
   onDelete,
+  onRetry,
 }: DefaultMessageActionsOptions<TMessage>): MessageMenuItem[] {
   if (message.system)
     return []
@@ -81,6 +85,8 @@ export function buildDefaultMessageActions<TMessage extends IMessage> ({
   const text = message.text
 
   const items: MessageMenuItem[] = []
+  if (onRetry && isOwn && message.isFailed)
+    items.push({ key: 'retry', label: labels.actionRetry, icon: ICONS.retry, onPress: () => onRetry(message) })
   for (const key of keys)
     switch (key) {
       case 'reply':

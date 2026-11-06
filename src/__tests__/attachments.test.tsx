@@ -72,6 +72,14 @@ describe('attachment messages', () => {
     expect(getAttachmentTabs()).toEqual(['file', 'location'])
     expect(getAttachmentTabs(['location', 'file'])).toEqual(['location', 'file'])
   })
+
+  it('offers a tab whose peer is missing when the app gives its own picker', () => {
+    const pick = async () => []
+    expect(getAttachmentTabs(['gallery', 'camera', 'file'])).toEqual(['file'])
+    expect(getAttachmentTabs(['gallery', 'camera', 'file'], { gallery: pick, camera: pick })).toEqual(['gallery', 'camera', 'file'])
+    // Without the grid the Gallery tab is the system picker, so the app's own one keeps it
+    expect(getAttachmentTabs(['gallery', 'file'], { gallery: pick }, false)).toEqual(['gallery', 'file'])
+  })
 })
 
 // The built-in menu mounts on its first open and opens on the frame after.
@@ -110,6 +118,22 @@ describe('the paperclip', () => {
 
     expect(mockGetDocumentAsync).toHaveBeenCalledWith({ multiple: true, copyToCacheDirectory: true })
     expect(onSend).toHaveBeenCalledTimes(1)
+    const [[sent]] = onSend.mock.calls
+    expect(sent[0]).toMatchObject({ file: PDF, user: ME })
+  })
+
+  it('uses the app\'s own file picker instead of expo-document-picker', async () => {
+    mockGetDocumentAsync.mockClear()
+    const file = jest.fn(async () => [{ type: 'file' as const, ...PDF }])
+    const onSend = jest.fn()
+    const utils = await mountChat(<Chat messages={messages} onSend={onSend} user={ME} attachments={{ pickers: { file } }} />)
+
+    await openMenu(utils.getByLabelText('Attach'))
+    await fireEvent.press(utils.getByLabelText('File'))
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(file).toHaveBeenCalledTimes(1)
+    expect(mockGetDocumentAsync).not.toHaveBeenCalled()
     const [[sent]] = onSend.mock.calls
     expect(sent[0]).toMatchObject({ file: PDF, user: ME })
   })

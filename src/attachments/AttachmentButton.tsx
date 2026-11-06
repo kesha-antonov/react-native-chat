@@ -71,7 +71,7 @@ export function AttachmentButton<TMessage extends IMessage = IMessage> ({
       <Actions onPressActionButton={open} icon={icon} wrapperStyle={wrapperStyle} />
       {config.renderAttachmentMenu
         ? renderComponentOrElement(config.renderAttachmentMenu, { visible: isVisible, onClose: close, tabs, onSend: send })
-        : hasOpened && <AttachmentMenu visible={isVisible} tabs={tabs} onClose={close} onSend={send} />}
+        : hasOpened && <AttachmentMenu visible={isVisible} tabs={tabs} pickers={config.pickers} isGalleryGridEnabled={config.isGalleryGridEnabled} onClose={close} onSend={send} />}
     </>
   )
 }

@@ -30,13 +30,18 @@ export function useActionsFragment<TMessage extends IMessage> (
   const hasAttachments = !!attachmentsConfig
   // Keyed by the tab list, not its identity: an inline array would rebuild the menu every render.
   const requestedTabsId = requestedTabs?.join(',')
+  // Which tabs have the app's own picker, as a key for the same reason.
+  const pickers = attachmentsConfig?.pickers
+  const customPickersId = (['gallery', 'camera', 'file'] as const).filter(tab => !!pickers?.[tab]).join(',')
+  const isGalleryGridEnabled = attachmentsConfig?.isGalleryGridEnabled !== false
   const attachmentTabs = useMemo(() => {
     if (!hasAttachments)
       return []
+    const custom = Object.fromEntries(customPickersId.split(',').filter(Boolean).map(tab => [tab, true]))
     return getAttachmentTabs(requestedTabsId === undefined
       ? undefined
-      : requestedTabsId.split(',').filter(Boolean) as AttachmentTab[])
-  }, [hasAttachments, requestedTabsId])
+      : requestedTabsId.split(',').filter(Boolean) as AttachmentTab[], custom, isGalleryGridEnabled)
+  }, [hasAttachments, requestedTabsId, customPickersId, isGalleryGridEnabled])
   const onSendProp = (props as { onSend?: OnSend<TMessage> }).onSend
   const onSendForAttachments = useCallback((messages: Partial<TMessage>[], shouldReset: boolean) => {
     onSendProp?.(messages, shouldReset)

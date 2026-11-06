@@ -46,14 +46,16 @@ export function useMessageActions<TMessage extends IMessage> ({
     onForwardMessages,
     onDeleteMessages,
     onLongPressMessage,
+    onRetryMessage,
   } = props
 
   // The app's callbacks are read through a ref, so an inline arrow does not hand every row a
   // new `messageActions` (and re-render it) on each parent render.
-  const actionCallbacksRef = useRef({ onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage, onForwardMessages, onDeleteMessages })
+  const actionCallbacksRef = useRef({ onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage, onForwardMessages, onDeleteMessages, onRetryMessage })
   useInsertionEffect(() => {
-    actionCallbacksRef.current = { onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage, onForwardMessages, onDeleteMessages }
+    actionCallbacksRef.current = { onEditMessage, onDeleteMessage, onForwardMessage, onPinMessage, onForwardMessages, onDeleteMessages, onRetryMessage }
   })
+  const hasRetry = !!onRetryMessage
   const hasPin = !!onPinMessage
   const hasEdit = !!onEditMessage
   const hasDelete = !!onDeleteMessage || !!onDeleteMessages
@@ -73,7 +75,7 @@ export function useMessageActions<TMessage extends IMessage> ({
       return messageActions
 
     const keys = (actionKeysId ? actionKeysId.split(',') : []) as typeof DEFAULT_MESSAGE_ACTION_KEYS
-    if (keys.length === 0 && !messageActions)
+    if (keys.length === 0 && !messageActions && !hasRetry)
       return undefined
 
     const clipboard = keys.includes('copy') ? getClipboard() : null
@@ -83,7 +85,7 @@ export function useMessageActions<TMessage extends IMessage> ({
       selectionStore.start(message._id)
     }
     const owner = userId != null ? { _id: userId } : undefined
-    const defaultsFor = (message: TMessage): MessageMenuItem[] => keys.length === 0
+    const defaultsFor = (message: TMessage): MessageMenuItem[] => keys.length === 0 && !hasRetry
       ? []
       : buildDefaultMessageActions({
         message,
@@ -104,6 +106,7 @@ export function useMessageActions<TMessage extends IMessage> ({
           : undefined,
         onSelect: canSelect ? startSelection : undefined,
         onPin: hasPin ? m => actionCallbacksRef.current.onPinMessage?.(m) : undefined,
+        onRetry: hasRetry ? m => actionCallbacksRef.current.onRetryMessage?.(m) : undefined,
         onDelete: hasDelete
           ? m => {
             if (editStore.get()?._id === m._id)
@@ -135,6 +138,7 @@ export function useMessageActions<TMessage extends IMessage> ({
     hasDelete,
     hasForward,
     hasPin,
+    hasRetry,
     canSelect,
     composerPanels,
     selectionStore,

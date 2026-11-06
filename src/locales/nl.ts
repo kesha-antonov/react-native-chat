@@ -42,6 +42,7 @@ export const nl: Partial<ChatLabels> = {
   actionEdit: 'Bewerken',
   actionForward: 'Doorsturen',
   actionDelete: 'Verwijderen',
+  actionRetry: 'Opnieuw proberen',
   emojiSearch: 'Emoji zoeken',
   emojiRecent: 'Recent gebruikt',
   emojiSmileys: 'Smileys en mensen',

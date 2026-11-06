@@ -94,6 +94,8 @@ export interface ChatLabels {
   actionForward: string
   /** Message context menu: delete the message. */
   actionDelete: string
+  /** Message context menu: send a message that failed again. */
+  actionRetry: string
   /** Emoji keyboard: the search field placeholder. */
   emojiSearch: string
   /** Emoji keyboard: the recents tab. */
@@ -276,6 +278,7 @@ export const defaultLabels: ChatLabels = {
   actionEdit: 'Edit',
   actionForward: 'Forward',
   actionDelete: 'Delete',
+  actionRetry: 'Retry',
   emojiSearch: 'Search Emoji',
   emojiRecent: 'Recently Used',
   emojiSmileys: 'Smileys & People',

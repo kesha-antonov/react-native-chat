@@ -18,13 +18,15 @@ import { createStyles } from './styles'
  * What the sheet shows when there is no grid: the location row, or the gallery's fallback (a
  * message and a button for the system picker).
  */
-export function TabPanel ({ activeTab, location, onSendLocation, hasGrid, galleryStatus, runPicker }: {
+export function TabPanel ({ activeTab, location, onSendLocation, hasGrid, galleryStatus, runPicker, pickGallery }: {
   activeTab: AttachmentTab
   location: CurrentLocation | 'locating' | null
   onSendLocation: () => void
   hasGrid: boolean
   galleryStatus: GalleryStatus
   runPicker: (picker: () => Promise<PickedAttachment[]>) => void
+  /** The app's own gallery picker, opened instead of expo-image-picker when there is no in-sheet grid. */
+  pickGallery?: () => Promise<PickedAttachment[]>
 }) {
   const styles = useThemedStyles(createStyles)
   const theme = useTheme()
@@ -60,8 +62,8 @@ export function TabPanel ({ activeTab, location, onSendLocation, hasGrid, galler
   return (
     <View style={styles.galleryPanel}>
       {!!message && <Text style={styles.panelText}>{message}</Text>}
-      {hasImagePicker() && (
-        <Pressable onPress={() => runPicker(pickFromSystemGallery)} style={styles.panelButton} accessibilityRole='button'>
+      {(hasImagePicker() || !!pickGallery) && (
+        <Pressable onPress={() => runPicker(pickGallery ?? pickFromSystemGallery)} style={styles.panelButton} accessibilityRole='button'>
           <Text style={styles.panelButtonText}>{labels.attachChooseFromGallery}</Text>
         </Pressable>
       )}

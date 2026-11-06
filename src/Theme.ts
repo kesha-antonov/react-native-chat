@@ -342,6 +342,10 @@ export interface ChatThemeChatList {
   headerBackground: string
   /** Header title and icons. */
   headerText: string
+  /** `ChatHeader`'s status line ("last seen", members). */
+  headerSubtitle: string
+  /** `ChatHeader`'s status line while it reads "online" or "typing". */
+  headerSubtitleActive: string
   /** Chat names. */
   name: string
   /** The last message's text. */
@@ -442,6 +446,11 @@ export interface ChatTheme {
   chatList: ChatThemeChatList
   /** Sender name colors, picked per user id (`avatar_nameInMessage*`); empty uses `colors.senderName`. */
   nameColors: string[]
+  /**
+   * The text size the user picked, as a multiplier of every size in `typography` (1 by default):
+   * messages, times, names, day and service pills, quotes and the composer grow together.
+   */
+  textScale?: number
 }
 
 export type PartialChatTheme = {
@@ -460,6 +469,8 @@ export type PartialChatTheme = {
   attachments?: Partial<ChatThemeAttachments>
   chatList?: Partial<ChatThemeChatList>
   nameColors?: string[]
+  /** Multiplies every size in `typography`; see `ChatTheme.textScale`. */
+  textScale?: number
 }
 
 // Avatars: a vertical gradient per color, `abs(id % 7)` -> red, orange, violet, green,
@@ -656,6 +667,8 @@ export const defaultLightTheme: ChatTheme = {
     background: '#FFFFFF',
     headerBackground: '#FFFFFF',
     headerText: '#1A1D21',
+    headerSubtitle: '#79817E',
+    headerSubtitleActive: '#298ACF',
     name: '#1A1D21',
     message: '#8E9091',
     senderPrefix: '#298ACF',
@@ -817,6 +830,8 @@ export const defaultDarkTheme: ChatTheme = {
     background: '#1D2733',
     headerBackground: '#242D39',
     headerText: '#FFFFFF',
+    headerSubtitle: 'rgba(219, 242, 255, 0.49)',
+    headerSubtitleActive: '#73BBF7',
     name: '#E9EEF4',
     message: '#7D8B99',
     senderPrefix: '#E9EEF4',
@@ -891,6 +906,18 @@ export function mergeTheme (base: ChatTheme, override?: PartialChatTheme): ChatT
     for (const key of Object.keys(override.typography) as Array<keyof ChatThemeTypography>)
       mergedTypography[key] = { ...base.typography[key], ...override.typography[key] }
 
+  // The text size multiplies whatever sizes the merge ends with, the app's own included.
+  const textScale = override.textScale ?? base.textScale ?? 1
+  if (textScale !== (base.textScale ?? 1))
+    for (const key of Object.keys(mergedTypography) as Array<keyof ChatThemeTypography>) {
+      const style = mergedTypography[key]
+      mergedTypography[key] = {
+        ...style,
+        fontSize: style.fontSize * textScale,
+        lineHeight: style.lineHeight != null ? style.lineHeight * textScale : undefined,
+      }
+    }
+
   const overrideScreenEdge = override.spacing?.screenEdge
   const mergedScreenEdge: ChatThemeHorizontalEdge = typeof overrideScreenEdge === 'number'
     ? { left: overrideScreenEdge, right: overrideScreenEdge }
@@ -926,6 +953,7 @@ export function mergeTheme (base: ChatTheme, override?: PartialChatTheme): ChatT
     attachments: { ...base.attachments, ...override.attachments },
     chatList: { ...base.chatList, ...override.chatList },
     nameColors,
+    textScale,
   }
 }
 

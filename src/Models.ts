@@ -7,7 +7,7 @@ export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>
  * The actions the chat can put in the long-press menu by itself, in this order:
  * `reply`, `copy`, `forward`, `pin`, `edit`, `delete`.
  */
-export type MessageActionKey = 'reply' | 'copy' | 'forward' | 'pin' | 'edit' | 'select' | 'delete'
+export type MessageActionKey = 'retry' | 'reply' | 'copy' | 'forward' | 'pin' | 'edit' | 'select' | 'delete'
 
 /** An action shown in the message long-press context menu. */
 export interface MessageMenuItem {
@@ -99,6 +99,7 @@ export interface LinkPreview {
 export interface IMessage {
   _id: string | number
   text: string
+  /** A Date, or a timestamp in milliseconds (as `Date.now()` gives). */
   createdAt: Date | number
   user: User
   image?: string
