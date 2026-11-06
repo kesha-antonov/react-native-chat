@@ -1,5 +1,10 @@
 # Changelog
 
+## [6.1.4] - 2026-11-07
+
+### 📝 Docs
+- The README's opening GIF loads from the release tag as well, like the feature showcase
+
 ## [6.1.3] - 2026-11-07
 
 ### 📝 Docs

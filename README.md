@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/v6.1.3/media/showcase.gif" alt="Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive" />
+  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/v6.1.4/media/showcase.gif" alt="Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive" />
 </p>
 
 <p align="center">
@@ -130,8 +130,8 @@ That is the whole setup - everything below is optional.
 <!-- chat-showcase:start -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/v6.1.3/media/features-dark.gif" />
-    <img width="760" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/v6.1.3/media/features-light.gif" alt="A chat with an assistant, opened on a big waving emoji and quick replies: a long press adds a heart reaction, a swipe quotes the message in the composer, the reply is sent and its ticks turn to read, the assistant's answer streams in word by word with a link preview, a held mic sends a voice note, a round video note is filmed and sent, a photo is picked from the attachment sheet, then the same chat switches to the dark theme. Beside it, the features list and the other built-in features" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/v6.1.4/media/features-dark.gif" />
+    <img width="760" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/v6.1.4/media/features-light.gif" alt="A chat with an assistant, opened on a big waving emoji and quick replies: a long press adds a heart reaction, a swipe quotes the message in the composer, the reply is sent and its ticks turn to read, the assistant's answer streams in word by word with a link preview, a held mic sends a voice note, a round video note is filmed and sent, a photo is picked from the attachment sheet, then the same chat switches to the dark theme. Beside it, the features list and the other built-in features" />
   </picture>
 </p>
 <!-- chat-showcase:end -->
