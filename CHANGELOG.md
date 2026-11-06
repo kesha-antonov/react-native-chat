@@ -1,5 +1,10 @@
 # Changelog
 
+## [6.1.2] - 2026-11-06
+
+### 📝 Docs
+- The feature showcase opens in the dark theme and switches to light, with a wider typing indicator
+
 ## [6.1.1] - 2026-11-06
 
 ### 📝 Docs
