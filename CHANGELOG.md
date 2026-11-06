@@ -1,5 +1,10 @@
 # Changelog
 
+## [6.1.3] - 2026-11-07
+
+### 📝 Docs
+- The README's showcase GIFs load from the release tag, so the npm page shows the current ones instead of a cached copy
+
 ## [6.1.2] - 2026-11-06
 
 ### 📝 Docs
