@@ -11,9 +11,10 @@ import { Stream } from './kit/motion/Stream'
 import './styles.css'
 
 // How @kesha-antonov/react-native-chat works, told on one conversation with an
-// assistant, in the library's own default look (the day theme's green
-// wallpaper, white and pale green bubbles, the time and ticks inside them,
-// the pill composer with the round mic). A list beside the phone names each
+// assistant, in the library's own default look: the night theme first (the
+// dark wallpaper, purple-to-blue outgoing bubbles), then the day theme (green
+// wallpaper, white and pale green bubbles), the time and ticks inside them,
+// the pill composer with the round mic. A list beside the phone names each
 // feature as it happens and says why it matters:
 //   1. Reactions: a long press opens the picker, a heart lands on the bubble.
 //   2. Swipe to reply: the answer is swiped, its quote opens over the composer.
@@ -24,7 +25,7 @@ import './styles.css'
 //      round note in a circle over the chat, which lands in the thread.
 //   7. Attachments: the clip opens the gallery sheet, a photo is picked and
 //      sent from the caption bar.
-//   8. Themes: the same chat turns to the night theme.
+//   8. Themes: the same chat turns to the day theme.
 // The payoff holds, then what the story added leaves in one reverse stagger
 // as the day theme comes back, and the loop starts on the opening frame.
 //
@@ -79,7 +80,7 @@ const initial: S = {
   picked: false,
   photo: false,
   lastTick: 'read',
-  dark: false,
+  dark: true,
   leave: 0,
 }
 
@@ -98,6 +99,7 @@ const poster: S = {
   ai: 'stream',
   words: STREAMED_WORDS,
   preview: true,
+  dark: false,
   video: true,
   voice: true,
   round: true,
@@ -242,16 +244,16 @@ async function script(a: Act<S>) {
   a.put({ lastTick: 'read' })
   await a.wait(600)
 
-  // 8. The same chat in the night theme; the payoff holds
-  a.mark('dark')
-  await a.set({ step: 8, dark: true })
+  // 8. The same chat in the day theme; the payoff holds
+  a.mark('theme')
+  await a.set({ step: 8, dark: false })
   await a.wait(1500)
   a.put({ step: 9 })
   await a.wait(1600)
 
-  // What the story added leaves, newest first, as the day theme returns
+  // What the story added leaves, newest first, as the night theme returns
   a.mark('reset')
-  a.put({ step: 0, dark: false, video: false })
+  a.put({ step: 0, dark: true, video: false })
   for (let k = 1; k <= 5; k++) {
     a.put({ leave: k })
     await a.wait(70)

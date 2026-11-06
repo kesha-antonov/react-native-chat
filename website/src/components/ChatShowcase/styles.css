@@ -376,6 +376,13 @@
     transform: none;
   }
 
+  .rc-screen[data-dark] .rc-picker {
+    background: #212d3b;
+    box-shadow:
+      0 0 0 0.5px rgba(255, 255, 255, 0.06),
+      0 8px 24px -6px rgba(0, 0, 0, 0.6);
+  }
+
   .rc-picker__emoji {
     display: grid;
     place-items: center;
@@ -1011,6 +1018,10 @@
     backdrop-filter: blur(8px);
   }
 
+  .rc-screen[data-dark] .rc-cam {
+    background: rgba(15, 23, 30, 0.45);
+  }
+
   .rc-cam__disc {
     position: relative;
     display: block;
@@ -1114,6 +1125,10 @@
 
   .rc-cell:nth-child(3) {
     border-top-right-radius: 16px;
+  }
+
+  .rc-screen[data-dark] .rc-cell {
+    background: #1d2733;
   }
 
   .rc-cell--camera {
@@ -1229,6 +1244,11 @@
     color: #858a84;
     font-size: 17px;
     line-height: 46px;
+  }
+
+  .rc-screen[data-dark] .rc-caption-bar__field {
+    background: rgba(40, 52, 66, 0.95);
+    color: rgba(219, 239, 255, 0.43);
   }
 
   .rc-sheet-send {
