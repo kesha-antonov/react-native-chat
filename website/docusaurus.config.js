@@ -9,7 +9,7 @@ const config = {
   title: 'React Native Chat',
   tagline: 'The most complete chat UI for React Native and Web, with streaming AI messages',
 
-  url: 'https://kesha-antonov.github.io',
+  url: 'https://kesha-antonov.com',
   baseUrl: '/react-native-chat/',
   organizationName: 'kesha-antonov',
   projectName: 'react-native-chat',
