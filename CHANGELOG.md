@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [7.0.1] - 2026-11-17
 
 ### 🐛 Fixes
 - Links from messages open only with a safe scheme: `http`, `https`, `mailto`, `tel` or `sms` for text, markdown and link previews, plus `file` and `content` for media and files. A `javascript:`, `intent:`, `data:` or custom-scheme link does nothing; `isSafeLinkUrl` / `isSafeMediaUrl` are exported for your own handlers
