@@ -3,6 +3,43 @@ import { StyleProp, TextStyle, ViewStyle } from 'react-native'
 
 import { IMessage, MessageReaction, User } from '../Models'
 
+/**
+ * Where a reaction is drawn: `'pill'` in the message's reactions, `'picker'` in the reactions
+ * bar of the long-press overlay, `'flight'` the pick flying from the bar to the message.
+ */
+export type ReactionIconPlace = 'pill' | 'picker' | 'flight'
+
+/**
+ * Where a picked reaction lands: the center of its pill's emoji, relative to the bubble's box
+ * (`pageX`, `pageY`).
+ */
+export interface ReactionTarget {
+  x: number
+  y: number
+}
+
+/** What `ReactionsProps.renderReactionIcon` is called with. */
+export interface ReactionIconProps {
+  /** The reaction's key: an entry of `emojis`, and `MessageReaction.emoji` on a message. */
+  emoji: string
+  place: ReactionIconPlace
+  /**
+   * The emoji's font size at that place (16 in a pill, 26 in the bar): an icon this size stands
+   * in for the emoji. Scale it to taste; the box around it stays the emoji's.
+   */
+  size: number
+  /** The text color at that place: the pill's count color, the menu's icon color in the bar. */
+  color: string
+  /** The current user reacted with it: their own pill, or a reaction they already picked in the bar. */
+  isChosen: boolean
+}
+
+/**
+ * Draws a reaction in place of its emoji text; `null` or `undefined` keeps the text for that key.
+ * See `ReactionsProps.renderReactionIcon`.
+ */
+export type RenderReactionIcon = (props: ReactionIconProps) => React.ReactNode
+
 /** Props passed to the reactions display: the built-in one draws pills inside the bubble, a custom `renderReactions` one renders below it */
 export interface MessageReactionsDisplayProps<TMessage extends IMessage> {
   message: TMessage
@@ -26,6 +63,8 @@ export interface MessageReactionsDisplayProps<TMessage extends IMessage> {
   getUser?: (userId: string | number) => User | undefined
   /** A group chat shows reactors' avatars only while a message has three reactions or fewer. */
   isGroupChat?: boolean
+  /** `ReactionsProps.renderReactionIcon`, passed through so a custom display draws reactions the same way. */
+  renderReactionIcon?: RenderReactionIcon
 }
 
 /** Props passed to the default (or custom) reaction-picker component shown on long-press */
@@ -59,6 +98,13 @@ export interface ReactionPickerProps<TMessage extends IMessage> {
   messagePreview?: React.ReactNode
   /** `ReactionsProps.renderExpandedPicker`, passed through (the built-in grid by default). */
   renderExpandedPicker?: ((props: ExpandedReactionPickerProps) => React.ReactNode) | null
+  /** `ReactionsProps.renderReactionIcon`, passed through. */
+  renderReactionIcon?: RenderReactionIcon
+  /**
+   * Where the picked reaction's pill is, once the pick has been applied and the pill drawn;
+   * pass it to `ContextMenu` so the pick flies there. Undefined until then.
+   */
+  reactionTarget?: ReactionTarget
 }
 
 /** Props for the content of the expanded reactions panel. */
@@ -110,6 +156,15 @@ export interface ReactionsProps<TMessage extends IMessage> {
    * own to replace it, or `null` to drop the expand button. Call `onSelect` with the pick.
    */
   renderExpandedPicker?: ((props: ExpandedReactionPickerProps) => React.ReactNode) | null
+  /**
+   * Draws a reaction as an icon instead of its emoji text, everywhere a reaction shows: the
+   * pills on a message, the reactions bar of the long-press overlay and the pick flying from
+   * one to the other. Called with the reaction's key (`emoji`), the place, the emoji's size and
+   * text color there, and whether it is the current user's own (`isChosen`); return `null` to
+   * keep the text for a key. Lets `emojis` hold keys of your own (`'like'`, `'question'`) drawn
+   * with an icon set. The full emoji grid behind the chevron still shows emoji.
+   */
+  renderReactionIcon?: RenderReactionIcon
   /** Style for the container wrapping all reaction pills */
   containerStyle?: StyleProp<ViewStyle>
   /** Style applied to every inactive reaction pill */

@@ -8,11 +8,12 @@ import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 import { useThemeColor } from '@/hooks/use-theme-color'
 
-type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions' | 'context-menu' | 'media' | 'loading' | 'theming' | 'localization' | 'day-animated' | 'keyboard-provider' | 'aligned-top'
+type ChatExample = 'basic' | 'customized-rendering' | 'slack' | 'links' | 'reply' | 'ai-bot' | 'reactions' | 'reaction-icons' | 'context-menu' | 'media' | 'loading' | 'theming' | 'localization' | 'day-animated' | 'keyboard-provider' | 'aligned-top'
 
 const examples: Array<{ id: ChatExample, title: string, description: string }> = [
   { id: 'ai-bot', title: 'AI Bot (Streaming + Markdown)', description: 'Streamed assistant replies with a typing cursor, Stop button, and markdown rendering' },
   { id: 'reactions', title: 'Reactions', description: 'Your own quick reactions bar; the chevron opens the built-in full emoji grid' },
+  { id: 'reaction-icons', title: 'Reaction Icons', description: 'Reactions as keys of your own, drawn with an icon set through renderReactionIcon' },
   { id: 'context-menu', title: 'Context Menu', description: 'Long-press menu: built-in actions, Edit / Pin / Delete callbacks and a custom action' },
   { id: 'media', title: 'Media & Voice', description: 'Audio, video and location messages, hold-to-record voice notes, and video recording' },
   { id: 'loading', title: 'Loading States', description: 'Download and upload rings, the sending clock, failed messages, image placeholders and history loading' },

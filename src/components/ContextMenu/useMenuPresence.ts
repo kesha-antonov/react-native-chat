@@ -5,6 +5,7 @@ import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import { selectionHaptic } from '../haptics'
 import {
   BAR_IN,
+  CLOSE_HOLD_FRAMES,
   CLOSE_MS,
   DECELERATE,
   EASE_OUT_QUINT,
@@ -68,7 +69,10 @@ export const useMenuPresence = (visible: boolean, revealMs: number, isFlying: ()
     }))
   }, [scrim, closing, settle, isFlying])
 
-  const { isMounted, close } = useAnimatedPresence(visible, animateIn, animateOut)
+  // Held two frames past `onDismiss`, which shows the original message again under its lifted
+  // copy: unmounted with it, the Modal's window went a frame before the list redrew, and the
+  // message blinked out on Android.
+  const { isMounted, close } = useAnimatedPresence(visible, animateIn, animateOut, CLOSE_HOLD_FRAMES)
 
   return { scrim, reveal, barIn, closing, expand, menuFade, onFlightEnd, isMounted, close }
 }

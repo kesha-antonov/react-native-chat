@@ -66,6 +66,7 @@ export const ContextMenu = ({
   touchX,
   touchY,
   reactions,
+  reactionTarget,
   messagePreview,
   children,
 }: ContextMenuProps) => {
@@ -184,6 +185,7 @@ export const ContextMenu = ({
     barWidth,
     rowCount,
     menuWidth,
+    reactionTarget,
   })
 
   const followY = useSharedValue(0)
@@ -197,7 +199,7 @@ export const ContextMenu = ({
       return
 
     isFlyingRef.current = true
-    setFlight({ emoji, fromX: cellCenter(index, barLeft, barWidth, isRTL), fromY: pillTop + BAR_HEIGHT / 2 })
+    setFlight({ emoji, isChosen: !!reactions?.selected?.includes(emoji), fromX: cellCenter(index, barLeft, barWidth, isRTL), fromY: pillTop + BAR_HEIGHT / 2 })
     reactions?.onSelect(emoji)
     close(onDismiss)
   }, [close, reactions, onDismiss, barLeft, barWidth, pillTop, isRTL])
@@ -288,6 +290,8 @@ export const ContextMenu = ({
             target={flightTarget}
             onEnd={onFlightEnd}
             emojiStyle={reactions?.emojiStyle}
+            renderReactionIcon={reactions?.renderReactionIcon}
+            iconColor={theme.contextMenu.icon}
             styles={styles}
           />
         )}

@@ -4,6 +4,7 @@ import { SharedValue, useDerivedValue, useSharedValue } from 'react-native-reani
 
 import { IMessage } from '../Models'
 import { CONTENT_PADDING_BOTTOM, ListState } from './listState'
+import { createListCellTransition } from './listTransitions'
 import { AnimatedListProps } from './types'
 
 const LAYOUT_SETTLE_MS = 500
@@ -18,11 +19,12 @@ export function useListMetrics<TMessage extends IMessage> (listProps: AnimatedLi
   // an estimated height and moves them once they are measured, and on Android those corrections
   // played as messages sliding in each time a chat opened. A chat should open with everything
   // already in place, as Telegram's does, so the slide starts once the first layout has settled.
-  const [isLayoutAnimated, setIsLayoutAnimated] = useState(false)
+  const isLayoutAnimated = useSharedValue(false)
+  const listCellTransition = useMemo(() => createListCellTransition(isLayoutAnimated), [isLayoutAnimated])
   useEffect(() => {
-    if (!isListLaidOut || isLayoutAnimated)
+    if (!isListLaidOut)
       return
-    const timer = setTimeout(() => setIsLayoutAnimated(true), LAYOUT_SETTLE_MS)
+    const timer = setTimeout(() => isLayoutAnimated.set(true), LAYOUT_SETTLE_MS)
     return () => clearTimeout(timer)
   }, [isListLaidOut, isLayoutAnimated])
 
@@ -70,7 +72,7 @@ export function useListMetrics<TMessage extends IMessage> (listProps: AnimatedLi
 
   return {
     isListLaidOut,
-    isLayoutAnimated,
+    listCellTransition,
     listHeight,
     contentHeight,
     scrollOffset,

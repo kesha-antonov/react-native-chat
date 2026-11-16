@@ -5,6 +5,7 @@ import Animated from 'react-native-reanimated'
 import { useChatContext } from '../ChatContext'
 import { useThemedStyles } from '../hooks/useTheme'
 import { IMessage } from '../Models'
+import { ReactionPillRefsContext } from '../Reactions/pillRegistry'
 import { getStyleWithPosition } from '../styles'
 import { renderComponentOrElement } from '../utils'
 import { BubbleBody } from './BubbleBody'
@@ -94,6 +95,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       reactionCountStyle: reactions?.reactionCountStyle,
       getUser: reactions?.getUser,
       isGroupChat: reactions?.isGroupChat,
+      renderReactionIcon: reactions?.renderReactionIcon,
     }
   }, [currentMessage, position, props.user, reactions])
 
@@ -126,7 +128,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
   const customReactions = reactions?.renderReactions && reactionsDisplay
     ? renderComponentOrElement(reactions.renderReactions, reactionsDisplay as Parameters<typeof reactions.renderReactions>[0])
     : null
-  const reactionsBelow = customReactions && menu.isLifted
+  const reactionsBelow = customReactions && menu.isOriginalHidden
     ? <View style={hiddenStyle}>{customReactions}</View>
     : customReactions
 
@@ -140,7 +142,7 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
       <Animated.View style={containerStyleList}>
         <PressableBubbleRow
           isGestureEnabled={isGestureEnabled}
-          isLifted={menu.isLifted}
+          isLifted={menu.isOriginalHidden}
           onPressMessage={onPressMessageProp}
           onLongPressStart={menu.open}
           measureBubble={menu.measureBubble}
@@ -150,7 +152,10 @@ export const Bubble = <TMessage extends IMessage = IMessage>(props: BubbleProps<
           wrapperStyleList={wrapperStyleList}
           bubbleContainerRef={menu.bubbleContainerRef}
         >
-          {body}
+          {/* Only the message in the list registers its pills; the overlay's copy draws them too. */}
+          <ReactionPillRefsContext.Provider value={menu.pillRefs}>
+            {body}
+          </ReactionPillRefsContext.Provider>
         </PressableBubbleRow>
         <BubbleQuickReplies bubble={props} />
         {reactionsBelow}

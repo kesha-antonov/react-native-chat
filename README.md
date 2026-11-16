@@ -1281,8 +1281,31 @@ For a prototype, `useChatMessages({ initialMessages, user })` keeps the messages
 - **`getUser`** _(Function)_ - `(userId) => User | undefined`, who reacted. As in Telegram, a pill shows up to three reactors' avatars instead of a count in a one-to-one chat, and in a group while the message has three reactions or fewer, when every reactor is known. Defaults to the senders of the loaded messages (and you)
 - **`renderReactions`** _(Function)_ - Override the reactions-display component rendered below the bubble
 - **`renderReactionPicker`** _(Function)_ - Override the picker shown on long-press (use for a full emoji browser). It receives [`ReactionPickerProps`](src/Reactions/types.ts): `visible`, `message`, `emojis`, `onSelect`, `onDismiss`, `position`, the bubble's on-screen box (`pageX`, `pageY`, `bubbleWidth`, `bubbleHeight`), the two picker styles and:
+  - **`reactionTarget`** _(`{ x, y }`, optional)_ - Where the picked reaction's pill is, relative to the bubble's box, once the pick has been applied and the pill drawn. Pass it on to `ContextMenu` so the pick flies to its own pill
   - **`messagePreview`** _(ReactNode, optional)_ - A copy of the pressed bubble to draw lifted above your backdrop at the bubble's box. While it is mounted the original bubble is hidden, so the message seems to rise out of the list; if you never render it, the original simply stays put. The easiest way to get the built-in look is to render the exported `ContextMenu` with `items={[]}` (see [Message actions](#message-actions-long-press-context-menu) for its props)
 - **`renderExpandedPicker`** _(Function(`{ onSelect }`) | null, optional)_ - The expand button. The reactions bar (in the quick picker and above the context menu) ends in a chevron that grows the bar in place into a panel holding what this returns. Defaults to the built-in emoji grid (8 columns, search, tabs, recents); pass your own, or `null` to drop the button. Call `onSelect(emoji)` with the pick; the overlay closes and `onReactionPress` is called. Also passed to a custom `renderReactionPicker`
+- **`renderReactionIcon`** _(Function(`{ emoji, place, size, color, isChosen }`), optional)_ - Draws a reaction as an icon instead of its emoji text, everywhere a reaction shows: the pills on a message (`place: 'pill'`), the reactions bar of the long-press overlay (`'picker'`) and the pick flying from the bar to the message (`'flight'`). `emoji` is the reaction's key, `size` the emoji's font size there (16 in a pill, 26 in the bar), `color` the text color there, and `isChosen` is true for the current user's own reaction. Return `null` to keep the text for a key. With it, `emojis` and `MessageReaction.emoji` can hold keys of your own (`'like'`, `'question'`) drawn with your icon set; the built-in emoji grid behind the chevron still shows emoji, so pair it with `renderExpandedPicker: null` when only your keys are allowed. Also passed to a custom `renderReactions` and `renderReactionPicker`, and `ReactionIcon` is exported for drawing a reaction the same way in your own components:
+
+  ```tsx
+  import ThumbsUp from 'lucide-react-native/icons/thumbs-up'
+  import Heart from 'lucide-react-native/icons/heart'
+
+  const ICONS = { like: ThumbsUp, love: Heart }
+
+  <Chat
+    reactions={{
+      onReactionPress,
+      emojis: ['like', 'love'],
+      renderExpandedPicker: null,
+      renderReactionIcon: ({ emoji, size, color, isChosen }) => {
+        const Icon = ICONS[emoji as keyof typeof ICONS]
+        return Icon ? <Icon size={size} color={color} fill={isChosen ? color : 'none'} /> : null
+      },
+    }}
+  />
+  ```
+
+  See `example/components/chat-examples/ReactionIconsExample.tsx`
 - **`containerStyle`**, **`reactionStyle`**, **`reactionActiveStyle`**, **`reactionTextStyle`**, **`reactionCountStyle`** - Styles for the reaction pills
 - **`pickerContainerStyle`**, **`pickerEmojiStyle`** - Styles for the quick picker
 
@@ -1364,8 +1387,9 @@ import { Copy, Trash2 } from 'lucide-react-native' // optional icons
 
 `ContextMenu` is exported for custom pickers and menus. Beyond `visible`, `items`, `onDismiss` (called once its exit has played), `position` and the bubble's box (`pageX`, `pageY`, `bubbleWidth`, `bubbleHeight`), it takes these optional props:
 
-- **`reactions`** _(Object)_ - `{ emojis, onSelect, selected?, containerStyle?, emojiStyle?, renderAccessory?, renderExpandedPicker? }`. `selected` lists the reactions the user already picked (drawn smaller, in a circle); `renderAccessory` adds content at the end of the bar; `renderExpandedPicker` adds the expand button and the panel it opens (see `reactions.renderExpandedPicker` above)
+- **`reactions`** _(Object)_ - `{ emojis, onSelect, selected?, containerStyle?, emojiStyle?, renderAccessory?, renderExpandedPicker?, renderReactionIcon? }`. `selected` lists the reactions the user already picked (drawn smaller, in a circle); `renderAccessory` adds content at the end of the bar; `renderExpandedPicker` adds the expand button and the panel it opens; `renderReactionIcon` draws the reactions as icons (see `reactions.renderExpandedPicker` and `reactions.renderReactionIcon` above)
 - **`touchX`**, **`touchY`** _(Number)_ - Where the finger was, in window coordinates; the menu opens beside it (beside the bubble's middle without them)
+- **`reactionTarget`** _(`{ x, y }`)_ - Where a picked reaction lands: the center of its pill's emoji, relative to the bubble's box (`pageX`, `pageY`). Without it the pick lands where a message's first pill sits
 - **`messagePreview`** _(ReactNode)_ - The copy of the message drawn above the scrim in place; pass the one a custom picker receives
 - **`children`** _(ReactNode)_ - Drawn above everything else in the overlay, e.g. a full emoji sheet
 

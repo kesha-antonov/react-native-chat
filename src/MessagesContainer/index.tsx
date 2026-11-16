@@ -11,7 +11,6 @@ import { TypingIndicatorListAnimationContext } from '../TypingIndicator'
 import { DayAnimated } from './components/DayAnimated'
 import { ScrollToBottomButton } from './components/ScrollToBottomButton'
 import { useListState } from './listState'
-import { listCellTransition } from './listTransitions'
 import { PageDownReturnContext } from './pageDownReturn'
 import { MessageRowConfigContext, RowTargetsContext } from './rowConfig'
 import { MessageRowStore, MessageRowStoreContext } from './rowStore'
@@ -68,7 +67,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
 
   const {
     isListLaidOut,
-    isLayoutAnimated,
+    listCellTransition,
     listHeight,
     contentHeight,
     scrollOffset,
@@ -192,7 +191,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       maintainVisibleContentPosition
       // Rows that move (a message arriving, a row growing a reaction, the typing bubble
       // coming or going) slide to their new place instead of jumping there.
-      itemLayoutAnimation={isLayoutAnimated ? listCellTransition : undefined}
+      itemLayoutAnimation={listCellTransition}
       sharedValues={sharedValues}
       style={stylesCommon.fill}
       ListEmptyComponent={renderChatEmpty}
@@ -216,7 +215,7 @@ export const MessagesContainer = <TMessage extends IMessage>(props: MessagesCont
       viewabilityConfigCallbackPairs={viewabilityPairs}
       onLayout={onLayoutList}
     />
-  ), [forwardRef, keyExtractor, orderedData, renderItem, alignItemsAtEnd, isLayoutAnimated, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, contentContainerStyle, handleScrollBeginDrag, handleScrollEndDrag, handleMomentumScrollBegin, handleMomentumScrollEnd, handleContentSizeChange, handleItemSizeChanged, handleMetricsChange, viewabilityPairs, onLayoutList])
+  ), [forwardRef, keyExtractor, orderedData, renderItem, alignItemsAtEnd, listCellTransition, initialScroll, maintainScrollAtEnd, sharedValues, renderChatEmpty, ListHeaderComponent, ListFooterComponent, onStartReached, listProps, contentContainerStyle, handleScrollBeginDrag, handleScrollEndDrag, handleMomentumScrollBegin, handleMomentumScrollEnd, handleContentSizeChange, handleItemSizeChanged, handleMetricsChange, viewabilityPairs, onLayoutList])
 
   const list = (
     <View

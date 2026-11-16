@@ -487,7 +487,8 @@ const sharedRadii: ChatThemeRadii = {
   bubbleGrouped: 6,
   // The composer island.
   inputField: 22,
-  sendButton: 18,
+  // The send / record circle: as tall as the island at one line, as in Telegram.
+  sendButton: 22,
   // Reaction pills are full capsules: 26 tall, radius 13.
   reaction: 13,
   // Date / service pill radius.
@@ -626,7 +627,7 @@ export const defaultLightTheme: ChatTheme = {
   spacing: sharedSpacing,
   typography: sharedTypography,
   avatar: { size: 42, palette: avatarPaletteDay, paletteEnd: avatarPaletteEndDay, textColor: '#FFFFFF' },
-  sendButton: { size: 36 },
+  sendButton: { size: 44 },
   composer: sharedComposer,
   voice: sharedVoice,
   bubble: { ...sharedBubble, outgoingGradient: null },
@@ -783,7 +784,7 @@ export const defaultDarkTheme: ChatTheme = {
   spacing: sharedSpacing,
   typography: sharedTypography,
   avatar: { size: 42, palette: avatarPaletteNight, paletteEnd: avatarPaletteEndNight, textColor: '#FFFFFF' },
-  sendButton: { size: 36 },
+  sendButton: { size: 44 },
   composer: sharedComposer,
   voice: sharedVoice,
   bubble: {

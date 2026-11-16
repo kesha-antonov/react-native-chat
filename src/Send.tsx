@@ -115,7 +115,8 @@ export const Send = <TMessage extends IMessage = IMessage>({
         {
           children ||
           <Animated.View style={[styles.circle, !canSend && styles.circleInactive, circleStyle]}>
-            <PlaneIcon color='#fff' size={Math.round(size * 0.62)} />
+            {/* 22 in the default 44, the size of the mic it replaces. */}
+            <PlaneIcon color='#fff' size={Math.round(size / 2)} />
           </Animated.View>
         }
       </TouchableOpacity>
@@ -138,7 +139,7 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     borderRadius: theme.sendButton.size / 2,
     overflow: 'hidden',
   },
-  // A solid 36 circle in the accent color.
+  // A solid circle in the accent color, as tall as the field at one line.
   circle: {
     width: theme.sendButton.size,
     height: theme.sendButton.size,

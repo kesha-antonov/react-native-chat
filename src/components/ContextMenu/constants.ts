@@ -37,6 +37,8 @@ export const MENU_MIN_WIDTH = 200
 export const ROW_IN_MS = 180
 export const ROW_SHIFT = 6
 export const CLOSE_MS = 220
+// Frames the overlay stays after it has handed the message back (see `useMenuPresence`).
+export const CLOSE_HOLD_FRAMES = 2
 /** The bar and card glide after a message the list moved under them (the keyboard leaving). */
 export const FOLLOW_MS = 250
 export const CLOSE_SCALE = 0.8
@@ -92,7 +94,7 @@ export const FLIGHT_GROW_MS = 150
 export const FLIGHT_GROW_SCALE = 1.6
 export const FLIGHT_MS = 220
 export const PILL_EMOJI = 16
-// Where a new pill's emoji lands: the first pill, inside the bubble at its bottom-left (the
+// Where a pick lands until its own pill is known: the first pill, inside the bubble at its bottom-left (the
 // bubble's 9 inset + the pill's 8 padding + half its 20 emoji; 7 + half of 26 up).
 export const PILL_X = 9 + 8 + 10
 export const PILL_Y = 7 + 13

@@ -421,7 +421,7 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
             needsOffscreenAlphaCompositing={true}
             style={
               {
-                "borderRadius": 18,
+                "borderRadius": 22,
                 "overflow": "hidden",
               }
             }
@@ -448,10 +448,10 @@ exports[`should render <InputToolbar /> and compare with snapshot 1`] = `
                     {
                       "alignItems": "center",
                       "backgroundColor": "#229AF0",
-                      "borderRadius": 18,
-                      "height": 36,
+                      "borderRadius": 22,
+                      "height": 44,
                       "justifyContent": "center",
-                      "width": 36,
+                      "width": 44,
                     },
                     {
                       "backgroundColor": "#858A84",

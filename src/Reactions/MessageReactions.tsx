@@ -1,13 +1,16 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useContext, useLayoutEffect } from 'react'
 import { Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native'
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { Easing, useAnimatedRef, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import { ChatAvatar } from '../ChatAvatar'
 import { multiplyAlpha } from '../colorUtils'
+import { PILL_EMOJI } from '../components/ContextMenu/constants'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { IMessage, User } from '../Models'
 import { ChatTheme } from '../Theme'
-import { MessageReactionsDisplayProps } from './types'
+import { ReactionPillRefsContext } from './pillRegistry'
+import { ReactionIcon } from './ReactionIcon'
+import { MessageReactionsDisplayProps, RenderReactionIcon } from './types'
 
 // `ButtonBounce`: down to 0.9 over 60ms on `DEFAULT`, back over 350ms on `Overshoot(5)`.
 const PRESS_IN = { duration: 60, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
@@ -18,6 +21,8 @@ const UNCHOSEN_ALPHA = 0.156
 // groups while the message has this many reactions or fewer.
 const MAX_AVATARS = 3
 const AVATAR_SIZE = 20
+// The emoji's box: 8 + 20 + 3 across the pill.
+const PILL_EMOJI_BOX = 20
 
 interface ReactionPillProps {
   emoji: string
@@ -31,9 +36,10 @@ interface ReactionPillProps {
   style?: StyleProp<ViewStyle>
   textStyle?: StyleProp<TextStyle>
   countStyle?: StyleProp<TextStyle>
+  renderReactionIcon?: RenderReactionIcon
 }
 
-const ReactionPill = ({ emoji, count, avatars, isChosen, background, textColor, onPress, style, textStyle, countStyle }: ReactionPillProps) => {
+const ReactionPill = ({ emoji, count, avatars, isChosen, background, textColor, onPress, style, textStyle, countStyle, renderReactionIcon }: ReactionPillProps) => {
   const styles = useThemedStyles(createStyles)
   const scale = useSharedValue(1)
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
@@ -46,6 +52,20 @@ const ReactionPill = ({ emoji, count, avatars, isChosen, background, textColor, 
   }, [scale])
   const handlePress = useCallback(() => onPress?.(emoji), [onPress, emoji])
 
+  // A reaction picked in the overlay flies to this box.
+  const pillRefs = useContext(ReactionPillRefsContext)
+  const emojiRef = useAnimatedRef<Animated.View>()
+  useLayoutEffect(() => {
+    if (!pillRefs)
+      return
+
+    pillRefs.set(emoji, emojiRef)
+    return () => {
+      if (pillRefs.get(emoji) === emojiRef)
+        pillRefs.delete(emoji)
+    }
+  }, [pillRefs, emoji, emojiRef])
+
   return (
     <Pressable
       onPress={handlePress}
@@ -56,7 +76,18 @@ const ReactionPill = ({ emoji, count, avatars, isChosen, background, textColor, 
       accessibilityLabel={count > 1 ? `${emoji} ${count}` : emoji}
     >
       <Animated.View style={[styles.pill, !avatars && styles.pillWithCount, { backgroundColor: background }, style, pressStyle]}>
-        <Text style={[styles.emoji, textStyle]}>{emoji}</Text>
+        <Animated.View ref={emojiRef} collapsable={false}>
+          <ReactionIcon
+            emoji={emoji}
+            place='pill'
+            size={PILL_EMOJI}
+            color={textColor}
+            isChosen={isChosen}
+            renderReactionIcon={renderReactionIcon}
+            style={styles.iconBox}
+            textStyle={[styles.emoji, textStyle]}
+          />
+        </Animated.View>
         {avatars
           ? (
             <View style={styles.avatars}>
@@ -99,6 +130,7 @@ export const MessageReactions = <TMessage extends IMessage = IMessage>(
     hasContentAbove = false,
     getUser,
     isGroupChat = false,
+    renderReactionIcon,
   } = props
 
   const theme = useTheme()
@@ -136,6 +168,7 @@ export const MessageReactions = <TMessage extends IMessage = IMessage>(
         style={isChosen ? reactionActiveStyle : reactionStyle}
         textStyle={reactionTextStyle}
         countStyle={reactionCountStyle}
+        renderReactionIcon={renderReactionIcon}
       />
     )
   })
@@ -212,10 +245,14 @@ const createStyles = (theme: ChatTheme) =>
       fontSize: 8,
     },
     emoji: {
-      width: 20,
-      fontSize: 16,
-      lineHeight: 20,
+      width: PILL_EMOJI_BOX,
+      fontSize: PILL_EMOJI,
+      lineHeight: PILL_EMOJI_BOX,
       textAlign: 'center',
+    },
+    iconBox: {
+      width: PILL_EMOJI_BOX,
+      height: PILL_EMOJI_BOX,
     },
     count: {
       marginLeft: 4,

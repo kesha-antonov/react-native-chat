@@ -65,4 +65,42 @@ describe('bubble long-press', () => {
     })()
     expect(hiddenAncestor).not.toBeNull()
   })
+
+  it('shows the original again as soon as the overlay is dismissed, while its copy is still drawn', async () => {
+    const pickerProps: ReactionPickerProps<typeof DEFAULT_TEST_MESSAGE>[] = []
+    // Keeps drawing the copy for as long as it is handed one, as an overlay does on its way out.
+    const renderReactionPicker = (props: ReactionPickerProps<typeof DEFAULT_TEST_MESSAGE>) => {
+      pickerProps.push(props)
+      return props.messagePreview ?? null
+    }
+
+    const { getAllByText } = await render(
+      <Bubble
+        user={{ _id: 1 }}
+        currentMessage={DEFAULT_TEST_MESSAGE}
+        position='left'
+        reactions={{ isEnabled: true, onReactionPress: jest.fn(), renderReactionPicker }}
+      />
+    )
+    await longPress()
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50))
+    })
+    const isHidden = () => {
+      let node = getAllByText(DEFAULT_TEST_MESSAGE.text)[0]!.parent
+      while (node) {
+        if (StyleSheet.flatten(node.props.style)?.opacity === 0)
+          return true
+        node = node.parent
+      }
+      return false
+    }
+    expect(isHidden()).toBe(true)
+
+    await act(() => pickerProps.at(-1)!.onDismiss())
+
+    // The copy is still mounted; the original no longer waits for it to go.
+    expect(getAllByText(DEFAULT_TEST_MESSAGE.text)).toHaveLength(2)
+    expect(isHidden()).toBe(false)
+  })
 })

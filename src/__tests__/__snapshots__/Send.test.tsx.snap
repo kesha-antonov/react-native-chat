@@ -45,7 +45,7 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
       needsOffscreenAlphaCompositing={true}
       style={
         {
-          "borderRadius": 18,
+          "borderRadius": 22,
           "overflow": "hidden",
         }
       }
@@ -72,10 +72,10 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
               {
                 "alignItems": "center",
                 "backgroundColor": "#229AF0",
-                "borderRadius": 18,
-                "height": 36,
+                "borderRadius": 22,
+                "height": 44,
                 "justifyContent": "center",
-                "width": 36,
+                "width": 44,
               },
               {
                 "backgroundColor": "#858A84",
@@ -174,7 +174,7 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
       needsOffscreenAlphaCompositing={true}
       style={
         {
-          "borderRadius": 18,
+          "borderRadius": 22,
           "overflow": "hidden",
         }
       }
@@ -201,10 +201,10 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
               {
                 "alignItems": "center",
                 "backgroundColor": "#229AF0",
-                "borderRadius": 18,
-                "height": 36,
+                "borderRadius": 22,
+                "height": 44,
                 "justifyContent": "center",
-                "width": 36,
+                "width": 44,
               },
               {
                 "backgroundColor": "#858A84",
@@ -303,7 +303,7 @@ exports[`Send should render <Send /> where there is input and compare with snaps
       needsOffscreenAlphaCompositing={true}
       style={
         {
-          "borderRadius": 18,
+          "borderRadius": 22,
           "overflow": "hidden",
         }
       }
@@ -330,10 +330,10 @@ exports[`Send should render <Send /> where there is input and compare with snaps
               {
                 "alignItems": "center",
                 "backgroundColor": "#229AF0",
-                "borderRadius": 18,
-                "height": 36,
+                "borderRadius": 22,
+                "height": 44,
                 "justifyContent": "center",
-                "width": 36,
+                "width": 44,
               },
               false,
               {

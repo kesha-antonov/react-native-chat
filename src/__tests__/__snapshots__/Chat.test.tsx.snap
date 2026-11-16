@@ -523,7 +523,7 @@ exports[`should render <Chat/> and compare with snapshot 1`] = `
                           needsOffscreenAlphaCompositing={true}
                           style={
                             {
-                              "borderRadius": 18,
+                              "borderRadius": 22,
                               "overflow": "hidden",
                             }
                           }
@@ -550,10 +550,10 @@ exports[`should render <Chat/> and compare with snapshot 1`] = `
                                   {
                                     "alignItems": "center",
                                     "backgroundColor": "#229AF0",
-                                    "borderRadius": 18,
-                                    "height": 36,
+                                    "borderRadius": 22,
+                                    "height": 44,
                                     "justifyContent": "center",
-                                    "width": 36,
+                                    "width": 44,
                                   },
                                   {
                                     "backgroundColor": "#858A84",
@@ -753,6 +753,7 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                     }
                     estimatedItemSize={64}
                     initialScrollAtEnd={true}
+                    itemLayoutAnimation={[Function]}
                     keyboardDismissMode="interactive"
                     keyboardShouldPersistTaps="handled"
                     maintainScrollAtEnd={
@@ -1535,7 +1536,7 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                           needsOffscreenAlphaCompositing={true}
                           style={
                             {
-                              "borderRadius": 18,
+                              "borderRadius": 22,
                               "overflow": "hidden",
                             }
                           }
@@ -1562,10 +1563,10 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                                   {
                                     "alignItems": "center",
                                     "backgroundColor": "#229AF0",
-                                    "borderRadius": 18,
-                                    "height": 36,
+                                    "borderRadius": 22,
+                                    "height": 44,
                                     "justifyContent": "center",
-                                    "width": 36,
+                                    "width": 44,
                                   },
                                   {
                                     "backgroundColor": "rgba(219, 239, 255, 0.431)",
@@ -1765,6 +1766,7 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                     }
                     estimatedItemSize={64}
                     initialScrollAtEnd={true}
+                    itemLayoutAnimation={[Function]}
                     keyboardDismissMode="interactive"
                     keyboardShouldPersistTaps="handled"
                     maintainScrollAtEnd={
@@ -2556,7 +2558,7 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                           needsOffscreenAlphaCompositing={true}
                           style={
                             {
-                              "borderRadius": 18,
+                              "borderRadius": 22,
                               "overflow": "hidden",
                             }
                           }
@@ -2583,10 +2585,10 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                                   {
                                     "alignItems": "center",
                                     "backgroundColor": "#229AF0",
-                                    "borderRadius": 18,
-                                    "height": 36,
+                                    "borderRadius": 22,
+                                    "height": 44,
                                     "justifyContent": "center",
-                                    "width": 36,
+                                    "width": 44,
                                   },
                                   {
                                     "backgroundColor": "#858A84",

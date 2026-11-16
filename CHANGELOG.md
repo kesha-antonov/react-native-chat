@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+- `reactions.renderReactionIcon` draws reactions as icons instead of emoji text, in the pills, the reactions bar and the pick's flight, so reactions can be keys of your own drawn with an icon set; it gets the key, the place, the size and color there and whether it is your own reaction (`null` keeps the text). `ReactionIcon` is exported for custom reaction displays
+
+### 🐛 Fixes
+- A reaction picked in the long-press bar flies to its own pill instead of always to the first one, and gives way to the pill once it lands. A custom `renderReactionPicker` gets the spot as `reactionTarget` and passes it to `ContextMenu`
+- The long-pressed message no longer blinks out for a frame or two on Android as the overlay closes
+- The first reaction (or any other change to a row) after a chat opened no longer remounts every row on screen, which blinked the messages and reloaded their images
+- The lifted message follows its row while the list slides rows aside for a new reaction, so it lands back where the message is
+- The send / record button is as tall as the composer's field at one line, 44 instead of 36, as in Telegram; `theme.sendButton.size` and `theme.radii.sendButton` still set it
+
+### 📲 Example app
+- A Reaction Icons demo: reactions as keys drawn with Lucide icons, filled for your own
+
 ## [6.1.5] - 2026-11-07
 
 ### 📝 Docs

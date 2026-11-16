@@ -1,6 +1,6 @@
 import React from 'react'
 import { Text } from 'react-native'
-import { fireEvent, render } from '@testing-library/react-native'
+import { act, fireEvent, render } from '@testing-library/react-native'
 
 import { ContextMenu, ContextMenuProps } from '../components/ContextMenu'
 import { ReactionPicker } from '../Reactions'
@@ -56,6 +56,13 @@ describe('ContextMenu', () => {
     const { getByText, queryByText } = await renderMenu({ onDismiss, items: [{ label: 'Copy', onPress }] })
 
     await fireEvent.press(getByText('Copy'))
+    // It stays two frames past `onDismiss`, for the message to come back under it, and a
+    // press in them does nothing.
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+    await fireEvent.press(getByText('Copy'))
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    })
 
     expect(queryByText('Copy')).toBeNull()
     expect(onPress).toHaveBeenCalledTimes(1)

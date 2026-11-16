@@ -140,6 +140,8 @@ export const ReactionsBar = ({
                   isHidden={flyingEmoji === emoji}
                   onPress={onReaction}
                   emojiStyle={reactions?.emojiStyle}
+                  renderReactionIcon={reactions?.renderReactionIcon}
+                  iconColor={theme.contextMenu.icon}
                   styles={styles}
                 />
               )

@@ -58,6 +58,10 @@ export default function ChatLayout () {
         options={{ title: 'Reactions' }}
       />
       <Stack.Screen
+        name='reaction-icons'
+        options={{ title: 'Reaction Icons' }}
+      />
+      <Stack.Screen
         name='context-menu'
         options={{ title: 'Context Menu' }}
       />

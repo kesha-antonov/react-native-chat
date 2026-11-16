@@ -138,6 +138,9 @@ backend confirms. Voice notes, files and media show the same clock / ✓ / ✓�
   (`NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription`, `NSLocationWhenInUseUsageDescription`);
   in Expo, list the packages' config plugins.
 - The reactions bar's chevron opens the built-in emoji grid (`reactions.renderExpandedPicker: null` drops it).
+- `reactions.renderReactionIcon({ emoji, place, size, color, isChosen })` draws reactions as icons in the
+  pills, the reactions bar and the pick's flight (`null` keeps the emoji text for a key), so `emojis`
+  can be keys of your own (`'like'`) drawn with an icon set.
 - `getChatCapabilities()` tells which optional features the installed peers allow.
 
 ## Optional features and the peers they need

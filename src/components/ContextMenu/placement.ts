@@ -1,3 +1,4 @@
+import { ReactionTarget } from '../../Reactions/types'
 import {
   BAR_CELL,
   BAR_HEIGHT,
@@ -97,6 +98,8 @@ export interface MenuPlacementInput {
   barWidth: number
   rowCount: number
   menuWidth: number
+  /** The picked reaction's pill, relative to the bubble, once it is known. */
+  reactionTarget?: ReactionTarget
 }
 
 export const placeMenu = ({
@@ -113,6 +116,7 @@ export const placeMenu = ({
   barWidth,
   rowCount,
   menuWidth,
+  reactionTarget,
 }: MenuPlacementInput) => {
   const hasMenu = rowCount > 0
   const menuHeight = rowCount * ROW_HEIGHT
@@ -152,10 +156,13 @@ export const placeMenu = ({
 
   // The reaction is applied first and the emoji flies to its pill under the
   // message at its live position: a first reaction grows the bubble, so the target follows it.
-  const flightTarget: FlightTarget = {
-    toX: isRTL ? pageX + bubbleWidth - PILL_X : pageX + PILL_X,
-    toY: pageY + bubbleHeight - PILL_Y,
-  }
+  // Until that pill has been found (or when the display has none), it aims at the first pill.
+  const flightTarget: FlightTarget = reactionTarget
+    ? { toX: pageX + reactionTarget.x, toY: pageY + reactionTarget.y }
+    : {
+      toX: isRTL ? pageX + bubbleWidth - PILL_X : pageX + PILL_X,
+      toY: pageY + bubbleHeight - PILL_Y,
+    }
 
   return {
     hasMenu,

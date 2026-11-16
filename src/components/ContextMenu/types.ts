@@ -2,6 +2,7 @@ import React from 'react'
 import { StyleProp, TextStyle, ViewStyle } from 'react-native'
 
 import { MessageMenuItem } from '../../Models'
+import { ReactionTarget, RenderReactionIcon } from '../../Reactions/types'
 
 export interface ContextMenuReactions {
   emojis: string[]
@@ -19,6 +20,8 @@ export interface ContextMenuReactions {
    * panel holding what this returns (a full emoji grid, say). Call `onSelect` with the pick.
    */
   renderExpandedPicker?: (props: { onSelect: (emoji: string) => void }) => React.ReactNode
+  /** Draws a reaction as an icon instead of its emoji text (see `reactions.renderReactionIcon` of `Chat`). */
+  renderReactionIcon?: RenderReactionIcon
 }
 
 export interface ContextMenuProps {
@@ -43,6 +46,11 @@ export interface ContextMenuProps {
   /** Optional reactions bar rendered above the menu. */
   reactions?: ContextMenuReactions
   /**
+   * Where a picked reaction lands: the center of its pill's emoji, relative to the bubble's box
+   * (`pageX`, `pageY`). Without it the pick lands where a message's first pill sits.
+   */
+  reactionTarget?: ReactionTarget
+  /**
    * A copy of the pressed message, drawn above the scrim exactly where the message is (`pageX` /
    * `pageY`, `bubbleWidth` wide), so it stays lit above the scrim while the chat dims.
    * It follows the anchor if the message moves underneath.
@@ -54,6 +62,8 @@ export interface ContextMenuProps {
 
 export interface Flight {
   emoji: string
+  /** The bar showed it as already picked. */
+  isChosen: boolean
   fromX: number
   fromY: number
 }

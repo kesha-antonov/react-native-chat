@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Pressable, StyleProp, Text, TextStyle } from 'react-native'
+import { Pressable, StyleProp, TextStyle } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -7,7 +7,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
-import { EASE_OUT_QUINT, ITEM_IN_MS, REDUCE_MOTION, timing } from './constants'
+import { ReactionIcon } from '../../Reactions/ReactionIcon'
+import { RenderReactionIcon } from '../../Reactions/types'
+import { BAR_EMOJI, EASE_OUT_QUINT, ITEM_IN_MS, REDUCE_MOTION, timing } from './constants'
 import { Styles } from './styles'
 
 export const ReactionButton = ({
@@ -18,6 +20,8 @@ export const ReactionButton = ({
   isHidden,
   onPress,
   emojiStyle,
+  renderReactionIcon,
+  iconColor,
   styles,
 }: {
   emoji: string
@@ -28,6 +32,8 @@ export const ReactionButton = ({
   isHidden: boolean
   onPress: (emoji: string, index: number) => void
   emojiStyle?: StyleProp<TextStyle>
+  renderReactionIcon?: RenderReactionIcon
+  iconColor: string
   styles: Styles
 }) => {
   const appear = useSharedValue(0)
@@ -47,9 +53,17 @@ export const ReactionButton = ({
       style={styles.reactionCell}
     >
       <Animated.View style={[styles.reactionBox, isSelected && styles.reactionBoxSelected, isHidden && styles.hidden, appearStyle]}>
-        <Text style={[styles.reactionEmoji, isSelected && styles.reactionEmojiSelected, emojiStyle]} allowFontScaling={false}>
-          {emoji}
-        </Text>
+        <ReactionIcon
+          emoji={emoji}
+          place='picker'
+          size={BAR_EMOJI}
+          color={iconColor}
+          isChosen={isSelected}
+          renderReactionIcon={renderReactionIcon}
+          style={isSelected && styles.reactionEmojiSelected}
+          textStyle={[styles.reactionEmoji, isSelected && styles.reactionEmojiSelected, emojiStyle]}
+          allowFontScaling={false}
+        />
       </Animated.View>
     </Pressable>
   )

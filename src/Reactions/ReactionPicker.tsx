@@ -32,6 +32,8 @@ export const ReactionPicker = <TMessage extends IMessage = IMessage>(
     pickerEmojiStyle,
     messagePreview,
     renderExpandedPicker,
+    renderReactionIcon,
+    reactionTarget,
   } = props
 
   const reactions = useMemo(() => ({
@@ -40,7 +42,8 @@ export const ReactionPicker = <TMessage extends IMessage = IMessage>(
     containerStyle: pickerContainerStyle,
     emojiStyle: pickerEmojiStyle,
     renderExpandedPicker: renderExpandedPicker ?? undefined,
-  }), [emojis, onSelect, pickerContainerStyle, pickerEmojiStyle, renderExpandedPicker])
+    renderReactionIcon,
+  }), [emojis, onSelect, pickerContainerStyle, pickerEmojiStyle, renderExpandedPicker, renderReactionIcon])
 
   return (
     <ContextMenu
@@ -54,6 +57,7 @@ export const ReactionPicker = <TMessage extends IMessage = IMessage>(
       bubbleHeight={bubbleHeight}
       touchX={touchX}
       touchY={touchY}
+      reactionTarget={reactionTarget}
       reactions={reactions}
       messagePreview={messagePreview}
     />

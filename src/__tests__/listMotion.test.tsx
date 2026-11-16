@@ -20,6 +20,31 @@ describe('list motion', () => {
   it('uses the list animation duration', () => {
     expect(LIST_ITEM_DURATION).toBe(250)
   })
+
+  // Legend List wraps every row in a component it picks from `itemLayoutAnimation`; setting the
+  // prop once the list had settled swapped that component, and each row remounted the next time
+  // it rendered (the first reaction blinked the rows and reloaded their images).
+  it('keeps one row transition from the first render on', async () => {
+    const findTransition = (node: ReturnType<Awaited<ReturnType<typeof render>>['toJSON']>): unknown => {
+      if (!node || typeof node !== 'object')
+        return undefined
+      if (Array.isArray(node))
+        return node.map(findTransition).find(Boolean)
+      return node.props?.itemLayoutAnimation ?? findTransition(node.children as never)
+    }
+
+    const screen = await render(<Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />)
+    await fireEvent(screen.getByTestId('GC_WRAPPER'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } } })
+    const before = findTransition(screen.toJSON())
+    expect(before).toEqual(expect.any(Function))
+
+    // Past the settle that turns the slides on.
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 700))
+    })
+
+    expect(findTransition(screen.toJSON())).toBe(before)
+  })
 })
 
 describe('Chat across a color scheme switch', () => {
