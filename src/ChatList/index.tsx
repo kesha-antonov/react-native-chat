@@ -29,6 +29,7 @@ import { normalizeColorScheme } from '../hooks/useColorScheme'
 import { formatLabel, resolveLabels } from '../i18n'
 import { IconName } from '../Icons'
 import { isRTLLocale } from '../rtl'
+import { sanitizeChats } from '../sanitizeMessage'
 import { ChatTheme, resolveTheme } from '../Theme'
 import { ChatListAvatar } from './ChatListAvatar'
 import { CHAT_LIST_ROW_HEIGHT, ChatListCell } from './ChatListCell'
@@ -74,6 +75,9 @@ export function ChatList<TChat extends ChatListItem = ChatListItem> (props: Chat
     labels,
     icons,
   } = props
+  // Chats show other people's names and messages: one with a field of the wrong type must not
+  // take the list down. Well-formed chats, and the array when all are, keep their identity.
+  const chats = useMemo(() => sanitizeChats(props.chats), [props.chats])
   const systemColorScheme = useColorScheme()
   const colorScheme = normalizeColorScheme(colorSchemeProp !== undefined ? colorSchemeProp : systemColorScheme)
   const resolvedTheme = useMemo(() => resolveTheme(colorScheme, theme, darkTheme, appearance), [colorScheme, theme, darkTheme, appearance])
@@ -92,7 +96,7 @@ export function ChatList<TChat extends ChatListItem = ChatListItem> (props: Chat
   return (
     <GestureHandlerRootView style={styles.fill}>
       <ChatContext.Provider value={context}>
-        <ChatListContent<TChat> {...props} resolvedTheme={resolvedTheme} />
+        <ChatListContent<TChat> {...props} chats={chats} resolvedTheme={resolvedTheme} />
       </ChatContext.Provider>
     </GestureHandlerRootView>
   )

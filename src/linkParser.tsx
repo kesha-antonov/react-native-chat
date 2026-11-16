@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
-import { Text, TextStyle, StyleProp, Linking } from 'react-native'
+import { Text, TextStyle, StyleProp } from 'react-native'
 import { splitHighlights } from './components/textHighlight'
+import { openLinkUrl } from './safeUrl'
 
 export type LinkType = 'url' | 'email' | 'phone' | 'mention' | 'hashtag'
 
@@ -175,7 +176,55 @@ function execMatches(text: string, matcher: LinkMatcher): RegExpExecArray[] {
   return matches
 }
 
+/**
+ * Most link patterns cost the square of the text they scan, and a message is whatever its
+ * sender typed, so a long one is scanned in pieces of up to this many characters, cut at
+ * whitespace. A run of more than this many characters with no whitespace is no link anyone
+ * types; it is shown as plain text.
+ */
+const MAX_SCAN_LENGTH = 4096
+
+/** The ranges of \`text\` to scan for links, each up to \`MAX_SCAN_LENGTH\` long and cut at whitespace. */
+function scanRanges (text: string): Array<[number, number]> {
+  if (text.length <= MAX_SCAN_LENGTH)
+    return [[0, text.length]]
+
+  const ranges: Array<[number, number]> = []
+  let start = 0
+  const token = /\S+/g
+  let match: RegExpExecArray | null
+  while ((match = token.exec(text)) !== null) {
+    const tokenStart = match.index
+    const tokenEnd = tokenStart + match[0].length
+    if (match[0].length > MAX_SCAN_LENGTH) {
+      if (tokenStart > start)
+        ranges.push([start, tokenStart])
+      start = tokenEnd
+    } else if (tokenEnd - start > MAX_SCAN_LENGTH) {
+      ranges.push([start, tokenStart])
+      start = tokenStart
+    }
+  }
+  if (text.length > start)
+    ranges.push([start, text.length])
+
+  return ranges
+}
+
 function parseLinks(text: string, matchers: LinkMatcher[]): ParsedLink[] {
+  const ranges = scanRanges(text)
+  if (ranges.length === 1 && ranges[0][0] === 0 && ranges[0][1] === text.length)
+    return parseRange(text, matchers)
+
+  const links: ParsedLink[] = []
+  for (const [start, end] of ranges)
+    for (const link of parseRange(text.slice(start, end), matchers))
+      links.push({ ...link, index: link.index + start })
+
+  return links
+}
+
+function parseRange(text: string, matchers: LinkMatcher[]): ParsedLink[] {
   const links: ParsedLink[] = []
 
   matchers.forEach(matcher => {
@@ -205,25 +254,18 @@ function parseLinks(text: string, matchers: LinkMatcher[]): ParsedLink[] {
   return links.sort((a, b) => a.index - b.index)
 }
 
+// \`links\` is sorted by start, so a link overlaps one already kept exactly when it starts before
+// the furthest end kept so far: one pass, where comparing with every kept link was quadratic in
+// the number of links (a message of thousands of short domains froze the row).
 function removeOverlaps(links: ParsedLink[]): ParsedLink[] {
   const filtered: ParsedLink[] = []
+  let keptEnd = 0
 
-  for (const link of links) {
-    const hasOverlap = filtered.some(existing => {
-      const existingEnd = existing.index + existing.length
-      const linkEnd = link.index + link.length
-
-      return (
-        (link.index >= existing.index && link.index < existingEnd) ||
-        (linkEnd > existing.index && linkEnd <= existingEnd) ||
-        (link.index <= existing.index && linkEnd >= existingEnd)
-      )
-    })
-
-    if (!hasOverlap)
+  for (const link of links)
+    if (link.index >= keptEnd) {
       filtered.push(link)
-
-  }
+      keptEnd = link.index + link.length
+    }
 
   return filtered
 }
@@ -333,10 +375,8 @@ function LinkParserComponent({
         else if (onPress)
           onPress(link.url, link.type)
         else
-          // Default behavior
-          Linking.openURL(link.url).catch(err => {
-            console.warn('Failed to open URL:', err)
-          })
+          // Default behavior: only safe schemes; a custom matcher's URL is checked too
+          openLinkUrl(link.url)
 
       }
 

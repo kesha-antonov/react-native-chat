@@ -35,7 +35,7 @@ export function useDaysPositions<TMessage extends IMessage> ({
     for (let i = 0; i < messages.length; i++) {
       const previous = isInverted ? messages[i + 1] : messages[i - 1]
       if (!previous || !isSameDay(messages[i], previous))
-        ids.push(messages[i]._id.toString())
+        ids.push(String(messages[i]._id))
     }
     return ids
   }, [messages, isInverted])

@@ -1,8 +1,8 @@
 import React, { useCallback } from 'react'
-import { Linking, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native'
-
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native'
 import { useLabels } from '../hooks/useLabels'
 import { useThemedStyles } from '../hooks/useTheme'
+import { openMediaUrl } from '../safeUrl'
 import { ChatTheme } from '../Theme'
 import { Icon } from './Icon'
 import { PlayIcon } from './MediaControls'
@@ -36,7 +36,7 @@ export const MediaCard = ({ kind, uri, position = 'left', label, onPress, style 
     }
 
     if (uri)
-      Linking.openURL(uri).catch(() => {})
+      openMediaUrl(uri)
   }, [onPress, uri])
 
   const defaultLabel = kind === 'video' ? labels.video : labels.voiceMessage

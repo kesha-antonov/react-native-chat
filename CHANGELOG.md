@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Fixes
+- Links from messages open only with a safe scheme: `http`, `https`, `mailto`, `tel` or `sms` for text, markdown and link previews, plus `file` and `content` for media and files. A `javascript:`, `intent:`, `data:` or custom-scheme link does nothing; `isSafeLinkUrl` / `isSafeMediaUrl` are exported for your own handlers
+- Markdown links work with `react-native-streamdown` without an `onPress` of your own
+- A message with a field of the wrong type, no `_id` or a repeated `_id` no longer crashes `Chat`; the field or message is dropped. The same for chats in `ChatList`
+- A row that throws while rendering hides itself instead of taking the chat down
+- A very long message no longer freezes the chat while its links are found, nor does one made of thousands of links
+- The warning for a message without `_id` or `user` no longer prints the message's text
+- Right-to-left override characters are removed from a file's displayed name, so it cannot disguise its extension
+
+### 📝 Docs
+- A Security section in the README and on the docs site
+
 ## [7.0.0] - 2026-11-17
 
 ### 💥 Breaking

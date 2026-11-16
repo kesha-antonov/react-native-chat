@@ -14,6 +14,7 @@ import { TextHighlightContext } from '../components/textHighlight'
 import { TEST_ID } from '../Constant'
 import { AnimatedList } from '../MessagesContainer'
 import { IMessage, User } from '../Models'
+import { sanitizeMessages } from '../sanitizeMessage'
 import stylesCommon from '../styles'
 import { renderComponentOrElement } from '../utils'
 import { ChatBackground } from './ChatBackground'
@@ -34,11 +35,13 @@ import { useMessageNavigation } from './useMessageNavigation'
 import { useOptionalPeerHints } from './useOptionalPeerHints'
 import { useIsGroupChat, useResolvedReactions } from './useResolvedReactions'
 
+const EMPTY_MESSAGES: never[] = []
+
 export function Chat<TMessage extends IMessage = IMessage> (
   props: ChatProps<TMessage>
 ) {
   const {
-    messages = [],
+    messages: rawMessages,
     initialText = '',
     user = {},
     renderLoading,
@@ -52,6 +55,10 @@ export function Chat<TMessage extends IMessage = IMessage> (
     renderAvatar,
     renderWallpaper,
   } = props
+
+  // Messages come from other people: one with a field of the wrong type must not take the chat
+  // down. Well-formed messages, and the array when all are, keep their identity.
+  const messages = useMemo(() => sanitizeMessages(rawMessages ?? EMPTY_MESSAGES), [rawMessages])
 
   const { mediaController, mediaTransferController, mediaGallery, messagesRef } = useChatMedia({
     messages,

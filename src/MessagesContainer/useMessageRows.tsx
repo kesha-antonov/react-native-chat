@@ -116,7 +116,7 @@ export function useMessageRows<TMessage extends IMessage> (
     <MessageRow id={String((item as TMessage)._id)} />
   , [])
 
-  const keyExtractor = useCallback((item: unknown) => (item as TMessage)._id.toString(), [])
+  const keyExtractor = useCallback((item: unknown) => String((item as TMessage)._id), [])
 
   return { rowStore, orderedData, initialScroll, rowConfig, rowTargets, renderItem, keyExtractor }
 }

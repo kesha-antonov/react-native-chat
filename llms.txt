@@ -271,6 +271,14 @@ Same props, same `IMessage`. Swap the package and rename: `GiftedChat` → `Chat
   `@expo/react-native-action-sheet` dependency was removed; prefer `messageActions`, or supply
   your own `actionSheet` implementation.
 - **Forgetting the container.** `<Chat>` needs a parent with `flex: 1`.
+- **Opening a sender's URL unchecked.** By default a link opens only with `http`, `https`,
+  `mailto`, `tel` or `sms` (media and files: `http`, `https`, `file`, `content`). A custom
+  `messageTextProps.onPress`, `onPressLinkPreview` or matcher `onPress` gets the raw URL: check
+  it with `isSafeLinkUrl` / `isSafeMediaUrl` before `Linking.openURL`, or a message can open
+  `javascript:` on web or an `intent:` on Android.
+- **Relying on the chat to validate messages.** `Chat` drops malformed fields, messages without
+  an `_id` and repeated ids so a bad message cannot crash it, but limit size and validate on the
+  server, and fetch link previews there: fetching on the device reveals the reader's IP.
 
 ## Links
 

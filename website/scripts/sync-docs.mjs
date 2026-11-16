@@ -112,6 +112,15 @@ const PAGES = [
     sections: ["📱 Platform Notes"],
   },
   {
+    id: "security",
+    title: "Security",
+    sidebarLabel: "Security",
+    description:
+      "How the chat handles links, malformed messages and long text from other people.",
+    keywords: ["react native chat security"],
+    sections: ["🔒 Security"],
+  },
+  {
     id: "performance",
     title: "Performance",
     sidebarLabel: "Performance",

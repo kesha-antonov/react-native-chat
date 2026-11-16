@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react'
-import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
-
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { isLightColor, multiplyAlpha } from '../colorUtils'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { IMessage, LinkPreview } from '../Models'
+import { openLinkUrl } from '../safeUrl'
 import { createKeyedStore, useKeyedValue } from '../store'
 import { ChatTheme, getNameColor } from '../Theme'
 
@@ -23,23 +23,38 @@ export type FetchLinkPreview = (url: string) => Promise<LinkPreview | null | und
 // Same matching as the text's own links: an explicit scheme, `www.`, or a bare domain.
 const URL_PATTERN = /(?:https?:\/\/|www\.)[^\s<>"]+|\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?:\/[^\s<>"]*)?/i
 // Punctuation that ends a sentence rather than the link.
-const TRAILING_PUNCTUATION = /[.,;:!?)\]}'"»]+$/
+const TRAILING_PUNCTUATION = new Set(['.', ',', ';', ':', '!', '?', ')', ']', '}', '\'', '"', '\u00BB'])
+// No link anyone types is longer; a longer run with no whitespace is skipped, since the pattern
+// costs the square of what it scans and the text is whatever the sender typed.
+const MAX_TOKEN_LENGTH = 4096
 
 /** The first link in a text, with a scheme, or undefined. */
 export function findFirstUrl (text: string | undefined): string | undefined {
   if (!text)
     return undefined
 
-  const match = text.match(URL_PATTERN)
-  if (!match)
-    return undefined
+  const tokens = /\S+/g
+  let token: RegExpExecArray | null
+  while ((token = tokens.exec(text)) !== null) {
+    if (token[0].length > MAX_TOKEN_LENGTH)
+      continue
 
-  // An e-mail address is not a page.
-  if (match.index != null && match.index > 0 && text[match.index - 1] === '@')
-    return undefined
+    const match = token[0].match(URL_PATTERN)
+    if (!match)
+      continue
 
-  const url = match[0].replace(TRAILING_PUNCTUATION, '')
-  return /^https?:\/\//i.test(url) ? url : `https://${url}`
+    // An e-mail address is not a page.
+    if (match.index != null && match.index > 0 && token[0][match.index - 1] === '@')
+      return undefined
+
+    let end = match[0].length
+    while (end > 0 && TRAILING_PUNCTUATION.has(match[0][end - 1]))
+      end--
+    const url = match[0].slice(0, end)
+    return /^https?:\/\//i.test(url) ? url : `https://${url}`
+  }
+
+  return undefined
 }
 
 // One request per URL for the app's lifetime; the rows that show it share the answer, and a
@@ -156,7 +171,7 @@ export function LinkPreviewCard<TMessage extends IMessage> ({
       onPress(preview, currentMessage)
       return
     }
-    Linking.openURL(preview.url).catch(() => {})
+    openLinkUrl(preview.url)
   }
 
   const siteName = preview.siteName ?? hostOf(preview.url)

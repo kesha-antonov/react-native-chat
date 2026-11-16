@@ -404,6 +404,7 @@ Overridable names: `send`, `mic`, `camera`, `play`, `pause`, `check`, `checkAll`
   - [TypeScript](#typescript)
   - [Building blocks](#building-blocks)
 - [Platform Notes](#-platform-notes)
+- [Security](#-security)
 - [Performance](#-performance)
 - [Testing](#-testing)
 - [Example App](#-example-app)
@@ -1336,13 +1337,17 @@ Message text is automatically scanned for URLs, emails, and phone numbers; hasht
     linkStyle: { left: { color: '#1d9bf0' }, right: { color: '#fff' } },
     onPress: (message, url, type) => {
       // type: 'url' | 'email' | 'phone' | 'mention' | 'hashtag'
-      Linking.openURL(url)
+      // The URL comes from the sender: open only schemes you trust.
+      if (isSafeLinkUrl(url))
+        Linking.openURL(url)
     },
   }}
 />
 ```
 
 For full control, pass custom `matchers` (`{ type, pattern, getLinkUrl?, getLinkText?, renderLink?, onPress? }[]`) to add or override patterns. See the Links example in the [example app](#-example-app).
+
+Without an `onPress`, a link opens only when its scheme is `http`, `https`, `mailto`, `tel` or `sms`; see [Security](#-security).
 
 </details>
 
@@ -1570,7 +1575,7 @@ interface MyMessage extends IMessage {
 - **Menus and status**: `ContextMenu`, `TypingStatus` (`getTypingText`), `StreamingCursor`, `MarkdownMessageText` (`isMarkdownAvailable`), `BasicMarkdown`
 - **Lists**: `MessagesContainer`, `ChatList`, `ChatListCell`, `ChatListAvatar`, `ChatListShimmer`
 - **Hooks**: `useTheme`, `useThemedStyles`, `useColorScheme`, `useIcons`, `useLabels`, `useIsRTL`, `useChatContext`, `useStreamingMessages`, `useChatMessages`, `useChatList`
-- **Helpers**: `toggleReaction`, `getChatCapabilities`, `buildAttachmentMessages`, `getAttachmentTabs`, `formatFileSize`, `findFirstUrl`, `countEmojiOnly`, `isRTLLocale`, `mirrorPosition`, `formatChatListDate`, `getChatPreview`, `sortChats`, `matchesChatQuery`, `DEFAULT_MESSAGE_ACTION_KEYS`, `EMOJI_CATEGORY_KEYS`, `DEFAULT_RECENT_EMOJIS`
+- **Helpers**: `toggleReaction`, `getChatCapabilities`, `buildAttachmentMessages`, `getAttachmentTabs`, `formatFileSize`, `findFirstUrl`, `isSafeLinkUrl`, `isSafeMediaUrl`, `countEmojiOnly`, `isRTLLocale`, `mirrorPosition`, `formatChatListDate`, `getChatPreview`, `sortChats`, `matchesChatQuery`, `DEFAULT_MESSAGE_ACTION_KEYS`, `EMOJI_CATEGORY_KEYS`, `DEFAULT_RECENT_EMOJIS`
 
 Components rendered outside `Chat` need a `GestureHandlerRootView` above them.
 
@@ -1666,6 +1671,20 @@ Three things to know:
 - **StyleX styles do not reach Chat.** It takes React Native style objects and its own `theme` prop, not `css.create` output. On native, `compat.native` is the bridge if you want RSD to drive a wrapper around it
 
 </details>
+
+---
+
+## 🔒 Security
+
+A message is whatever its sender put in it, so the library treats every field as untrusted:
+
+- **Links open only with a safe scheme.** Text links, markdown links and link previews open with `http`, `https`, `mailto`, `tel` or `sms`; a message's media and files with `http`, `https`, `file` or `content`. Anything else (`javascript:`, `intent:`, `data:`, an app's custom scheme) does nothing and logs the scheme alone. When you handle a press yourself (`messageTextProps.onPress`, `onPressLinkPreview`, a matcher's `onPress`), check the URL with the exported `isSafeLinkUrl` / `isSafeMediaUrl` before opening it.
+- **A malformed message cannot take the chat down.** `Chat` and `ChatList` check each message and chat as it arrives: a field of the wrong type is dropped, and a message without a string or number `_id`, or with an `_id` already used, is left out. Well-formed messages pass through untouched, as the same objects. A row that still throws while rendering, for example in a render prop of yours, hides itself and the rest of the chat stays.
+- **Long messages cannot freeze it.** Link detection scans a long text in bounded pieces and skips any run of more than 4096 characters with no whitespace, so its cost grows in step with the text.
+- **Nothing a sender wrote reaches the device log.** The library's warnings name ids, field names and URL schemes, never message text or URLs.
+- **File names cannot disguise their type.** Characters that reorder text (right-to-left overrides) are removed from a file's displayed name, and its icon shows the real extension.
+
+What stays with your app: limit message size and validate messages on your server, and fetch link previews there too. A `fetchLinkPreview` that loads the page on the device tells every linked site the reader's IP address.
 
 ---
 

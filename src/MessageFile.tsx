@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
-
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { isLightColor, readableOn } from './colorUtils'
 import { clampProgress, transferState, useMediaTransfer } from './components/mediaTransfer'
 import { suppressPressAfterHold } from './components/messagePress'
@@ -9,6 +8,7 @@ import { useIsRTL } from './hooks/useIsRTL'
 import { useThemedStyles } from './hooks/useTheme'
 import { IMessage, IMessageFile as MessageFileData, MessageFileProps } from './Models'
 import { getExpoSharing } from './optional'
+import { isSafeMediaUrl, openMediaUrl } from './safeUrl'
 import { ChatTheme } from './Theme'
 
 /** "1.2 MB": one decimal, binary units. */
@@ -33,15 +33,27 @@ export const fileExtension = (name?: string): string => {
   return match ? match[1].slice(0, 4).toUpperCase() : ''
 }
 
+// Bidi embedding, override and isolate controls. In a file name they only serve to disguise it:
+// `invoice\u202Efdp.exe` reads as "invoiceexe.pdf".
+const BIDI_CONTROLS = /[\u202A-\u202E\u2066-\u2069]/g
+
+/** A file name as shown: without the controls that reorder its characters. */
+export const displayFileName = (name?: string) => (name ?? '').replace(BIDI_CONTROLS, '')
+
 /** Opens a file: the system share sheet (`expo-sharing`) when installed, otherwise `Linking`. */
 export const openFile = (file: MessageFileData) => {
+  // The uri comes from the message: an `intent:` or custom scheme must not reach the system.
+  if (!isSafeMediaUrl(file.uri)) {
+    openMediaUrl(file.uri)
+    return
+  }
   const sharing = getExpoSharing()
   if (sharing?.shareAsync) {
     Promise.resolve(sharing.shareAsync(file.uri, { mimeType: file.mimeType, dialogTitle: file.name }))
-      .catch(() => Linking.openURL(file.uri).catch(() => {}))
+      .catch(() => openMediaUrl(file.uri))
     return
   }
-  Linking.openURL(file.uri).catch(() => {})
+  openMediaUrl(file.uri)
 }
 
 // The document cell: a 44 circle in the bubble's
@@ -91,6 +103,7 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
     return null
 
   const extension = fileExtension(file.name)
+  const name = displayFileName(file.name)
   // "1.2 MB / 4.5 MB" in place of the size while it moves.
   const size = currentMessage?.transfer && file.size
     ? `${formatFileSize(Math.round(clampProgress(currentMessage.transfer.progress) * file.size))} / ${formatFileSize(file.size)}`
@@ -102,7 +115,7 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
       onPress={handlePress}
       {...suppressPressAfterHold}
       accessibilityRole='button'
-      accessibilityLabel={[file.name, size].filter(Boolean).join(', ')}
+      accessibilityLabel={[name, size].filter(Boolean).join(', ')}
       style={[styles.container, containerStyle]}
     >
       <View style={styles.icon}>
@@ -122,7 +135,7 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
       </View>
       <View style={[styles.meta, !hasText && styles.metaReserve]}>
         <Text style={[styles.name, isRTL && styles.textRTL]} numberOfLines={2} ellipsizeMode='middle'>
-          {file.name}
+          {name}
         </Text>
         {!!size && <Text style={[styles.size, isRTL && styles.textRTL]} numberOfLines={1}>{size}</Text>}
       </View>

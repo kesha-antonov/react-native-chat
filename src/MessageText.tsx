@@ -15,6 +15,7 @@ import { useTextHighlight } from './components/textHighlight'
 import { useThemedStyles } from './hooks/useTheme'
 import { LinkParser, LinkMatcher, LinkType } from './linkParser'
 import { LeftRightStyle, IMessage } from './Models'
+import { openLinkUrl } from './safeUrl'
 import { ChatTheme } from './Theme'
 
 export type MessageTextProps<TMessage extends IMessage> = {
@@ -119,7 +120,9 @@ export function MessageText<TMessage extends IMessage>({
           isStreaming={isStreaming}
           textStyle={style}
           linkStyle={linkStyle}
-          onLinkPress={onPressProp ? (link: string) => handlePress(link, 'url') : undefined}
+          // react-native-enriched-markdown opens nothing itself; without an app handler a link
+          // goes through the same scheme check as everywhere else.
+          onLinkPress={onPressProp ? (link: string) => handlePress(link, 'url') : openLinkUrl}
           componentProps={markdownProps}
         />
         {trailingLine}

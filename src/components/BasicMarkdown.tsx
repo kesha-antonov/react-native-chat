@@ -1,6 +1,5 @@
 import React from 'react'
 import {
-  Linking,
   Platform,
   StyleProp,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
 } from 'react-native'
 
 import { useThemedStyles } from '../hooks/useTheme'
+import { openLinkUrl } from '../safeUrl'
 import { ChatTheme } from '../Theme'
 
 /**
@@ -34,7 +34,7 @@ function openUrl (url: string, onLinkPress?: (url: string) => void) {
   if (onLinkPress)
     onLinkPress(url)
   else
-    Linking.openURL(url).catch(() => {})
+    openLinkUrl(url)
 }
 
 // Parse a single line/segment of inline markdown into React text nodes. Returns

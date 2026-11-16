@@ -209,6 +209,16 @@ describe('file bubble', () => {
     expect(mockShareAsync).toHaveBeenCalledWith(PDF.uri, { mimeType: PDF.mimeType, dialogTitle: PDF.name })
   })
 
+  it('does not share or open a file whose uri is not a file or web address', async () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true)
+    jest.spyOn(console, 'log').mockImplementation(() => {})
+    const hostile: IMessage = { ...message, file: { ...PDF, uri: 'intent://x#Intent;package=com.example;end' } }
+    const { getByRole } = await render(<MessageFile currentMessage={hostile} position='left' />)
+    await fireEvent.press(getByRole('button'))
+    expect(mockShareAsync).not.toHaveBeenCalled()
+    expect(openURL).not.toHaveBeenCalled()
+  })
+
   it('hands the tap to onPress when given', async () => {
     const onPress = jest.fn()
     const openURL = jest.spyOn(Linking, 'openURL')

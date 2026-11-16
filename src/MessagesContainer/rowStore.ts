@@ -60,11 +60,13 @@ export class MessageRowStore<TMessage extends IMessage = IMessage> {
     const seen = new Set<string>()
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i]
+      // Only the position and the field names: a message's text and media must not reach the
+      // device log, which release builds keep.
       if (message._id == null)
-        warning('Chat: `_id` is missing for message', JSON.stringify(message))
+        warning(`Chat: \`_id\` is missing for the message at index ${i}, fields:`, Object.keys(message).join(', '))
       if (!message.user) {
         if (!message.system)
-          warning('Chat: `user` is missing for message', JSON.stringify(message))
+          warning(`Chat: \`user\` is missing for message ${String(message._id)}`)
         message.user = { _id: 0 }
       }
 

@@ -1,6 +1,7 @@
 import React, { useContext, useMemo } from 'react'
 import { View } from 'react-native'
 import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated'
+import { RowErrorBoundary } from '../../../components/RowErrorBoundary'
 import { UnreadSeparator } from '../../../components/UnreadSeparator'
 import { Day } from '../../../Day'
 import { Message, MessageProps } from '../../../Message'
@@ -148,7 +149,7 @@ const ItemComponent = <TMessage extends IMessage>(props: ItemProps<TMessage>) =>
 
   return (
     // do not remove key. it helps to get correct position of the day container
-    <View key={props.currentMessage._id.toString()}>
+    <View key={String(props.currentMessage._id)}>
       {isDayBoundary && (isDayAnimationEnabled
         ? <AnimatedDayWrapper<TMessage> {...props} />
         : <DayWrapper<TMessage> {...messageProps as MessageProps<TMessage>} />)}
@@ -182,14 +183,16 @@ const MessageRowComponent = ({ id }: { id: string }) => {
   const position = userId != null && entry.message.user?._id === userId ? 'right' : 'left'
 
   return (
-    <ItemComponent
-      {...config}
-      currentMessage={entry.message}
-      previousMessage={entry.previousMessage}
-      nextMessage={entry.nextMessage}
-      position={position}
-      isFirstUnread={isFirstUnread}
-    />
+    <RowErrorBoundary id={id} resetKey={entry.message}>
+      <ItemComponent
+        {...config}
+        currentMessage={entry.message}
+        previousMessage={entry.previousMessage}
+        nextMessage={entry.nextMessage}
+        position={position}
+        isFirstUnread={isFirstUnread}
+      />
+    </RowErrorBoundary>
   )
 }
 

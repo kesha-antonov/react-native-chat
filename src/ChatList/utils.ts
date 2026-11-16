@@ -65,9 +65,14 @@ export interface ChatPreview {
 
 const firstName = (name?: string) => (name ?? '').split(' ')[0]
 
+// A row shows one line, so the start of the message is enough. Cut first, because several
+// patterns below cost the square of the text and a message is whatever its sender typed.
+const PREVIEW_SOURCE_LENGTH = 1000
+
 /** Markdown as plain text, for a one-line preview: links keep their text, markers go. */
 export function stripMarkdown (text: string): string {
   return text
+    .slice(0, PREVIEW_SOURCE_LENGTH)
     .replace(/```[\s\S]*?```/g, match => match.replace(/```\w*/g, ''))
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, '')
