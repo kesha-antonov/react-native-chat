@@ -13,6 +13,8 @@ concurrency:
   group: sync-promo
   cancel-in-progress: false
 
+permissions: {}
+
 jobs:
   sync:
     name: Pull the canonical promo block
@@ -22,8 +24,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v5
-
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       # The script is dependency-free and uses the runner's own Node, so there
       # is no setup-node here: it would trip over this repo's packageManager pin.
       - name: Sync

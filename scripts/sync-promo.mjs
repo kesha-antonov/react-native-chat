@@ -49,6 +49,21 @@ block = block
 
 if (block.includes('{{')) throw new Error('canonical block still has an unfilled placeholder')
 
+// The block comes from another site and is committed to main unreviewed, and the docs site is
+// built from this README, so anything beyond plain links and images is refused: if that site
+// were ever compromised, the sync fails instead of shipping its content.
+const FORBIDDEN = [
+  [/<\s*(script|iframe|object|embed|style|form|input|button|meta|link|base|svg|math)\b/i, 'an active HTML element'],
+  [/\son[a-z]+\s*=/i, 'an inline event handler'],
+  [/\{[^}]*\}/, 'an MDX expression'],
+  [/^\s*(import|export)\s/m, 'an MDX import or export'],
+]
+for (const [pattern, what] of FORBIDDEN)
+  if (pattern.test(block)) throw new Error(`canonical block has ${what}; refusing to sync it`)
+const urls = [...block.matchAll(/\b(?:href|src)\s*=\s*["']([^"']*)["']|\]\(([^)\s]+)/gi)].map(m => m[1] ?? m[2])
+const bad = urls.filter(url => !/^https:\/\//i.test(url))
+if (bad.length) throw new Error(`canonical block has non-https links: ${bad.join(', ')}`)
+
 const readme = readFileSync(README, 'utf8')
 const from = readme.indexOf(START)
 const to = readme.indexOf(END)
