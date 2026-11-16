@@ -55,7 +55,7 @@ export function RecordButton ({
 }: RecordButtonProps) {
   const styles = useThemedStyles(createStyles)
   const labels = useLabels()
-  const { voice } = useTheme()
+  const { voice, colors } = useTheme()
   const isRTL = useIsRTL()
 
   const slideDistance = useRecordSlideDistance()
@@ -210,7 +210,7 @@ export function RecordButton ({
             accessibilityLabel={isVideo ? 'send video message' : 'send voice message'}
             style={styles.button}
           >
-            <Icon name='send' color='#fff' size={20} fallback={<SendIcon color='#fff' size={20} />} />
+            <Icon name='send' color={colors.onAccent} size={20} fallback={<SendIcon color={colors.onAccent} size={20} />} />
           </Pressable>
         )
         : <ModeButton gesture={gesture} buttonShown={buttonShown} modeSV={modeSV} isVideo={isVideo} styles={styles} />}

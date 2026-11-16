@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 
-import { multiplyAlpha } from '../colorUtils'
+import { isLightColor, multiplyAlpha } from '../colorUtils'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { IMessage, LinkPreview } from '../Models'
 import { createKeyedStore, useKeyedValue } from '../store'
@@ -141,7 +141,7 @@ export function LinkPreviewCard<TMessage extends IMessage> ({
     ? (theme.nameColors.length ? accent : theme.colors.incomingReplyName)
     : theme.colors.outgoingReplyName
   const textColor = position === 'left' ? theme.colors.incomingText : theme.colors.outgoingText
-  const boxAlpha = position === 'right' && accent.toUpperCase() === '#FFFFFF' ? BOX_ALPHA_ON_WHITE_LINE : BOX_ALPHA
+  const boxAlpha = isLightColor(accent) ? BOX_ALPHA_ON_WHITE_LINE : BOX_ALPHA
 
   const aspect = preview.imageWidth && preview.imageHeight ? preview.imageWidth / preview.imageHeight : undefined
   const isSmallImage = !!preview.image &&

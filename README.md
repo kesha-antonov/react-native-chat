@@ -205,8 +205,8 @@ Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/Farid
 | Added in this fork | react-native-gifted-chat | @kesha-antonov/react-native-chat |
 | --- | :---: | :---: |
 | Active maintenance | 💤 sporadic | ✅ active |
-| Modern default UI (modern messenger look) | dated 2020 look | ✅ wallpaper, tails, inline time, fully overridable |
-| Light/Dark **theme system** | per-component color props | ✅ `theme` / `darkTheme` tokens, runtime switch |
+| Modern default UI (modern messenger look) | dated 2020 look | ✅ four built-in appearances, inline time, fully overridable |
+| Light/Dark **theme system** | per-component color props | ✅ `appearance` presets + `theme` / `darkTheme` tokens, runtime switch |
 | Streaming (AI) messages | ❌ | ✅ token-by-token + typing cursor |
 | Emoji reactions | ❌ | ✅ long-press picker + reaction pills |
 | Emoji keyboard | ❌ | ✅ built in: tabs, search, recents, skin tones |
@@ -224,12 +224,16 @@ Kept in sync with upstream [`react-native-gifted-chat`](https://github.com/Farid
 ### Theming in one line
 
 <details>
-<summary><strong>Override any token, light and dark</strong></summary>
+<summary><strong>Pick a built-in look, then override any token, light and dark</strong></summary>
 
 ```jsx
-// Modern defaults out of the box, or override any token (light + dark):
+// 'plain' (default), 'wallpaper', 'mono' or 'soft', each with a light and a dark theme:
+<Chat appearance='soft' {...props} />
+
+// Override any token on top of it (light + dark):
 <Chat
-  theme={{ colors: { accent: '#3390EC', outgoingBubble: '#EFFEDE' } }}
+  appearance='plain'
+  theme={{ colors: { accent: '#3390EC' } }}
   darkTheme={{ colors: { background: '#0E1621' } }}
   {...props}
 />
@@ -623,9 +627,10 @@ Every group below is collapsed - open the one you need.
 - **`messageIdGenerator`** _(Function)_ - Generate an id for new messages. Defaults to a simple random string generator.
 - **`locale`** _(String)_ - Locale to localize the dates. You need first to import the locale you need (ie. `require('dayjs/locale/de')` or `import 'dayjs/locale/fr'`)
 - **`colorScheme`** _('light' | 'dark')_ - Force color scheme (light/dark mode). When set to `'light'` or `'dark'`, it overrides the system color scheme. When `undefined`, it uses the system color scheme. Default is `undefined`.
-- **`theme`** _(Object)_ - Override the default light theme tokens (`colors` / `radii` / `spacing` / `typography` / `avatar` / `sendButton` / `composer` / `voice` / `bubble` / `wallpaper` / `nameColors`). Deep-merged over `defaultLightTheme`; any subset is allowed. See [Theming & Dark Mode](#theming--dark-mode).
-- **`renderWallpaper`** _(Function | null)_ - The chat background. By default `Chat` draws a swirl gradient from `theme.wallpaper`, turning one step per message you send. Return your own element (an image, `ChatWallpaper` with other props...) to replace it, or pass `null` for the plain `theme.colors.background`.
-- **`darkTheme`** _(Object)_ - Same as `theme`, applied when the resolved color scheme is dark (deep-merged over `defaultDarkTheme`).
+- **`appearance`** _('plain' | 'wallpaper' | 'mono' | 'soft' | `{ light, dark }`)_ - The built-in look to start from, each a complete light and dark theme: `'plain'` (default: a neutral background, white incoming and solid accent outgoing bubbles), `'wallpaper'` (the swirl wallpaper with tails, pale green bubbles by day and a purple-to-blue gradient by night), `'mono'` (black and white, square-ish corners) and `'soft'` (lavender, rounded). Or pass your own pair of themes, e.g. built from `chatAppearances.soft`. `theme` and `darkTheme` are merged on top of it. See [Theming & Dark Mode](#theming--dark-mode).
+- **`theme`** _(Object)_ - Override the light theme tokens (`colors` / `radii` / `spacing` / `typography` / `avatar` / `sendButton` / `composer` / `voice` / `bubble` / `wallpaper` / `nameColors`). Deep-merged over the `appearance`'s light theme; any subset is allowed. See [Theming & Dark Mode](#theming--dark-mode).
+- **`renderWallpaper`** _(Function | null)_ - The chat background. With `theme.wallpaper.isEnabled` (the `'wallpaper'` appearance) `Chat` draws a swirl gradient from `theme.wallpaper`, turning one step per message you send; otherwise `theme.colors.background`. Return your own element (an image, `ChatWallpaper` with other props...) to replace it, or pass `null` for the plain `theme.colors.background`.
+- **`darkTheme`** _(Object)_ - Same as `theme`, applied when the resolved color scheme is dark (deep-merged over the `appearance`'s dark theme).
 - **`icons`** _(Object)_ - Icon override registry. Supply a render function for any built-in icon to replace it (e.g. with `lucide-react-native`). See [Custom icons](#custom-icons-eg-lucide).
 - **`labels`** _(Object)_ - Override any UI string. See [Localization (i18n)](#localization-i18n).
 
@@ -985,7 +990,7 @@ const list = useChatList(initialChats)
 | `isSearchEnabled` / `filterChat` / `onSearchChange` | Search; a custom match; a server-side search |
 | `isArchiveOpen` / `onArchiveOpenChange` | Control which list shows |
 | `renderChat` / `renderEmpty` / `listProps` / `style` | A custom row (`ChatListCell` is the built-in one), the empty text, FlatList props (`onEndReached`, `refreshControl`...) |
-| `theme` / `darkTheme` / `colorScheme` / `locale` / `labels` / `icons` | As on `Chat`; the list's colors are `theme.chatList` |
+| `appearance` / `theme` / `darkTheme` / `colorScheme` / `locale` / `labels` / `icons` | As on `Chat` (pass the same `appearance` to `Chat`, `ChatList` and `ChatHeader`); the list's colors are `theme.chatList` |
 
 `ChatListCell`, `ChatListAvatar`, `ChatListShimmer`, `sortChats`, `getChatPreview` and `formatChatListDate` are exported for building your own row or screen.
 
@@ -1422,10 +1427,20 @@ If a message must own every touch that lands on it, set `isMessageGestureEnabled
 <details>
 <summary><strong>Token groups, runtime switching and themed components</strong></summary>
 
-The default look is a modern messenger style: a classic day theme (pale green outgoing bubbles over a green swirl wallpaper) and a dark blue night theme (a purple-to-blue outgoing gradient fixed to the screen). Every value is a token. Override any subset via `theme` (light) and `darkTheme` (dark); your overrides are deep-merged over `defaultLightTheme` / `defaultDarkTheme`, and the resolved theme switches at runtime with the color scheme (system, or forced via `colorScheme`). Explicit per-component style props still win over the theme.
+The look starts from an **appearance**, a complete light and dark theme picked with the `appearance` prop:
+
+| `appearance` | Day | Night |
+| --- | --- | --- |
+| `'plain'` (default) | Neutral #F4F5F7 background, white incoming bubbles, solid blue outgoing with white text | Near-black background, dark grey incoming, the same blue outgoing |
+| `'wallpaper'` | Green swirl wallpaper, pale green outgoing bubbles with tails | Dark blue, a purple-to-blue outgoing gradient fixed to the screen |
+| `'mono'` | White, light grey incoming, black outgoing, grey avatars, 12pt corners | Black, the bubbles reversed |
+| `'soft'` | Faint violet background, lavender outgoing bubbles with dark text, 20pt corners | Deep plum |
+
+Every value is a token. Override any subset via `theme` (light) and `darkTheme` (dark); your overrides are deep-merged over the appearance, and the resolved theme switches at runtime with the color scheme (system, or forced via `colorScheme`). Explicit per-component style props still win over the theme. For a look of your own, pass `appearance={{ light, dark }}`, for example `{ light: mergeTheme(chatAppearances.mono.light, {...}), dark: ... }`. Pass the same `appearance` to `ChatList` and `ChatHeader` so the whole app matches.
 
 ```tsx
 <Chat
+  appearance='wallpaper'
   theme={{
     colors: { accent: '#3390EC', outgoingBubble: '#3390EC', outgoingText: '#FFFFFF' },
     radii: { bubble: 18 },
@@ -1463,9 +1478,9 @@ const MyBadge = () => {
 }
 ```
 
-Also exported: `defaultLightTheme`, `defaultDarkTheme`, `ChatWallpaper`, and the `ChatTheme` / `PartialChatTheme` types.
+Also exported: `chatAppearances` (every built-in appearance), `defaultLightTheme` / `defaultDarkTheme` (the `'plain'` pair), `mergeTheme`, `ChatWallpaper`, and the `ChatTheme` / `PartialChatTheme` / `ChatAppearance` / `ChatAppearanceName` types.
 
-The built-in panels have their own token groups: `emojiKeyboard`, `contextMenu`, `attachments` and `chatList`. The full set of tokens and their default values is the `ChatTheme` type and `defaultLightTheme` / `defaultDarkTheme`.
+The built-in panels have their own token groups: `emojiKeyboard`, `contextMenu`, `attachments` and `chatList`. The full set of tokens is the `ChatTheme` type; every appearance's values are in `chatAppearances`. `colors.onAccent` colors the icons and text on an accent fill (the send button, badges, checks); a link whose color matches its text is underlined.
 
 </details>
 

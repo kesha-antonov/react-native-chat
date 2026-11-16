@@ -7,6 +7,7 @@ import {
   View,
   Text } from 'react-native'
 
+import { contrastRatio } from './colorUtils'
 import { BasicMarkdown } from './components/BasicMarkdown'
 import { MarkdownMessageText, canUseStreamdown } from './components/MarkdownMessageText'
 import { StreamingCursor } from './components/StreamingCursor'
@@ -189,6 +190,9 @@ export function MessageText<TMessage extends IMessage>({
   )
 }
 
+const linkDecoration = (link: string, text: string) =>
+  contrastRatio(link, text) < 1.5 ? 'underline' as const : 'none' as const
+
 const createStyles = (theme: ChatTheme) => StyleSheet.create({
   container: {
     marginTop: theme.spacing.bubblePaddingV,
@@ -206,12 +210,15 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   text_right: {
     color: theme.colors.outgoingText,
   },
-  // Links are colored, not underlined.
+  // Links are colored, not underlined - unless their color is (nearly) the text's, as on a
+  // solid accent bubble with white text or in a monochrome theme, where only a line tells them apart.
   link: {},
   link_left: {
     color: theme.colors.incomingLink,
+    textDecorationLine: linkDecoration(theme.colors.incomingLink, theme.colors.incomingText),
   },
   link_right: {
     color: theme.colors.outgoingLink,
+    textDecorationLine: linkDecoration(theme.colors.outgoingLink, theme.colors.outgoingText),
   },
 })

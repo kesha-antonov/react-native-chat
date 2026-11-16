@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { ChatList } from '@kesha-antonov/react-native-chat'
 import { Href, useRouter } from 'expo-router'
 
+import { useAppearance } from '@/components/appearance'
 import { ME } from './data'
 import { chatStore, DialogItem, startChatListDemo, useChatListItems } from './store'
 
@@ -15,6 +16,7 @@ let hasLoadedDialogs = false
  * its own, as in Telegram, which the main list pushes when the folder row is tapped.
  */
 export default function ChatListScreen ({ archived = false }: { archived?: boolean }) {
+  const appearance = useAppearance()
   const router = useRouter()
   const chats = useChatListItems()
   const [isLoading, setIsLoading] = useState(!archived && !hasLoadedDialogs)
@@ -44,6 +46,7 @@ export default function ChatListScreen ({ archived = false }: { archived?: boole
 
   return (
     <ChatList<DialogItem>
+      appearance={appearance}
       chats={chats}
       user={ME}
       isLoading={isLoading}

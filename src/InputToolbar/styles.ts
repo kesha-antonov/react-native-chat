@@ -87,7 +87,7 @@ export const createStyles = (theme: ChatTheme) => StyleSheet.create({
   },
   videoPreviewTime: {
     fontSize: 12,
-    color: '#fff',
+    color: theme.colors.onAccent,
     fontVariant: ['tabular-nums'],
   },
   // Everything sits inside the island now, so the field group draws nothing of its own:

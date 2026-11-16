@@ -6,7 +6,7 @@ import { TypingAction } from '../components/TypingStatus'
 import { ChatLabels } from '../i18n'
 import { ChatIcons } from '../Icons'
 import { IMessage, User } from '../Models'
-import { PartialChatTheme } from '../Theme'
+import { ChatAppearance, ChatAppearanceName, PartialChatTheme } from '../Theme'
 
 /** What a chat is: a one-to-one chat, a group (its rows name the sender) or a channel. */
 export type ChatListItemKind = 'private' | 'group' | 'channel'
@@ -148,6 +148,8 @@ export interface ChatListProps<TChat extends ChatListItem = ChatListItem> {
   listProps?: Partial<FlatListProps<TChat>>
   style?: StyleProp<ViewStyle>
 
+  /** The built-in look, as on `Chat`; pass the same one to every part of the app. */
+  appearance?: ChatAppearanceName | ChatAppearance
   theme?: PartialChatTheme
   darkTheme?: PartialChatTheme
   colorScheme?: ColorSchemeName

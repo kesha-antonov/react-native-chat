@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { useAppearance } from '@/components/appearance'
 import { useDemoSend } from './useDemoSend'
 
 // Generates a labelled chat spanning several days so the floating/animated day
@@ -41,6 +42,7 @@ const generateRange = (fromDayOffset: number, toDayOffset: number): IMessage[] =
 }
 
 export default function DayAnimatedExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(() => generateRange(0, INITIAL_DAYS - 1))
   const [oldestDayOffset, setOldestDayOffset] = useState(INITIAL_DAYS - 1)
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
@@ -62,6 +64,7 @@ export default function DayAnimatedExample () {
 
   return (
     <Chat
+      appearance={appearance}
       messages={messages}
       onSend={onSend}
       user={USER}

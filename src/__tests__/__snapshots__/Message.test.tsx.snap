@@ -40,7 +40,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
               "maxWidth": 688,
             },
             {
-              "borderBottomLeftRadius": 0,
+              "borderBottomLeftRadius": 17,
               "borderBottomRightRadius": 17,
               "borderTopLeftRadius": 17,
               "borderTopRightRadius": 17,
@@ -49,7 +49,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
               "boxShadow": [
                 {
                   "blurRadius": 0.5,
-                  "color": "rgba(29, 55, 83, 0.16)",
+                  "color": "rgba(16, 24, 40, 0.1)",
                   "offsetX": 0,
                   "offsetY": 1,
                 },
@@ -96,35 +96,6 @@ exports[`Message component should render <Message /> and compare with snapshot 1
           onStartShouldSetResponder={[Function]}
         >
           <View
-            pointerEvents="none"
-            style={
-              [
-                {
-                  "bottom": 0,
-                  "height": 12,
-                  "marginBottom": -1,
-                  "position": "absolute",
-                  "width": 7,
-                },
-                {
-                  "left": -6,
-                },
-                {
-                  "borderRightWidth": 6,
-                  "borderTopColor": "transparent",
-                  "borderTopWidth": 11,
-                  "height": 0,
-                  "left": -6,
-                  "marginBottom": 0,
-                  "width": 0,
-                },
-                {
-                  "borderRightColor": "#FFFFFF",
-                },
-              ]
-            }
-          />
-          <View
             style={
               [
                 {
@@ -145,7 +116,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
                     "lineHeight": 19,
                   },
                   {
-                    "color": "#000000",
+                    "color": "#111418",
                   },
                   undefined,
                   undefined,
@@ -161,7 +132,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
                       "lineHeight": 19,
                     },
                     {
-                      "color": "#000000",
+                      "color": "#111418",
                     },
                     undefined,
                     undefined,
@@ -213,7 +184,7 @@ exports[`Message component should render <Message /> and compare with snapshot 1
                 style={
                   [
                     {
-                      "color": "#A1AAB3",
+                      "color": "#8E959F",
                       "fontSize": 12,
                       "fontWeight": "400",
                       "lineHeight": 14,
@@ -312,7 +283,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
               "maxWidth": 688,
             },
             {
-              "borderBottomLeftRadius": 0,
+              "borderBottomLeftRadius": 17,
               "borderBottomRightRadius": 17,
               "borderTopLeftRadius": 17,
               "borderTopRightRadius": 17,
@@ -321,7 +292,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
               "boxShadow": [
                 {
                   "blurRadius": 0.5,
-                  "color": "rgba(29, 55, 83, 0.16)",
+                  "color": "rgba(16, 24, 40, 0.1)",
                   "offsetX": 0,
                   "offsetY": 1,
                 },
@@ -368,35 +339,6 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
           onStartShouldSetResponder={[Function]}
         >
           <View
-            pointerEvents="none"
-            style={
-              [
-                {
-                  "bottom": 0,
-                  "height": 12,
-                  "marginBottom": -1,
-                  "position": "absolute",
-                  "width": 7,
-                },
-                {
-                  "left": -6,
-                },
-                {
-                  "borderRightWidth": 6,
-                  "borderTopColor": "transparent",
-                  "borderTopWidth": 11,
-                  "height": 0,
-                  "left": -6,
-                  "marginBottom": 0,
-                  "width": 0,
-                },
-                {
-                  "borderRightColor": "#FFFFFF",
-                },
-              ]
-            }
-          />
-          <View
             style={
               [
                 {
@@ -417,7 +359,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
                     "lineHeight": 19,
                   },
                   {
-                    "color": "#000000",
+                    "color": "#111418",
                   },
                   undefined,
                   undefined,
@@ -433,7 +375,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
                       "lineHeight": 19,
                     },
                     {
-                      "color": "#000000",
+                      "color": "#111418",
                     },
                     undefined,
                     undefined,
@@ -485,7 +427,7 @@ exports[`Message component should render <Message /> with Avatar 1`] = `
                 style={
                   [
                     {
-                      "color": "#A1AAB3",
+                      "color": "#8E959F",
                       "fontSize": 12,
                       "fontWeight": "400",
                       "lineHeight": 14,
@@ -584,7 +526,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
               "maxWidth": 688,
             },
             {
-              "borderBottomLeftRadius": 0,
+              "borderBottomLeftRadius": 17,
               "borderBottomRightRadius": 17,
               "borderTopLeftRadius": 17,
               "borderTopRightRadius": 17,
@@ -593,7 +535,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
               "boxShadow": [
                 {
                   "blurRadius": 0.5,
-                  "color": "rgba(29, 55, 83, 0.16)",
+                  "color": "rgba(16, 24, 40, 0.1)",
                   "offsetX": 0,
                   "offsetY": 1,
                 },
@@ -640,35 +582,6 @@ exports[`Message component should render null if user has no Avatar 1`] = `
           onStartShouldSetResponder={[Function]}
         >
           <View
-            pointerEvents="none"
-            style={
-              [
-                {
-                  "bottom": 0,
-                  "height": 12,
-                  "marginBottom": -1,
-                  "position": "absolute",
-                  "width": 7,
-                },
-                {
-                  "left": -6,
-                },
-                {
-                  "borderRightWidth": 6,
-                  "borderTopColor": "transparent",
-                  "borderTopWidth": 11,
-                  "height": 0,
-                  "left": -6,
-                  "marginBottom": 0,
-                  "width": 0,
-                },
-                {
-                  "borderRightColor": "#FFFFFF",
-                },
-              ]
-            }
-          />
-          <View
             style={
               [
                 {
@@ -689,7 +602,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
                     "lineHeight": 19,
                   },
                   {
-                    "color": "#000000",
+                    "color": "#111418",
                   },
                   undefined,
                   undefined,
@@ -705,7 +618,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
                       "lineHeight": 19,
                     },
                     {
-                      "color": "#000000",
+                      "color": "#111418",
                     },
                     undefined,
                     undefined,
@@ -757,7 +670,7 @@ exports[`Message component should render null if user has no Avatar 1`] = `
                 style={
                   [
                     {
-                      "color": "#A1AAB3",
+                      "color": "#8E959F",
                       "fontSize": 12,
                       "fontWeight": "400",
                       "lineHeight": 14,

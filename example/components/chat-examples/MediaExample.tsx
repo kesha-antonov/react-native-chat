@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { useAppearance } from '@/components/appearance'
 import { useDemoSend } from './useDemoSend'
 
 const USER = { _id: 1, name: 'You' }
@@ -72,6 +73,7 @@ const INITIAL_MESSAGES: IMessage[] = [
 const VIDEO_RECORDING = { maxDuration: 30 }
 
 export default function MediaExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
 
   const onSend = useDemoSend(setMessages)
@@ -80,6 +82,7 @@ export default function MediaExample () {
   // expo-video for video and round notes, expo-sharing to open files.
   return (
     <Chat<IMessage>
+      appearance={appearance}
       messages={messages}
       onSend={onSend}
       user={USER}

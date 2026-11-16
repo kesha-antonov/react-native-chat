@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
+import { useAppearance } from '@/components/appearance'
 import messagesData from '../../example-expo/data/messages'
 import { useDemoSend } from './useDemoSend'
 
@@ -10,6 +11,7 @@ const USER = { _id: 1, name: 'Developer' }
 const QUICK_REACTIONS = ['🔥', '🎉', '😍', '🤯', '👏', '🙏', '💯']
 
 export default function ReactionsExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(messagesData)
 
   const onSend = useDemoSend(setMessages)
@@ -22,6 +24,7 @@ export default function ReactionsExample () {
 
   return (
     <Chat
+      appearance={appearance}
       messages={messages}
       onSend={onSend}
       user={USER}

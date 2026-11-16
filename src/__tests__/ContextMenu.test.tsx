@@ -4,6 +4,7 @@ import { act, fireEvent, render } from '@testing-library/react-native'
 
 import { ContextMenu, ContextMenuProps } from '../components/ContextMenu'
 import { ReactionPicker } from '../Reactions'
+import { defaultLightTheme } from '../Theme'
 import { DEFAULT_TEST_MESSAGE } from './data'
 
 const renderMenu = (props: Partial<ContextMenuProps> = {}) =>
@@ -129,10 +130,10 @@ describe('ContextMenu (details)', () => {
       ],
     })
 
-    // `actionBarDefaultSubmenuItemIcon` and `text_RedRegular`.
-    expect(getByText('icon #1A1D21')).toBeTruthy()
-    expect(getByText('icon #CC2929')).toBeTruthy()
-    expect(icon).toHaveBeenCalledWith({ color: '#CC2929', size: 24 })
+    const { icon: iconColor, destructive } = defaultLightTheme.contextMenu
+    expect(getByText(`icon ${iconColor}`)).toBeTruthy()
+    expect(getByText(`icon ${destructive}`)).toBeTruthy()
+    expect(icon).toHaveBeenCalledWith({ color: destructive, size: 24 })
   })
 })
 

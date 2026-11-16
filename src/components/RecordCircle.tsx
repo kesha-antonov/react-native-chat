@@ -492,11 +492,11 @@ export const RecordCircle = memo(function RecordCircle ({
         )}
         <Animated.View style={[styles.icon, recordIconStyle]}>
           {mode === 'video'
-            ? <Icon name='camera' color='#fff' size={ICON_SIZE} fallback={<CameraIcon color='#fff' size={ICON_SIZE} />} />
-            : <Icon name='mic' color='#fff' size={ICON_SIZE} fallback={<MicIcon color='#fff' size={ICON_SIZE} />} />}
+            ? <Icon name='camera' color={colors.onAccent} size={ICON_SIZE} fallback={<CameraIcon color={colors.onAccent} size={ICON_SIZE} />} />
+            : <Icon name='mic' color={colors.onAccent} size={ICON_SIZE} fallback={<MicIcon color={colors.onAccent} size={ICON_SIZE} />} />}
         </Animated.View>
         <Animated.View style={[styles.icon, sendIconStyle]}>
-          <Icon name='send' color='#fff' size={ICON_SIZE} fallback={<SendIcon color='#fff' size={ICON_SIZE} />} />
+          <Icon name='send' color={colors.onAccent} size={ICON_SIZE} fallback={<SendIcon color={colors.onAccent} size={ICON_SIZE} />} />
         </Animated.View>
         {!!flightIconColor && (
           <Animated.View style={[styles.flightIcon, flightIconStyle]}>

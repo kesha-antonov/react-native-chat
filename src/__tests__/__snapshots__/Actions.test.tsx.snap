@@ -85,7 +85,7 @@ exports[`should render <Actions /> and compare with snapshot 1`] = `
               style={
                 {
                   "borderBottomWidth": 0,
-                  "borderColor": "rgba(27, 34, 39, 0.6)",
+                  "borderColor": "#8E959F",
                   "borderRadius": 6,
                   "borderWidth": 2,
                   "height": 18.72,

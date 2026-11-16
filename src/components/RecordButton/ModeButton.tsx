@@ -61,10 +61,10 @@ export function ModeButton ({ gesture, buttonShown, modeSV, isVideo, styles }: M
         style={[styles.button, buttonStyle]}
       >
         <Animated.View style={[styles.modeIcon, micStyle]}>
-          <Icon name='mic' color='#fff' size={22} fallback={<MicIcon color='#fff' size={22} />} />
+          <Icon name='mic' color={styles.onAccent.color} size={22} fallback={<MicIcon color={styles.onAccent.color} size={22} />} />
         </Animated.View>
         <Animated.View style={[styles.modeIcon, cameraStyle]}>
-          <Icon name='camera' color='#fff' size={22} fallback={<CameraIcon color='#fff' size={22} />} />
+          <Icon name='camera' color={styles.onAccent.color} size={22} fallback={<CameraIcon color={styles.onAccent.color} size={22} />} />
         </Animated.View>
       </Animated.View>
     </GestureDetector>

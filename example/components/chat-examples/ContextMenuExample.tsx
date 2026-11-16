@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react'
 import { Alert } from 'react-native'
 import { Chat, IMessage, MessageMenuItem } from '@kesha-antonov/react-native-chat'
 import Info from 'lucide-react-native/icons/info'
+import { useAppearance } from '@/components/appearance'
 import { useDemoSend } from './useDemoSend'
 
 const USER = { _id: 1, name: 'You' }
@@ -14,6 +15,7 @@ const INITIAL_MESSAGES: IMessage[] = [
 ]
 
 export default function ContextMenuExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
 
   const onSend = useDemoSend(setMessages)
@@ -48,6 +50,7 @@ export default function ContextMenuExample () {
 
   return (
     <Chat
+      appearance={appearance}
       messages={messages}
       onSend={onSend}
       user={USER}

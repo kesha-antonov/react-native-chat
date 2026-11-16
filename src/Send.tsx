@@ -116,7 +116,7 @@ export const Send = <TMessage extends IMessage = IMessage>({
           children ||
           <Animated.View style={[styles.circle, !canSend && styles.circleInactive, circleStyle]}>
             {/* 22 in the default 44, the size of the mic it replaces. */}
-            <PlaneIcon color='#fff' size={Math.round(size / 2)} />
+            <PlaneIcon color={theme.colors.onAccent} size={Math.round(size / 2)} />
           </Animated.View>
         }
       </TouchableOpacity>

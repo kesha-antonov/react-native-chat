@@ -6,6 +6,7 @@ import Heart from 'lucide-react-native/icons/heart'
 import Lightbulb from 'lucide-react-native/icons/lightbulb'
 import ThumbsUp from 'lucide-react-native/icons/thumbs-up'
 
+import { useAppearance } from '@/components/appearance'
 import { useDemoSend } from './useDemoSend'
 
 const USER = { _id: 1, name: 'You' }
@@ -49,6 +50,7 @@ const INITIAL_MESSAGES: IMessage[] = [
 ]
 
 export default function ReactionIconsExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
 
   const onSend = useDemoSend(setMessages)
@@ -59,6 +61,7 @@ export default function ReactionIconsExample () {
 
   return (
     <Chat
+      appearance={appearance}
       messages={messages}
       onSend={onSend}
       user={USER}

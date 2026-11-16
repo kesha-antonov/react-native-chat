@@ -104,7 +104,8 @@ backend confirms. Voice notes, files and media show the same clock / ✓ / ✓�
 - `messages`, `user`, `onSend` - required
 - `text` + `textInputProps.onChangeText` - only if you control the composer text externally (the built-in emoji keyboard inserts either way)
 - `initialText` + `onDraftChange` - restore and save the unsent draft per chat
-- `theme` / `darkTheme` - deep-merged token overrides (`colors`, `radii`, `spacing`, `typography`, `bubble`, `wallpaper`, `nameColors`, …). The default look is a modern messenger style: swirl wallpaper, tails, the time on the last line; `wallpaper: { isEnabled: false }`, `bubble: { hasTail: false, isTimeInline: false }` turn those off
+- `appearance` - the built-in look: `'plain'` (default: neutral background, solid accent outgoing bubbles, no wallpaper), `'wallpaper'` (swirl wallpaper, tails, gradient bubbles at night), `'mono'`, `'soft'`, or a `{ light, dark }` pair of full themes (start from `chatAppearances`). Pass the same one to `Chat`, `ChatList` and `ChatHeader`.
+- `theme` / `darkTheme` - deep-merged token overrides on top of the appearance (`colors`, `radii`, `spacing`, `typography`, `bubble`, `wallpaper`, `nameColors` and the rest); `bubble: { hasTail, isTimeInline }` and `wallpaper: { isEnabled }` switch those parts
 - `renderWallpaper` - replace the background (`null` = plain `colors.background`)
 - `colorScheme` - `'light' | 'dark'` to force a scheme; omit to follow the system
 - `locale` + `labels` - 15 built-in translations (es, fr, de, ru, zh, ar, pt, ja, ko, it, tr, hi, nl, pl, id; English is the default, `pt-BR` falls back to `pt`) and per-string overrides

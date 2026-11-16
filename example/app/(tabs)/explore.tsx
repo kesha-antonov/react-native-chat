@@ -1,9 +1,12 @@
 import React from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
+import { ChatAppearanceName } from '@kesha-antonov/react-native-chat'
 import { Href, useRouter } from 'expo-router'
 import { Touchable } from 'react-native-gesture-handler'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { APPEARANCES, setAppearance, setThemeMode, THEME_MODES, ThemeMode, useAppearance, useThemeMode } from '@/components/appearance'
+import { OptionChips } from '@/components/chat-examples/OptionChips'
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 import { useThemeColor } from '@/hooks/use-theme-color'
@@ -17,7 +20,7 @@ const examples: Array<{ id: ChatExample, title: string, description: string }> =
   { id: 'context-menu', title: 'Context Menu', description: 'Long-press menu: built-in actions, Edit / Pin / Delete callbacks and a custom action' },
   { id: 'media', title: 'Media & Voice', description: 'Audio, video and location messages, hold-to-record voice notes, and video recording' },
   { id: 'loading', title: 'Loading States', description: 'Download and upload rings, the sending clock, failed messages, image placeholders and history loading' },
-  { id: 'theming', title: 'Theming & Icons', description: 'Switch themes at runtime and override icons via the icon registry' },
+  { id: 'theming', title: 'Theming & Icons', description: 'Token overrides on top of the appearance picked above, and icons from the icon registry' },
   { id: 'localization', title: 'Localization (i18n)', description: 'Switch UI language at runtime; built-in en/es/fr/de/ru + custom labels' },
   { id: 'basic', title: 'Basic Example', description: 'Defaults only: emoji keyboard, attachment menu, voice and round video notes, load earlier' },
   { id: 'links', title: 'Links & Patterns', description: 'Phone numbers, emails, URLs, hashtags, and mentions' },
@@ -30,6 +33,8 @@ const examples: Array<{ id: ChatExample, title: string, description: string }> =
 ]
 
 export default function ExploreScreen () {
+  const appearance = useAppearance()
+  const themeMode = useThemeMode()
   const router = useRouter()
   const backgroundColor = useThemeColor({}, 'background')
   const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#444' }, 'icon')
@@ -45,6 +50,17 @@ export default function ExploreScreen () {
             Choose from different chat implementations to see various features and styling options.
           </ThemedText>
         </ThemedView>
+        {/* One `appearance` for every demo and the Chats tab, as an app would set it once. */}
+        <OptionChips
+          title='Appearance'
+          options={APPEARANCES.map(option => ({ ...option, isActive: option.id === appearance }))}
+          onPress={id => setAppearance(id as ChatAppearanceName)}
+        />
+        <OptionChips
+          title='Theme'
+          options={THEME_MODES.map(option => ({ ...option, isActive: option.id === themeMode }))}
+          onPress={id => setThemeMode(id as ThemeMode)}
+        />
         <View style={styles.examplesContainer}>
           {examples.map(example => (
             <Touchable

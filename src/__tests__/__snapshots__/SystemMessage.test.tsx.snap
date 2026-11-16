@@ -22,7 +22,7 @@ exports[`SystemMessage should render <SystemMessage /> and compare with snapshot
     style={
       [
         {
-          "backgroundColor": "rgba(0, 0, 0, 0.18)",
+          "backgroundColor": "rgba(255, 255, 255, 0.92)",
           "borderRadius": 11,
           "paddingHorizontal": 8,
           "paddingVertical": 3,
@@ -60,13 +60,13 @@ exports[`SystemMessage should render <SystemMessage /> and compare with snapshot
               "lineHeight": 19,
             },
             {
-              "color": "#000000",
+              "color": "#111418",
             },
             undefined,
             [
               {
                 "backgroundColor": "transparent",
-                "color": "#FFFFFF",
+                "color": "#5F6671",
                 "fontSize": 14,
                 "fontWeight": "500",
                 "lineHeight": 17,

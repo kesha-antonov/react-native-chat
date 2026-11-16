@@ -53,8 +53,8 @@ exports[`should render <MessageReply /> and compare with snapshot 1`] = `
           "paddingTop": 3,
         },
         {
-          "backgroundColor": "rgba(149, 92, 219, 0.1)",
-          "borderLeftColor": "#955CDB",
+          "backgroundColor": "rgba(116, 81, 214, 0.1)",
+          "borderLeftColor": "#7451D6",
         },
         undefined,
         undefined,
@@ -78,7 +78,7 @@ exports[`should render <MessageReply /> and compare with snapshot 1`] = `
               "lineHeight": 17,
             },
             {
-              "color": "#955CDB",
+              "color": "#7451D6",
             },
             undefined,
             undefined,
@@ -97,7 +97,7 @@ exports[`should render <MessageReply /> and compare with snapshot 1`] = `
               "lineHeight": 17,
             },
             {
-              "color": "#000000",
+              "color": "#111418",
             },
             undefined,
             undefined,
@@ -164,8 +164,8 @@ exports[`should render <MessageReply /> on right position and compare with snaps
           "paddingTop": 3,
         },
         {
-          "backgroundColor": "rgba(110, 185, 105, 0.1)",
-          "borderLeftColor": "#6EB969",
+          "backgroundColor": "rgba(255, 255, 255, 0.12)",
+          "borderLeftColor": "#FFFFFF",
         },
         undefined,
         undefined,
@@ -189,7 +189,7 @@ exports[`should render <MessageReply /> on right position and compare with snaps
               "lineHeight": 17,
             },
             {
-              "color": "#55AB4F",
+              "color": "#FFFFFF",
             },
             undefined,
             undefined,
@@ -208,7 +208,7 @@ exports[`should render <MessageReply /> on right position and compare with snaps
               "lineHeight": 17,
             },
             {
-              "color": "#000000",
+              "color": "#FFFFFF",
             },
             undefined,
             undefined,

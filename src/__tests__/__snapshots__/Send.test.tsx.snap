@@ -71,14 +71,14 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
             [
               {
                 "alignItems": "center",
-                "backgroundColor": "#229AF0",
+                "backgroundColor": "#2B6FE6",
                 "borderRadius": 22,
                 "height": 44,
                 "justifyContent": "center",
                 "width": 44,
               },
               {
-                "backgroundColor": "#858A84",
+                "backgroundColor": "#8E959F",
               },
               {
                 "opacity": 1,
@@ -111,7 +111,7 @@ exports[`Send should always render <Send /> and compare with snapshot 1`] = `
                 {
                   "borderBottomColor": "transparent",
                   "borderBottomWidth": 9.02,
-                  "borderLeftColor": "#fff",
+                  "borderLeftColor": "#FFFFFF",
                   "borderLeftWidth": 18.04,
                   "borderTopColor": "transparent",
                   "borderTopWidth": 9.02,
@@ -200,14 +200,14 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
             [
               {
                 "alignItems": "center",
-                "backgroundColor": "#229AF0",
+                "backgroundColor": "#2B6FE6",
                 "borderRadius": 22,
                 "height": 44,
                 "justifyContent": "center",
                 "width": 44,
               },
               {
-                "backgroundColor": "#858A84",
+                "backgroundColor": "#8E959F",
               },
               {
                 "opacity": 0,
@@ -240,7 +240,7 @@ exports[`Send should not render <Send /> and compare with snapshot 1`] = `
                 {
                   "borderBottomColor": "transparent",
                   "borderBottomWidth": 9.02,
-                  "borderLeftColor": "#fff",
+                  "borderLeftColor": "#FFFFFF",
                   "borderLeftWidth": 18.04,
                   "borderTopColor": "transparent",
                   "borderTopWidth": 9.02,
@@ -329,7 +329,7 @@ exports[`Send should render <Send /> where there is input and compare with snaps
             [
               {
                 "alignItems": "center",
-                "backgroundColor": "#229AF0",
+                "backgroundColor": "#2B6FE6",
                 "borderRadius": 22,
                 "height": 44,
                 "justifyContent": "center",
@@ -367,7 +367,7 @@ exports[`Send should render <Send /> where there is input and compare with snaps
                 {
                   "borderBottomColor": "transparent",
                   "borderBottomWidth": 9.02,
-                  "borderLeftColor": "#fff",
+                  "borderLeftColor": "#FFFFFF",
                   "borderLeftWidth": 18.04,
                   "borderTopColor": "transparent",
                   "borderTopWidth": 9.02,

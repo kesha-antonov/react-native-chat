@@ -78,3 +78,43 @@ export function averageBrightness (colors: string[]): number {
   const total = parsed.reduce((sum, c) => sum + Math.max(c.r, c.g, c.b) / 255, 0)
   return total / parsed.length
 }
+
+/** `a` moved toward `b` by `amount` (0 keeps `a`, 1 gives `b`), alpha included. */
+export function mixColors (a: string, b: string, amount: number): string {
+  const from = parseColor(a)
+  const to = parseColor(b)
+  if (!from || !to)
+    return a
+
+  const mix = (x: number, y: number) => x + (y - x) * amount
+  return formatColor({ r: mix(from.r, to.r), g: mix(from.g, to.g), b: mix(from.b, to.b), a: mix(from.a, to.a) })
+}
+
+/** Relative luminance (WCAG, 0 black to 1 white); a color it cannot parse counts as mid-grey. */
+export function luminance (color: string): number {
+  const parsed = parseColor(color)
+  if (!parsed)
+    return 0.5
+
+  const channel = (value: number) => {
+    const c = value / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * channel(parsed.r) + 0.7152 * channel(parsed.g) + 0.0722 * channel(parsed.b)
+}
+
+/** True for a fill light enough that white on it would not read (white, pale greys and tints). */
+export function isLightColor (color: string): boolean {
+  return luminance(color) > 0.6
+}
+
+/** WCAG contrast ratio between two opaque colors (1 to 21). */
+export function contrastRatio (a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/** Whichever of `candidates` reads best on `fill` (the highest contrast). */
+export function readableOn (fill: string, ...candidates: string[]): string {
+  return candidates.reduce((best, color) => contrastRatio(color, fill) > contrastRatio(best, fill) ? color : best)
+}

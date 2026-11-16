@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react'
 import { StyleSheet, TextInput, View } from 'react-native'
 import { Bubble, BubbleProps, Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
+import { useAppearance } from '@/components/appearance'
 import { OptionChips } from './OptionChips'
 import { useDemoSend } from './useDemoSend'
 
@@ -38,6 +39,7 @@ const INITIAL_MESSAGES: IMessage[] = [
 ]
 
 export default function AlignedTopExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
   const [alignMode, setAlignMode] = useState<AlignMode>('auto')
   const [isTallBubbleEnabled, setIsTallBubbleEnabled] = useState(false)
@@ -83,6 +85,7 @@ export default function AlignedTopExample () {
       />
 
       <Chat
+        appearance={appearance}
         messages={messages}
         onSend={onSend}
         user={USER}

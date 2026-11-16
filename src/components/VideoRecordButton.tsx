@@ -147,9 +147,9 @@ export function VideoRecordButton<TMessage extends IMessage = IMessage> ({
       >
         <Icon
           name='camera'
-          color={isRound ? '#fff' : styles.iconColor.color}
+          color={isRound ? styles.onAccent.color : styles.iconColor.color}
           size={22}
-          fallback={<CameraIcon color={isRound ? '#fff' : styles.iconColor.color} size={22} />}
+          fallback={<CameraIcon color={isRound ? styles.onAccent.color : styles.iconColor.color} size={22} />}
         />
       </Pressable>
 
@@ -192,6 +192,9 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
     paddingBottom: 8,
   },
   // Carries the themed icon color (StyleSheet keeps it out of JSX).
+  onAccent: {
+    color: theme.colors.onAccent,
+  },
   iconColor: {
     color: theme.colors.incomingMeta,
   },

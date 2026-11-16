@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Chat, IMessage, MediaTransferProps } from '@kesha-antonov/react-native-chat'
 import { File, Paths } from 'expo-file-system'
+import { useAppearance } from '@/components/appearance'
 import { photo } from '@/constants/photos'
 
 const USER = { _id: 1, name: 'You' }
@@ -108,6 +109,7 @@ const useSimulatedTransfers = (patch: (id: IMessage['_id'], change: Patch) => vo
 }
 
 export default function LoadingExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
@@ -202,6 +204,7 @@ export default function LoadingExample () {
 
   return (
     <Chat<IMessage>
+      appearance={appearance}
       messages={messages}
       onSend={onSend}
       user={USER}

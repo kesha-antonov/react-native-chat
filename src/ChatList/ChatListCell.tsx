@@ -236,8 +236,8 @@ function ChatListCellInner<TChat extends ChatListItem> ({
               ]}
             />
             <Animated.View style={[styles.swipeAction, iconStyle]}>
-              <Icon name={chat.isArchived ? 'unarchive' : 'archive'} size={28} color='#FFFFFF' fallback={null} />
-              <Text style={styles.swipeLabel}>{chat.isArchived ? labels.chatListUnarchive : labels.chatListArchive}</Text>
+              <Icon name={chat.isArchived ? 'unarchive' : 'archive'} size={28} color={theme.colors.onAccent} fallback={null} />
+              <Text style={[styles.swipeLabel, { color: theme.colors.onAccent }]}>{chat.isArchived ? labels.chatListUnarchive : labels.chatListArchive}</Text>
             </Animated.View>
           </View>
         )}
@@ -426,7 +426,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   swipeLabel: {
-    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '500',
     marginTop: 2,

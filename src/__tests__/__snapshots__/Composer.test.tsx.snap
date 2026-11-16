@@ -31,17 +31,17 @@ exports[`should render <Composer /> and compare with snapshot 1`] = `
     <TextInput
       accessibilityLabel="Type a message..."
       accessible={true}
-      cursorColor="#54A1DB"
+      cursorColor="#2B6FE6"
       enablesReturnKeyAutomatically={true}
       keyboardAppearance="default"
       multiline={true}
       placeholder="Type a message..."
-      placeholderTextColor="#858A84"
-      selectionColor="#54A1DB"
+      placeholderTextColor="#8E959F"
+      selectionColor="#2B6FE6"
       style={
         [
           {
-            "color": "#000000",
+            "color": "#111418",
             "fontSize": 18,
             "fontWeight": "400",
             "includeFontPadding": false,

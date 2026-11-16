@@ -2,10 +2,17 @@
 
 ## [Unreleased]
 
+### 💥 Breaking
+- The default look is the new `plain` appearance: a neutral background, white incoming and solid blue outgoing bubbles, no wallpaper, gradient or tails. `appearance='wallpaper'` brings back the previous look, and `defaultLightTheme` / `defaultDarkTheme` are now the `plain` pair
+
 ### ✨ Features
+- `appearance` on `Chat`, `ChatList` and `ChatHeader` picks a built-in look, each a complete light and dark theme: `'plain'`, `'wallpaper'`, `'mono'` or `'soft'`, or a `{ light, dark }` pair of your own; `theme` / `darkTheme` merge on top. `chatAppearances` holds them all
+- `colors.onAccent` colors the icons and text on an accent fill: the send and record button, badges, checks
 - `reactions.renderReactionIcon` draws reactions as icons instead of emoji text, in the pills, the reactions bar and the pick's flight, so reactions can be keys of your own drawn with an icon set; it gets the key, the place, the size and color there and whether it is your own reaction (`null` keeps the text). `ReactionIcon` is exported for custom reaction displays
 
 ### 🐛 Fixes
+- A link whose color matches its text (white on the night gradient bubble) is underlined, so it can be told apart
+- The play glyph and the file icon in an incoming bubble take whichever of white and the bubble's color reads better on their button (on the night wallpaper theme's light blue, the dark one), and a reply box on any light accent line gets the stronger tint
 - A reaction picked in the long-press bar flies to its own pill instead of always to the first one, and gives way to the pill once it lands. A custom `renderReactionPicker` gets the spot as `reactionTarget` and passes it to `ContextMenu`
 - The long-pressed message no longer blinks out for a frame or two on Android as the overlay closes
 - The first reaction (or any other change to a row) after a chat opened no longer remounts every row on screen, which blinked the messages and reloaded their images
@@ -13,6 +20,8 @@
 - The send / record button is as tall as the composer's field at one line, 44 instead of 36, as in Telegram; `theme.sendButton.size` and `theme.radii.sendButton` still set it
 
 ### 📲 Example app
+- An Appearance picker in the Explore tab sets the look of every demo and the Chats tab
+- A Theme picker in the Explore tab switches the whole app between System (the default), Light and Dark
 - A Reaction Icons demo: reactions as keys drawn with Lucide icons, filled for your own
 
 ## [6.1.5] - 2026-11-07

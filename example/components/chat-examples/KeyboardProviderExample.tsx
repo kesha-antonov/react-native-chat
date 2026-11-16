@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
+import { useAppearance } from '@/components/appearance'
 import { useDemoSend } from './useDemoSend'
 
 /**
@@ -14,6 +15,7 @@ import { useDemoSend } from './useDemoSend'
  * opening, not twice.
  */
 export default function KeyboardProviderExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(() =>
     Array.from({ length: 20 }, (_, i) => ({
       _id: i + 1,
@@ -30,6 +32,7 @@ export default function KeyboardProviderExample () {
   return (
     <View style={styles.container}>
       <Chat
+        appearance={appearance}
         messages={messages}
         user={user}
         onSend={onSend}

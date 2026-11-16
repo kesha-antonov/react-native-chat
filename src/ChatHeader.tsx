@@ -11,7 +11,7 @@ import { ChatLabels, resolveLabels } from './i18n'
 import { ChatIcons } from './Icons'
 import { User } from './Models'
 import { isRTLLocale } from './rtl'
-import { PartialChatTheme, resolveTheme } from './Theme'
+import { ChatAppearance, ChatAppearanceName, PartialChatTheme, resolveTheme } from './Theme'
 
 const HEADER_HEIGHT = 56
 const AVATAR_SIZE = 42
@@ -41,6 +41,8 @@ export interface ChatHeaderProps {
   /** Pads the bar by the top safe-area inset. Default true; turn off when it sits below the status bar already. */
   isTopInsetApplied?: boolean
   style?: StyleProp<ViewStyle>
+  /** The built-in look, as on `Chat`; pass the same one to every part of the app. */
+  appearance?: ChatAppearanceName | ChatAppearance
   theme?: PartialChatTheme
   darkTheme?: PartialChatTheme
   colorScheme?: ColorSchemeName
@@ -56,10 +58,10 @@ export interface ChatHeaderProps {
  * `headerSubtitleActive`), so it matches `ChatList`'s header.
  */
 export function ChatHeader (props: ChatHeaderProps) {
-  const { theme, darkTheme, colorScheme: colorSchemeProp, locale, labels, icons } = props
+  const { appearance, theme, darkTheme, colorScheme: colorSchemeProp, locale, labels, icons } = props
   const systemColorScheme = useColorScheme()
   const colorScheme = normalizeColorScheme(colorSchemeProp !== undefined ? colorSchemeProp : systemColorScheme)
-  const resolvedTheme = useMemo(() => resolveTheme(colorScheme, theme, darkTheme), [colorScheme, theme, darkTheme])
+  const resolvedTheme = useMemo(() => resolveTheme(colorScheme, theme, darkTheme, appearance), [colorScheme, theme, darkTheme, appearance])
   const resolvedLabels = useMemo(() => resolveLabels(locale, labels), [locale, labels])
   const isRTL = useMemo(() => isRTLLocale(locale), [locale])
   const context = useMemo<IChatContext>(() => ({

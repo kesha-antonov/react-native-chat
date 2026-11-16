@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 
+import { isLightColor, readableOn } from './colorUtils'
 import { clampProgress, transferState, useMediaTransfer } from './components/mediaTransfer'
 import { suppressPressAfterHold } from './components/messagePress'
 import { RadialProgress } from './components/RadialProgress'
@@ -132,8 +133,11 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
 const makeStyles = (theme: ChatTheme, position: 'left' | 'right') => {
   const isOutgoing = position === 'right'
   const accent = isOutgoing ? theme.colors.outgoingVoiceFill : theme.colors.incomingVoiceFill
-  // Over a light accent (the night outgoing bubble's white), the glyph takes the bubble's color.
-  const glyph = isOutgoing && accent.toUpperCase() === '#FFFFFF' ? theme.colors.outgoingBubble : '#FFFFFF'
+  // Over a light accent (the night outgoing bubble's white), the glyph takes the bubble's color;
+  // in an incoming bubble, whichever of white and the bubble's color reads better.
+  const glyph = isOutgoing
+    ? (isLightColor(accent) ? theme.colors.outgoingBubble : '#FFFFFF')
+    : readableOn(accent, '#FFFFFF', theme.colors.incomingBubble)
 
   return StyleSheet.create({
     container: {

@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
+import { useAppearance } from '@/components/appearance'
 import earlierMessages from '../../example-expo/data/earlierMessages'
 import messagesData from '../../example-expo/data/messages'
 import { useDemoSend } from './useDemoSend'
@@ -11,6 +12,7 @@ const USER = { _id: 1, name: 'Developer' }
 // swipe-to-reply, voice and round video notes (on once expo-audio / vision-camera are
 // installed), the scroll-to-bottom button. This screen only adds "Load earlier".
 export default function BasicExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(messagesData)
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false)
 
@@ -26,6 +28,7 @@ export default function BasicExample () {
 
   return (
     <Chat
+      appearance={appearance}
       messages={messages}
       onSend={onSend}
       user={USER}

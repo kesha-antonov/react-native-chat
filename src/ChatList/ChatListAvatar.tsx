@@ -72,7 +72,7 @@ export function ChatListAvatar ({ id, title, uri, size, isArchive, isOnline, isS
           exiting={ZoomOut.duration(200)}
           style={[styles.check, { backgroundColor: colors.checkbox, borderColor: ring }]}
         >
-          <Icon name='check' color='#FFFFFF' size={13} fallback={<Text style={styles.checkText}>✓</Text>} />
+          <Icon name='check' color={theme.colors.onAccent} size={13} fallback={<Text style={[styles.checkText, { color: theme.colors.onAccent }]}>✓</Text>} />
         </Animated.View>
       )}
     </View>
@@ -110,7 +110,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkText: {
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
   },

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Chat, ChatIcons, IMessage, PartialChatTheme } from '@kesha-antonov/react-native-chat'
 
+import { useAppearance } from '@/components/appearance'
 import { OptionChips } from './OptionChips'
 import { useDemoSend } from './useDemoSend'
 
@@ -35,8 +36,8 @@ const customIcons: ChatIcons = {
   ),
 }
 
-// Light text and meta for a saturated outgoing bubble, as the default day theme's pale green
-// bubble carries dark text.
+// Light text and meta for a saturated outgoing bubble, for appearances whose outgoing bubble
+// is pale and carries dark text (wallpaper's green, soft's lavender).
 const onColoredBubble = {
   outgoingText: '#FFFFFF',
   outgoingMeta: 'rgba(255, 255, 255, 0.75)',
@@ -57,7 +58,7 @@ const PRESETS: Array<{ id: string, label: string, theme: PartialChatTheme, darkT
   {
     id: 'default',
     label: 'Default',
-    // The built-in look: the library's day and night themes.
+    // The appearance picked in the Explore tab, untouched; the others override tokens on top of it.
     theme: {},
     darkTheme: {},
   },
@@ -83,6 +84,7 @@ const PRESETS: Array<{ id: string, label: string, theme: PartialChatTheme, darkT
 ]
 
 export default function ThemingExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
   const [presetId, setPresetId] = useState('default')
 
@@ -97,6 +99,7 @@ export default function ThemingExample () {
         onPress={setPresetId}
       />
       <Chat<IMessage>
+        appearance={appearance}
         messages={messages}
         onSend={onSend}
         user={USER}

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Chat, IMessage } from '@kesha-antonov/react-native-chat'
 
+import { useAppearance } from '@/components/appearance'
 import { OptionChips } from './OptionChips'
 import { useDemoSend } from './useDemoSend'
 
@@ -25,6 +26,7 @@ const LOCALES: Array<{ id: string, label: string }> = [
 ]
 
 export default function LocalizationExample () {
+  const appearance = useAppearance()
   const [messages, setMessages] = useState<IMessage[]>(INITIAL_MESSAGES)
   const [locale, setLocale] = useState('en')
 
@@ -37,6 +39,7 @@ export default function LocalizationExample () {
         onPress={setLocale}
       />
       <Chat<IMessage>
+        appearance={appearance}
         messages={messages}
         onSend={onSend}
         user={USER}

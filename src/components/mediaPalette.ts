@@ -1,3 +1,4 @@
+import { readableOn } from '../colorUtils'
 import { ChatTheme } from '../Theme'
 
 /**
@@ -40,7 +41,9 @@ export const getMediaPalette = (
     }
     : {
       control: theme.colors.incomingVoiceFill,
-      glyph: '#FFFFFF',
+      // White or the bubble's color, whichever reads better on the fill: a light accent on a dark
+      // bubble takes the dark glyph.
+      glyph: readableOn(theme.colors.incomingVoiceFill, '#FFFFFF', theme.colors.incomingBubble),
       progress: theme.colors.incomingVoiceFill,
       track: theme.colors.incomingVoiceTrack,
       meta: theme.colors.incomingMeta,

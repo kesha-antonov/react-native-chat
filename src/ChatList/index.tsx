@@ -66,6 +66,7 @@ const isArchiveRow = <TChat, >(row: Row<TChat>): row is { id: typeof ARCHIVE_ROW
  */
 export function ChatList<TChat extends ChatListItem = ChatListItem> (props: ChatListProps<TChat>) {
   const {
+    appearance,
     theme,
     darkTheme,
     colorScheme: colorSchemeProp,
@@ -75,7 +76,7 @@ export function ChatList<TChat extends ChatListItem = ChatListItem> (props: Chat
   } = props
   const systemColorScheme = useColorScheme()
   const colorScheme = normalizeColorScheme(colorSchemeProp !== undefined ? colorSchemeProp : systemColorScheme)
-  const resolvedTheme = useMemo(() => resolveTheme(colorScheme, theme, darkTheme), [colorScheme, theme, darkTheme])
+  const resolvedTheme = useMemo(() => resolveTheme(colorScheme, theme, darkTheme, appearance), [colorScheme, theme, darkTheme, appearance])
   const resolvedLabels = useMemo(() => resolveLabels(locale, labels), [locale, labels])
   const isRTL = useMemo(() => isRTLLocale(locale), [locale])
   const context = useMemo<IChatContext>(() => ({

@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { readableOn } from '../colorUtils'
 import { IconName } from '../Icons'
 import { getSvg } from '../optional'
 
@@ -23,7 +24,7 @@ const FILLED = new Set<IconName>(['play', 'pause', 'verified'])
 
 // Lucide glyph geometry (24x24 viewBox), one entry per IconName. Copied verbatim
 // from lucide.dev so the icons match the design system exactly.
-const glyphs: Record<IconName, () => React.ReactNode> = {
+const glyphs: Record<IconName, (color: string) => React.ReactNode> = {
   // lucide `circle-check`, for the menu's Select.
   checkCircle: () => [
     <Circle key='a' cx={12} cy={12} r={10} />,
@@ -233,10 +234,11 @@ const glyphs: Record<IconName, () => React.ReactNode> = {
     <Path key='b' d='M16 9a5 5 0 0 1 0 6' />,
     <Path key='c' d='M19.364 18.364a9 9 0 0 0 0-12.728' />,
   ],
-  // lucide `badge-check`, filled with a white check (the verified mark).
-  verified: () => [
+  // lucide `badge-check`, the verified mark. The check is cut out in white, or in near-black on a
+  // light badge (mono at night draws a white one).
+  verified: color => [
     <Path key='a' d='M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z' stroke='none' />,
-    <Path key='b' d='m16 9-5.5 5.5L8 12' fill='none' stroke='#FFFFFF' />,
+    <Path key='b' d='m16 9-5.5 5.5L8 12' fill='none' stroke={readableOn(color, '#FFFFFF', '#16181D')} />,
   ],
   // lucide `menu`, the reorder handle.
   reorder: () => [
@@ -273,7 +275,7 @@ export const LucideIcon = ({ name, color, size }: LucideIconProps): React.ReactE
       strokeLinecap='round'
       strokeLinejoin='round'
     >
-      {glyphs[name]()}
+      {glyphs[name](color)}
     </Svg>
   )
 }

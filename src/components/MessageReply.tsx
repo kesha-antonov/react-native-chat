@@ -11,7 +11,7 @@ import {
   ViewStyle,
 } from 'react-native'
 
-import { multiplyAlpha } from '../colorUtils'
+import { isLightColor, multiplyAlpha } from '../colorUtils'
 import { useTheme, useThemedStyles } from '../hooks/useTheme'
 import { IMessage, ReplyMessage } from '../Models'
 import { ChatTheme, getNameColor } from '../Theme'
@@ -129,7 +129,7 @@ export function MessageReply<TMessage extends IMessage = IMessage> ({
   const nameColor = position === 'left'
     ? (theme.nameColors.length ? accent : theme.colors.incomingReplyName)
     : theme.colors.outgoingReplyName
-  const boxAlpha = position === 'right' && accent.toUpperCase() === '#FFFFFF' ? BOX_ALPHA_ON_WHITE_LINE : BOX_ALPHA
+  const boxAlpha = isLightColor(accent) ? BOX_ALPHA_ON_WHITE_LINE : BOX_ALPHA
 
   const handlePress = () => {
     onPress?.(replyMessage, currentMessage)

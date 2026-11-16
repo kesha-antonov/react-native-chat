@@ -42,7 +42,7 @@ import { ReactionsProps } from '../Reactions'
 import { ReplyProps } from '../Reply'
 import { SendProps } from '../Send'
 import { SystemMessageProps } from '../SystemMessage'
-import { PartialChatTheme } from '../Theme'
+import { ChatAppearance, ChatAppearanceName, PartialChatTheme } from '../Theme'
 import { TimeProps } from '../Time'
 
 /** What `chatRef` reaches: moving to a message from outside the chat, e.g. a search result. */
@@ -108,9 +108,16 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
   forceRTL?: boolean
   /* Force color scheme (light/dark); default is undefined (uses system color scheme) */
   colorScheme?: 'light' | 'dark'
-  /* Override the modern default light theme tokens (deep-merged over defaults) */
+  /**
+   * The built-in look to start from: `'plain'` (default: a neutral background, solid accent
+   * outgoing bubbles), `'wallpaper'` (the swirl wallpaper and gradient bubbles), `'mono'`,
+   * `'soft'`, or your own `{ light, dark }` pair of themes (see `chatAppearances`). `theme` and
+   * `darkTheme` are merged on top of it.
+   */
+  appearance?: ChatAppearanceName | ChatAppearance
+  /* Override the light theme tokens (deep-merged over the appearance's) */
   theme?: PartialChatTheme
-  /* Override the modern default dark theme tokens (deep-merged over defaults) */
+  /* Override the dark theme tokens (deep-merged over the appearance's) */
   darkTheme?: PartialChatTheme
   /* Override built-in icons (e.g. with lucide-react-native); drawn icons are used for any name not provided */
   icons?: ChatIcons

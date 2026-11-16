@@ -12,12 +12,13 @@ export function useChatContextValue<TMessage extends IMessage> ({
   locale = 'en',
   forceRTL,
   colorScheme: colorSchemeProp,
+  appearance,
   theme,
   darkTheme,
   icons,
   labels,
   actionSheet,
-}: Pick<ChatProps<TMessage>, 'locale' | 'forceRTL' | 'colorScheme' | 'theme' | 'darkTheme' | 'icons' | 'labels' | 'actionSheet'>) {
+}: Pick<ChatProps<TMessage>, 'locale' | 'forceRTL' | 'colorScheme' | 'appearance' | 'theme' | 'darkTheme' | 'icons' | 'labels' | 'actionSheet'>) {
   const systemColorScheme = useColorScheme()
   // RN 0.86 can report 'unspecified'; normalize it away before it reaches the theme.
   const colorScheme = normalizeColorScheme(
@@ -28,8 +29,8 @@ export function useChatContextValue<TMessage extends IMessage> ({
   // makes on-the-fly theme / color-scheme switching propagate to every memoized
   // StyleSheet without rebuilding styles on unrelated renders.
   const resolvedTheme = useMemo(
-    () => resolveTheme(colorScheme, theme, darkTheme),
-    [colorScheme, theme, darkTheme]
+    () => resolveTheme(colorScheme, theme, darkTheme, appearance),
+    [colorScheme, theme, darkTheme, appearance]
   )
 
   const resolvedLabels = useMemo(

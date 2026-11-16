@@ -4,6 +4,7 @@ import { ActionSheetProvider, useActionSheet } from '@expo/react-native-action-s
 import { Chat, FetchLinkPreview, IMessage, LinkMatcher, LinkPreview } from '@kesha-antonov/react-native-chat'
 import { setStringAsync } from 'expo-clipboard'
 import { isValidPhoneNumber, parsePhoneNumberWithError } from 'libphonenumber-js'
+import { useAppearance } from '@/components/appearance'
 import { photo } from '@/constants/photos'
 import { useDemoSend } from './useDemoSend'
 
@@ -35,6 +36,7 @@ const fetchLinkPreview: FetchLinkPreview = async url => {
 }
 
 const LinksExample: React.FC = () => {
+  const appearance = useAppearance()
   const { showActionSheetWithOptions } = useActionSheet()
 
   const initialMessages: IMessage[] = useMemo(() => [
@@ -229,6 +231,7 @@ const LinksExample: React.FC = () => {
 
   return (
     <Chat
+      appearance={appearance}
       messages={messages}
       onSend={onSend}
       user={user}

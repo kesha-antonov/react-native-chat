@@ -1,3 +1,4 @@
+import { chatAppearances } from '../appearances'
 import { getMediaPalette } from '../components/mediaPalette'
 import {
   VOICE_META_TICKS_WIDTH,
@@ -8,7 +9,6 @@ import {
   levelsFromSamples,
   voiceContentWidth,
 } from '../components/voiceWaveform'
-import { defaultDarkTheme, defaultLightTheme } from '../Theme'
 
 describe('voiceWaveform', () => {
   it('formats durations zero-padded, with hours past an hour', () => {
@@ -50,11 +50,27 @@ describe('voiceWaveform', () => {
   })
 
   it('draws the bars in the voice colors, lighter than a dark bubble', () => {
-    expect(getMediaPalette(defaultDarkTheme, 'left').track).toBe('#5D6F80')
-    expect(getMediaPalette(defaultLightTheme, 'left').track).toBe('#DEE5EB')
-    expect(getMediaPalette(defaultLightTheme, 'right')).toMatchObject({ control: '#78C272', track: '#BBE3AC' })
-    expect(getMediaPalette(defaultDarkTheme, 'right')).toMatchObject({ control: '#FFFFFF', progress: '#FFFFFF' })
-    const custom = { ...defaultDarkTheme, colors: { ...defaultDarkTheme.colors, incomingVoiceTrack: 'gray' } }
+    const { light, dark } = chatAppearances.wallpaper
+    expect(getMediaPalette(dark, 'left').track).toBe('#5D6F80')
+    expect(getMediaPalette(light, 'left').track).toBe('#DEE5EB')
+    expect(getMediaPalette(light, 'right')).toMatchObject({ control: '#78C272', track: '#BBE3AC' })
+    expect(getMediaPalette(dark, 'right')).toMatchObject({ control: '#FFFFFF', progress: '#FFFFFF' })
+    const custom = { ...dark, colors: { ...dark.colors, incomingVoiceTrack: 'gray' } }
+    expect(getMediaPalette(custom, 'left').track).toBe('gray')
+  })
+
+  it('draws the play glyph in the bubble\'s color on a light fill', () => {
+    // A light accent on a dark bubble (mono, plain and soft at night), where a white glyph fades.
+    for (const name of ['mono', 'plain', 'soft'] as const) {
+      const { dark } = chatAppearances[name]
+      expect(getMediaPalette(dark, 'left').glyph).toBe(dark.colors.incomingBubble)
+    }
+    expect(getMediaPalette(chatAppearances.plain.light, 'left').glyph).toBe('#FFFFFF')
+  })
+
+  it('keeps a custom track', () => {
+    const { dark } = chatAppearances.wallpaper
+    const custom = { ...dark, colors: { ...dark.colors, incomingVoiceTrack: 'gray' } }
     expect(getMediaPalette(custom, 'left').track).toBe('gray')
   })
 

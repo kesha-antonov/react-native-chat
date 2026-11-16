@@ -2,7 +2,7 @@ import React from 'react'
 import { StyleSheet } from 'react-native'
 import { render } from '@testing-library/react-native'
 
-import { Bubble, defaultDarkTheme, defaultLightTheme, mergeTheme, utils } from '..'
+import { Bubble, chatAppearances, ChatContext, mergeTheme, utils } from '..'
 import { HIDDEN_TEXT_COLOR } from '../Bubble/styles'
 import { useOutgoingStep } from '../components/ChatWallpaper'
 import { encodePng, gatherPositions, generateWallpaperPixels, getWallpaperUri } from '../components/wallpaperGradient'
@@ -64,12 +64,33 @@ describe('run grouping (isSameGroup)', () => {
   })
 })
 
+// The tailed bubble is the `wallpaper` appearance's; `plain`, the default, has none.
+const wallpaperContext = {
+  actionSheet: () => ({ showActionSheetWithOptions: () => {} }),
+  getLocale: () => 'en',
+  getColorScheme: () => 'light' as const,
+  getTheme: () => chatAppearances.wallpaper.light,
+}
+const withWallpaper = (node: React.ReactElement) => <ChatContext.Provider value={wallpaperContext}>{node}</ChatContext.Provider>
+
 describe('bubble shape', () => {
   const wrapperStyle = (json: any) => StyleSheet.flatten(json.children[0].props.style)
 
-  it('rounds a lone bubble 17 with no corner at the tail', async () => {
+  it('rounds a lone bubble 17 all round by default, with no tail', async () => {
     const { toJSON } = await render(
       <Bubble user={ME} position='right' currentMessage={message({ user: ME })} />
+    )
+    expect(wrapperStyle(toJSON())).toMatchObject({
+      borderTopLeftRadius: 17,
+      borderBottomLeftRadius: 17,
+      borderTopRightRadius: 17,
+      borderBottomRightRadius: 17,
+    })
+  })
+
+  it('rounds a lone bubble 17 with no corner at the tail', async () => {
+    const { toJSON } = await render(
+      withWallpaper(<Bubble user={ME} position='right' currentMessage={message({ user: ME })} />)
     )
     expect(wrapperStyle(toJSON())).toMatchObject({
       borderTopLeftRadius: 17,
@@ -82,13 +103,15 @@ describe('bubble shape', () => {
   it('drops to 6 on the tail side inside a run, without a tail', async () => {
     const current = message({ user: ME, createdAt: T0 + 1000 })
     const { toJSON } = await render(
-      <Bubble
-        user={ME}
-        position='right'
-        currentMessage={current}
-        previousMessage={message({ user: ME })}
-        nextMessage={message({ user: ME, createdAt: T0 + 2000 })}
-      />
+      withWallpaper(
+        <Bubble
+          user={ME}
+          position='right'
+          currentMessage={current}
+          previousMessage={message({ user: ME })}
+          nextMessage={message({ user: ME, createdAt: T0 + 2000 })}
+        />
+      )
     )
     expect(wrapperStyle(toJSON())).toMatchObject({
       borderTopRightRadius: 6,
@@ -193,15 +216,16 @@ describe('status', () => {
 })
 
 describe('theme', () => {
-  it('ships the default day and night colors', () => {
-    expect(defaultLightTheme.colors.outgoingBubble).toBe('#EFFFDE')
-    expect(defaultLightTheme.bubble.outgoingGradient).toBeNull()
-    expect(defaultDarkTheme.bubble.outgoingGradient).toEqual(['#9F3EAA', '#8146D7', '#4272DF', '#258DE5'])
-    expect(defaultLightTheme.radii.bubble).toBe(17)
+  it('keeps the wallpaper appearance\'s day and night colors', () => {
+    const { light, dark } = chatAppearances.wallpaper
+    expect(light.colors.outgoingBubble).toBe('#EFFFDE')
+    expect(light.bubble.outgoingGradient).toBeNull()
+    expect(dark.bubble.outgoingGradient).toEqual(['#9F3EAA', '#8146D7', '#4272DF', '#258DE5'])
+    expect(light.radii.bubble).toBe(17)
   })
 
   it('keeps an app-chosen outgoing color solid, and its sender color plain', () => {
-    const theme = mergeTheme(defaultDarkTheme, { colors: { outgoingBubble: '#123456', senderName: '#ABCDEF' } })
+    const theme = mergeTheme(chatAppearances.wallpaper.dark, { colors: { outgoingBubble: '#123456', senderName: '#ABCDEF' } })
     expect(theme.bubble.outgoingGradient).toBeNull()
     expect(getNameColor(theme, 5)).toBe('#ABCDEF')
   })
@@ -210,7 +234,7 @@ describe('theme', () => {
     expect(getUserColorIndex(7, 7)).toBe(0)
     expect(getUserColorIndex(-3, 7)).toBe(3)
     expect(getUserColorIndex('abc', 7)).toBe(getUserColorIndex('abc', 7))
-    expect(getNameColor(defaultLightTheme, 1)).toBe('#D67722')
+    expect(getNameColor(chatAppearances.wallpaper.light, 1)).toBe('#D67722')
   })
 })
 
@@ -229,9 +253,9 @@ describe('wallpaper', () => {
   it('encodes a valid PNG and caches the data URI', () => {
     const png = encodePng(new Uint8Array(2 * 2 * 3), 2, 2)
     expect(Array.from(png.slice(0, 8))).toEqual([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
-    const uri = getWallpaperUri(defaultLightTheme.wallpaper.colors, 3)
+    const uri = getWallpaperUri(chatAppearances.wallpaper.light.wallpaper.colors, 3)
     expect(uri.startsWith('data:image/png;base64,iVBORw0KGgo')).toBe(true)
-    expect(getWallpaperUri(defaultLightTheme.wallpaper.colors, 11)).toBe(uri)
+    expect(getWallpaperUri(chatAppearances.wallpaper.light.wallpaper.colors, 11)).toBe(uri)
   })
 
   it('steps once per new outgoing message', async () => {

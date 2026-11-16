@@ -1,6 +1,8 @@
 import React, { useCallback } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
+
 import { Chat, IMessage, Send, useStreamingMessages, useTheme } from '@kesha-antonov/react-native-chat'
+import { useAppearance } from '@/components/appearance'
 
 const USER = { _id: 1, name: 'You' }
 const BOT = { _id: 2, name: 'Assistant' }
@@ -60,6 +62,7 @@ function StopButton ({ onPress }: { onPress: () => void }) {
 }
 
 export default function AIBotExample () {
+  const appearance = useAppearance()
   const {
     messages,
     append,
@@ -100,6 +103,7 @@ export default function AIBotExample () {
 
   return (
     <Chat<IMessage>
+      appearance={appearance}
       messages={messages}
       onSend={onSend}
       user={USER}

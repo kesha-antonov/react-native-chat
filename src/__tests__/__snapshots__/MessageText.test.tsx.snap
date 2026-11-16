@@ -22,7 +22,7 @@ exports[`should render <MessageText /> and compare with snapshot 1`] = `
           "lineHeight": 19,
         },
         {
-          "color": "#000000",
+          "color": "#111418",
         },
         undefined,
         undefined,

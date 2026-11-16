@@ -50,7 +50,7 @@ exports[`should render <LoadEarlierMessages /> and compare with snapshot 1`] = `
               "justifyContent": "center",
             },
             {
-              "backgroundColor": "rgba(0, 0, 0, 0.18)",
+              "backgroundColor": "rgba(255, 255, 255, 0.92)",
               "borderRadius": 11,
               "paddingHorizontal": 12,
               "paddingVertical": 5,
@@ -72,7 +72,7 @@ exports[`should render <LoadEarlierMessages /> and compare with snapshot 1`] = `
               [
                 {
                   "backgroundColor": "transparent",
-                  "color": "#FFFFFF",
+                  "color": "#5F6671",
                   "fontSize": 12,
                   "lineHeight": 13,
                 },

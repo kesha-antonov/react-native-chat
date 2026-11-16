@@ -20,6 +20,10 @@ export const createStyles = (theme: ChatTheme) => StyleSheet.create({
     justifyContent: 'center',
     zIndex: 2,
   },
+  // The mic, camera and send glyphs on the circle.
+  onAccent: {
+    color: theme.colors.onAccent,
+  },
   modeIcon: {
     position: 'absolute',
     alignItems: 'center',

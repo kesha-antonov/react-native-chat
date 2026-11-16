@@ -7,6 +7,7 @@ import { Href, useFocusEffect, useRouter } from 'expo-router'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { useAppearance } from '@/components/appearance'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Dialog, ME } from './data'
 import { formatSubscribers } from './format'
@@ -19,6 +20,7 @@ import { useChatListColors } from './theme'
  * edit, delete). Who is typing shows in the header, as a messenger does, not as a bubble in the list.
  */
 export default function ChatScreen ({ id }: { id: string }) {
+  const appearance = useAppearance()
   const dialog = useDialog(id)
   const messages = useMessages(id)
   const typingUser = useTyping(id)
@@ -77,6 +79,7 @@ export default function ChatScreen ({ id }: { id: string }) {
     <View style={[styles.container, { backgroundColor: background }]}>
       <ChatHeader dialog={dialog} typingUser={typingUser} typingAction={typingAction} />
       <Chat
+        appearance={appearance}
         messages={messages}
         onSend={onSend}
         mediaTransfer={mediaTransfer}
