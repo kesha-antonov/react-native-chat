@@ -94,5 +94,13 @@
     "react-native-enriched-markdown": {
       "built": true
     }
+  },
+  "resolutions": {
+    "glob@npm:^9.3.3": "^14.0.6",
+    "glob@npm:^13.0.0": "^14.0.6",
+    "minimatch@npm:^8.0.2": "^11.0.1",
+    "minimatch@npm:^10.2.2": "^11.0.1",
+    "minimatch@npm:^10.2.4": "^11.0.1",
+    "minimatch@npm:^10.2.6": "^11.0.1"
   }
 }
