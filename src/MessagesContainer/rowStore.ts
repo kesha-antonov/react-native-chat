@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useSyncExternalStore } from 'react'
-import isEqual from 'lodash.isequal'
-
+import { deepEqual } from '../deepEqual'
 import { warning } from '../logging'
 import { IMessage } from '../Models'
 import { isSameDay, isSameGroup } from '../utils'
@@ -84,7 +83,7 @@ export class MessageRowStore<TMessage extends IMessage = IMessage> {
         stored.nextSignature === nextSignature &&
         // A store that rebuilds every message object on each update (a server snapshot)
         // still only re-renders what changed.
-        (stored.entry.message === message || isEqual(stored.entry.message, message))
+        (stored.entry.message === message || deepEqual(stored.entry.message, message))
       )
         continue
 

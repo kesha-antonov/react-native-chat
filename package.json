@@ -70,9 +70,7 @@
   },
   "dependencies": {
     "@legendapp/list": "^3.7.1",
-    "@types/lodash.isequal": "^4.5.8",
     "dayjs": "^1.11.23",
-    "lodash.isequal": "^4.5.0",
     "react-native-zoom-reanimated": "^1.6.0"
   },
   "devDependencies": {
@@ -226,6 +224,8 @@
     "minimatch@npm:^9.0.4": "^11.0.1",
     "minimatch@npm:^10.2.2": "^11.0.1",
     "minimatch@npm:^10.2.4": "^11.0.1",
-    "minimatch@npm:^10.2.6": "^11.0.1"
+    "minimatch@npm:^10.2.6": "^11.0.1",
+    "glob@npm:^7.1.4": "^14.0.6",
+    "glob@npm:^7.2.0": "^14.0.6"
   }
 }

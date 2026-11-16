@@ -6,6 +6,7 @@ import { Bubble, IMessage, findFirstUrl } from '..'
 import { stripMarkdown } from '../ChatList/utils'
 import { BasicMarkdown } from '../components/BasicMarkdown'
 import { MediaCard } from '../components/MediaCard'
+import { deepEqual } from '../deepEqual'
 import { LinkParser } from '../linkParser'
 import { displayFileName } from '../MessageFile'
 import { MessageRowStore } from '../MessagesContainer/rowStore'
@@ -222,5 +223,33 @@ describe('file names', () => {
     expect(displayFileName('invoice\u202Efdp.exe')).toBe('invoicefdp.exe')
     expect(displayFileName('report.pdf')).toBe('report.pdf')
     expect(displayFileName(undefined)).toBe('')
+  })
+})
+
+describe('comparing messages', () => {
+  it('matches equal data and tells different data apart', () => {
+    const at = new Date(2024, 0, 1)
+    expect(deepEqual({ a: [1, { b: 'x' }], d: at, n: Number.NaN }, { a: [1, { b: 'x' }], d: new Date(at.getTime()), n: Number.NaN })).toBe(true)
+    expect(deepEqual({ a: [1, 2] }, { a: [1, 3] })).toBe(false)
+    expect(deepEqual({ a: 1 }, { a: 1, b: undefined })).toBe(false)
+    expect(deepEqual([1], { 0: 1 })).toBe(false)
+    const fn = () => null
+    expect(deepEqual({ avatar: fn }, { avatar: fn })).toBe(true)
+    expect(deepEqual({ avatar: fn }, { avatar: () => null })).toBe(false)
+  })
+
+  it('survives data nested far too deep, and cycles', () => {
+    const nest = () => {
+      let value: Record<string, unknown> = {}
+      for (let i = 0; i < 100_000; i++)
+        value = { value }
+      return value
+    }
+    expect(() => deepEqual(nest(), nest())).not.toThrow()
+    const a: Record<string, unknown> = { x: 1 }
+    a.self = a
+    const b: Record<string, unknown> = { x: 1 }
+    b.self = b
+    expect(() => deepEqual(a, b)).not.toThrow()
   })
 })

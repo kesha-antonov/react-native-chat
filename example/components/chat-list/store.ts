@@ -3,6 +3,11 @@ import { Chat, ChatListItem, IMessage, TypingAction, User } from '@kesha-antonov
 
 import { BOT_SUGGESTIONS, botAnswer, CANNED_REPLIES, Dialog, DIALOGS, INITIAL_MESSAGES, ME, SAMPLE_AUDIO } from './data'
 
+// Chat ids come from deep links (`example:///chats/<id>`), so a lookup reads only the store's own
+// entries: `dialogs['constructor']` would otherwise be Object's constructor, not undefined.
+const own = <T>(record: Record<string, T>, id: string): T | undefined =>
+  Object.prototype.hasOwnProperty.call(record, id) ? record[id] : undefined
+
 /**
  * The demo's whole "backend": dialogs, their messages and who is typing, in one module with
  * listeners. Screens read slices through `useSyncExternalStore`; nothing leaves the device.
@@ -46,7 +51,10 @@ function useStore<T> (selector: (s: State) => T): T {
 }
 
 function patchDialog (id: string, patch: Partial<Dialog>) {
-  setState(s => ({ ...s, dialogs: { ...s.dialogs, [id]: { ...s.dialogs[id], ...patch } } }))
+  const dialog = own(state.dialogs, id)
+  if (!dialog)
+    return
+  setState(s => ({ ...s, dialogs: { ...s.dialogs, [id]: { ...dialog, ...own(s.dialogs, id), ...patch } } }))
 }
 
 /** What the library's `ChatList` draws for a dialog, with the dialog itself alongside. */
@@ -86,7 +94,7 @@ function toItem (s: State, dialog: Dialog): DialogItem {
 
 /** The dialogs as list items, pinned ones first in pin order (the list sorts the rest itself). */
 function toItems (s: State): DialogItem[] {
-  const pinned = s.pinOrder.map(id => s.dialogs[id]).filter(Boolean)
+  const pinned = s.pinOrder.map(id => own(s.dialogs, id)).filter((dialog): dialog is Dialog => !!dialog)
   const rest = Object.values(s.dialogs).filter(dialog => !pinned.includes(dialog))
   return [...pinned, ...rest].map(dialog => toItem(s, dialog))
 }
@@ -100,16 +108,16 @@ function getItems (s: State) {
 }
 
 export const useChatListItems = () => useStore(getItems)
-export const useDialog = (id: string): Dialog | undefined => useStore(s => s.dialogs[id])
-export const useMessages = (id: string): IMessage[] => useStore(s => s.messages[id] ?? EMPTY)
-export const useLastMessage = (id: string): IMessage | undefined => useStore(s => s.messages[id]?.[0])
-export const useTyping = (id: string): User | undefined => useStore(s => s.typing[id])
-export const useTypingAction = (id: string): TypingAction | undefined => useStore(s => s.typingAction[id])
+export const useDialog = (id: string): Dialog | undefined => useStore(s => own(s.dialogs, id))
+export const useMessages = (id: string): IMessage[] => useStore(s => own(s.messages, id) ?? EMPTY)
+export const useLastMessage = (id: string): IMessage | undefined => useStore(s => own(s.messages, id)?.[0])
+export const useTyping = (id: string): User | undefined => useStore(s => own(s.typing, id))
+export const useTypingAction = (id: string): TypingAction | undefined => useStore(s => own(s.typingAction, id))
 
 const EMPTY: IMessage[] = []
 
 function setMessages (id: string, update: (messages: IMessage[]) => IMessage[]) {
-  setState(s => ({ ...s, messages: { ...s.messages, [id]: update(s.messages[id] ?? EMPTY) } }))
+  setState(s => ({ ...s, messages: { ...s.messages, [id]: update(own(s.messages, id) ?? EMPTY) } }))
 }
 
 function setTyping (id: string, user: User | undefined, action?: TypingAction) {
@@ -119,8 +127,8 @@ function setTyping (id: string, user: User | undefined, action?: TypingAction) {
 /** Adds an incoming message; it counts as unread unless the chat is open. */
 function receive (id: string, message: IMessage) {
   setMessages(id, messages => Chat.append(messages, [message]))
-  const dialog = state.dialogs[id]
-  if (state.openChatId !== id)
+  const dialog = own(state.dialogs, id)
+  if (dialog && state.openChatId !== id)
     patchDialog(id, { unreadCount: dialog.unreadCount + 1, isArchived: dialog.isMuted ? dialog.isArchived : false })
 }
 
@@ -212,10 +220,12 @@ function simulateReply (id: string, from: User, text: string, typingAfter = 900,
 }
 
 export const chatStore = {
-  getDialog: (id: string) => state.dialogs[id],
+  getDialog: (id: string) => own(state.dialogs, id),
 
   send (id: string, newMessages: IMessage[]) {
-    const dialog = state.dialogs[id]
+    const dialog = own(state.dialogs, id)
+    if (!dialog)
+      return
     // A new message shows the sending clock until the server has it; media uploads first, with
     // the progress ring on it, and only then gets its check.
     const isMedia = (m: IMessage) => !!(m.image || m.video || m.file || m.audio)
@@ -280,7 +290,7 @@ export const chatStore = {
   },
 
   togglePin (id: string) {
-    const isPinned = !state.dialogs[id].isPinned
+    const isPinned = !own(state.dialogs, id)?.isPinned
     setState(s => ({
       ...s,
       pinOrder: isPinned ? [id, ...s.pinOrder] : s.pinOrder.filter(other => other !== id),
@@ -294,13 +304,13 @@ export const chatStore = {
   },
 
   toggleMute (id: string) {
-    patchDialog(id, { isMuted: !state.dialogs[id].isMuted })
+    patchDialog(id, { isMuted: !own(state.dialogs, id)?.isMuted })
   },
 
   toggleArchive (id: string) {
-    const isArchived = !state.dialogs[id].isArchived
+    const isArchived = !own(state.dialogs, id)?.isArchived
     // Archiving unpins.
-    if (isArchived && state.dialogs[id].isPinned)
+    if (isArchived && own(state.dialogs, id)?.isPinned)
       chatStore.togglePin(id)
     patchDialog(id, { isArchived })
   },
@@ -308,7 +318,7 @@ export const chatStore = {
   /** An unsent message left in the composer, shown in the list as "Draft:". */
   setDraft (id: string, text: string) {
     const draft = text.trim() ? text : undefined
-    if (state.dialogs[id] && state.dialogs[id].draft !== draft)
+    if (own(state.dialogs, id) && own(state.dialogs, id)?.draft !== draft)
       patchDialog(id, { draft })
   },
 
@@ -327,12 +337,12 @@ export const chatStore = {
   /** Opens (or starts) a one-to-one chat with someone, for the new-message screen. */
   ensureDialog (user: User): string {
     const id = String(user._id)
-    if (!state.dialogs[id])
+    if (!own(state.dialogs, id))
       setState(s => ({
         ...s,
         dialogs: { ...s.dialogs, [id]: { id, title: user.name ?? id, kind: 'user', peer: user, avatar: typeof user.avatar === 'string' ? user.avatar : undefined, lastSeen: 'last seen recently', unreadCount: 0 } },
       }))
-    else if (state.dialogs[id].isArchived)
+    else if (own(state.dialogs, id)?.isArchived)
       patchDialog(id, { isArchived: false })
     return id
   },

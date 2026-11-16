@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Fixes
+- A message nested thousands of levels deep no longer overflows the stack when the list compares it with its previous version
+
+### 📦 Dependencies
+- `lodash.isequal`, deprecated and unmaintained, is no longer a dependency; the list compares messages itself. Its types package, listed under `dependencies` by mistake, is gone too
+
+### 📲 Example app
+- A deep link to a chat or profile id like `constructor` or `__proto__` no longer reaches into JavaScript's built-in objects, and Android backups of the app's data are off
+
 ## [7.0.1] - 2026-11-17
 
 ### 🐛 Fixes

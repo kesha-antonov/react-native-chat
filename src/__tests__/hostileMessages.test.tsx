@@ -49,6 +49,7 @@ const HOSTILE: Array<[string, Record<string, unknown>]> = [
   ['_id as an object', { _id: { a: 1 } }],
   ['_id shared with the next message', { _id: 'ok' }],
   ['control and bidi characters', { text: 'a‮b\u0000c﻿d‏e' }],
+  ['nested 100000 levels deep', { extra: Array.from({ length: 100_000 }).reduce<unknown>(value => ({ value }), {}) }],
   ['lone surrogates', { text: '𐀀\uD800x\uDFFF' }],
 ]
 
