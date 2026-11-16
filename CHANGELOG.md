@@ -9,6 +9,7 @@
 - `lodash.isequal`, deprecated and unmaintained, is no longer a dependency; the list compares messages itself. Its types package, listed under `dependencies` by mistake, is gone too
 
 ### 📲 Example app
+- A chat profile's Links tab lists and opens a shared link only when its scheme is safe, as the library does
 - A deep link to a chat or profile id like `constructor` or `__proto__` no longer reaches into JavaScript's built-in objects, and Android backups of the app's data are off
 
 ## [7.0.1] - 2026-11-17

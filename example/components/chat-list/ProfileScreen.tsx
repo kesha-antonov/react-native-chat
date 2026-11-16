@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
-import { ChatListAvatar, IMessage, User } from '@kesha-antonov/react-native-chat'
+import { ChatListAvatar, IMessage, isSafeLinkUrl, User } from '@kesha-antonov/react-native-chat'
 import { Href, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -38,10 +38,13 @@ export default function ProfileScreen ({ id }: { id: string }) {
         media.push(message)
       if (message.file)
         files.push(message)
-      if (message.linkPreview?.url)
-        links.push({ id: String(message._id), url: message.linkPreview.url, title: message.linkPreview.title })
-      else
+      // The sender chose a preview's URL: list only one that is safe to open.
+      if (message.linkPreview?.url) {
+        if (isSafeLinkUrl(message.linkPreview.url))
+          links.push({ id: String(message._id), url: message.linkPreview.url, title: message.linkPreview.title })
+      } else {
         message.text?.match(URL_PATTERN)?.forEach((url, index) => links.push({ id: `${String(message._id)}-${index}`, url }))
+      }
     }
     return { media, files, links }
   }, [messages])
@@ -172,7 +175,7 @@ export default function ProfileScreen ({ id }: { id: string }) {
         {tab === 'links' && (
           shared.links.length > 0
             ? shared.links.map(link => (
-              <Pressable key={link.id} onPress={() => Linking.openURL(link.url)} style={styles.listRow} accessibilityRole='link'>
+              <Pressable key={link.id} onPress={() => isSafeLinkUrl(link.url) && Linking.openURL(link.url)} style={styles.listRow} accessibilityRole='link'>
                 <View style={[styles.fileIcon, { backgroundColor: colors.pressed }]}>
                   <MaterialCommunityIcons name='link-variant' size={22} color={colors.subtitleActive} />
                 </View>
