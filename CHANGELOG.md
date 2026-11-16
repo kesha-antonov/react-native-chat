@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [7.0.0] - 2026-11-17
 
 ### 💥 Breaking
 - The default look is the new `plain` appearance: a neutral background, white incoming and solid blue outgoing bubbles, no wallpaper, gradient or tails. `appearance='wallpaper'` brings back the previous look, and `defaultLightTheme` / `defaultDarkTheme` are now the `plain` pair
