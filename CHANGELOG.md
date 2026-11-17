@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [7.0.2] - 2026-11-17
 
 ### 🐛 Fixes
 - A message nested thousands of levels deep no longer overflows the stack when the list compares it with its previous version
