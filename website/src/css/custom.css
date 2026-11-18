@@ -38,3 +38,9 @@
 .chat-showcase[data-live] > p {
   display: none;
 }
+
+/* Clips that stand in for the README's GIFs shrink with the page, like images. */
+.markdown video {
+  max-width: 100%;
+  height: auto;
+}

@@ -4,9 +4,9 @@ import { useColorMode } from '@docusaurus/theme-common'
 import ChatShowcase from './ChatShowcase'
 
 /**
- * The README carries the showcase as a GIF; sync-docs.mjs wraps it in a
- * `.chat-showcase` block. On the site the live scene takes the GIF's place,
- * so it stays sharp at any size and follows the site's color mode.
+ * The README carries the showcase as a GIF; sync-docs.mjs turns it into a
+ * clip inside a `.chat-showcase` block. On the site the live scene takes its
+ * place, so it stays sharp at any size and follows the site's color mode.
  */
 export default function ChatShowcaseSlot () {
   const { colorMode } = useColorMode()
@@ -18,7 +18,13 @@ export default function ChatShowcaseSlot () {
       return
     el.setAttribute('data-live', '')
     setSlot(el)
-    return () => el.removeAttribute('data-live')
+    // The clip the scene replaces is hidden from here on, so it stops playing
+    const clip = el.querySelector('video')
+    clip?.pause()
+    return () => {
+      el.removeAttribute('data-live')
+      clip?.play().catch(() => {})
+    }
   }, [])
 
   if (!slot)

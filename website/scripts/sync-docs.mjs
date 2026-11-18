@@ -29,9 +29,45 @@ const TAG = `v${JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).ver
  */
 const key = (text) => text.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-/** The demo clip at the top of the README, reused as the site's opening image. */
+// Where the site is served from: raw HTML in the pages is not run through
+// Docusaurus, so links to files in static/ carry the base path themselves.
+const BASE = '/react-native-chat'
+
+/**
+ * The README's GIFs weigh 5 to 8 MB each, so the site plays mp4 copies from
+ * static/media instead: file name to the clip's pixel size. After re-recording
+ * a GIF, encode it again:
+ *
+ *   ffmpeg -i media/NAME.gif -an -c:v libx264 -preset veryslow -crf 26 \
+ *     -pix_fmt yuv420p -movflags +faststart website/static/media/NAME.mp4
+ */
+const CLIPS = {
+  showcase: [360, 808],
+  'features-light': [1140, 900],
+  'features-dark': [1140, 900],
+}
+
+/**
+ * A muted looping clip that stands where a GIF would. `sources` are clip names,
+ * each optionally with the media query it is for; the last one is the default.
+ */
+function clip (sources, width, label, poster) {
+  const [w, h] = CLIPS[sources[sources.length - 1].name]
+  const attrs = [
+    'autoplay muted loop playsinline',
+    `width="${width}" height="${Math.round(width * h / w)}"`,
+    poster ? `poster="${BASE}/media/${poster}"` : null,
+    `aria-label="${label}"`,
+  ].filter(Boolean).join(' ')
+  const tags = sources.map(({ name, media }) =>
+    `    <source${media ? ` media="${media}"` : ''} src="${BASE}/media/${name}.mp4" type="video/mp4" />`
+  )
+  return `<video ${attrs}>\n${tags.join('\n')}\n  </video>`
+}
+
+/** The demo clip at the top of the README, reused as the site's opening clip. */
 const SHOWCASE = `<p align="center">
-  <img width="300" src="https://raw.githubusercontent.com/kesha-antonov/react-native-chat/${TAG}/media/showcase.gif" alt="Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive" />
+  ${clip([{ name: 'showcase' }], 300, 'Chat list, photo viewer, reactions, swipe-to-reply, emoji keyboard, photo attachments, a voice note, a streamed AI reply and swipe-to-archive', 'showcase.jpg')}
 </p>`
 
 /** Pages, in sidebar order. `from` is either README sections or a whole file. */
@@ -40,12 +76,15 @@ const PAGES = [
     id: "intro",
     slug: "/",
     title: "React Native Chat",
+    // What search results show; the page heading stays the short title.
+    headTitle: "React Native Chat UI - Gifted Chat alternative, AI streaming",
     sidebarLabel: "Introduction",
     description:
       "A complete chat UI for React Native and Web with streaming AI messages, reactions and replies. The maintained successor to react-native-gifted-chat.",
     keywords: ["react native chat ui", "gifted chat alternative", "streaming ai chat react native"],
-    // The README's hero image sits above its first section, so the page adds it itself.
-    lead: SHOWCASE,
+    // The README's opening lines and hero image sit above its first section,
+    // so the page adds them itself.
+    lead: () => `${introText()}\n\n${SHOWCASE}`,
     sections: ["✨ Features", "Quick start"],
   },
   {
@@ -53,7 +92,7 @@ const PAGES = [
     title: "What's new vs Gifted Chat",
     sidebarLabel: "What's new",
     description:
-      "Everything this library adds on top of react-native-gifted-chat.",
+      "What this library adds on top of react-native-gifted-chat: a light and dark theme system, streaming AI messages, emoji reactions, voice notes and more.",
     keywords: ["gifted chat successor", "react native chat reactions"],
     sections: ["🆕 What's new vs react-native-gifted-chat"],
   },
@@ -62,7 +101,7 @@ const PAGES = [
     title: "Installation",
     sidebarLabel: "Installation",
     description:
-      "Requirements and install steps, including the peer dependencies.",
+      "Requirements (React Native 0.82+, React 19, Expo SDK 55+) and install steps for Expo and bare React Native projects, plus the optional peer packages.",
     keywords: ["react-native-chat install"],
     sections: ["📋 Requirements", "📦 Installation"],
   },
@@ -80,7 +119,7 @@ const PAGES = [
     title: "Usage and data structure",
     sidebarLabel: "Usage",
     description:
-      "Render the chat, and the shape of the message objects it expects.",
+      "A basic example of rendering the Chat component, and the structure of the message, system message and quick reply objects it expects (IMessage).",
     keywords: ["IMessage react native", "react native chat example"],
     sections: ["🚀 Usage", "📊 Data Structure"],
   },
@@ -89,7 +128,7 @@ const PAGES = [
     title: "Props reference",
     sidebarLabel: "Props",
     description:
-      "Every prop on the Chat component.",
+      "Every prop of the Chat component by group: core configuration, keyboard and layout, composer, actions, messages, bubbles, avatars, dates, quick replies.",
     keywords: ["react native chat props"],
     sections: ["📖 Props Reference"],
   },
@@ -98,16 +137,63 @@ const PAGES = [
     title: "Guides",
     sidebarLabel: "Guides",
     description:
-      "Streaming AI replies, reactions, replies, custom bubbles and more.",
-    keywords: ["streaming chat react native", "chat reactions react native"],
+      "Guides for React Native Chat: chat list, swipe to reply, streaming AI messages, emoji reactions, link parsing, long-press actions, theming and i18n.",
+    keywords: ["react native chat guides", "react native chat ui tutorial"],
     sections: ["🧩 Guides"],
+  },
+  // The largest guides have pages of their own; the Guides page keeps their
+  // headings, each with a link to its page.
+  {
+    id: "chat-list",
+    title: "Chat list",
+    sidebarLabel: "Chat list",
+    description:
+      "ChatList renders the list of chats: search, a selection bar, an Archived Chats folder, swipe to archive, draggable pinned chats and unread counters.",
+    keywords: ["react native chat list", "react native conversation list"],
+    guide: "Chat List",
+  },
+  {
+    id: "reply-to-messages",
+    title: "Reply to messages",
+    sidebarLabel: "Reply to messages",
+    description:
+      "Swipe on a message to reply to it: a reply preview in the input toolbar and the replied message above the new bubble. Props, structure and examples.",
+    keywords: ["react native swipe to reply", "react native chat reply"],
+    guide: "Reply to Messages",
+  },
+  {
+    id: "streaming-ai-messages",
+    title: "Streaming AI messages",
+    sidebarLabel: "Streaming AI messages",
+    description:
+      "Render AI assistant replies token by token in React Native: useStreamingMessages, a blinking caret, a Stop control and markdown rendering for replies.",
+    keywords: ["streaming chat react native", "react native ai chat ui", "react native streaming markdown"],
+    guide: "Streaming (AI) Messages",
+  },
+  {
+    id: "emoji-reactions",
+    title: "Emoji reactions",
+    sidebarLabel: "Emoji reactions",
+    description:
+      "Long-press a message to open a quick emoji picker; reactions render as pills in the bubble and toggle on tap. Wiring up the toggle and the prop list.",
+    keywords: ["chat reactions react native", "react native emoji reactions"],
+    guide: "Emoji Reactions",
+  },
+  {
+    id: "theming",
+    title: "Theming and dark mode",
+    sidebarLabel: "Theming and dark mode",
+    description:
+      "Theme the chat with the appearance prop and the theme and darkTheme tokens: four built-in appearances, token groups and switching at runtime.",
+    keywords: ["react native chat dark mode", "react native chat theme"],
+    guide: "Theming & Dark Mode",
   },
   {
     id: "platform-notes",
     title: "Platform notes",
     sidebarLabel: "Platform notes",
     description:
-      "iOS, Android and Web differences worth knowing.",
+      "Platform notes for React Native Chat: Android keyboard configuration, running on the web with react-native-web, and use inside a React Strict DOM tree.",
     keywords: ["react native chat web"],
     sections: ["📱 Platform Notes"],
   },
@@ -116,7 +202,7 @@ const PAGES = [
     title: "Security",
     sidebarLabel: "Security",
     description:
-      "How the chat handles links, malformed messages and long text from other people.",
+      "How the chat treats message content as untrusted: links open only with safe schemes, malformed messages are left out, long text cannot freeze the list.",
     keywords: ["react native chat security"],
     sections: ["🔒 Security"],
   },
@@ -125,7 +211,7 @@ const PAGES = [
     title: "Performance",
     sidebarLabel: "Performance",
     description:
-      "Keeping long message lists smooth.",
+      "How the chat keeps long message lists smooth: a row re-renders only when its own message changes. What to memoize and how to tune list virtualization.",
     keywords: ["react native chat performance"],
     sections: ["⚡ Performance"],
   },
@@ -134,7 +220,7 @@ const PAGES = [
     title: "Testing",
     sidebarLabel: "Testing",
     description:
-      "Testing a chat UI.",
+      "Testing a screen built with React Native Chat: the exported TEST_ID constants, and how to trigger the onLayout event that sets the chat container height.",
     keywords: ["react native chat testing"],
     sections: ["🧪 Testing"],
   },
@@ -143,7 +229,7 @@ const PAGES = [
     title: "Example app",
     sidebarLabel: "Example app",
     description:
-      "Run the example app, or try it in the browser on Expo Snack.",
+      "Run the React Native Chat example app on iOS, Android or the web: a small messenger with a chat list built on the defaults. Or try it on Expo Snack.",
     keywords: ["react native chat example app"],
     sections: ["📦 Example App"],
   },
@@ -152,7 +238,7 @@ const PAGES = [
     title: "Troubleshooting",
     sidebarLabel: "Troubleshooting",
     description:
-      "Common problems and their fixes.",
+      "Fixes for common problems: Cannot read property 'Chat' of undefined, a message list blurred on iOS 26, a TextInput hidden on Android, and short how-tos.",
     keywords: ["react native chat troubleshooting"],
     sections: ["❓ Troubleshooting"],
   },
@@ -161,7 +247,7 @@ const PAGES = [
     title: "Contributing",
     sidebarLabel: "Contributing",
     description:
-      "How to propose a change.",
+      "How to contribute to React Native Chat: fork, branch and open a pull request. The commands for the development setup, the tests, linting and the build.",
     keywords: ["contributing"],
     sections: ["🤝 Contributing"],
   },
@@ -192,6 +278,47 @@ function splitSections (markdown) {
   }
 
   return sections
+}
+
+const GUIDES = "🧩 Guides"
+
+/**
+ * Splits a section into its `###` guides, ignoring headings inside fenced code
+ * blocks. Lines above the first one are kept under the `null` key.
+ */
+function splitGuides (section) {
+  const guides = new Map([[null, []]])
+  let current = guides.get(null)
+  let fenced = false
+
+  for (const line of section.lines) {
+    if (/^\s*(```|~~~)/.test(line)) fenced = !fenced
+
+    const heading = !fenced && /^### (.+?)\s*$/.exec(line)
+    if (heading) {
+      current = []
+      guides.set(heading[1], current)
+      continue
+    }
+    current.push(line)
+  }
+
+  return guides
+}
+
+/**
+ * The opening paragraph of the landing page, in the README's own words: what
+ * the library is, what it replaces, and the install command from Quick start.
+ */
+function introText () {
+  const install = /```bash\n[\s\S]*?```/.exec(readmeSections.get('Quick start').lines.join('\n'))
+  if (!install) throw new Error('README "Quick start" has no install command. Update website/scripts/sync-docs.mjs.')
+  const text = [
+    'React Native Chat is a chat UI for React Native and Web, with streaming AI messages, emoji reactions and swipe to reply.',
+    'It is a maintained alternative to Gifted Chat: a drop-in replacement for `react-native-gifted-chat` with the same `IMessage`, the same props and a few renamed exports.',
+    'Coming from it? [Migrate in one command with the codemod](./migration.md).',
+  ].join(' ')
+  return `${text}\n\n${install[0]}`
 }
 
 /** Collects every heading in a chunk of markdown, outside of code fences. */
@@ -242,21 +369,39 @@ const readme = read('README.md')
 const readmeSections = splitSections(readme)
 const anchorToPage = new Map()
 
+const guides = splitGuides(readmeSections.get(GUIDES))
+const guidePages = new Map(PAGES.filter((page) => page.guide).map((page) => [page.guide, page]))
+
+/** The body of a `##` section; a guide with its own page is left as a link to it. */
+function sectionBody (title) {
+  const section = readmeSections.get(title)
+  if (!section) throw new Error(`README section not found: "${title}". Update website/scripts/sync-docs.mjs.`)
+  if (title !== GUIDES) return `## ${section.title}\n${section.lines.join('\n')}`
+
+  const parts = [...guides].map(([guide, lines]) => {
+    if (guide === null) return lines.join('\n')
+    const page = guidePages.get(guide)
+    if (!page) return `### ${guide}\n${lines.join('\n')}`
+    return `### ${guide}\n\n${page.description} Read the guide: [${page.title}](./${page.id}.md).\n`
+  })
+  return `## ${section.title}\n${parts.join('\n')}`
+}
+
 for (const page of PAGES) {
-  const bodies = page.sections
-    ? page.sections.map((title) => {
-        const section = readmeSections.get(title)
-        if (!section) throw new Error(`README section not found: "${title}". Update website/scripts/sync-docs.mjs.`)
-        return `## ${section.title}\n${section.lines.join('\n')}`
-      })
-    : [read(page.file)]
+  if (page.guide) {
+    const lines = guides.get(page.guide)
+    if (!lines) throw new Error(`README guide not found: "${page.guide}". Update website/scripts/sync-docs.mjs.`)
+    page.raw = `### ${page.guide}\n${lines.join('\n')}`
+  } else {
+    page.raw = page.sections ? page.sections.map(sectionBody).join('\n\n') : read(page.file)
+  }
 
-  page.raw = bodies.join('\n\n')
-
-  // When a page is built from a single README section, that section's own
-  // heading just repeats the page title, so it is dropped and its subheadings
-  // are promoted one level. Links that pointed at it become links to the page.
-  page.droppedHeading = page.sections?.length === 1 ? key(page.sections[0]) : null
+  // When a page is built from a single README section or guide, that heading
+  // just repeats the page title, so it is dropped and its subheadings are
+  // promoted. Links that pointed at it become links to the page.
+  page.droppedHeading = page.guide
+    ? key(page.guide)
+    : page.sections?.length === 1 ? key(page.sections[0]) : null
 
   for (const heading of headingsIn(page.raw)) {
     if (!anchorToPage.has(key(heading))) anchorToPage.set(key(heading), page.id)
@@ -321,12 +466,45 @@ function rewriteLinks (markdown, pageId) {
 }
 
 /**
+ * Adds the height to the README's screenshots, which only state a width, so
+ * the page does not jump while they load. The size is read from the PNG file.
+ */
+function sizeScreenshots (markdown) {
+  return markdown.replace(/<img width="(\d+)" src="([^"]*\/media\/([\w-]+\.png))"/g, (match, width, src, file) => {
+    const png = readFileSync(join(ROOT, 'media', file))
+    const height = Math.round(width * png.readUInt32BE(20) / png.readUInt32BE(16))
+    return `<img width="${width}" height="${height}" src="${src}"`
+  })
+}
+
+/**
  * The README shows the feature showcase as a GIF between `chat-showcase`
  * comments. On the site that block becomes a `.chat-showcase` slot: the live
  * scene (src/components/ChatShowcase) mounts into it and hides the GIF, which
  * stays inside as the fallback before scripts run. The block is kept free of
  * blank lines so CommonMark reads it as one HTML block.
  */
+/**
+ * Swaps the README's GIFs for the mp4 clips in static/media. A light/dark
+ * `<picture>` pair becomes one clip with a source per color scheme.
+ */
+function gifsToClips (markdown) {
+  const gif = String.raw`[^"]*/media/([\w-]+)\.gif`
+  const pair = new RegExp(
+    String.raw`<picture>\s*<source media="([^"]+)" srcset="${gif}" />\s*<img width="(\d+)" src="${gif}" alt="([^"]*)" />\s*</picture>`,
+    'g'
+  )
+  const single = new RegExp(String.raw`<img width="(\d+)" src="${gif}" alt="([^"]*)" />`, 'g')
+
+  return markdown
+    .replace(pair, (match, media, themed, width, fallback, alt) =>
+      CLIPS[themed] && CLIPS[fallback] ? clip([{ name: themed, media }, { name: fallback }], Number(width), alt) : match
+    )
+    .replace(single, (match, width, name, alt) =>
+      CLIPS[name] ? clip([{ name }], Number(width), alt) : match
+    )
+}
+
 function liveShowcase (markdown) {
   return markdown.replace(
     /<!-- chat-showcase:start -->\n([\s\S]*?)\n<!-- chat-showcase:end -->/g,
@@ -342,6 +520,8 @@ function frontmatter (page, index) {
     `description: ${JSON.stringify(page.description)}`,
   ]
   if (page.slug) fields.push(`slug: ${JSON.stringify(page.slug)}`)
+  // Read by src/theme/DocItem/Metadata, which puts it in the page's <title>.
+  if (page.headTitle) fields.push(`head_title: ${JSON.stringify(page.headTitle)}`)
   if (page.keywords?.length) fields.push(`keywords: [${page.keywords.map((k) => JSON.stringify(k)).join(', ')}]`)
   return `---\n${fields.join('\n')}\n---\n`
 }
@@ -354,17 +534,21 @@ PAGES.forEach((page, index) => {
   // Standalone files lead with an `# H1` that the frontmatter title replaces.
   body = body.replace(/^#\s+.+?\n/, '')
 
-  // Same for a single README section: its `##` heading is the page title.
+  // Same for a single README section or guide: its heading is the page title.
   let depth = 0
   if (page.droppedHeading) {
-    body = body.replace(/^##\s+.+?\n/, '')
-    depth = 1
+    body = body.replace(/^###?\s+.+?\n/, '')
+    depth = page.guide ? 2 : 1
   }
+  // A guide that is one collapsed block in the README opens on its own page.
+  if (page.guide) body = body.replace(/^\s*<details>/, '<details open>')
 
   body = normaliseHeadings(body, depth)
   body = rewriteLinks(body, page.id)
+  body = gifsToClips(body)
+  body = sizeScreenshots(body)
   body = liveShowcase(body)
-  if (page.lead) body = `${page.lead}\n\n${body.trim()}`
+  if (page.lead) body = `${page.lead()}\n\n${body.trim()}`
 
   const source = page.file ?? 'README.md'
   const note = `<!-- Generated from ${source} by website/scripts/sync-docs.mjs - edit that file, not this one. -->\n`

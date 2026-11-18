@@ -1837,8 +1837,6 @@ Based on [FaridSafi/react-native-gifted-chat](https://github.com/FaridSafi/react
 
 **Maintainer:** [Kesha Antonov](https://github.com/kesha-antonov)
 
-I also build **[cryptoc](https://cryptoc-app.web.app/)** - a crypto portfolio app with home screen, lock screen and Watch widgets, no account and no exchange API keys.
-
 > I maintained the original project solo for 2 years before deciding to continue development in this repository. If you find this library useful, please consider [becoming a sponsor](https://github.com/sponsors/kesha-antonov) to support continued development. 💖
 
 ---
