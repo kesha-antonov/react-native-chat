@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.0.3] - 2026-11-18
+
+No changes to the library code. This release updates the README shown on npm.
+
+### 📝 Docs
+- README documentation links go straight to kesha-antonov.com
+- The package homepage on npm is the documentation site
+- The author line links to the author's site, and the app block is gone from the README
+
 ## [7.0.2] - 2026-11-17
 
 ### 🐛 Fixes
