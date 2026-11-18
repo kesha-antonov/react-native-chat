@@ -33,7 +33,7 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://kesha-antonov.com/react-native-chat/">📖 Documentation</a></strong> &nbsp;·&nbsp;
+  <strong><a href="https://kesha-antonov.com/react-native-chat">📖 Documentation</a></strong> &nbsp;·&nbsp;
   <a href="https://kesha-antonov.com/react-native-chat/installation">Installation</a> &nbsp;·&nbsp;
   <a href="https://kesha-antonov.com/react-native-chat/usage">Usage</a> &nbsp;·&nbsp;
   <a href="https://kesha-antonov.com/react-native-chat/props">Props</a> &nbsp;·&nbsp;
