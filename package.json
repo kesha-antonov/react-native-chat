@@ -37,7 +37,7 @@
     "url": "git+https://github.com/kesha-antonov/react-native-chat.git"
   },
   "license": "MIT",
-  "author": "Kesha Antonov <innokenty.longway@gmail.com> (https://kesha-antonov.com)",
+  "author": "Kesha Antonov <keshagoodvibes@gmail.com> (https://kesha-antonov.com)",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
