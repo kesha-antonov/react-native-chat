@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [7.1.0] - 2026-11-18
 
 ### 🐛 Fixes
 - The messages above the input stay above it while the keyboard opens and closes, scrolled up or at the newest message, with no jump or settle afterwards: the composer rides up with the keyboard and the list lifts its own content in step (`KeyboardChatScrollView`), instead of the whole chat being padded once the keyboard has moved ([#36](https://github.com/kesha-antonov/react-native-chat/issues/36))
