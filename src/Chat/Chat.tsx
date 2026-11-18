@@ -6,9 +6,12 @@ import React, {
   useState,
   RefObject,
 } from 'react'
-import { TextInput, View } from 'react-native'
+import { LayoutChangeEvent, TextInput, View } from 'react-native'
+import { useWindowDimensions } from 'react-native-keyboard-controller'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChatContext } from '../ChatContext'
 import { createComposerPanelsStore } from '../components/composerPanels'
+import { KeyboardLifted, KeyboardLiftContext, useKeyboardLift } from '../components/keyboardLift'
 import { MediaViewerHost } from '../components/mediaViewer/MediaViewerHost'
 import { TextHighlightContext } from '../components/textHighlight'
 import { TEST_ID } from '../Constant'
@@ -18,7 +21,6 @@ import { sanitizeMessages } from '../sanitizeMessage'
 import stylesCommon from '../styles'
 import { renderComponentOrElement } from '../utils'
 import { ChatBackground } from './ChatBackground'
-import { ChatKeyboardAvoidingView } from './ChatKeyboardAvoidingView'
 import { ChatMessageList } from './ChatMessageList'
 import { ChatProviders } from './ChatProviders'
 import { ChatSelectionBar } from './ChatSelectionBar'
@@ -173,6 +175,21 @@ export function Chat<TMessage extends IMessage = IMessage> (
 
   const isSelectionBarShown = isSelecting && renderSelectionBar !== null
 
+  // The keyboard reaches the chat less the space under it and the home indicator's inset, which
+  // the composer keeps as padding (see `keyboardLift`).
+  const insets = useSafeAreaInsets()
+  const { height: screenHeight } = useWindowDimensions()
+  const [chatHeight, setChatHeight] = useState(0)
+  const onWrapperLayout = (event: LayoutChangeEvent) => {
+    setChatHeight(event.nativeEvent.layout.height)
+    onInitialLayoutViewLayout(event)
+  }
+  // Where the chat starts in the window: measured, unless the app says (the old
+  // `keyboardAvoidingViewProps.keyboardVerticalOffset`).
+  const chatTop = props.keyboardAvoidingViewProps?.keyboardVerticalOffset ?? keyboardVerticalOffset
+  const spaceBelow = chatHeight > 0 ? Math.max(0, screenHeight - chatTop - chatHeight) : 0
+  const keyboardLift = useKeyboardLift(spaceBelow + (props.bottomInset ?? insets.bottom))
+
   const highlightText = props.highlightText
   const highlightTextStyle = props.highlightTextStyle
   const textHighlight = useMemo(
@@ -187,7 +204,7 @@ export function Chat<TMessage extends IMessage = IMessage> (
           testID={TEST_ID.WRAPPER}
           ref={keyboardOffsetRef}
           style={[stylesCommon.fill, styles.contentContainer, { backgroundColor: resolvedTheme.colors.background }]}
-          onLayout={onInitialLayoutViewLayout}
+          onLayout={onWrapperLayout}
         >
           <ChatBackground
             messages={messages}
@@ -196,10 +213,7 @@ export function Chat<TMessage extends IMessage = IMessage> (
             theme={resolvedTheme}
             renderWallpaper={renderWallpaper}
           />
-          <ChatKeyboardAvoidingView
-            keyboardVerticalOffset={keyboardVerticalOffset}
-            keyboardAvoidingViewProps={props.keyboardAvoidingViewProps}
-          >
+          <KeyboardLiftContext.Provider value={keyboardLift}>
             {/*
             collapsable={false}: `opacity` is the only paint prop this view ever
             carries, and it's conditional on `isReady` - a plain `{flex:1}` view is
@@ -240,32 +254,34 @@ export function Chat<TMessage extends IMessage = IMessage> (
                   isUsernameVisible={isUsernameVisible}
                   sendGreeting={sendGreeting}
                 />
-                {isSelectionBarShown && (
-                  <ChatSelectionBar<TMessage>
-                    store={selectionStore}
-                    messages={messages}
-                    canCopy={hasClipboard}
-                    onCopy={copySelection}
-                    onForward={forwardSelection}
-                    onDelete={deleteSelection}
-                    renderSelectionBar={renderSelectionBar}
-                  />
-                )}
-                {/*
+                <KeyboardLifted>
+                  {isSelectionBarShown && (
+                    <ChatSelectionBar<TMessage>
+                      store={selectionStore}
+                      messages={messages}
+                      canCopy={hasClipboard}
+                      onCopy={copySelection}
+                      onForward={forwardSelection}
+                      onDelete={deleteSelection}
+                      renderSelectionBar={renderSelectionBar}
+                    />
+                  )}
+                  {/*
                 The selection bar takes the composer's place, but the composer stays
                 mounted under it, out of layout: leaving selection used to rebuild the
                 whole composer (its recorder, panels and animations) from scratch.
                 collapsable={false} keeps this view's native node stable while its
                 `display` flips (see the note on TEST_ID.CONTENT above).
               */}
-                <View collapsable={false} style={isSelectionBarShown ? styles.composerAway : undefined}>
-                  {inputToolbarFragment}
-                </View>
+                  <View collapsable={false} style={isSelectionBarShown ? styles.composerAway : undefined}>
+                    {inputToolbarFragment}
+                  </View>
+                </KeyboardLifted>
                 <MediaViewerHost gallery={mediaGallery} />
               </ChatProviders>
             </View>
             {!isReady && renderComponentOrElement(renderLoading, {})}
-          </ChatKeyboardAvoidingView>
+          </KeyboardLiftContext.Provider>
         </View>
       </TextHighlightContext.Provider>
     </ChatContext.Provider>

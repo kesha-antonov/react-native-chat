@@ -139,3 +139,14 @@ jest.mock('@legendapp/list/reanimated', () => {
 
   return { AnimatedLegendList }
 })
+
+// The keyboard-aware list (a chat's list) is the same stand-in: Jest has no keyboard to lift it.
+jest.mock('@legendapp/list/keyboard', () => {
+  const React = require('react')
+  const { AnimatedLegendList } = require('@legendapp/list/reanimated')
+  const KeyboardAwareLegendList = React.forwardRef((props: Record<string, any>, ref: React.Ref<unknown>) => {
+    const { keyboardOffset: _keyboardOffset, keyboardLiftBehavior: _keyboardLiftBehavior, contentInsetEndAdjustment: _contentInsetEndAdjustment, freeze: _freeze, ...rest } = props
+    return React.createElement(AnimatedLegendList, { ...rest, ref })
+  })
+  return { KeyboardAwareLegendList }
+})

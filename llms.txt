@@ -259,8 +259,10 @@ Same props, same `IMessage`. Swap the package and rename: `GiftedChat` → `Chat
   grouping (sender, day, time apart); a row does not re-render when a neighbour's text or status
   changes.
 - **Setting `keyboardVerticalOffset` by hand.** Chat measures its own position on screen; a
-  manual value replaces the measured one and usually leaves the toolbar floating. Pass one only
-  to add deliberate extra space.
+  manual value (`keyboardAvoidingViewProps.keyboardVerticalOffset`, the only part of that
+  deprecated prop still read) replaces the measured one and usually leaves the toolbar floating.
+- **Wrapping Chat in a `KeyboardAvoidingView`.** Chat lifts the composer and the list itself as
+  the keyboard moves; a padding or resizing view around it lifts them twice.
 - **Nesting a second `GestureHandlerRootView`.** If the app already mounts one (directly or via
   a bottom-sheet library), set `enableGestureHandlerRootView={false}` - it cannot be
   auto-detected. An existing `KeyboardProvider` *is* detected and reused automatically.

@@ -1,11 +1,24 @@
 import React from 'react'
-import { View } from 'react-native'
+import { Dimensions, View } from 'react-native'
 import { act, render, fireEvent } from '@testing-library/react-native'
 import { KeyboardContext } from 'react-native-keyboard-controller'
 import * as SafeAreaContext from 'react-native-safe-area-context'
 
 import { Chat } from '..'
 import { waitForRows } from './waitForRows'
+
+// The offset each chat hands its keyboard lift.
+const mockLiftOffsets: number[] = []
+jest.mock('../components/keyboardLift', () => {
+  const actual = jest.requireActual('../components/keyboardLift')
+  return {
+    ...actual,
+    useKeyboardLift: (offset: number) => {
+      mockLiftOffsets.push(offset)
+      return actual.useKeyboardLift(offset)
+    },
+  }
+})
 
 // Stands in for what a mounted `KeyboardProvider` puts in the context: one Reanimated
 // shared value per field.
@@ -161,41 +174,35 @@ it('reuses the app KeyboardProvider instead of nesting a second one (#11)', asyn
   expect(findKeyboardProviders(toJSON())).toHaveLength(0)
 })
 
-const findKeyboardVerticalOffset = (tree: any): number | undefined => {
-  if (tree == null || typeof tree !== 'object')
-    return undefined
+// The keyboard lifts the chat by its height less the space under the chat (and the composer's
+// home-indicator inset, 0 here). That space is the screen less where the chat starts and its
+// height, so it shows whether the chat's start came from the right place.
+const screenHeight = Dimensions.get('window').height
+const layoutChat = (getByTestId: (id: string) => any, height: number) =>
+  fireEvent(getByTestId('GC_WRAPPER'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 390, height } } })
 
-  if (tree.props?.keyboardVerticalOffset !== undefined)
-    return tree.props.keyboardVerticalOffset
-
-  const children = (Array.isArray(tree) ? tree : tree.children ?? []) as any[]
-
-  return children.reduce<number | undefined>(
-    (found, child) => found ?? findKeyboardVerticalOffset(child),
-    undefined
-  )
-}
-
-it('offsets the keyboard by where the chat actually sits, not by the top inset (#11)', async () => {
+it('lifts the keyboard by where the chat actually sits, not by the top inset (#11)', async () => {
   // A chat below a navigation header: the container starts 120pt down the screen while
-  // the top inset stays at the status bar. Only the frame knows about the header.
+  // the top inset stays at the status bar. Only the frame knows about the header. It ends 50pt
+  // above the screen's bottom (a tab bar).
   const frame = jest
     .spyOn(SafeAreaContext, 'useSafeAreaFrame')
     .mockReturnValue({ x: 0, y: 120, width: 390, height: 724 })
 
   try {
-    const { toJSON } = await render(
+    const { getByTestId } = await render(
       <Chat messages={messages} onSend={() => {}} user={{ _id: 1 }} />
     )
+    await layoutChat(getByTestId, screenHeight - 120 - 50)
 
-    expect(findKeyboardVerticalOffset(toJSON())).toBe(120)
+    expect(mockLiftOffsets.at(-1)).toBe(50)
   } finally {
     frame.mockRestore()
   }
 })
 
-it('lets `keyboardAvoidingViewProps` override the measured offset', async () => {
-  const { toJSON } = await render(
+it('lets `keyboardAvoidingViewProps.keyboardVerticalOffset` say where the chat starts', async () => {
+  const { getByTestId } = await render(
     <Chat
       messages={messages}
       onSend={() => {}}
@@ -203,8 +210,9 @@ it('lets `keyboardAvoidingViewProps` override the measured offset', async () => 
       keyboardAvoidingViewProps={{ keyboardVerticalOffset: 64 }}
     />
   )
+  await layoutChat(getByTestId, screenHeight - 64 - 30)
 
-  expect(findKeyboardVerticalOffset(toJSON())).toBe(64)
+  expect(mockLiftOffsets.at(-1)).toBe(30)
 })
 
 it('skips the KeyboardProvider when `enableKeyboardProvider` is false', async () => {

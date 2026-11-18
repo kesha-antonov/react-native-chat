@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BackHandler, Keyboard, Platform, StyleSheet } from 'react-native'
 import { KeyboardEvents, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
-import Animated, { Easing, SharedValue, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { Easing, SharedValue, useAnimatedReaction, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { holdKeyboardLift, useKeyboardLiftContext } from '../components/keyboardLift'
 import { useThemedStyles } from '../hooks/useTheme'
 import { ChatTheme } from '../Theme'
 import { renderComponentOrElement } from '../utils'
@@ -94,6 +95,7 @@ export interface EmojiKeyboardController {
 
 export function useEmojiKeyboard ({ isEnabled, focusComposer, defaultHeight }: UseEmojiKeyboardOptions): EmojiKeyboardController {
   const insets = useSafeAreaInsets()
+  const keyboardLift = useKeyboardLiftContext()
   const keyboard = useReanimatedKeyboardAnimation()
   const fallbackProgress = useSharedValue(0)
   const keyboardProgress = keyboard?.progress ?? fallbackProgress
@@ -162,13 +164,16 @@ export function useEmojiKeyboard ({ isEnabled, focusComposer, defaultHeight }: U
     setIsOpen(true)
     const isKeyboardUp = keyboardProgress.get() > 0.5
     if (isKeyboardUp) {
-      // The panel takes the keyboard's exact place while the keyboard leaves.
+      // The panel takes the keyboard's exact place while the keyboard leaves. The list holds its
+      // keyboard padding meanwhile: the panel lifts the composer by as much, so nothing moves.
+      if (keyboardLift)
+        holdKeyboardLift(keyboardLift)
       open.set(1)
       Keyboard.dismiss()
     } else {
       open.set(withTiming(1, SWITCH))
     }
-  }, [isEnabled, focusComposer, keyboardProgress, open])
+  }, [isEnabled, focusComposer, keyboardProgress, open, keyboardLift])
 
   const close = useCallback(() => {
     if (!isOpenRef.current)
@@ -211,20 +216,53 @@ interface EmojiKeyboardPanelProps {
   config: EmojiKeyboardProps
   onSelect: (emoji: string) => void
   onBackspace: () => void
+  /** The composer's padding for the home indicator, which the panel covers in a chat. */
+  composerInset?: number
 }
 
 /**
- * The space under the composer the panel fills. Its height is the panel's share of the bottom,
- * less whatever the system keyboard already covers, so the composer stays put while the two
- * trade places; the panel itself is laid out once at full height and simply revealed.
+ * The panel in the system keyboard's place.
+ *
+ * In a chat it takes no space: it hangs below the composer, which rides up on the larger of the
+ * keyboard's lift and the one the panel asks for (`keyboardLift`). The panel is as tall as the
+ * last keyboard, so trading the two lifts the composer by the same amount and nothing moves - as
+ * a spacer under the composer it changed the composer's height every frame and the list jumped.
+ *
+ * Outside a chat it is the space under the composer the panel fills: the panel's share of the
+ * bottom, less whatever the system keyboard already covers.
  */
-export function EmojiKeyboardPanel ({ controller, config, onSelect, onBackspace }: EmojiKeyboardPanelProps) {
+export function EmojiKeyboardPanel ({ controller, config, onSelect, onBackspace, composerInset = 0 }: EmojiKeyboardPanelProps) {
   const styles = useThemedStyles(createStyles)
   const insets = useSafeAreaInsets()
   const keyboard = useReanimatedKeyboardAnimation()
   const fallbackHeight = useSharedValue(0)
   const keyboardHeight = keyboard?.height ?? fallbackHeight
   const { open, searching, panelHeight, isMounted } = controller
+  const keyboardLift = useKeyboardLiftContext()
+  const liftOffset = keyboardLift?.offset ?? 0
+
+  // The lift the panel asks for: as a keyboard of its height would lift the composer, and while
+  // searching, its search row on top of the system keyboard. Only searching follows the keyboard,
+  // so a plain keyboard move does not run this.
+  useAnimatedReaction(
+    () => {
+      if (searching.value === 0)
+        return open.value * Math.max(0, panelHeight - liftOffset)
+      const covered = Math.max(0, -keyboardHeight.value)
+      return Math.max(0, covered - liftOffset) + SEARCH_MODE_HEIGHT * open.value
+    },
+    (wanted, previous) => {
+      // A first run with the panel shut leaves `panel` alone: it may be someone else's lift, as
+      // the attachment menu's as the keyboard makes way for it.
+      if (!keyboardLift || wanted === previous || (previous == null && wanted === 0))
+        return
+      keyboardLift.panel.set(wanted)
+    }
+  )
+  useEffect(() => () => {
+    keyboardLift?.panel.set(0)
+    keyboardLift?.held.set(-1)
+  }, [keyboardLift])
 
   const spacerStyle = useAnimatedStyle(() => {
     const covered = Math.max(0, -keyboardHeight.value)
@@ -256,7 +294,12 @@ export function EmojiKeyboardPanel ({ controller, config, onSelect, onBackspace 
   }
 
   return (
-    <Animated.View style={[styles.spacer, spacerStyle]}>
+    <Animated.View
+      style={keyboardLift
+        ? [styles.hanging, { height: panelHeight, marginTop: -composerInset }]
+        : [styles.spacer, spacerStyle]}
+      pointerEvents='box-none'
+    >
       <Animated.View
         testID='emoji-keyboard'
         style={[styles.panel, { height: panelHeight }, panelStyle]}
@@ -286,6 +329,13 @@ const createStyles = (theme: ChatTheme) => StyleSheet.create({
   // Unclipped: the panel hangs below it, under the keyboard or off screen, and is revealed.
   spacer: {
     overflow: 'visible',
+  },
+  // Below the composer, over its home-indicator padding, out of the layout.
+  hanging: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
   },
   panel: {
     position: 'absolute',

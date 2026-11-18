@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Fixes
+- The messages above the input stay above it while the keyboard opens and closes, scrolled up or at the newest message, with no jump or settle afterwards: the composer rides up with the keyboard and the list lifts its own content in step (`KeyboardChatScrollView`), instead of the whole chat being padded once the keyboard has moved ([#36](https://github.com/kesha-antonov/react-native-chat/issues/36))
+- The scroll-to-bottom button no longer comes up or goes away when the keyboard opens or closes, and the list's scroll bar no longer shows while the keyboard moves
+- Switching between the keyboard and the emoji panel no longer moves the input or the messages: the panel takes the keyboard's place instead of resizing the chat
+- On Android, opening the attachment menu with the keyboard up no longer makes the messages jump behind it: the keyboard closes first, then the menu opens
+- A `renderAccessory` component that uses hooks no longer throws when the input re-renders without new props
+
+### 🔧 Deprecations
+- `keyboardAvoidingViewProps`: Chat no longer uses a `KeyboardAvoidingView`. Only `keyboardVerticalOffset` is still read, as where the chat starts on screen
+
+### 📦 Dependencies
+- `react-native-keyboard-controller` peer range is now `>=1.21.7`, the first version with `KeyboardChatScrollView`
+
 ## [7.0.4] - 2026-11-18
 
 No changes to the library code. This release updates the README shown on npm.

@@ -35,35 +35,41 @@ exports[`should render <Chat/> and compare with snapshot 1`] = `
         testID="GC_WRAPPER"
       >
         <View
-          behavior="translate-with-padding"
-          keyboardVerticalOffset={0}
+          collapsable={false}
           style={
-            {
-              "flex": 1,
-            }
+            [
+              {
+                "flex": 1,
+              },
+              {
+                "opacity": 0,
+              },
+            ]
           }
+          testID="GC_CONTENT"
         >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          />
           <View
             collapsable={false}
             style={
               [
+                undefined,
                 {
-                  "flex": 1,
-                },
-                {
-                  "opacity": 0,
+                  "transform": [
+                    {
+                      "translateY": -0,
+                    },
+                  ],
                 },
               ]
             }
-            testID="GC_CONTENT"
           >
-            <View
-              style={
-                {
-                  "flex": 1,
-                }
-              }
-            />
             <View
               collapsable={false}
             >
@@ -617,306 +623,317 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
         testID="GC_WRAPPER"
       >
         <View
-          behavior="translate-with-padding"
-          keyboardVerticalOffset={0}
+          collapsable={false}
           style={
-            {
-              "flex": 1,
-            }
+            [
+              {
+                "flex": 1,
+              },
+              {
+                "opacity": 0,
+              },
+            ]
           }
+          testID="GC_CONTENT"
         >
           <View
-            collapsable={false}
             style={
               [
                 {
                   "flex": 1,
                 },
-                {
-                  "opacity": 0,
-                },
+                undefined,
               ]
             }
-            testID="GC_CONTENT"
           >
             <View
               style={
-                [
-                  {
-                    "flex": 1,
-                  },
-                  undefined,
-                ]
+                {
+                  "flex": 1,
+                }
               }
             >
               <View
+                onTouchEnd={[Function]}
+                onTouchStart={[Function]}
                 style={
-                  {
-                    "flex": 1,
-                  }
+                  [
+                    {
+                      "flexGrow": 1,
+                      "justifyContent": "flex-start",
+                    },
+                    {
+                      "backgroundColor": "transparent",
+                    },
+                    {
+                      "flex": 1,
+                    },
+                  ]
                 }
               >
                 <View
-                  onTouchEnd={[Function]}
-                  onTouchStart={[Function]}
+                  collapsable={false}
                   style={
                     [
                       {
-                        "flexGrow": 1,
-                        "justifyContent": "flex-start",
-                      },
-                      {
-                        "backgroundColor": "transparent",
-                      },
-                      {
                         "flex": 1,
+                        "overflow": "hidden",
+                      },
+                      {
+                        "transform": [
+                          {
+                            "translateY": -0,
+                          },
+                        ],
                       },
                     ]
                   }
                 >
-                  <RCTScrollView
-                    alignItemsAtEnd={true}
-                    contentContainerStyle={
-                      {
-                        "paddingBottom": 10,
-                      }
-                    }
-                    estimatedItemSize={64}
-                    initialScrollAtEnd={true}
-                    itemLayoutAnimation={[Function]}
-                    keyboardDismissMode="interactive"
-                    keyboardShouldPersistTaps="handled"
-                    maintainScrollAtEnd={
-                      {
-                        "animated": false,
-                      }
-                    }
-                    maintainVisibleContentPosition={true}
-                    onContentSizeChange={[Function]}
-                    onItemSizeChanged={[Function]}
-                    onLayout={[Function]}
-                    onMetricsChange={[Function]}
-                    onMomentumScrollBegin={[Function]}
-                    onMomentumScrollEnd={[Function]}
-                    onScrollBeginDrag={[Function]}
-                    onScrollEndDrag={[Function]}
-                    onStartReached={[Function]}
-                    onStartReachedThreshold={0.1}
-                    sharedValues={
-                      {
-                        "scrollOffset": {
-                          "value": 0,
-                        },
-                      }
-                    }
+                  <View
+                    collapsable={false}
                     style={
-                      {
-                        "flex": 1,
-                      }
-                    }
-                    viewabilityConfigCallbackPairs={
                       [
                         {
-                          "onViewableItemsChanged": [Function],
-                          "viewabilityConfig": {
-                            "itemVisiblePercentThreshold": 0,
-                          },
+                          "flex": 1,
+                        },
+                        {
+                          "transform": [
+                            {
+                              "translateY": 0,
+                            },
+                          ],
                         },
                       ]
                     }
                   >
-                    <View>
+                    <RCTScrollView
+                      alignItemsAtEnd={true}
+                      contentContainerStyle={
+                        {
+                          "paddingBottom": 10,
+                        }
+                      }
+                      estimatedItemSize={64}
+                      initialScrollAtEnd={true}
+                      itemLayoutAnimation={[Function]}
+                      keyboardDismissMode="interactive"
+                      keyboardShouldPersistTaps="handled"
+                      maintainScrollAtEnd={
+                        {
+                          "animated": false,
+                        }
+                      }
+                      maintainVisibleContentPosition={true}
+                      onContentSizeChange={[Function]}
+                      onItemSizeChanged={[Function]}
+                      onLayout={[Function]}
+                      onMetricsChange={[Function]}
+                      onMomentumScrollBegin={[Function]}
+                      onMomentumScrollEnd={[Function]}
+                      onScrollBeginDrag={[Function]}
+                      onScrollEndDrag={[Function]}
+                      onStartReached={[Function]}
+                      onStartReachedThreshold={0.1}
+                      sharedValues={
+                        {
+                          "scrollOffset": {
+                            "value": 0,
+                          },
+                        }
+                      }
+                      showsVerticalScrollIndicator={true}
+                      style={
+                        {
+                          "flex": 1,
+                        }
+                      }
+                      viewabilityConfigCallbackPairs={
+                        [
+                          {
+                            "onViewableItemsChanged": [Function],
+                            "viewabilityConfig": {
+                              "itemVisiblePercentThreshold": 0,
+                            },
+                          },
+                        ]
+                      }
+                    >
                       <View>
                         <View>
-                          <View
-                            style={
-                              {
-                                "opacity": 1,
-                              }
-                            }
-                          >
-                            <View>
-                              <View
-                                style={
-                                  [
-                                    {
-                                      "alignItems": "center",
-                                      "justifyContent": "center",
-                                    },
-                                    {
-                                      "marginBottom": 7,
-                                      "marginTop": 1,
-                                    },
-                                    undefined,
-                                  ]
-                                }
-                              >
-                                <View
-                                  style={
-                                    [
-                                      {
-                                        "backgroundColor": "rgba(27, 30, 36, 0.92)",
-                                        "borderRadius": 11,
-                                        "paddingHorizontal": 8,
-                                        "paddingVertical": 3,
-                                      },
-                                      undefined,
-                                    ]
-                                  }
-                                >
-                                  <Text
-                                    style={
-                                      [
-                                        {
-                                          "color": "#A4ABB6",
-                                          "fontSize": 14,
-                                          "fontWeight": "500",
-                                          "lineHeight": 17,
-                                        },
-                                        undefined,
-                                      ]
-                                    }
-                                  >
-                                    1 January 2024
-                                  </Text>
-                                </View>
-                              </View>
-                            </View>
-                          </View>
                           <View>
                             <View
-                              handlerTags={
-                                [
-                                  20,
-                                ]
-                              }
-                              moduleId={-1}
-                              onGestureHandlerEvent={[Function]}
-                              onGestureHandlerStateChange={[Function]}
-                              onGestureHandlerTouchEvent={[Function]}
-                              onStartShouldSetResponder={[Function]}
-                              pointerEvents="box-none"
                               style={
                                 {
-                                  "display": "contents",
+                                  "opacity": 1,
                                 }
                               }
                             >
                               <View>
                                 <View
                                   style={
-                                    {
-                                      "transform": [
-                                        {
-                                          "translateX": 0,
-                                        },
-                                      ],
-                                    }
+                                    [
+                                      {
+                                        "alignItems": "center",
+                                        "justifyContent": "center",
+                                      },
+                                      {
+                                        "marginBottom": 7,
+                                        "marginTop": 1,
+                                      },
+                                      undefined,
+                                    ]
                                   }
                                 >
                                   <View
-                                    collapsable={false}
                                     style={
-                                      {
-                                        "alignItems": "flex-end",
-                                        "flexDirection": "row",
-                                        "justifyContent": "flex-start",
-                                        "marginBottom": 6,
-                                        "marginHorizontal": 8,
-                                      }
+                                      [
+                                        {
+                                          "backgroundColor": "rgba(27, 30, 36, 0.92)",
+                                          "borderRadius": 11,
+                                          "paddingHorizontal": 8,
+                                          "paddingVertical": 3,
+                                        },
+                                        undefined,
+                                      ]
                                     }
                                   >
-                                    <View
+                                    <Text
                                       style={
                                         [
                                           {
-                                            "alignItems": "flex-start",
-                                            "flex": 1,
+                                            "color": "#A4ABB6",
+                                            "fontSize": 14,
+                                            "fontWeight": "500",
+                                            "lineHeight": 17,
                                           },
                                           undefined,
                                         ]
                                       }
                                     >
-                                      <View
-                                        handlerTags={
-                                          [
-                                            22,
-                                            21,
-                                          ]
-                                        }
-                                        moduleId={-1}
-                                        onGestureHandlerEvent={[Function]}
-                                        onGestureHandlerStateChange={[Function]}
-                                        onGestureHandlerTouchEvent={[Function]}
-                                        onStartShouldSetResponder={[Function]}
-                                        pointerEvents="box-none"
-                                        style={
+                                      1 January 2024
+                                    </Text>
+                                  </View>
+                                </View>
+                              </View>
+                            </View>
+                            <View>
+                              <View
+                                handlerTags={
+                                  [
+                                    20,
+                                  ]
+                                }
+                                moduleId={-1}
+                                onGestureHandlerEvent={[Function]}
+                                onGestureHandlerStateChange={[Function]}
+                                onGestureHandlerTouchEvent={[Function]}
+                                onStartShouldSetResponder={[Function]}
+                                pointerEvents="box-none"
+                                style={
+                                  {
+                                    "display": "contents",
+                                  }
+                                }
+                              >
+                                <View>
+                                  <View
+                                    style={
+                                      {
+                                        "transform": [
                                           {
-                                            "display": "contents",
-                                          }
+                                            "translateX": 0,
+                                          },
+                                        ],
+                                      }
+                                    }
+                                  >
+                                    <View
+                                      collapsable={false}
+                                      style={
+                                        {
+                                          "alignItems": "flex-end",
+                                          "flexDirection": "row",
+                                          "justifyContent": "flex-start",
+                                          "marginBottom": 6,
+                                          "marginHorizontal": 8,
+                                        }
+                                      }
+                                    >
+                                      <View
+                                        style={
+                                          [
+                                            {
+                                              "alignItems": "flex-start",
+                                              "flex": 1,
+                                            },
+                                            undefined,
+                                          ]
                                         }
                                       >
                                         <View
+                                          handlerTags={
+                                            [
+                                              22,
+                                              21,
+                                            ]
+                                          }
+                                          moduleId={-1}
+                                          onGestureHandlerEvent={[Function]}
+                                          onGestureHandlerStateChange={[Function]}
+                                          onGestureHandlerTouchEvent={[Function]}
+                                          onStartShouldSetResponder={[Function]}
+                                          pointerEvents="box-none"
                                           style={
                                             {
-                                              "alignItems": "flex-start",
-                                              "alignSelf": "stretch",
+                                              "display": "contents",
                                             }
                                           }
                                         >
-                                          <View>
-                                            <View
-                                              style={
-                                                [
-                                                  {
-                                                    "backgroundColor": "#22252B",
-                                                    "borderRadius": 17,
-                                                    "justifyContent": "flex-end",
-                                                    "minHeight": 20,
-                                                  },
-                                                  {
-                                                    "maxWidth": 688,
-                                                  },
-                                                  {
-                                                    "borderBottomLeftRadius": 17,
-                                                    "borderBottomRightRadius": 17,
-                                                    "borderTopLeftRadius": 17,
-                                                    "borderTopRightRadius": 17,
-                                                  },
-                                                  false,
-                                                  null,
-                                                  null,
-                                                  undefined,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                ]
+                                          <View
+                                            style={
+                                              {
+                                                "alignItems": "flex-start",
+                                                "alignSelf": "stretch",
                                               }
-                                            >
+                                            }
+                                          >
+                                            <View>
                                               <View
                                                 style={
                                                   [
                                                     {
-                                                      "marginBottom": 8.5,
-                                                      "marginHorizontal": 9,
-                                                      "marginTop": 5,
+                                                      "backgroundColor": "#22252B",
+                                                      "borderRadius": 17,
+                                                      "justifyContent": "flex-end",
+                                                      "minHeight": 20,
                                                     },
+                                                    {
+                                                      "maxWidth": 688,
+                                                    },
+                                                    {
+                                                      "borderBottomLeftRadius": 17,
+                                                      "borderBottomRightRadius": 17,
+                                                      "borderTopLeftRadius": 17,
+                                                      "borderTopRightRadius": 17,
+                                                    },
+                                                    false,
+                                                    null,
+                                                    null,
                                                     undefined,
+                                                    false,
+                                                    false,
+                                                    false,
                                                   ]
                                                 }
                                               >
-                                                <Text
+                                                <View
                                                   style={
                                                     [
                                                       {
-                                                        "fontSize": 16,
-                                                        "fontWeight": "400",
-                                                        "lineHeight": 19,
+                                                        "marginBottom": 8.5,
+                                                        "marginHorizontal": 9,
+                                                        "marginTop": 5,
                                                       },
-                                                      {
-                                                        "color": "#F2F4F7",
-                                                      },
-                                                      undefined,
                                                       undefined,
                                                     ]
                                                   }
@@ -937,63 +954,80 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                                                       ]
                                                     }
                                                   >
-                                                    Hello developer
+                                                    <Text
+                                                      style={
+                                                        [
+                                                          {
+                                                            "fontSize": 16,
+                                                            "fontWeight": "400",
+                                                            "lineHeight": 19,
+                                                          },
+                                                          {
+                                                            "color": "#F2F4F7",
+                                                          },
+                                                          undefined,
+                                                          undefined,
+                                                        ]
+                                                      }
+                                                    >
+                                                      Hello developer
+                                                    </Text>
+                                                    <Text
+                                                      style={
+                                                        [
+                                                          {
+                                                            "fontSize": 12,
+                                                            "fontWeight": "400",
+                                                          },
+                                                          undefined,
+                                                          {
+                                                            "color": "rgba(0, 0, 0, 0.004)",
+                                                          },
+                                                        ]
+                                                      }
+                                                    >
+                                                      ​  1:00 PM
+                                                    </Text>
                                                   </Text>
-                                                  <Text
-                                                    style={
-                                                      [
-                                                        {
-                                                          "fontSize": 12,
-                                                          "fontWeight": "400",
-                                                        },
-                                                        undefined,
-                                                        {
-                                                          "color": "rgba(0, 0, 0, 0.004)",
-                                                        },
-                                                      ]
-                                                    }
-                                                  >
-                                                    ​  1:00 PM
-                                                  </Text>
-                                                </Text>
-                                              </View>
-                                              <View
-                                                accessibilityElementsHidden={true}
-                                                importantForAccessibility="no-hide-descendants"
-                                                pointerEvents="none"
-                                                style={
-                                                  [
-                                                    {
-                                                      "alignItems": "center",
-                                                      "bottom": 3.5,
-                                                      "flexDirection": "row",
-                                                      "gap": 4,
-                                                      "position": "absolute",
-                                                    },
-                                                    {
-                                                      "right": 7,
-                                                    },
-                                                    undefined,
-                                                  ]
-                                                }
-                                              >
-                                                <View>
-                                                  <Text
-                                                    style={
-                                                      [
-                                                        {
-                                                          "color": "#7D8590",
-                                                          "fontSize": 12,
-                                                          "fontWeight": "400",
-                                                          "lineHeight": 14,
-                                                          "textAlign": "right",
-                                                        },
-                                                        undefined,
-                                                      ]
-                                                    }
-                                                  >
-                                                    1:00 PM
-                                                  </Text>
+                                                </View>
+                                                <View
+                                                  accessibilityElementsHidden={true}
+                                                  importantForAccessibility="no-hide-descendants"
+                                                  pointerEvents="none"
+                                                  style={
+                                                    [
+                                                      {
+                                                        "alignItems": "center",
+                                                        "bottom": 3.5,
+                                                        "flexDirection": "row",
+                                                        "gap": 4,
+                                                        "position": "absolute",
+                                                      },
+                                                      {
+                                                        "right": 7,
+                                                      },
+                                                      undefined,
+                                                    ]
+                                                  }
+                                                >
+                                                  <View>
+                                                    <Text
+                                                      style={
+                                                        [
+                                                          {
+                                                            "color": "#7D8590",
+                                                            "fontSize": 12,
+                                                            "fontWeight": "400",
+                                                            "lineHeight": 14,
+                                                            "textAlign": "right",
+                                                          },
+                                                          undefined,
+                                                        ]
+                                                      }
+                                                    >
+                                                      1:00 PM
+                                                    </Text>
+                                                  </View>
                                                 </View>
                                               </View>
                                             </View>
@@ -1008,11 +1042,69 @@ exports[`should render <Chat/> with dark colorScheme and compare with snapshot 1
                           </View>
                         </View>
                       </View>
-                    </View>
-                  </RCTScrollView>
+                    </RCTScrollView>
+                  </View>
                 </View>
+                <View
+                  pointerEvents="box-none"
+                  style={
+                    [
+                      {
+                        "bottom": 0,
+                        "left": 0,
+                        "position": "absolute",
+                        "right": 0,
+                        "top": 0,
+                      },
+                      {
+                        "transform": [
+                          {
+                            "translateY": -0,
+                          },
+                        ],
+                      },
+                    ]
+                  }
+                />
               </View>
+              <View
+                pointerEvents="box-none"
+                style={
+                  [
+                    {
+                      "bottom": 0,
+                      "left": 0,
+                      "position": "absolute",
+                      "right": 0,
+                      "top": 0,
+                    },
+                    {
+                      "transform": [
+                        {
+                          "translateY": -0,
+                        },
+                      ],
+                    },
+                  ]
+                }
+              />
             </View>
+          </View>
+          <View
+            collapsable={false}
+            style={
+              [
+                undefined,
+                {
+                  "transform": [
+                    {
+                      "translateY": -0,
+                    },
+                  ],
+                },
+              ]
+            }
+          >
             <View
               collapsable={false}
             >
@@ -1557,315 +1649,326 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
         testID="GC_WRAPPER"
       >
         <View
-          behavior="translate-with-padding"
-          keyboardVerticalOffset={0}
+          collapsable={false}
           style={
-            {
-              "flex": 1,
-            }
+            [
+              {
+                "flex": 1,
+              },
+              {
+                "opacity": 0,
+              },
+            ]
           }
+          testID="GC_CONTENT"
         >
           <View
-            collapsable={false}
             style={
               [
                 {
                   "flex": 1,
                 },
-                {
-                  "opacity": 0,
-                },
+                undefined,
               ]
             }
-            testID="GC_CONTENT"
           >
             <View
               style={
-                [
-                  {
-                    "flex": 1,
-                  },
-                  undefined,
-                ]
+                {
+                  "flex": 1,
+                }
               }
             >
               <View
+                onTouchEnd={[Function]}
+                onTouchStart={[Function]}
                 style={
-                  {
-                    "flex": 1,
-                  }
+                  [
+                    {
+                      "flexGrow": 1,
+                      "justifyContent": "flex-start",
+                    },
+                    {
+                      "backgroundColor": "transparent",
+                    },
+                    {
+                      "flex": 1,
+                    },
+                  ]
                 }
               >
                 <View
-                  onTouchEnd={[Function]}
-                  onTouchStart={[Function]}
+                  collapsable={false}
                   style={
                     [
                       {
-                        "flexGrow": 1,
-                        "justifyContent": "flex-start",
-                      },
-                      {
-                        "backgroundColor": "transparent",
-                      },
-                      {
                         "flex": 1,
+                        "overflow": "hidden",
+                      },
+                      {
+                        "transform": [
+                          {
+                            "translateY": -0,
+                          },
+                        ],
                       },
                     ]
                   }
                 >
-                  <RCTScrollView
-                    alignItemsAtEnd={true}
-                    contentContainerStyle={
-                      {
-                        "paddingBottom": 10,
-                      }
-                    }
-                    estimatedItemSize={64}
-                    initialScrollAtEnd={true}
-                    itemLayoutAnimation={[Function]}
-                    keyboardDismissMode="interactive"
-                    keyboardShouldPersistTaps="handled"
-                    maintainScrollAtEnd={
-                      {
-                        "animated": false,
-                      }
-                    }
-                    maintainVisibleContentPosition={true}
-                    onContentSizeChange={[Function]}
-                    onItemSizeChanged={[Function]}
-                    onLayout={[Function]}
-                    onMetricsChange={[Function]}
-                    onMomentumScrollBegin={[Function]}
-                    onMomentumScrollEnd={[Function]}
-                    onScrollBeginDrag={[Function]}
-                    onScrollEndDrag={[Function]}
-                    onStartReached={[Function]}
-                    onStartReachedThreshold={0.1}
-                    sharedValues={
-                      {
-                        "scrollOffset": {
-                          "value": 0,
-                        },
-                      }
-                    }
+                  <View
+                    collapsable={false}
                     style={
-                      {
-                        "flex": 1,
-                      }
-                    }
-                    viewabilityConfigCallbackPairs={
                       [
                         {
-                          "onViewableItemsChanged": [Function],
-                          "viewabilityConfig": {
-                            "itemVisiblePercentThreshold": 0,
-                          },
+                          "flex": 1,
+                        },
+                        {
+                          "transform": [
+                            {
+                              "translateY": 0,
+                            },
+                          ],
                         },
                       ]
                     }
                   >
-                    <View>
+                    <RCTScrollView
+                      alignItemsAtEnd={true}
+                      contentContainerStyle={
+                        {
+                          "paddingBottom": 10,
+                        }
+                      }
+                      estimatedItemSize={64}
+                      initialScrollAtEnd={true}
+                      itemLayoutAnimation={[Function]}
+                      keyboardDismissMode="interactive"
+                      keyboardShouldPersistTaps="handled"
+                      maintainScrollAtEnd={
+                        {
+                          "animated": false,
+                        }
+                      }
+                      maintainVisibleContentPosition={true}
+                      onContentSizeChange={[Function]}
+                      onItemSizeChanged={[Function]}
+                      onLayout={[Function]}
+                      onMetricsChange={[Function]}
+                      onMomentumScrollBegin={[Function]}
+                      onMomentumScrollEnd={[Function]}
+                      onScrollBeginDrag={[Function]}
+                      onScrollEndDrag={[Function]}
+                      onStartReached={[Function]}
+                      onStartReachedThreshold={0.1}
+                      sharedValues={
+                        {
+                          "scrollOffset": {
+                            "value": 0,
+                          },
+                        }
+                      }
+                      showsVerticalScrollIndicator={true}
+                      style={
+                        {
+                          "flex": 1,
+                        }
+                      }
+                      viewabilityConfigCallbackPairs={
+                        [
+                          {
+                            "onViewableItemsChanged": [Function],
+                            "viewabilityConfig": {
+                              "itemVisiblePercentThreshold": 0,
+                            },
+                          },
+                        ]
+                      }
+                    >
                       <View>
                         <View>
-                          <View
-                            style={
-                              {
-                                "opacity": 1,
-                              }
-                            }
-                          >
-                            <View>
-                              <View
-                                style={
-                                  [
-                                    {
-                                      "alignItems": "center",
-                                      "justifyContent": "center",
-                                    },
-                                    {
-                                      "marginBottom": 7,
-                                      "marginTop": 1,
-                                    },
-                                    undefined,
-                                  ]
-                                }
-                              >
-                                <View
-                                  style={
-                                    [
-                                      {
-                                        "backgroundColor": "rgba(255, 255, 255, 0.92)",
-                                        "borderRadius": 11,
-                                        "paddingHorizontal": 8,
-                                        "paddingVertical": 3,
-                                      },
-                                      undefined,
-                                    ]
-                                  }
-                                >
-                                  <Text
-                                    style={
-                                      [
-                                        {
-                                          "color": "#5F6671",
-                                          "fontSize": 14,
-                                          "fontWeight": "500",
-                                          "lineHeight": 17,
-                                        },
-                                        undefined,
-                                      ]
-                                    }
-                                  >
-                                    1 January 2024
-                                  </Text>
-                                </View>
-                              </View>
-                            </View>
-                          </View>
                           <View>
                             <View
-                              handlerTags={
-                                [
-                                  15,
-                                ]
-                              }
-                              moduleId={-1}
-                              onGestureHandlerEvent={[Function]}
-                              onGestureHandlerStateChange={[Function]}
-                              onGestureHandlerTouchEvent={[Function]}
-                              onStartShouldSetResponder={[Function]}
-                              pointerEvents="box-none"
                               style={
                                 {
-                                  "display": "contents",
+                                  "opacity": 1,
                                 }
                               }
                             >
                               <View>
                                 <View
                                   style={
-                                    {
-                                      "transform": [
-                                        {
-                                          "translateX": 0,
-                                        },
-                                      ],
-                                    }
+                                    [
+                                      {
+                                        "alignItems": "center",
+                                        "justifyContent": "center",
+                                      },
+                                      {
+                                        "marginBottom": 7,
+                                        "marginTop": 1,
+                                      },
+                                      undefined,
+                                    ]
                                   }
                                 >
                                   <View
-                                    collapsable={false}
                                     style={
-                                      {
-                                        "alignItems": "flex-end",
-                                        "flexDirection": "row",
-                                        "justifyContent": "flex-start",
-                                        "marginBottom": 6,
-                                        "marginHorizontal": 8,
-                                      }
+                                      [
+                                        {
+                                          "backgroundColor": "rgba(255, 255, 255, 0.92)",
+                                          "borderRadius": 11,
+                                          "paddingHorizontal": 8,
+                                          "paddingVertical": 3,
+                                        },
+                                        undefined,
+                                      ]
                                     }
                                   >
-                                    <View
+                                    <Text
                                       style={
                                         [
                                           {
-                                            "alignItems": "flex-start",
-                                            "flex": 1,
+                                            "color": "#5F6671",
+                                            "fontSize": 14,
+                                            "fontWeight": "500",
+                                            "lineHeight": 17,
                                           },
                                           undefined,
                                         ]
                                       }
                                     >
-                                      <View
-                                        handlerTags={
-                                          [
-                                            17,
-                                            16,
-                                          ]
-                                        }
-                                        moduleId={-1}
-                                        onGestureHandlerEvent={[Function]}
-                                        onGestureHandlerStateChange={[Function]}
-                                        onGestureHandlerTouchEvent={[Function]}
-                                        onStartShouldSetResponder={[Function]}
-                                        pointerEvents="box-none"
-                                        style={
+                                      1 January 2024
+                                    </Text>
+                                  </View>
+                                </View>
+                              </View>
+                            </View>
+                            <View>
+                              <View
+                                handlerTags={
+                                  [
+                                    15,
+                                  ]
+                                }
+                                moduleId={-1}
+                                onGestureHandlerEvent={[Function]}
+                                onGestureHandlerStateChange={[Function]}
+                                onGestureHandlerTouchEvent={[Function]}
+                                onStartShouldSetResponder={[Function]}
+                                pointerEvents="box-none"
+                                style={
+                                  {
+                                    "display": "contents",
+                                  }
+                                }
+                              >
+                                <View>
+                                  <View
+                                    style={
+                                      {
+                                        "transform": [
                                           {
-                                            "display": "contents",
-                                          }
+                                            "translateX": 0,
+                                          },
+                                        ],
+                                      }
+                                    }
+                                  >
+                                    <View
+                                      collapsable={false}
+                                      style={
+                                        {
+                                          "alignItems": "flex-end",
+                                          "flexDirection": "row",
+                                          "justifyContent": "flex-start",
+                                          "marginBottom": 6,
+                                          "marginHorizontal": 8,
+                                        }
+                                      }
+                                    >
+                                      <View
+                                        style={
+                                          [
+                                            {
+                                              "alignItems": "flex-start",
+                                              "flex": 1,
+                                            },
+                                            undefined,
+                                          ]
                                         }
                                       >
                                         <View
+                                          handlerTags={
+                                            [
+                                              17,
+                                              16,
+                                            ]
+                                          }
+                                          moduleId={-1}
+                                          onGestureHandlerEvent={[Function]}
+                                          onGestureHandlerStateChange={[Function]}
+                                          onGestureHandlerTouchEvent={[Function]}
+                                          onStartShouldSetResponder={[Function]}
+                                          pointerEvents="box-none"
                                           style={
                                             {
-                                              "alignItems": "flex-start",
-                                              "alignSelf": "stretch",
+                                              "display": "contents",
                                             }
                                           }
                                         >
-                                          <View>
-                                            <View
-                                              style={
-                                                [
-                                                  {
-                                                    "backgroundColor": "#FFFFFF",
-                                                    "borderRadius": 17,
-                                                    "justifyContent": "flex-end",
-                                                    "minHeight": 20,
-                                                  },
-                                                  {
-                                                    "maxWidth": 688,
-                                                  },
-                                                  {
-                                                    "borderBottomLeftRadius": 17,
-                                                    "borderBottomRightRadius": 17,
-                                                    "borderTopLeftRadius": 17,
-                                                    "borderTopRightRadius": 17,
-                                                  },
-                                                  {
-                                                    "boxShadow": [
-                                                      {
-                                                        "blurRadius": 0.5,
-                                                        "color": "rgba(16, 24, 40, 0.1)",
-                                                        "offsetX": 0,
-                                                        "offsetY": 1,
-                                                      },
-                                                    ],
-                                                  },
-                                                  null,
-                                                  null,
-                                                  undefined,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                ]
+                                          <View
+                                            style={
+                                              {
+                                                "alignItems": "flex-start",
+                                                "alignSelf": "stretch",
                                               }
-                                            >
+                                            }
+                                          >
+                                            <View>
                                               <View
                                                 style={
                                                   [
                                                     {
-                                                      "marginBottom": 8.5,
-                                                      "marginHorizontal": 9,
-                                                      "marginTop": 5,
+                                                      "backgroundColor": "#FFFFFF",
+                                                      "borderRadius": 17,
+                                                      "justifyContent": "flex-end",
+                                                      "minHeight": 20,
                                                     },
+                                                    {
+                                                      "maxWidth": 688,
+                                                    },
+                                                    {
+                                                      "borderBottomLeftRadius": 17,
+                                                      "borderBottomRightRadius": 17,
+                                                      "borderTopLeftRadius": 17,
+                                                      "borderTopRightRadius": 17,
+                                                    },
+                                                    {
+                                                      "boxShadow": [
+                                                        {
+                                                          "blurRadius": 0.5,
+                                                          "color": "rgba(16, 24, 40, 0.1)",
+                                                          "offsetX": 0,
+                                                          "offsetY": 1,
+                                                        },
+                                                      ],
+                                                    },
+                                                    null,
+                                                    null,
                                                     undefined,
+                                                    false,
+                                                    false,
+                                                    false,
                                                   ]
                                                 }
                                               >
-                                                <Text
+                                                <View
                                                   style={
                                                     [
                                                       {
-                                                        "fontSize": 16,
-                                                        "fontWeight": "400",
-                                                        "lineHeight": 19,
+                                                        "marginBottom": 8.5,
+                                                        "marginHorizontal": 9,
+                                                        "marginTop": 5,
                                                       },
-                                                      {
-                                                        "color": "#111418",
-                                                      },
-                                                      undefined,
                                                       undefined,
                                                     ]
                                                   }
@@ -1886,63 +1989,80 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                                                       ]
                                                     }
                                                   >
-                                                    Hello developer
+                                                    <Text
+                                                      style={
+                                                        [
+                                                          {
+                                                            "fontSize": 16,
+                                                            "fontWeight": "400",
+                                                            "lineHeight": 19,
+                                                          },
+                                                          {
+                                                            "color": "#111418",
+                                                          },
+                                                          undefined,
+                                                          undefined,
+                                                        ]
+                                                      }
+                                                    >
+                                                      Hello developer
+                                                    </Text>
+                                                    <Text
+                                                      style={
+                                                        [
+                                                          {
+                                                            "fontSize": 12,
+                                                            "fontWeight": "400",
+                                                          },
+                                                          undefined,
+                                                          {
+                                                            "color": "rgba(0, 0, 0, 0.004)",
+                                                          },
+                                                        ]
+                                                      }
+                                                    >
+                                                      ​  1:00 PM
+                                                    </Text>
                                                   </Text>
-                                                  <Text
-                                                    style={
-                                                      [
-                                                        {
-                                                          "fontSize": 12,
-                                                          "fontWeight": "400",
-                                                        },
-                                                        undefined,
-                                                        {
-                                                          "color": "rgba(0, 0, 0, 0.004)",
-                                                        },
-                                                      ]
-                                                    }
-                                                  >
-                                                    ​  1:00 PM
-                                                  </Text>
-                                                </Text>
-                                              </View>
-                                              <View
-                                                accessibilityElementsHidden={true}
-                                                importantForAccessibility="no-hide-descendants"
-                                                pointerEvents="none"
-                                                style={
-                                                  [
-                                                    {
-                                                      "alignItems": "center",
-                                                      "bottom": 3.5,
-                                                      "flexDirection": "row",
-                                                      "gap": 4,
-                                                      "position": "absolute",
-                                                    },
-                                                    {
-                                                      "right": 7,
-                                                    },
-                                                    undefined,
-                                                  ]
-                                                }
-                                              >
-                                                <View>
-                                                  <Text
-                                                    style={
-                                                      [
-                                                        {
-                                                          "color": "#8E959F",
-                                                          "fontSize": 12,
-                                                          "fontWeight": "400",
-                                                          "lineHeight": 14,
-                                                          "textAlign": "right",
-                                                        },
-                                                        undefined,
-                                                      ]
-                                                    }
-                                                  >
-                                                    1:00 PM
-                                                  </Text>
+                                                </View>
+                                                <View
+                                                  accessibilityElementsHidden={true}
+                                                  importantForAccessibility="no-hide-descendants"
+                                                  pointerEvents="none"
+                                                  style={
+                                                    [
+                                                      {
+                                                        "alignItems": "center",
+                                                        "bottom": 3.5,
+                                                        "flexDirection": "row",
+                                                        "gap": 4,
+                                                        "position": "absolute",
+                                                      },
+                                                      {
+                                                        "right": 7,
+                                                      },
+                                                      undefined,
+                                                    ]
+                                                  }
+                                                >
+                                                  <View>
+                                                    <Text
+                                                      style={
+                                                        [
+                                                          {
+                                                            "color": "#8E959F",
+                                                            "fontSize": 12,
+                                                            "fontWeight": "400",
+                                                            "lineHeight": 14,
+                                                            "textAlign": "right",
+                                                          },
+                                                          undefined,
+                                                        ]
+                                                      }
+                                                    >
+                                                      1:00 PM
+                                                    </Text>
+                                                  </View>
                                                 </View>
                                               </View>
                                             </View>
@@ -1957,11 +2077,69 @@ exports[`should render <Chat/> with light colorScheme and compare with snapshot 
                           </View>
                         </View>
                       </View>
-                    </View>
-                  </RCTScrollView>
+                    </RCTScrollView>
+                  </View>
                 </View>
+                <View
+                  pointerEvents="box-none"
+                  style={
+                    [
+                      {
+                        "bottom": 0,
+                        "left": 0,
+                        "position": "absolute",
+                        "right": 0,
+                        "top": 0,
+                      },
+                      {
+                        "transform": [
+                          {
+                            "translateY": -0,
+                          },
+                        ],
+                      },
+                    ]
+                  }
+                />
               </View>
+              <View
+                pointerEvents="box-none"
+                style={
+                  [
+                    {
+                      "bottom": 0,
+                      "left": 0,
+                      "position": "absolute",
+                      "right": 0,
+                      "top": 0,
+                    },
+                    {
+                      "transform": [
+                        {
+                          "translateY": -0,
+                        },
+                      ],
+                    },
+                  ]
+                }
+              />
             </View>
+          </View>
+          <View
+            collapsable={false}
+            style={
+              [
+                undefined,
+                {
+                  "transform": [
+                    {
+                      "translateY": -0,
+                    },
+                  ],
+                },
+              ]
+            }
+          >
             <View
               collapsable={false}
             >

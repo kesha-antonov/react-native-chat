@@ -16,6 +16,8 @@ interface ScrollToBottomOptions {
   listHeight: SharedValue<number>
   scrollToBottomOffset: number
   pageDownReturn: PageDownReturn | null
+  /** Set when the list scrolls itself to keep its rows in place, not because the user scrolled. */
+  isScrollAdjusting: SharedValue<boolean>
 }
 
 /**
@@ -29,6 +31,7 @@ export function useScrollToBottom ({
   listHeight,
   scrollToBottomOffset,
   pageDownReturn,
+  isScrollAdjusting,
 }: ScrollToBottomOptions) {
   const scrollToBottomOpacity = useSharedValue(0)
   const isScrollingDown = useSharedValue(false)
@@ -39,6 +42,7 @@ export function useScrollToBottom ({
   const isShownByScroll = useSharedValue(false)
   const distanceFromNewestSV = useSharedValue(0)
   const lastScrolledY = useSharedValue(0)
+  const lastListHeight = useSharedValue(0)
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false)
 
   // Whether the scroll-to-bottom button should be showing. Written from the scroll
@@ -103,6 +107,15 @@ export function useScrollToBottom ({
       const distanceFromNewest = Math.max(0, contentHeight.get() - listHeight.get() - y)
       const delta = distanceFromNewest - distanceFromNewestSV.get()
       distanceFromNewestSV.set(distanceFromNewest)
+
+      // The list changing height (the keyboard, the composer growing) is not the user scrolling:
+      // its height and the scroll that keeps the rows in place arrive apart, and counted as travel
+      // they brought the button up and took it away again each time the keyboard moved.
+      if (listHeight.get() !== lastListHeight.get() || isScrollAdjusting.get()) {
+        lastListHeight.set(listHeight.get())
+        isScrollAdjusting.set(false)
+        return
+      }
 
       // The button hides once the newest message is reached; it comes up after scrolling
       // back towards the newest by `scrollToBottomOffset`, and goes again after scrolling

@@ -61,8 +61,8 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
   const { rememberSelection, insertEmoji, deleteBackwardInComposer } =
     useComposerEditing(props.text ?? '', props.textInputProps?.onChangeText)
 
-  // The emoji panel covers the indicator just as the keyboard does.
-  const insetStyle = useKeyboardInset(emoji.open, props.bottomInset)
+  // The keyboard and the emoji panel cover it as the composer rides up on them.
+  const { insetStyle, bottomInset } = useKeyboardInset(props.bottomInset)
 
   const containerStyles = useMemo(() => [
     styles.container,
@@ -236,6 +236,7 @@ export function InputToolbar<TMessage extends IMessage = IMessage> (
           config={emojiConfig}
           onSelect={insertEmoji}
           onBackspace={deleteBackwardInComposer}
+          composerInset={bottomInset}
         />
       )}
     </>

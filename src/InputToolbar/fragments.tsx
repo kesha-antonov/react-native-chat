@@ -56,13 +56,15 @@ export function useSendFragment<TMessage extends IMessage> (props: InputToolbarP
 
 /** Whatever `renderAccessory` draws under the island. */
 export function useAccessoryFragment<TMessage extends IMessage> (props: InputToolbarProps<TMessage>) {
+  // Called on every render, not memoized: `renderAccessory` may be a component with hooks, which
+  // is called as a function here and so runs its hooks as the toolbar's. Skipped on a render whose
+  // props had not changed, they went missing from it and React threw.
+  'use no memo'
   const renderAccessory = props.renderAccessory
-  return useMemo(() => {
-    if (!renderAccessory)
-      return null
+  if (!renderAccessory)
+    return null
 
-    return renderComponentOrElement(renderAccessory, props)
-  }, [renderAccessory, props])
+  return renderComponentOrElement(renderAccessory, props)
 }
 
 /** The reply or editing banner on top of the island. */

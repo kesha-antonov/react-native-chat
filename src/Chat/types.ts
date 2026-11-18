@@ -254,7 +254,11 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    * Default is `true`.
    */
   enableKeyboardProvider?: boolean
-  /** Props for KeyboardAvoidingView. Use `keyboardVerticalOffset` to account for headers or iOS predictive text bar (~44pt). */
+  /**
+   * @deprecated Chat no longer uses a `KeyboardAvoidingView`: the composer rides up with the
+   * keyboard and the list lifts its own content. Only `keyboardVerticalOffset` is read, as where
+   * the chat starts on screen (measured by default); the other props are ignored.
+   */
   keyboardAvoidingViewProps?: KeyboardAvoidingViewProps
   /**
    * Render the `GestureHandlerRootView` Chat mounts around itself. Unlike

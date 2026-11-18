@@ -7,18 +7,17 @@ import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-han
 import { Chat, IMessage } from '..'
 import { waitForRows } from './waitForRows'
 
-// `ChatKeyboardAvoidingView` sits between `Chat` and everything it draws, and takes the composer
-// among its children, so it renders whenever `Chat` does. Counting its renders tells whether a
-// keystroke reached `Chat`, which a render prop cannot: compiled, `Chat` does not call an
-// unchanged one again.
-const avoidingViewRenders = { count: 0 }
-jest.mock('../Chat/ChatKeyboardAvoidingView', () => {
-  const actual = jest.requireActual('../Chat/ChatKeyboardAvoidingView')
+// `Chat` calls `useKeyboardLift` in its own body, so it runs on every render of `Chat` and on no
+// other. Counting the calls tells whether a keystroke reached `Chat`, which a render prop cannot:
+// compiled, `Chat` does not call an unchanged one again.
+const chatRenders = { count: 0 }
+jest.mock('../components/keyboardLift', () => {
+  const actual = jest.requireActual('../components/keyboardLift')
   return {
     ...actual,
-    ChatKeyboardAvoidingView: (props: Record<string, unknown>) => {
-      avoidingViewRenders.count++
-      return actual.ChatKeyboardAvoidingView(props)
+    useKeyboardLift: (offset: number) => {
+      chatRenders.count++
+      return actual.useKeyboardLift(offset)
     },
   }
 })
@@ -26,6 +25,19 @@ jest.mock('../Chat/ChatKeyboardAvoidingView', () => {
 const USER = { _id: 1 }
 const PLACEHOLDER = 'Type a message...'
 const LAYOUT = { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } } }
+
+it('the probe sees Chat render', async () => {
+  const { getByTestId } = await render(<Chat messages={[]} user={USER} onSend={() => {}} />)
+  await fireEvent(getByTestId('GC_WRAPPER'), 'layout', LAYOUT)
+  // The rows mount a frame after the chat, which renders it once more.
+  await waitForRows()
+  chatRenders.count = 0
+
+  // A new height re-renders Chat (it measures the space under itself).
+  await fireEvent(getByTestId('GC_WRAPPER'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 700 } } })
+
+  expect(chatRenders.count).toBeGreaterThan(0)
+})
 
 it('a keystroke re-renders the composer, not Chat', async () => {
   let sendRenders = 0
@@ -38,8 +50,10 @@ it('a keystroke re-renders the composer, not Chat', async () => {
     <Chat messages={[]} user={USER} onSend={() => {}} renderSend={renderSend} />
   )
   await fireEvent(getByTestId('GC_WRAPPER'), 'layout', LAYOUT)
+  // The rows mount a frame after the chat, which renders it once more.
+  await waitForRows()
 
-  avoidingViewRenders.count = 0
+  chatRenders.count = 0
   sendRenders = 0
 
   await fireEvent.changeText(getByTestId(PLACEHOLDER), 'h')
@@ -48,7 +62,7 @@ it('a keystroke re-renders the composer, not Chat', async () => {
   // Sensitivity guard: the composer did get the text.
   expect(sendRenders).toBeGreaterThan(0)
   expect(getByTestId('send:hi')).toBeTruthy()
-  expect(avoidingViewRenders.count).toBe(0)
+  expect(chatRenders.count).toBe(0)
 })
 
 it('a controlled `text` still reaches the composer', async () => {
@@ -97,7 +111,7 @@ it('an edit, from start to save, re-renders the composer, not Chat', async () =>
     <Chat messages={[MESSAGE]} onSend={() => {}} user={ME} onEditMessage={onEditMessage} isMultiline={false} />
   )
   await longPress()
-  avoidingViewRenders.count = 0
+  chatRenders.count = 0
 
   await fireEvent.press(getByText('Edit'))
   await settle()
@@ -110,7 +124,7 @@ it('an edit, from start to save, re-renders the composer, not Chat', async () =>
   await settle()
   expect(onEditMessage).toHaveBeenCalledWith(expect.objectContaining({ _id: 1 }), 'fixed')
   expect(queryByText('Editing')).toBeNull()
-  expect(avoidingViewRenders.count).toBe(0)
+  expect(chatRenders.count).toBe(0)
 })
 
 it('starting a reply re-renders the composer, not Chat', async () => {
@@ -119,12 +133,12 @@ it('starting a reply re-renders the composer, not Chat', async () => {
     <Chat messages={[{ ...MESSAGE, user: { _id: 2, name: 'Alice' } }]} onSend={onSend} user={ME} isMultiline={false} />
   )
   await longPress()
-  avoidingViewRenders.count = 0
+  chatRenders.count = 0
 
   await fireEvent.press(getByText('Reply'))
   await settle()
   expect(getByText(/Alice/)).toBeTruthy()
-  expect(avoidingViewRenders.count).toBe(0)
+  expect(chatRenders.count).toBe(0)
 
   // The reply still goes out with the message.
   await fireEvent.changeText(getByTestId(PLACEHOLDER), 'sure')

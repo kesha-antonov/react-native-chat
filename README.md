@@ -615,19 +615,19 @@ Every group below is collapsed - open the one you need.
 
 ### Keyboard & Layout
 
-- **`bottomInset`** _(Number)_ - The composer's space for the home indicator; measured by default. Pass it when the host already knows it, e.g. a chat inside a sliding panel whose own inset arrives late. It is still given up while the keyboard or the emoji panel covers it
+- **`bottomInset`** _(Number)_ - The composer's space for the home indicator; measured by default. Pass it when the host already knows it, e.g. a chat inside a sliding panel whose own inset arrives late. The keyboard covers it as the composer rides up; it is given up while the emoji panel is open
 - **`keyboardProviderProps`** _(Object)_ - Props to be passed to the [`KeyboardProvider`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/keyboard-provider) for keyboard handling. No defaults are applied - in particular Chat does **not** set `statusBarTranslucent` / `navigationBarTranslucent`, because on Android those change the *activity window* and the change outlives the chat screen ([#2755](https://github.com/FaridSafi/react-native-gifted-chat/issues/2755)). `react-native-keyboard-controller` turns them on by itself when the app is genuinely edge-to-edge, so there is nothing to set in a normal app.
 
   Only used when Chat mounts the provider itself. If your app already mounts a `KeyboardProvider` (the setup `react-native-keyboard-controller` recommends - once, at the root), Chat detects it and reuses it instead of nesting a second one, and this prop is ignored. Configure the provider where you mount it.
 - **`enableKeyboardProvider`** _(Bool)_ - Render the built-in `KeyboardProvider`; default is `true`. You do **not** need to turn this off just because your app mounts its own provider - that case is detected and reused. Set it to `false` only to opt out completely, e.g. when the provider's edge-to-edge behavior causes layout shift or a header jump on Android/Expo.
 - **`enableGestureHandlerRootView`** _(Bool)_ - Render the `GestureHandlerRootView` Chat mounts around itself; default is `true`. Unlike `KeyboardProvider`, an existing one can't be auto-detected - `react-native-gesture-handler` doesn't expose that publicly - so set this to `false` yourself if your app (or a library it uses, e.g. a bottom sheet) already mounts one at the root. Nesting a second one changes the native view hierarchy around the composer, which has been observed to make a rare Fabric/Yoga layout assertion on iOS more likely, especially when Chat is mounted and unmounted while the keyboard is open ([#17](https://github.com/kesha-antonov/react-native-chat/issues/17)).
-- **`keyboardAvoidingViewProps`** _(Object)_ - Props to be passed to the [`KeyboardAvoidingView`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-avoiding-view). See **keyboardVerticalOffset** below for proper keyboard handling.
+- **`keyboardAvoidingViewProps`** _(Object)_ - **Deprecated.** Chat no longer wraps itself in a `KeyboardAvoidingView`: the composer rides up with the keyboard and the message list lifts its own content in step with it ([`KeyboardChatScrollView`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-chat-scroll-view)), so nothing is laid out again while the keyboard moves. Only `keyboardVerticalOffset` is still read, as where the chat starts on screen (see below); the other props are ignored.
 - **`isAlignedTop`** _(`boolean | 'auto'`)_ - Where the bubbles sit **while the whole conversation fits on screen**; once it is taller than the list this has no effect. `false` (default) keeps the usual bottom-anchored chat, `true` pins the messages to the top, and `'auto'` pins them to the top while the keyboard is closed and re-anchors them to the bottom while it is open - so a short conversation starts under the header and moves above the keyboard when the composer is focused ([#2736](https://github.com/FaridSafi/react-native-gifted-chat/issues/2736)). Works with either `isInverted` setting.
 - **`isInverted`** _(Bool)_ - Reverses display order of `messages`; default is `true`
 
 #### Understanding `keyboardVerticalOffset`
 
-[`keyboardVerticalOffset`](https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-avoiding-view#keyboardverticaloffset) tells the KeyboardAvoidingView how far down the screen its container starts. That distance depends on the navigation header and on anything else you render above the chat.
+`keyboardVerticalOffset` tells Chat how far down the screen its container starts. Together with the chat's height it gives the space under the chat (a tab bar, say), which the keyboard does not have to cover, and so how far the composer rides up. That distance depends on the navigation header and on anything else you render above the chat.
 
 **You do not normally need to set it.** Chat measures its own position on screen and uses that, so the input toolbar sits on the keyboard whether the chat is full-screen or under a navigation header. The measurement comes from the `SafeAreaProvider` frame and updates on rotation and layout changes.
 
@@ -1567,15 +1567,6 @@ Make sure you have `android:windowSoftInputMode="adjustResize"` in your `Android
   android:label="@string/app_name"
   android:windowSoftInputMode="adjustResize"
   android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
-```
-
-For **Expo**, you can append `KeyboardAvoidingView` after Chat (Android only):
-
-```jsx
-<View style={{ flex: 1 }}>
-   <Chat />
-   {Platform.OS === 'android' && <KeyboardAvoidingView behavior="padding" />}
-</View>
 ```
 
 </details>

@@ -4,6 +4,7 @@ import { ChatEmpty } from '../components/ChatEmpty'
 import { ChatLoadingOverlay } from '../components/ChatLoadingOverlay'
 import { ChatOverlaySlot } from '../components/ChatOverlay'
 import { FloatingRoundNote } from '../components/FloatingRoundNote'
+import { KeyboardLifted, KeyboardLiftedOverlay } from '../components/keyboardLift'
 import { NowPlayingBar } from '../components/NowPlayingBar'
 import { AnimatedList, MessagesContainer, MessagesContainerProps } from '../MessagesContainer'
 import { PageDownReturn, PageDownReturnContext } from '../MessagesContainer/pageDownReturn'
@@ -131,9 +132,18 @@ export function ChatMessageList<TMessage extends IMessage> ({
           </View>
         )}
         <ChatLoadingOverlay isVisible={isHistoryLoading} />
-        {isFloatingRoundNoteEnabled && <FloatingRoundNote />}
+        {/* Docked to the list's bottom edge, which the keyboard covers: it rides up with it. */}
+        {isFloatingRoundNoteEnabled && (
+          <KeyboardLiftedOverlay>
+            <FloatingRoundNote />
+          </KeyboardLiftedOverlay>
+        )}
       </View>
-      {renderComponentOrElement(renderChatFooter, {})}
+      {renderChatFooter != null && (
+        <KeyboardLifted>
+          {renderComponentOrElement(renderChatFooter, {})}
+        </KeyboardLifted>
+      )}
       <ChatOverlaySlot />
     </View>
   )

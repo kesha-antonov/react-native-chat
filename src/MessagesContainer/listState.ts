@@ -9,7 +9,12 @@ export interface ListState {
   listen: (type: 'totalSize', callback: (value: number) => void) => () => void
   sizes: Map<string, number>
   isFollowingEnd: boolean
+  isAtEnd: boolean
   isNearEnd: boolean
+  scroll: number
+  /** The scrollable content's length, and the list's own (its viewport). */
+  contentLength: number
+  scrollLength: number
 }
 
 /** The bottom padding of the list's content (`styles.messagesContainer`). */
