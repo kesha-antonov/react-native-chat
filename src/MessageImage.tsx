@@ -66,6 +66,7 @@ export interface MessageImageProps<TMessage extends IMessage> {
   imageSourceProps?: Partial<ImageURISource>
   imageStyle?: StyleProp<ImageStyle>
   imageProps?: Partial<ImageProps>
+  onOpen?: () => void
 }
 
 export function MessageImage<TMessage extends IMessage = IMessage> ({
@@ -74,6 +75,7 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
   imageSourceProps,
   imageStyle,
   currentMessage,
+  onOpen,
 }: MessageImageProps<TMessage>) {
   const gallery = useMediaGallery()
   // Outside a `Chat` there is no gallery: the viewer opens on this photo alone.
@@ -144,11 +146,13 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
   const handleImagePress = useCallback(() => {
     if (!imageSource.uri || !currentMessage)
       return
-    if (gallery)
+    if (onOpen)
+      onOpen()
+    else if (gallery)
       gallery.open(currentMessage._id)
     else
       setIsViewerOpen(true)
-  }, [imageSource.uri, currentMessage, gallery])
+  }, [imageSource.uri, currentMessage, gallery, onOpen])
 
   const closeViewer = useCallback(() => setIsViewerOpen(false), [])
 
@@ -214,7 +218,7 @@ export function MessageImage<TMessage extends IMessage = IMessage> ({
                   onProgress={onLoadProgress}
                   onLoad={onLoad}
                   onError={onError}
-                  resizeMode='cover'
+                  resizeMode={imageProps?.resizeMode ?? 'cover'}
                 />
               </Animated.View>
             )
