@@ -41,6 +41,8 @@ const ACTIVATE = [{ name: 'activate' as const }]
 
 export const RoundNotePlayer = ({
   uri,
+  autoPlay,
+  sourceRef,
   videoProps,
   videoStyle,
   duration,
@@ -70,9 +72,10 @@ export const RoundNotePlayer = ({
     playerId,
     playerKey,
     player,
+    isReady,
     isPlayerLoading,
     bufferProgress,
-  } = useNotePlayer(uri, messageId, isAutoplay, duration)
+  } = useNotePlayer(uri, messageId, duration)
   const roundTransfer = transferState(message)
   const mediaTransfer = useMediaTransfer()
 
@@ -107,6 +110,9 @@ export const RoundNotePlayer = ({
     messageId,
     duration,
     isAutoplay,
+    autoPlay: autoPlay && !isViewOnce && !roundTransfer,
+    isReady,
+    canFloat: !isViewOnce && !!controller && messageId != null && controller.getOptions().isFloatingRoundNoteEnabled !== false,
     isIncoming,
     isMediaUnread,
     playingNoteSize,
@@ -186,9 +192,12 @@ export const RoundNotePlayer = ({
   })
   useEffect(() => () => {
     const live = liveRef.current
-    if (live.isCurrent)
-      detachRoundNoteFromRow(controller, playerCache, playerKey, messageId, player, live.isPlaying, !live.isViewOnce)
-  }, [controller, playerCache, playerKey, messageId, player])
+    if (live.isCurrent) {
+      const source = sourceRef.current
+      const replaced = source.messageId === messageId && source.uri !== uri
+      detachRoundNoteFromRow(controller, playerCache, playerKey, messageId, player, live.isPlaying, !live.isViewOnce && !replaced)
+    }
+  }, [controller, playerCache, playerKey, messageId, player, sourceRef, uri])
 
   const isPlayDisabled = viewOnce.isSpent
 

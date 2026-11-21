@@ -65,7 +65,9 @@ export const useAudioEngine = (progress: SharedValue<number>, durationProp: numb
 
   // Whichever source is running when called, not the one that was when an effect was set up.
   const stopRunningSource = useCallback(() => {
-    stopSourceNode(sourceRef.current)
+    const source = sourceRef.current
+    sourceRef.current = null
+    stopSourceNode(source)
   }, [])
 
   return { bufferRef, sourceRef, tickTimerRef, durationRef, pendingPlayRef, playFromRef, stopRaf, stopRunningSource }

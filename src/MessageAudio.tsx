@@ -1,21 +1,23 @@
-import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import React, { useCallback, useContext, useEffect, useId, useLayoutEffect, useRef } from 'react'
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useRaiseToListen } from './components/earpiece'
 import { MediaCard } from './components/MediaCard'
 import { getMediaPalette } from './components/mediaPalette'
 import {
+  LiftedPlaybackContext,
   StopReason,
   claimPlayback,
   releasePlayback,
   useNotePlaybackOptions,
   usePlaybackRate,
-  usePlaylistEntry,
   useReportNowPlaying,
 } from './components/mediaPlayback'
 import { suppressPressAfterHold } from './components/messagePress'
 import { UnreadDot } from './components/NoteIndicators'
 import { PlayPauseIcon } from './components/PlayPauseIcon'
 import { TranscribeButton, TranscriptionText, useTranscription } from './components/TranscribeButton'
+import { useAutoPlay } from './components/useAutoPlay'
+import { useVoicePlaybackEvents } from './components/useVoicePlaybackEvents'
 import { useViewOnce } from './components/viewOnce'
 import { ViewOnceBadge } from './components/ViewOnceBadge'
 import {
@@ -56,6 +58,8 @@ const ExpoAudioPlayer = ({
   message,
   isViewOnce = false,
   transcription,
+  autoPlay,
+  onPlaybackEnded,
 }: {
   uri: string
   position: 'left' | 'right'
@@ -66,6 +70,8 @@ const ExpoAudioPlayer = ({
   message?: IMessage
   isViewOnce?: boolean
   transcription?: string
+  autoPlay?: boolean
+  onPlaybackEnded?: () => void
 }) => {
   const player = expoAudio.useAudioPlayer(uri)
   const status = expoAudio.useAudioPlayerStatus(player)
@@ -81,10 +87,11 @@ const ExpoAudioPlayer = ({
   const { markReadRef, onTranscribe, onViewOnceEnd } = useNotePlaybackOptions(messageId)
   const transcribe = useTranscription(message, messageId, transcription, onTranscribe)
   const viewOnce = useViewOnce(message, messageId, isViewOnce, onViewOnceEnd)
-  // Heard here already, before the app has updated `isMediaUnread`.
-  const [isHeard, setIsHeard] = useState(false)
+  const hasStarted = useRef(false)
+  const attemptRef = useRef<{ phase: 'seeking' | 'starting' | 'playing' } | null>(null)
 
   const pause = useCallback(() => {
+    attemptRef.current = null
     try {
       player.pause()
     } catch {
@@ -98,7 +105,7 @@ const ExpoAudioPlayer = ({
     pause()
     if (reason === 'replaced') {
       try {
-        player.seekTo(0)
+        void Promise.resolve(player.seekTo(0)).catch(() => {})
       } catch {
         // player already released
       }
@@ -108,25 +115,31 @@ const ExpoAudioPlayer = ({
   }, [pause, player, viewOnce])
 
   const play = useCallback((fromStart: boolean) => {
-    // A view-once note that has played does not play again.
-    if (!viewOnce.onStart())
+    if (viewOnce.isSpent)
       return
 
-    if (fromStart)
-      player.seekTo(0)
-
-    player.setPlaybackRate?.(rate)
-    player.play()
-    // Same one-at-a-time rule as the waveform player and round notes; this
-    // fallback used to play over them.
+    hasStarted.current = true
+    const attempt: NonNullable<typeof attemptRef.current> = { phase: 'seeking' }
+    attemptRef.current = attempt
     claimPlayback(playerId, onStop)
-
-    // An incoming note counts as read the moment it starts playing.
-    if (position === 'left' && isMediaUnread) {
-      setIsHeard(true)
-      markReadRef.current()
+    const start = () => {
+      if (attemptRef.current !== attempt)
+        return
+      attempt.phase = 'starting'
+      player.setPlaybackRate?.(rate)
+      player.play()
     }
-  }, [player, rate, playerId, onStop, position, isMediaUnread, markReadRef, viewOnce])
+    void Promise.resolve().then(async () => {
+      if (fromStart)
+        await player.seekTo(0)
+      start()
+    }).catch(() => {
+      if (attemptRef.current === attempt) {
+        attemptRef.current = null
+        releasePlayback(playerId)
+      }
+    })
+  }, [player, rate, playerId, onStop, viewOnce.isSpent])
 
   // A paused note keeps its claim: it is still the current one, so a note
   // started later can reset it.
@@ -137,31 +150,50 @@ const ExpoAudioPlayer = ({
       play(!!status?.didJustFinish || (duration > 0 && currentTime >= duration))
   }, [status, duration, currentTime, pause, play])
 
-  const onEndedRef = usePlaylistEntry(messageId, () => play(true))
-  const viewOnceEndRef = useRef(viewOnce.onEnd)
-  // Layout effects run before the passive effect below that calls it, so it is never stale.
+  const { isUnread, markStarted, notifyEnded } = useVoicePlaybackEvents(
+    messageId, position === 'left' && !!isMediaUnread, markReadRef, () => play(true), onPlaybackEnded
+  )
+  const statusUpdateRef = useRef<(event: { playing?: boolean, didJustFinish?: boolean, error?: string | null }) => void>(() => {})
   useLayoutEffect(() => {
-    viewOnceEndRef.current = viewOnce.onEnd
+    statusUpdateRef.current = event => {
+      const attempt = attemptRef.current
+      if (!attempt || attempt.phase === 'seeking')
+        return
+      if (event.error) {
+        attemptRef.current = null
+        releasePlayback(playerId)
+        return
+      }
+      if (attempt.phase === 'starting' && (event.playing || event.didJustFinish)) {
+        attempt.phase = 'playing'
+        viewOnce.onStart()
+        markStarted()
+      }
+      if (event.didJustFinish) {
+        attemptRef.current = null
+        releasePlayback(playerId)
+        viewOnce.onEnd()
+        notifyEnded()
+      }
+    }
   })
-
-  // `didJustFinish` is set only by a natural end, never by a pause, so it is
-  // the signal to move on to the next note.
-  const didFinish = !!status?.didJustFinish
   useEffect(() => {
-    if (!didFinish)
-      return
+    const subscription = player.addListener('playbackStatusUpdate', (event: Parameters<typeof statusUpdateRef.current>[0]) => statusUpdateRef.current(event))
+    return () => subscription.remove()
+  }, [player])
 
-    releasePlayback(playerId)
-    viewOnceEndRef.current()
-    onEndedRef.current()
-  }, [didFinish, playerId, onEndedRef])
+  const isReady = !!status?.isLoaded && (Platform.OS !== 'web' || status.duration > 0 || status.isLive)
+  useAutoPlay(autoPlay && !isViewOnce && !message?.transfer && !message?.isDownloadRequired, isReady, () => play(false), hasStarted)
 
   // A speed picked on another note applies to this one mid-play too.
   useEffect(() => {
     player.setPlaybackRate?.(rate)
   }, [player, rate])
 
-  useEffect(() => () => releasePlayback(playerId), [playerId])
+  useEffect(() => () => {
+    pause()
+    releasePlayback(playerId)
+  }, [pause, playerId])
 
   // The "now playing" bar's close: stop and rewind, as another note would.
   const stopFromBar = useCallback(() => {
@@ -173,7 +205,6 @@ const ExpoAudioPlayer = ({
   // current one (playing, or paused part-way), the full length otherwise.
   const isCurrent = isPlaying || currentTime > 0
   useReportNowPlaying(messageId, 'voice', isCurrent, isPlaying, togglePlayback, stopFromBar)
-  const isUnread = position === 'left' && !!isMediaUnread && !isHeard
 
   // Raise to listen, as in the waveform player.
   useRaiseToListen({
@@ -268,17 +299,24 @@ export function MessageAudio<TMessage extends IMessage = IMessage> ({
   position = 'left',
   containerStyle,
   audioStyle,
+  autoPlay,
+  onPlaybackEnded,
 }: Partial<MessageAudioProps<TMessage>>) {
+  const isLifted = !!useContext(LiftedPlaybackContext)
   const uri = currentMessage?.audio
 
   if (!uri)
     return null
 
+  const sourceKey = `${String(currentMessage?._id)}:${uri}`
   return (
     <View style={[styles.container, containerStyle]}>
       {isWaveformAvailable
         ? (
           <WaveformPlayer
+            key={sourceKey}
+            autoPlay={!isLifted && autoPlay}
+            onPlaybackEnded={onPlaybackEnded}
             uri={uri}
             position={position}
             duration={currentMessage?.duration}
@@ -293,6 +331,9 @@ export function MessageAudio<TMessage extends IMessage = IMessage> ({
         : isExpoAudioAvailable
           ? (
             <ExpoAudioPlayer
+              key={sourceKey}
+              autoPlay={!isLifted && autoPlay}
+              onPlaybackEnded={onPlaybackEnded}
               uri={uri}
               position={position}
               messageId={currentMessage?._id}

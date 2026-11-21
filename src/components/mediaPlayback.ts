@@ -224,6 +224,7 @@ export const createMediaPlaybackController = (): MediaPlaybackController => {
   let isInverted = true
   let options: MediaPlaybackOptions = { isAutoPlayNextEnabled: true, isRoundVideoAutoplayEnabled: false }
   const entries = new Map<string | number, PlaylistEntry>()
+  const reportedReads = new Set<string | number>()
   const nearEarListeners = new Set<() => void>()
   let grownNote: string | number | null = null
   let grownTimeShift = 0
@@ -319,6 +320,12 @@ export const createMediaPlaybackController = (): MediaPlaybackController => {
       }
     },
     setMessages (next, inverted) {
+      if (reportedReads.size) {
+        const unread = new Set(next.filter(message => message.isMediaUnread).map(message => message._id))
+        for (const id of reportedReads)
+          if (!unread.has(id))
+            reportedReads.delete(id)
+      }
       messages = next
       isInverted = inverted
     },
@@ -341,8 +348,10 @@ export const createMediaPlaybackController = (): MediaPlaybackController => {
     },
     markRead (messageId) {
       const message = messages.find(m => m._id === messageId)
-      if (message?.isMediaUnread)
-        options.onMediaRead?.(message)
+      if (message?.isMediaUnread && options.onMediaRead && !reportedReads.has(messageId)) {
+        reportedReads.add(messageId)
+        options.onMediaRead(message)
+      }
     },
     register (messageId, entry) {
       entries.set(messageId, entry)

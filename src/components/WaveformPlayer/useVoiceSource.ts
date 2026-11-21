@@ -74,8 +74,10 @@ export const useVoiceSource = ({
   const expectedTrackWidth = voiceTrackWidth(contentWidth, ROW_PADDING_H, isTranscribeVisible)
   const barCount = barCountForWidth(trackWidth > 0 ? trackWidth : expectedTrackWidth)
   const barCountRef = useRef(barCount)
+  const durationPropRef = useRef(durationProp)
   useLayoutEffect(() => {
     barCountRef.current = barCount
+    durationPropRef.current = durationProp
   })
   // The waveform the server sent with the note is drawn first, so
   // the bars are there before the file is; only without one is it decoded from the audio.
@@ -125,7 +127,7 @@ export const useVoiceSource = ({
           return
 
         bufferRef.current = buffer
-        durationRef.current = bufferDuration(buffer, durationProp)
+        durationRef.current = bufferDuration(buffer, durationPropRef.current)
         setDecodedDuration(durationRef.current)
         setLevels(levelsFromSamples(buffer.getChannelData(0), barCountRef.current))
         setIsFetching(false)
@@ -148,7 +150,7 @@ export const useVoiceSource = ({
       releasePlayback(playerId)
       stopRunningSource()
     }
-  }, [uri, isRemote, shouldLoad, downloadProgress, stopRaf, playerId, durationProp, bufferRef, durationRef, pendingPlayRef, playFromRef, stopRunningSource])
+  }, [uri, isRemote, shouldLoad, downloadProgress, stopRaf, playerId, bufferRef, durationRef, pendingPlayRef, playFromRef, stopRunningSource])
 
   // Re-bucket an already-decoded waveform when the bar count changes.
   useEffect(() => {
@@ -171,6 +173,7 @@ export const useVoiceSource = ({
     setIsRequested,
     downloadProgress,
     fullDuration,
+    isReady: decodedDuration > 0,
     contentWidth,
     barCount,
   }

@@ -197,6 +197,7 @@ export interface MediaTransferProps {
 export type IChatMessage = IMessage
 
 export interface MessageVideoProps<TMessage extends IMessage> {
+  autoPlay?: boolean
   currentMessage: TMessage
   position?: 'left' | 'right'
   containerStyle?: StyleProp<ViewStyle>
@@ -205,6 +206,8 @@ export interface MessageVideoProps<TMessage extends IMessage> {
 }
 
 export interface MessageAudioProps<TMessage extends IMessage> {
+  autoPlay?: boolean
+  onPlaybackEnded?: () => void
   currentMessage: TMessage
   position?: 'left' | 'right'
   containerStyle?: StyleProp<ViewStyle>
