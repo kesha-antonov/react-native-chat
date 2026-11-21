@@ -70,6 +70,7 @@ export const ru: Partial<ChatLabels> = {
   attachNoPhotos: 'Фото пока нет',
   attachChooseFromGallery: 'Выбрать из галереи',
   attachChooseFile: 'Выбрать файл',
+  attachLocationUnavailable: 'Не удалось определить ваше местоположение. Попробуйте ещё раз.',
   attachLocationDenied: 'Доступ к геопозиции выключен. Включите его в Настройках, чтобы отправить местоположение.',
   emptyChatTitle: 'Здесь пока нет сообщений...',
   emptyChatText: 'Отправьте сообщение или нажмите на приветствие ниже.',

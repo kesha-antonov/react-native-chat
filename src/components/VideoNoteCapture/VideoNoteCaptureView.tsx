@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { useLabels } from '../../hooks/useLabels'
+import { VideoRecordingProps } from '../../Models'
 import { FlashIcon, FlipCameraIcon } from '../MediaControls'
 import { VideoNoteRecorderController, createVideoNoteRecorder, getVisionCamera, isCameraControlError } from '../visionCamera'
 import { EASE_OUT_QUINT, FLIP_MS, NO_CAMERA_TIMEOUT_MS, ZOOM_RESET_MS } from './constants'
@@ -20,7 +21,7 @@ import { RingProgress } from './types'
 import { useRoundAnimation } from './useRoundAnimation'
 import { useRoundLayout } from './useRoundLayout'
 
-interface VideoNoteCaptureViewProps {
+interface VideoNoteCaptureViewProps extends Pick<VideoRecordingProps, 'targetResolution' | 'targetBitRate'> {
   cameraRef: React.RefObject<VideoNoteRecorderController | null>
   facing: 'front' | 'back'
   isFlashOn: boolean
@@ -69,6 +70,8 @@ const useVideoOutput: (options: object) => any = visionCamera?.useVideoOutput
  */
 export function VideoNoteCaptureView ({
   cameraRef,
+  targetResolution,
+  targetBitRate,
   facing,
   isFlashOn,
   isRecording,
@@ -94,7 +97,8 @@ export function VideoNoteCaptureView ({
 
   // Recording goes through a video output and the recorders it creates. The
   // persistent recorder keeps one file across a flip mid-take.
-  const videoOutput = useVideoOutput({ enableAudio: true, enablePersistentRecorder: true })
+  const [quality] = useState(() => ({ targetResolution, targetBitRate }))
+  const videoOutput = useVideoOutput({ enableAudio: true, enablePersistentRecorder: true, ...quality })
   const outputs = useMemo(() => [videoOutput], [videoOutput])
   const recorder = useMemo(() => createVideoNoteRecorder(videoOutput), [videoOutput])
   useEffect(() => {

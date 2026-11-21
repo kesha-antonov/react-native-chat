@@ -7,11 +7,11 @@ import { Spinner } from '../../components/Spinner'
 import { useIsRTL } from '../../hooks/useIsRTL'
 import { useLabels } from '../../hooks/useLabels'
 import { useTheme, useThemedStyles } from '../../hooks/useTheme'
-import { formatLabel } from '../../i18n'
+import { defaultLabels, formatLabel } from '../../i18n'
 import { hasImagePicker } from '../../optional'
-import { CurrentLocation, pickFromSystemGallery } from '../buildMessages'
+import { pickFromSystemGallery } from '../buildMessages'
 import { GalleryStatus } from '../gallery'
-import { AttachmentTab, PickedAttachment } from '../types'
+import { AttachmentTab, CurrentLocation, PickedAttachment } from '../types'
 import { createStyles } from './styles'
 
 /**
@@ -38,7 +38,7 @@ export function TabPanel ({ activeTab, location, onSendLocation, hasGrid, galler
       ? labels.attachLocating
       : location.status === 'located'
         ? (location.accuracy ? formatLabel(labels.attachLocationAccuracy, { meters: Math.round(location.accuracy) }) : '')
-        : location.status === 'denied' ? labels.attachLocationDenied : ''
+        : location.status === 'denied' ? labels.attachLocationDenied : labels.attachLocationUnavailable ?? defaultLabels.attachLocationUnavailable
     return (
       <Pressable onPress={onSendLocation} style={[styles.locationRow, isRTL && styles.rowReverse]} accessibilityRole='button' accessibilityLabel={labels.attachSendLocation}>
         <View style={styles.locationIcon}>

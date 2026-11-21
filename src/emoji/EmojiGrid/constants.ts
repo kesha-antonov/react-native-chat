@@ -56,7 +56,7 @@ export const TAB_FALLBACK: Record<EmojiCategoryKey | 'recent', string> = {
   flags: '🏳️',
 }
 
-export const CATEGORY_LABEL: Record<EmojiCategoryKey, keyof ChatLabels> = {
+export const CATEGORY_LABEL = {
   smileys: 'emojiSmileys',
   animals: 'emojiAnimals',
   food: 'emojiFood',
@@ -65,4 +65,4 @@ export const CATEGORY_LABEL: Record<EmojiCategoryKey, keyof ChatLabels> = {
   objects: 'emojiObjects',
   symbols: 'emojiSymbols',
   flags: 'emojiFlags',
-}
+} satisfies Record<EmojiCategoryKey, keyof ChatLabels>

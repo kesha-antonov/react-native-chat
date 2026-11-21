@@ -33,7 +33,8 @@ export function LiveVideoNote<TMessage extends IMessage = IMessage> ({
   // Recording goes through a video output and the recorders it creates; the
   // persistent recorder keeps one file across a flip mid-take. Audio is only
   // recorded with the microphone permission granted.
-  const videoOutput = useVideoOutput({ enableAudio: microphone.hasPermission, enablePersistentRecorder: true })
+  const [quality] = useState(() => ({ targetResolution: config?.targetResolution, targetBitRate: config?.targetBitRate }))
+  const videoOutput = useVideoOutput({ enableAudio: microphone.hasPermission, enablePersistentRecorder: true, ...quality })
   const outputs = useMemo(() => [videoOutput], [videoOutput])
 
   const micHasPermission = microphone.hasPermission

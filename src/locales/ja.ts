@@ -70,6 +70,7 @@ export const ja: Partial<ChatLabels> = {
   attachNoPhotos: '写真はまだありません',
   attachChooseFromGallery: 'ギャラリーから選択',
   attachChooseFile: 'ファイルを選択',
+  attachLocationUnavailable: '現在地を取得できませんでした。もう一度お試しください。',
   attachLocationDenied: '位置情報へのアクセスがオフです。位置情報を送信するには設定でオンにしてください。',
   emptyChatTitle: 'まだメッセージはありません...',
   emptyChatText: 'メッセージを送信するか、下のあいさつをタップしてください。',

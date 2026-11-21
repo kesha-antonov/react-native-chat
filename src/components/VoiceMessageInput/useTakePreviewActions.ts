@@ -2,11 +2,10 @@ import React, { RefObject, useCallback, useImperativeHandle } from 'react'
 import { Alert, Platform } from 'react-native'
 
 import { useLabels } from '../../hooks/useLabels'
-import { IMessage } from '../../Models'
 import { confirmTrimOnResume, shouldConfirmTrimOnResume } from '../recordingFeedback'
 import { RecordingMeter } from '../recordingMeter'
-import { clipsDuration, renderClips, trimClips, VoiceClip } from '../voiceEditing'
-import { viewOnceFields } from './recorder'
+import { clipsDuration, clipsLevels, renderClips, trimClips, VoiceClip } from '../voiceEditing'
+import { voiceMessageFields } from './recorder'
 import { VoiceMessageInputHandle, VoiceMessageInputProps, VoiceRecordingPreview } from './types'
 
 interface UseTakePreviewActionsOptions {
@@ -84,7 +83,7 @@ export function useTakePreviewActions ({
     // Untrimmed, the preview's file is already the whole take.
     if (!isTrimmed()) {
       clipsRef.current = []
-      onSend?.({ audio: preview.uri, duration: Math.round(preview.durationMs / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
+      onSend?.(voiceMessageFields(preview.uri, preview.durationMs, preview.levels, isViewOnceRef.current), false)
       return
     }
 
@@ -93,7 +92,7 @@ export function useTakePreviewActions ({
     // A promise chain: the compiler cannot lower the optional calls inside a `try`.
     await renderClips(clips)
       .then(uri => {
-        onSend?.({ audio: uri, duration: Math.round(clipsDuration(clips) / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
+        onSend?.(voiceMessageFields(uri, clipsDuration(clips), clipsLevels(clips), isViewOnceRef.current), false)
       })
       .catch(error => {
         config?.onError?.(error)
@@ -103,6 +102,9 @@ export function useTakePreviewActions ({
   // Resume: cut the take to the handles, then record onto its end.
   const resume = useCallback(() => {
     const go = () => {
+      if (config?.canUseAudioSession?.() === false)
+        return
+
       clipsRef.current = trimmedClips()
       trimRef.current = { start: 0, end: 1 }
       meter.elapsed.set(clipsDuration(clipsRef.current))
@@ -127,7 +129,7 @@ export function useTakePreviewActions ({
     }
 
     go()
-  }, [labels, start, trimmedClips, meter, clipsRef, isTrimmed, setIsLocked, setIsResuming, trimRef])
+  }, [labels, config, start, trimmedClips, meter, clipsRef, isTrimmed, setIsLocked, setIsResuming, trimRef])
 
   return { sendPreview, resume }
 }

@@ -37,6 +37,7 @@ export type {
   AttachmentsProps,
   AttachmentMenuRenderProps,
   AttachmentPickers,
+  CurrentLocation,
   AttachmentPickResult,
   PickedAttachment
 } from './attachments/types'
@@ -63,6 +64,9 @@ export { ChatHeader } from './ChatHeader'
 export type { ChatHeaderProps } from './ChatHeader'
 export { MessageAudio } from './MessageAudio'
 export { MessageVideo } from './MessageVideo'
+export { VideoTransferOverlay } from './MessageVideo/VideoTransferOverlay'
+export type { VideoTransferOverlayProps } from './MessageVideo/VideoTransferOverlay'
+export { useMediaTransfer } from './components/mediaTransfer'
 export { MessageReply } from './components/MessageReply'
 export { ReplyPreview } from './components/ReplyPreview'
 export { StreamingCursor } from './components/StreamingCursor'

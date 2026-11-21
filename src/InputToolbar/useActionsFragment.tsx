@@ -32,7 +32,7 @@ export function useActionsFragment<TMessage extends IMessage> (
   const requestedTabsId = requestedTabs?.join(',')
   // Which tabs have the app's own picker, as a key for the same reason.
   const pickers = attachmentsConfig?.pickers
-  const customPickersId = (['gallery', 'camera', 'file'] as const).filter(tab => !!pickers?.[tab]).join(',')
+  const customPickersId = (['gallery', 'camera', 'file', 'location'] as const).filter(tab => !!pickers?.[tab]).join(',')
   const isGalleryGridEnabled = attachmentsConfig?.isGalleryGridEnabled !== false
   const attachmentTabs = useMemo(() => {
     if (!hasAttachments)

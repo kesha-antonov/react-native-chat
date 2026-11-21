@@ -54,6 +54,8 @@ export function useRecordGesture ({
   exitReasonRef,
   setIsLockHintVisible,
 }: RecordGestureOptions) {
+  'use no memo'
+
   const startedAtRef = useRef(0)
 
   // A tick when the voice recorder starts and stops; a round take ticks
@@ -91,10 +93,12 @@ export function useRecordGesture ({
   const panGesture = usePanGesture({
     activateAfterLongPress: onTap ? HOLD_DELAY_MS : 0,
     onActivate: () => {
+      'worklet'
       isTakeSV.set(1)
       runOnJS(jsStart)()
     },
     onUpdate: event => {
+      'worklet'
       if (isTakeSV.value === 0 || lockedSV.value > 0)
         return
 
@@ -135,6 +139,7 @@ export function useRecordGesture ({
       }
     },
     onFinalize: event => {
+      'worklet'
       if (isTakeSV.value === 0)
         return
 
@@ -172,6 +177,7 @@ export function useRecordGesture ({
     enabled: hasTap,
     maxDuration: HOLD_DELAY_MS,
     onDeactivate: () => {
+      'worklet'
       runOnJS(jsTap)()
     },
   })

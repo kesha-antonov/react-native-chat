@@ -42,18 +42,22 @@ export const displayFileName = (name?: string) => (name ?? '').replace(BIDI_CONT
 
 /** Opens a file: the system share sheet (`expo-sharing`) when installed, otherwise `Linking`. */
 export const openFile = (file: MessageFileData) => {
+  const { uri } = file
+  if (!uri)
+    return
+
   // The uri comes from the message: an `intent:` or custom scheme must not reach the system.
-  if (!isSafeMediaUrl(file.uri)) {
-    openMediaUrl(file.uri)
+  if (!isSafeMediaUrl(uri)) {
+    openMediaUrl(uri)
     return
   }
   const sharing = getExpoSharing()
   if (sharing?.shareAsync) {
-    Promise.resolve(sharing.shareAsync(file.uri, { mimeType: file.mimeType, dialogTitle: file.name }))
-      .catch(() => openMediaUrl(file.uri))
+    Promise.resolve(sharing.shareAsync(uri, { mimeType: file.mimeType, dialogTitle: file.name }))
+      .catch(() => openMediaUrl(uri))
     return
   }
-  openMediaUrl(file.uri)
+  openMediaUrl(uri)
 }
 
 // The document cell: a 44 circle in the bubble's
@@ -69,6 +73,7 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
   position = 'left',
   containerStyle,
   onPress,
+  accessibilityHint,
 }: Partial<MessageFileProps<TMessage>>) {
   const styles = useThemedStyles(position === 'right' ? createRightStyles : createLeftStyles)
   const isRTL = useIsRTL()
@@ -109,12 +114,15 @@ export function MessageFile<TMessage extends IMessage = IMessage> ({
     ? `${formatFileSize(Math.round(clampProgress(currentMessage.transfer.progress) * file.size))} / ${formatFileSize(file.size)}`
     : formatFileSize(file.size)
   const hasText = !!currentMessage?.text
+  const canPress = !!(transfer || file.uri || onPress)
 
   return (
     <Pressable
       onPress={handlePress}
       {...suppressPressAfterHold}
-      accessibilityRole='button'
+      disabled={!canPress}
+      accessibilityRole={canPress ? 'button' : undefined}
+      accessibilityHint={accessibilityHint}
       accessibilityLabel={[name, size].filter(Boolean).join(', ')}
       style={[styles.container, containerStyle]}
     >

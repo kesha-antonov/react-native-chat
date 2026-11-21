@@ -38,7 +38,7 @@ export function formatMessageTime (
   timeFormat: string,
   editedLabel: string
 ): string {
-  const time = formatTimeCached(message.createdAt, locale, timeFormat)
+  const time = formatTimeCached(message.editedAt ?? message.createdAt, locale, timeFormat)
   return isMessageEdited(message) ? `${editedLabel} ${time}` : time
 }
 

@@ -70,6 +70,7 @@ export const it: Partial<ChatLabels> = {
   attachNoPhotos: 'Ancora nessuna foto',
   attachChooseFromGallery: 'Scegli dalla galleria',
   attachChooseFile: 'Scegli un file',
+  attachLocationUnavailable: 'Impossibile trovare la tua posizione. Riprova.',
   attachLocationDenied: 'L\'accesso alla posizione è disattivato. Attivalo nelle Impostazioni per inviare la tua posizione.',
   emptyChatTitle: 'Ancora nessun messaggio qui...',
   emptyChatText: 'Invia un messaggio o tocca il saluto qui sotto.',

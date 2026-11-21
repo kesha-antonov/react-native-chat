@@ -61,7 +61,7 @@ export interface MessageReaction {
 /** A document attached to a message (`IMessage.file`), drawn as a file bubble. */
 export interface IMessageFile {
   /** Where the file is: a local `file://` path or a remote URL. */
-  uri: string
+  uri?: string
   /** The file name shown in the bubble, with its extension. */
   name: string
   /** Size in bytes, shown under the name. */
@@ -218,6 +218,7 @@ export interface MessageFileProps<TMessage extends IMessage> {
   containerStyle?: StyleProp<ViewStyle>
   /** Override opening the file (the system share sheet with `expo-sharing`, else `Linking`). */
   onPress?: (file: IMessageFile) => void
+  accessibilityHint?: string
 }
 
 export interface MessageLocationProps<TMessage extends IMessage> {
@@ -234,6 +235,9 @@ export interface MessageLocationProps<TMessage extends IMessage> {
  * `expo-audio` peer dependency; when it is absent the mic button is hidden.
  */
 export interface AudioRecordingProps {
+  canUseAudioSession?: () => boolean
+  recordingFileName?: () => string
+  previewAtLimit?: boolean
   /**
    * Show the "view once" toggle above the lock while a take is locked.
    * A take sent with it on arrives in `onSend` with `isViewOnce: true`.
@@ -265,6 +269,10 @@ export interface AudioRecordingProps {
  * `expo-image-picker` peer dependency; when it is absent the button is hidden.
  */
 export interface VideoRecordingProps {
+  canUseCapture?: () => boolean
+  confirmBeforeSend?: boolean
+  targetResolution?: { width: number, height: number }
+  targetBitRate?: number
   /** As `audioRecording.isViewOnceEnabled`, for round video takes. */
   isViewOnceEnabled?: boolean
   /**
