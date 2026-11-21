@@ -9,7 +9,7 @@ import {
   hasLocation,
   hasMediaLibrary,
 } from '../optional'
-import { AttachmentPickers, AttachmentTab, AttachmentsProps, PickedAttachment } from './types'
+import { AttachmentPickers, AttachmentTab, AttachmentsProps, CurrentLocation, PickedAttachment } from './types'
 
 /**
  * The messages the built-in menu sends: one per image, video and file (there are no albums
@@ -80,7 +80,7 @@ export const isAttachmentTabAvailable = (
     case 'file':
       return hasDocumentPicker() || !!pickers?.file
     case 'location':
-      return hasLocation()
+      return hasLocation() || !!pickers?.location
   }
   return false
 }
@@ -167,12 +167,8 @@ export async function pickDocuments (): Promise<PickedAttachment[]> {
   }))
 }
 
-export type CurrentLocation =
-  | { status: 'located', latitude: number, longitude: number, accuracy?: number }
-  | { status: 'denied' }
-  | { status: 'failed' }
-
 const LOCATION_TIMEOUT_MS = 8000
+const LAST_KNOWN_MAX_AGE_MS = 30000
 
 /** The current position (`expo-location`), asking for permission first. */
 export async function getCurrentLocation (): Promise<CurrentLocation> {
@@ -185,12 +181,17 @@ export async function getCurrentLocation (): Promise<CurrentLocation> {
       return { status: 'denied' }
     // A fix can take a while (or never come, on a simulator with no location set), so the
     // last known one stands in after a few seconds.
-    const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), LOCATION_TIMEOUT_MS))
-    const position = await Promise.race([
-      location.getCurrentPositionAsync({ accuracy: location.Accuracy?.Balanced ?? 3 }),
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    const timeout = new Promise<null>(resolve => {
+      timeoutId = setTimeout(() => resolve(null), LOCATION_TIMEOUT_MS)
+    })
+    const current = await Promise.race([
+      Promise.resolve().then(() => location.getCurrentPositionAsync({ accuracy: location.Accuracy?.Balanced ?? 3 })).catch(() => null),
       timeout,
-    ]) ?? await location.getLastKnownPositionAsync?.()
-    if (!position?.coords)
+    ])
+    clearTimeout(timeoutId)
+    const position = current ?? await location.getLastKnownPositionAsync?.({ maxAge: LAST_KNOWN_MAX_AGE_MS })
+    if (!position?.coords || (!current && Date.now() - position.timestamp > LAST_KNOWN_MAX_AGE_MS))
       return { status: 'failed' }
     return {
       status: 'located',

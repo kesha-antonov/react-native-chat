@@ -70,6 +70,7 @@ export const ar: Partial<ChatLabels> = {
   attachNoPhotos: 'لا توجد صور بعد',
   attachChooseFromGallery: 'اختيار من المعرض',
   attachChooseFile: 'اختيار ملف',
+  attachLocationUnavailable: 'تعذّر تحديد موقعك. حاول مرة أخرى.',
   attachLocationDenied: 'الوصول إلى الموقع متوقف. فعّله من الإعدادات لإرسال موقعك.',
   emptyChatTitle: 'لا توجد رسائل هنا بعد...',
   emptyChatText: 'أرسل رسالة أو انقر على التحية أدناه.',

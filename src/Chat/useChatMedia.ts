@@ -1,4 +1,4 @@
-import { useEffect, useInsertionEffect, useRef, useState } from 'react'
+import { useEffect, useInsertionEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   createMediaPlaybackController,
   setPlaybackRate,
@@ -40,10 +40,10 @@ export function useChatMedia<TMessage extends IMessage> ({
     isFloatingRoundNoteEnabled: mediaPlayback?.isFloatingRoundNoteEnabled ?? true,
   })
 
-  // Media button handlers, read at press time; written per render like the
-  // playback options so rows never re-render for a new handler.
   const [mediaTransferController] = useState(createMediaTransferController)
-  mediaTransferController.set(mediaTransfer)
+  useLayoutEffect(() => {
+    mediaTransferController.set(mediaTransfer)
+  }, [mediaTransferController, mediaTransfer])
 
   // The latest messages, for what reads them only when it needs them: the selection, and the
   // photos the media viewer pages through (read when it opens, so nothing re-renders as

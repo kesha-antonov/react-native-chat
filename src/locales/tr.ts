@@ -70,6 +70,7 @@ export const tr: Partial<ChatLabels> = {
   attachNoPhotos: 'Henüz fotoğraf yok',
   attachChooseFromGallery: 'Galeriden seç',
   attachChooseFile: 'Dosya seç',
+  attachLocationUnavailable: 'Konumun bulunamadı. Tekrar dene.',
   attachLocationDenied: 'Konum erişimi kapalı. Konumunu göndermek için Ayarlar\'dan aç.',
   emptyChatTitle: 'Burada henüz mesaj yok...',
   emptyChatText: 'Bir mesaj gönderin veya aşağıdaki selama dokunun.',

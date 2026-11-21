@@ -1,6 +1,7 @@
 import { Platform } from 'react-native'
 
 import { getExpoAudio, hasVoiceRecording } from '../../optional'
+import { levelsFromSamples } from '../voiceWaveform'
 import { METERING_FLOOR_DB } from './constants'
 
 // Optional recorder. Resolved through the optional-peer registry (`src/optional`) so the bundle works
@@ -20,8 +21,12 @@ export const normalizeMetering = (db: number | undefined) => {
   return (clamped - METERING_FLOOR_DB) / -METERING_FLOOR_DB
 }
 
-/** The message field a view-once take adds (`IMessage.isViewOnce`). */
-export const viewOnceFields = (isViewOnce: boolean) => (isViewOnce ? { isViewOnce: true } : null)
+export const voiceMessageFields = (audio: string, durationMs: number, levels: number[], isViewOnce: boolean) => ({
+  audio,
+  duration: durationMs / 1000,
+  ...(levels.length ? { waveform: levelsFromSamples(levels, Math.min(levels.length, 100)) } : null),
+  ...(isViewOnce ? { isViewOnce: true } : null),
+})
 
 // The three best-effort native calls below live at module level because the compiler cannot
 // lower an optional chain inside a `try`, and so would skip the whole component.

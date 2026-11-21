@@ -70,6 +70,7 @@ export const nl: Partial<ChatLabels> = {
   attachNoPhotos: 'Nog geen foto\'s',
   attachChooseFromGallery: 'Kiezen uit galerij',
   attachChooseFile: 'Bestand kiezen',
+  attachLocationUnavailable: 'Je locatie kon niet worden bepaald. Probeer het opnieuw.',
   attachLocationDenied: 'Locatietoegang staat uit. Zet het aan in Instellingen om je locatie te sturen.',
   emptyChatTitle: 'Nog geen berichten hier...',
   emptyChatText: 'Stuur een bericht of tik op de begroeting hieronder.',

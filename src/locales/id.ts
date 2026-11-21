@@ -70,6 +70,7 @@ export const id: Partial<ChatLabels> = {
   attachNoPhotos: 'Belum ada foto',
   attachChooseFromGallery: 'Pilih dari galeri',
   attachChooseFile: 'Pilih file',
+  attachLocationUnavailable: 'Lokasi Anda tidak dapat ditemukan. Coba lagi.',
   attachLocationDenied: 'Akses lokasi nonaktif. Aktifkan di Pengaturan untuk mengirim lokasi.',
   emptyChatTitle: 'Belum ada pesan di sini...',
   emptyChatText: 'Kirim pesan atau ketuk salam di bawah.',

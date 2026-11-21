@@ -17,6 +17,11 @@ export type PickedAttachment =
   | { type: 'file', uri: string, name: string, size?: number, mimeType?: string }
   | { type: 'location', latitude: number, longitude: number, accuracy?: number }
 
+export type CurrentLocation =
+  | { status: 'located', latitude: number, longitude: number, accuracy?: number }
+  | { status: 'denied' }
+  | { status: 'failed' }
+
 /**
  * Your own pickers for the menu's system tabs, for an app that picks with other libraries than the
  * Expo ones. Each resolves to what was picked, or an empty array when the user cancels. A tab
@@ -27,6 +32,7 @@ export interface AttachmentPickers {
   gallery?: () => Promise<PickedAttachment[]>
   camera?: () => Promise<PickedAttachment[]>
   file?: () => Promise<PickedAttachment[]>
+  location?: () => Promise<CurrentLocation>
 }
 
 /** What `attachments.onPick` can return. */

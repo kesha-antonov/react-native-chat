@@ -59,10 +59,7 @@ function cleanLocation (location: Loose) {
 }
 
 function cleanFile (file: Loose) {
-  if (typeof file.uri !== 'string')
-    return undefined
-
-  const isOk = typeof file.name === 'string' &&
+  const isOk = (file.uri === undefined || typeof file.uri === 'string') && typeof file.name === 'string' &&
     (file.size === undefined || isFiniteNumber(file.size)) &&
     (file.mimeType === undefined || typeof file.mimeType === 'string')
   if (isOk)
@@ -70,6 +67,7 @@ function cleanFile (file: Loose) {
 
   return {
     ...file,
+    uri: typeof file.uri === 'string' ? file.uri : undefined,
     name: asText(file.name) ?? '',
     size: isFiniteNumber(file.size) ? file.size : undefined,
     mimeType: typeof file.mimeType === 'string' ? file.mimeType : undefined,

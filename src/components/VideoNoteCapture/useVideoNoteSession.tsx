@@ -149,6 +149,17 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     cameraRef.current?.stopRecording().catch(() => {})
   }, [])
 
+  const abortUnavailable = useCallback(() => {
+    abortedRef.current = true
+    void cameraRef.current?.cancelRecording().catch(() => {})
+    close()
+  }, [close])
+
+  useLayoutEffect(() => {
+    if (phaseRef.current !== 'idle' && config?.canUseCapture?.() === false)
+      abortUnavailable()
+  })
+
   const sendVideo = useCallback((uri: string) => {
     // Before `onSend`, which is what adds the note the circle flies into.
     expectSendFlight('round')
@@ -167,6 +178,10 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
    */
   const stopTake = useCallback((outcome: 'send' | 'cancel' | 'preview') => {
     const current = phaseRef.current
+    if (configRef.current?.canUseCapture?.() === false) {
+      abortUnavailable()
+      return
+    }
 
     // Released before the camera was up: nothing was recorded, so this is a
     // take that was too short, the same as a quick tap on the button.
@@ -197,10 +212,10 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     setTakeDurationMs(duration)
     elapsedStore.set(duration)
     clearTimers()
-    setPhase(outcome === 'preview' ? 'stopping' : 'finishing')
+    setPhase(outcome === 'preview' || (canPreview && configRef.current?.confirmBeforeSend) ? 'stopping' : 'finishing')
     stopCapture()
     finishTimeoutRef.current = setTimeout(() => close(), FINISH_TIMEOUT_MS)
-  }, [close, clearTimers, setPhase, stopCapture, minDurationMs, elapsedStore])
+  }, [close, abortUnavailable, clearTimers, setPhase, stopCapture, minDurationMs, elapsedStore])
 
   const stopTakeRef = useRef(stopTake)
   useLayoutEffect(() => {
@@ -208,7 +223,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   })
 
   const start = useCallback(() => {
-    if (phaseRef.current !== 'idle' || !isVisionCameraAvailable)
+    if (phaseRef.current !== 'idle' || !isVisionCameraAvailable || configRef.current?.canUseCapture?.() === false)
       return
 
     // Recording takes the audio over: pause whatever note is
@@ -252,6 +267,10 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     setPhase('recording')
     clearTimers()
     timerRef.current = setInterval(() => {
+      if (configRef.current?.canUseCapture?.() === false) {
+        abortUnavailable()
+        return
+      }
       const ms = Date.now() - startedAtRef.current
       elapsedRef.current = ms
       elapsedStore.set(ms)
@@ -260,7 +279,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
       if (ms >= maxMs - LIMIT_LEAD_MS)
         stopTakeRef.current(canPreview ? 'preview' : 'send')
     }, 100)
-  }, [clearTimers, setPhase, maxMs, elapsedStore])
+  }, [clearTimers, setPhase, maxMs, elapsedStore, abortUnavailable])
 
   // The overlay's camera is ready: start the take. A flip mid-take
   // re-initializes the camera too, which this ignores.
@@ -268,17 +287,28 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     if (phaseRef.current !== 'preparing')
       return
 
+    if (configRef.current?.canUseCapture?.() === false) {
+      abortUnavailable()
+      return
+    }
+
     const recorder = cameraRef.current
     if (!recorder) {
       close()
       return
     }
 
+    const canUseCapture = () => configRef.current?.canUseCapture?.() !== false
     try {
       recorder.startRecording({
         onRecordingFinished: (video: { path: string }) => {
           if (abortedRef.current)
             return
+
+          if (!canUseCapture()) {
+            abortUnavailable()
+            return
+          }
 
           const uri = withFileScheme(video.path)
           if (phaseRef.current === 'stopping') {
@@ -310,7 +340,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     elapsedStore.set(0)
     setIsPastPauseLead(false)
     startTicking(0)
-  }, [close, clearTimers, setPhase, sendVideo, elapsedStore, startTicking])
+  }, [close, abortUnavailable, clearTimers, setPhase, sendVideo, elapsedStore, startTicking])
 
   const onCameraError = useCallback((error: unknown) => {
     abortedRef.current = true
@@ -325,6 +355,11 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   }, [])
 
   const finish = useCallback((cancelled: boolean) => {
+    if (configRef.current?.canUseCapture?.() === false) {
+      abortUnavailable()
+      return
+    }
+
     // Paused with the recorder holding the file open: finish it, or drop it.
     if (phaseRef.current === 'paused') {
       if (cancelled) {
@@ -333,7 +368,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
         close()
         return
       }
-      setPhase('finishing')
+      setPhase(canPreview && configRef.current?.confirmBeforeSend ? 'stopping' : 'finishing')
       stopCapture()
       finishTimeoutRef.current = setTimeout(() => close(), FINISH_TIMEOUT_MS)
       return
@@ -349,7 +384,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     }
 
     stopTake(cancelled ? 'cancel' : 'send')
-  }, [stopTake, previewUri, sendVideo, close, setPhase, stopCapture])
+  }, [stopTake, previewUri, sendVideo, close, setPhase, stopCapture, abortUnavailable])
 
   const send = useCallback(() => finish(false), [finish])
 
@@ -371,11 +406,15 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   const resume = useCallback(() => {
     if (phaseRef.current !== 'paused')
       return
+    if (configRef.current?.canUseCapture?.() === false) {
+      abortUnavailable()
+      return
+    }
     // The resume button plays its own tick.
     setIsLocked(true)
     startTicking(durationRef.current)
     cameraRef.current?.resumeRecording().catch(error => configRef.current?.onError?.(error))
-  }, [startTicking])
+  }, [startTicking, abortUnavailable])
 
   // Leaving the chat mid-take must not leave the camera recording into an
   // orphaned file.
@@ -433,6 +472,8 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
           : (
             <VideoNoteCaptureView
               cameraRef={cameraRef}
+              targetResolution={config?.targetResolution}
+              targetBitRate={config?.targetBitRate}
               facing={facing}
               isFlashOn={isFlashOn}
               isRecording={isRecording}

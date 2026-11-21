@@ -70,6 +70,7 @@ export const ko: Partial<ChatLabels> = {
   attachNoPhotos: '아직 사진이 없습니다',
   attachChooseFromGallery: '갤러리에서 선택',
   attachChooseFile: '파일 선택',
+  attachLocationUnavailable: '위치를 확인할 수 없습니다. 다시 시도하세요.',
   attachLocationDenied: '위치 접근이 꺼져 있습니다. 위치를 보내려면 설정에서 켜세요.',
   emptyChatTitle: '아직 메시지가 없습니다...',
   emptyChatText: '메시지를 보내거나 아래 인사를 탭하세요.',

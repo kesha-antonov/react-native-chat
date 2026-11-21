@@ -1,13 +1,12 @@
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { useLabels } from '../../hooks/useLabels'
-import { IMessage } from '../../Models'
 import { stopAllPlayback } from '../mediaPlayback'
 import { RecordButtonPhase } from '../RecordButton'
 import { createRecordingMeter, RecordingMeterContext } from '../recordingMeter'
 import { clipsDuration, clipsLevels, createClip, isVoiceTrimAvailable, renderClips, VoiceClip } from '../voiceEditing'
 import { CANCEL_ARMED_PROGRESS, DEFAULT_MIN_DURATION_MS, IDLE_STATE, LEVEL_HISTORY, MIN_CLIP_MS } from './constants'
-import { expoAudio, normalizeMetering, releaseAudioSession, stopRecorderQuietly, viewOnceFields } from './recorder'
+import { expoAudio, normalizeMetering, releaseAudioSession, stopRecorderQuietly, voiceMessageFields } from './recorder'
 import { PendingFinish, VoiceMessageInputHandle, VoiceMessageInputProps, VoiceRecordingPreview } from './types'
 import { useLazyRecorder } from './useLazyRecorder'
 import { useStateReport } from './useStateReport'
@@ -71,6 +70,11 @@ export function useVoiceTake (
   const startTokenRef = useRef(0)
   const pendingFinishRef = useRef<PendingFinish>(null)
 
+  const configRef = useRef(config)
+  useLayoutEffect(() => {
+    configRef.current = config
+  })
+
   const minDurationMs = config?.minDurationMs ?? DEFAULT_MIN_DURATION_MS
   const maxDurationMs = config?.maxDurationMs ?? 600000
 
@@ -127,7 +131,7 @@ export function useVoiceTake (
       const uri = recorder.uri
       const earlier = clipsRef.current
 
-      if (outcome === 'cancel' || !uri) {
+      if (outcome === 'cancel' || !uri || configRef.current?.canUseAudioSession?.() === false) {
         clipsRef.current = []
         return
       }
@@ -147,6 +151,10 @@ export function useVoiceTake (
       // so the preview plays exactly what would be sent.
       const joined = await renderClips(clips)
       const durationMs = clipsDuration(clips)
+      if (configRef.current?.canUseAudioSession?.() === false) {
+        clipsRef.current = []
+        return
+      }
 
       if (outcome === 'preview') {
         trimRef.current = { start: 0, end: 1 }
@@ -155,7 +163,7 @@ export function useVoiceTake (
       }
 
       clipsRef.current = []
-      onSend?.({ audio: joined, duration: Math.round(durationMs / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
+      onSend?.(voiceMessageFields(joined, durationMs, clipsLevels(clips), isViewOnceRef.current), false)
     })()
       .catch(error => {
         clipsRef.current = []
@@ -178,6 +186,12 @@ export function useVoiceTake (
     if (isRecordingRef.current || startTokenRef.current > 0)
       return
 
+    if (configRef.current?.canUseAudioSession?.() === false) {
+      setIsResuming(false)
+      setIsLocked(false)
+      return
+    }
+
     const token = Date.now()
     startTokenRef.current = token
     pendingFinishRef.current = null
@@ -193,23 +207,36 @@ export function useVoiceTake (
     stopAllPlayback()
 
     // A promise chain rather than try/finally, which the compiler cannot lower.
+    const canStart = () => startTokenRef.current === token && configRef.current?.canUseAudioSession?.() !== false
     await (async () => {
       const permission = await expoAudio.AudioModule.requestRecordingPermissionsAsync()
+      if (!canStart())
+        return
       if (!permission?.granted) {
         config?.onPermissionDenied?.()
         return
       }
 
       await expoAudio.setAudioModeAsync?.({ allowsRecording: true, playsInSilentMode: true })
+      if (!canStart()) {
+        releaseAudioSession()
+        return
+      }
       // Passing the options makes iOS build a new recorder, and so a new file.
       // Without them it reuses the last one and a resumed clip overwrites the
       // clip before it (Android makes a new file either way).
       const recorder = getRecorder()
-      await recorder.prepareToRecordAsync(recorderOptions)
+      const fileName = configRef.current?.recordingFileName?.()
+      await recorder.prepareToRecordAsync(fileName ? { ...recorderOptions, fileName } : recorderOptions)
 
       // The component may have unmounted while we were awaiting natives.
-      if (startTokenRef.current !== token)
+      if (!canStart()) {
+        if (startTokenRef.current === token) {
+          await Promise.resolve().then(() => recorder.stop()).catch(() => {})
+          releaseAudioSession()
+        }
         return
+      }
 
       recorder.record()
 
@@ -225,6 +252,10 @@ export function useVoiceTake (
       // 100ms drives the tenths in the timer and the halo smoothly
       // enough while staying cheap.
       timerRef.current = setInterval(() => {
+        if (configRef.current?.canUseAudioSession?.() === false) {
+          void stopTakeRef.current('cancel')
+          return
+        }
         const ms = baseElapsedRef.current + Date.now() - startedAtRef.current
 
         // The halo tracks real loudness rather than pulsing on a fixed loop.
@@ -239,7 +270,7 @@ export function useVoiceTake (
         meter.elapsed.set(ms)
 
         if (ms >= maxDurationMs)
-          stopTakeRef.current('send')
+          stopTakeRef.current(configRef.current?.previewAtLimit ? 'preview' : 'send')
       }, 100)
     })()
       .catch(error => {
@@ -258,6 +289,8 @@ export function useVoiceTake (
 
           // Apply a release that arrived while we were starting up. Without this
           // a quick tap leaves a live recording with no control to end it.
+          if (!isRecordingRef.current)
+            setIsLocked(false)
           const pending = takePendingFinish()
           if (pending)
             stopTakeRef.current(pending.cancelled ? 'cancel' : 'send')

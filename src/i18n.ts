@@ -152,6 +152,7 @@ export interface ChatLabels {
   attachChooseFile: string
   /** Attachment menu: shown when location access is denied. */
   attachLocationDenied: string
+  attachLocationUnavailable?: string
   /** Empty chat card: the title. */
   emptyChatTitle: string
   /** Empty chat card: the line above the greeting. */
@@ -306,6 +307,7 @@ export const defaultLabels: ChatLabels = {
   attachNoPhotos: 'No photos yet',
   attachChooseFromGallery: 'Choose from Gallery',
   attachChooseFile: 'Choose a file to send',
+  attachLocationUnavailable: 'Could not find your location. Try again.',
   attachLocationDenied: 'Location access is off. Turn it on in Settings to send your location.',
   emptyChatTitle: 'No messages here yet...',
   emptyChatText: 'Send a message or tap the greeting below.',

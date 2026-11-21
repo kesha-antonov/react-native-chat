@@ -1,24 +1,15 @@
 import { createContext, useContext } from 'react'
 
 import { IMessage, MediaTransferProps } from '../Models'
+import { createStore, Store, useStore } from '../store'
 
 /**
  * The app's download and cancel handlers, read at press time so a new handler
  * on every render of `Chat` never re-renders a bubble.
  */
-export interface MediaTransferController {
-  get: () => MediaTransferProps | undefined
-}
+export type MediaTransferController = Store<MediaTransferProps | undefined>
 
-export const createMediaTransferController = () => {
-  let props: MediaTransferProps | undefined
-  return {
-    get: () => props,
-    set: (next: MediaTransferProps | undefined) => {
-      props = next
-    },
-  }
-}
+export const createMediaTransferController = () => createStore<MediaTransferProps | undefined>(undefined)
 
 export const MediaTransferContext = createContext<MediaTransferController | null>(null)
 
@@ -28,8 +19,17 @@ export const useMediaTransfer = () => {
   return {
     onDownload: (message: IMessage) => controller?.get()?.onDownload?.(message),
     onCancel: (message: IMessage) => controller?.get()?.onCancel?.(message),
+    hasCancelHandler: () => !!controller?.get()?.onCancel,
     hasDownloadHandler: () => !!controller?.get()?.onDownload,
   }
+}
+
+const hasDownload = (props: MediaTransferProps | undefined) => !!props?.onDownload
+const hasCancel = (props: MediaTransferProps | undefined) => !!props?.onCancel
+
+export const useCanTransfer = (action: 'cancel' | 'download' | undefined) => {
+  const controller = useContext(MediaTransferContext)
+  return useStore(action ? controller ?? undefined : undefined, action === 'cancel' ? hasCancel : hasDownload, false)
 }
 
 /** What a media button shows for a message's `transfer` / `isDownloadRequired`. */

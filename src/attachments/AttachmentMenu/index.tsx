@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Modal,
   Pressable,
@@ -20,9 +20,9 @@ import { useColorScheme } from '../../hooks/useColorScheme'
 import { useThemedStyles } from '../../hooks/useTheme'
 import { warning } from '../../logging'
 import { hasImagePickerCamera, hasMediaLibrary } from '../../optional'
-import { CurrentLocation, getCurrentLocation, pickDocuments, pickFromSystemGallery, takePhoto } from '../buildMessages'
+import { getCurrentLocation, pickDocuments, pickFromSystemGallery, takePhoto } from '../buildMessages'
 import { GalleryAsset, toPickedAttachment, useGallery } from '../gallery'
-import { AttachmentPickers, AttachmentTab, PickedAttachment } from '../types'
+import { AttachmentPickers, AttachmentTab, CurrentLocation, PickedAttachment } from '../types'
 import { CaptionBar } from './CaptionBar'
 import {
   CAPTION_SWAP_MS,
@@ -65,6 +65,7 @@ export interface AttachmentMenuProps {
 export function AttachmentMenu ({ visible, tabs, onClose, onSend, pickers, isGalleryGridEnabled = true }: AttachmentMenuProps) {
   const pickFile = pickers?.file ?? pickDocuments
   const pickCamera = pickers?.camera ?? (hasImagePickerCamera() ? takePhoto : undefined)
+  const pickLocation = pickers?.location ?? getCurrentLocation
   const pickGallery = pickers?.gallery ?? pickFromSystemGallery
   const styles = useThemedStyles(createStyles)
   const isDark = useColorScheme() === 'dark'
@@ -78,6 +79,17 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend, pickers, isGal
   const [selected, setSelected] = useState<GalleryAsset[]>([])
   const [caption, setCaption] = useState('')
   const [location, setLocation] = useState<CurrentLocation | 'locating' | null>(null)
+  const locationRequest = useRef<object | null>(null)
+  const isLocationOpen = useRef(false)
+  const resetLocation = useCallback(() => {
+    isLocationOpen.current = false
+    locationRequest.current = null
+  }, [])
+  useLayoutEffect(() => {
+    isLocationOpen.current = visible
+    setLocation(null)
+    return resetLocation
+  }, [visible, resetLocation])
 
   const scrollY = useSharedValue(0)
   const gridMode = useSharedValue(1)
@@ -112,14 +124,18 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend, pickers, isGal
     captionShown.set(withTiming(selected.length > 0 ? 1 : 0, { duration: CAPTION_SWAP_MS, easing: DECELERATE, reduceMotion: REDUCE_MOTION }))
   }, [selected.length, captionShown])
 
-  const dismiss = useCallback(() => close(onClose), [close, onClose])
+  const dismiss = useCallback(() => {
+    resetLocation()
+    close(onClose)
+  }, [close, onClose, resetLocation])
   // Closes the sheet, then runs `action` (a system picker must not present over the sheet).
   const closeThen = useCallback((action: () => void) => {
+    resetLocation()
     close(() => {
       onClose()
       action()
     })
-  }, [close, onClose])
+  }, [close, onClose, resetLocation])
 
   const sendPicked = useCallback((attachments: PickedAttachment[], withCaption = '') => {
     if (attachments.length)
@@ -148,9 +164,23 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend, pickers, isGal
   }, [closeThen, sendPicked])
 
   const fetchLocation = useCallback(() => {
+    if (!isLocationOpen.current || locationRequest.current)
+      return
+
+    const request = {}
+    locationRequest.current = request
     setLocation('locating')
-    getCurrentLocation().then(setLocation).catch(() => setLocation({ status: 'failed' }))
-  }, [])
+    const complete = (result: CurrentLocation) => {
+      if (locationRequest.current === request) {
+        locationRequest.current = null
+        setLocation(result)
+      }
+    }
+    void Promise.resolve().then(async () => {
+      if (locationRequest.current === request)
+        complete(await pickLocation())
+    }).catch(() => complete({ status: 'failed' }))
+  }, [pickLocation])
 
   const onTabPress = useCallback((tab: AttachmentTab) => {
     if (tab === 'file')
@@ -170,11 +200,13 @@ export function AttachmentMenu ({ visible, tabs, onClose, onSend, pickers, isGal
 
   // The location tab finds the position as soon as it opens.
   useEffect(() => {
-    if (isMounted && activeTab === 'location' && location == null)
+    if (visible && isMounted && activeTab === 'location' && location == null)
       fetchLocation()
-  }, [isMounted, activeTab, location, fetchLocation])
+  }, [visible, isMounted, activeTab, location, fetchLocation])
 
   const sendLocation = useCallback(() => {
+    if (!isLocationOpen.current)
+      return
     if (location && typeof location === 'object' && location.status === 'located') {
       const picked: PickedAttachment = { type: 'location', latitude: location.latitude, longitude: location.longitude, accuracy: location.accuracy }
       closeThen(() => sendPicked([picked]))
