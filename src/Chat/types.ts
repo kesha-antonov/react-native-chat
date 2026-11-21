@@ -303,7 +303,7 @@ export interface ChatProps<TMessage extends IMessage> extends Partial<Omit<Messa
    * composer under an "Editing" banner; sending calls this with the message and the new text
    * instead of `onSend`.
    */
-  onEditMessage?: (message: TMessage, text: string) => void
+  onEditMessage?: (message: TMessage, text: string) => void | false
   /** Turns on the "Delete" action. */
   onDeleteMessage?: (message: TMessage) => void
   /**

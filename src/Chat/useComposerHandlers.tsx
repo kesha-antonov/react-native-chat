@@ -31,15 +31,13 @@ export function useComposerHandlers<TMessage extends IMessage> ({
   getTextFromProp,
   clearReply,
   notifyDraft,
-  restoreDraft,
   stopEdit,
   changeTextRef,
-  clearReplyRef,
 }: {
   props: ChatProps<TMessage>
   textInputRef: RefObject<React.ComponentRef<typeof TextInput>>
   messagesContainerRef: RefObject<AnimatedList>
-  actionCallbacksRef: RefObject<{ onEditMessage?: (message: TMessage, text: string) => void }>
+  actionCallbacksRef: RefObject<Pick<ChatProps<TMessage>, 'onEditMessage'>>
   textStore: Store<string>
   replyStore: Store<ReplyMessage | null>
   editStore: Store<TMessage | null>
@@ -47,10 +45,8 @@ export function useComposerHandlers<TMessage extends IMessage> ({
   getTextFromProp: (fallback: string) => string
   clearReply: () => void
   notifyDraft: (draft: string) => void
-  restoreDraft: () => void
   stopEdit: () => void
   changeTextRef: RefObject<(text: string) => void>
-  clearReplyRef: RefObject<() => void>
 }) {
   const {
     messageIdGenerator = defaultMessageIdGenerator,
@@ -110,21 +106,20 @@ export function useComposerHandlers<TMessage extends IMessage> ({
         messages = [messages]
 
       // In edit mode the composer saves the edited text instead of posting a message.
-      const [edit] = messages
       const editingMessage = editStore.get()
-      if (
-        editingMessage &&
-        messages.length === 1 &&
-        typeof edit?.text === 'string' &&
-        !edit.audio &&
-        !edit.video
-      ) {
-        if (shouldResetInputToolbar === true)
-          resetInputToolbar()
+      if (editingMessage) {
+        const [edit] = messages
+        if (
+          messages.length !== 1 ||
+          typeof edit?.text !== 'string' ||
+          !edit.text.trim() ||
+          edit.audio || edit.video || edit.image || edit.file || edit.location || edit.quickReplies
+        )
+          return
 
-        editStore.set(null)
-        restoreDraft()
-        actionCallbacksRef.current.onEditMessage?.(editingMessage, edit.text)
+        const { onEditMessage } = actionCallbacksRef.current
+        if (onEditMessage && onEditMessage(editingMessage, edit.text) !== false && editStore.get() === editingMessage)
+          stopEdit()
         return
       }
 
@@ -153,7 +148,7 @@ export function useComposerHandlers<TMessage extends IMessage> ({
       clearTimeout(scrollAfterSendTimeout.current)
       scrollAfterSendTimeout.current = setTimeout(() => scrollToBottom(), 10)
     },
-    [messageIdGenerator, onSend, user, resetInputToolbar, scrollToBottom, getReplyMessage, clearReply, editStore, restoreDraft, actionCallbacksRef]
+    [messageIdGenerator, onSend, user, resetInputToolbar, scrollToBottom, getReplyMessage, clearReply, editStore, stopEdit, actionCallbacksRef]
   )
 
   const _onChangeText = useCallback(
@@ -170,10 +165,6 @@ export function useComposerHandlers<TMessage extends IMessage> ({
   useInsertionEffect(() => {
     changeTextRef.current = _onChangeText
     sendRef.current = messages => _onSend(messages, false)
-    clearReplyRef.current = () => {
-      if (getReplyMessage())
-        clearReply()
-    }
   })
 
   // The composer's send keeps one identity: it is an event handler, and a new one each time
