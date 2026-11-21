@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useContext, useInsertionEffect, useRef } from 'react'
 import { View, useWindowDimensions } from 'react-native'
 import { MediaCard } from '../components/MediaCard'
 import { LiftedPlaybackContext } from '../components/mediaPlayback'
@@ -18,6 +18,7 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
   containerStyle,
   videoStyle,
   videoProps,
+  autoPlay,
 }: Partial<MessageVideoProps<TMessage>>) {
   const { width, height } = useWindowDimensions()
   // Inside a long-press copy: show what the original plays (see `MirroredRoundNote`).
@@ -26,11 +27,17 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
   const noteSize = shortSide * NOTE_SIZE_RATIO
   const playingNoteSize = shortSide - PLAYING_NOTE_INSET
   const uri = currentMessage?.video
+  const messageId = currentMessage?._id
+  const isNote = !!currentMessage?.videoNote
+  const roundUri = isNote ? uri : undefined
+  const sourceRef = useRef({ messageId, uri: roundUri })
+  useInsertionEffect(() => {
+    sourceRef.current = { messageId, uri: roundUri }
+  })
 
   if (!uri)
     return null
 
-  const isNote = !!currentMessage?.videoNote
   const noteStyle = { width: noteSize, height: noteSize, borderRadius: noteSize / 2 }
 
   return (
@@ -65,6 +72,8 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
               // rather than inheriting the previous one's.
                 key={`${String(currentMessage?._id)}:${uri}`}
                 uri={uri}
+                autoPlay={autoPlay}
+                sourceRef={sourceRef}
                 videoProps={videoProps}
                 videoStyle={videoStyle}
                 duration={currentMessage?.duration}
@@ -83,7 +92,7 @@ export function MessageVideo<TMessage extends IMessage = IMessage> ({
             <View>
               {lifted && videoPlayerKey(currentMessage?._id, uri)
                 ? <MirroredInlineVideo uri={uri} style={[styles.video, videoStyle]} videoProps={videoProps} playerKey={videoPlayerKey(currentMessage?._id, uri)!} />
-                : <ExpoVideoPlayer uri={uri} style={[styles.video, videoStyle]} videoProps={videoProps} playerKey={videoPlayerKey(currentMessage?._id, uri)} />}
+                : <ExpoVideoPlayer key={`${String(messageId)}:${uri}`} autoPlay={autoPlay && !currentMessage?.isViewOnce && !currentMessage?.transfer && !currentMessage?.isDownloadRequired} uri={uri} style={[styles.video, videoStyle]} videoProps={videoProps} playerKey={videoPlayerKey(currentMessage?._id, uri)} />}
               {currentMessage && <VideoTransferOverlay message={currentMessage} />}
             </View>
           )

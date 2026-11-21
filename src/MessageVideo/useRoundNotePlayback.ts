@@ -11,6 +11,7 @@ import {
   usePlaylistEntry,
 } from '../components/mediaPlayback'
 import { useRoundNoteChrome } from '../components/roundNoteChrome'
+import { useAutoPlay } from '../components/useAutoPlay'
 import { useViewOnce } from '../components/viewOnce'
 import { PLAYING_NOTE_INSET, PROGRESS_SYNC_MS } from './constants'
 import { setPlayer } from './videoPlayers'
@@ -24,6 +25,9 @@ interface RoundNotePlaybackOptions {
   /** Length in seconds, from the message, until the player knows its own. */
   duration?: number
   isAutoplay: boolean
+  autoPlay?: boolean
+  isReady: boolean
+  canFloat: boolean
   isIncoming: boolean
   isMediaUnread?: boolean
   playingNoteSize: number
@@ -47,6 +51,9 @@ export const useRoundNotePlayback = ({
   messageId,
   duration,
   isAutoplay,
+  autoPlay,
+  isReady,
+  canFloat,
   isIncoming,
   isMediaUnread,
   playingNoteSize,
@@ -60,6 +67,8 @@ export const useRoundNotePlayback = ({
 
   // Current: this note owns playback, playing or paused (`isPlayingMessage`).
   const [isCurrent, setIsCurrent] = useState(false)
+  const isCurrentRef = useRef(false)
+  const hasStarted = useRef(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isGrown, setIsGrown] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -117,22 +126,24 @@ export const useRoundNotePlayback = ({
   const reset = useCallback(() => {
     stopRaf()
     playerCache.keep(playerKey, false)
+    isCurrentRef.current = false
     setIsCurrent(false)
     setIsPlaying(false)
     setIsGrown(false)
     setGrowShift(0)
     setTimeShift(0)
     setCurrentTime(0)
+    const shouldLoop = isAutoplay && isReady
     try {
       setPlayer(player, { muted: true, loop: isAutoplay, playbackRate: 1, currentTime: 0 })
-      if (isAutoplay)
+      if (shouldLoop)
         player.play()
       else
         player.pause()
     } catch {
       // player already torn down
     }
-  }, [player, isAutoplay, stopRaf, playerCache, playerKey])
+  }, [player, isAutoplay, isReady, stopRaf, playerCache, playerKey])
 
   const pause = useCallback(() => {
     try {
@@ -171,7 +182,10 @@ export const useRoundNotePlayback = ({
 
   /** Current and grown, kept alive past this row until it stops. */
   const becomeCurrent = useCallback(() => {
-    playerCache.keep(playerKey, true)
+    if (canFloat)
+      playerCache.keep(playerKey, true)
+    hasStarted.current = true
+    isCurrentRef.current = true
     setIsCurrent(true)
     // The note does not grow with the keyboard up or in landscape: there is no room.
     const willGrow = windowWidth < windowHeight && !Keyboard.isVisible()
@@ -190,7 +204,7 @@ export const useRoundNotePlayback = ({
         // with the grown circle's right edge.
         setTimeShift(fittedLeft + playingNoteSize - (x + width))
       })
-  }, [playerCache, playerKey, windowWidth, windowHeight, isIncoming, playingNoteSize, noteRef])
+  }, [playerCache, playerKey, canFloat, windowWidth, windowHeight, isIncoming, playingNoteSize, noteRef])
 
   /** Play with sound from the start, as a tap on a looping note does. */
   const playFromStart = useCallback(() => {
@@ -250,10 +264,17 @@ export const useRoundNotePlayback = ({
   }, [playerKey])
 
   const onEndedRef = usePlaylistEntry(messageId, playFromStart)
-  const isCurrentRef = useRef(isCurrent)
-  useLayoutEffect(() => {
-    isCurrentRef.current = isCurrent
-  })
+  useAutoPlay(autoPlay, isReady, playFromStart, hasStarted)
+
+  useEffect(() => {
+    if (!isReady || isCurrentRef.current)
+      return
+    setPlayer(player, { muted: true, loop: isAutoplay })
+    if (isAutoplay && !player.playing)
+      player.play()
+    else if (!isAutoplay && player.playing)
+      player.pause()
+  }, [player, isReady, isAutoplay])
 
   // A natural end: shrink back to the loop and hand over to the next note.
   useEffect(() => {

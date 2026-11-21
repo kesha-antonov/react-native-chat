@@ -2,6 +2,8 @@ import { IMessage } from '../../Models'
 
 export interface WaveformPlayerProps {
   uri: string
+  autoPlay?: boolean
+  onPlaybackEnded?: () => void
   position?: 'left' | 'right'
   /**
    * Length in seconds from the message, shown before the file has decoded so a

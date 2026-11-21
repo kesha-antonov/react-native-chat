@@ -42,6 +42,8 @@ export function WaveformPlayer ({
   message,
   isViewOnce = false,
   transcription,
+  autoPlay,
+  onPlaybackEnded,
 }: WaveformPlayerProps) {
   const styles = useThemedStyles(position === 'right' ? createRightStyles : createLeftStyles)
   const playerId = useId()
@@ -81,6 +83,9 @@ export function WaveformPlayer ({
     viewOnce,
     markReadRef,
     setFailed: source.setFailed,
+    autoPlay: autoPlay && !isViewOnce && !transfer && shouldLoad && !source.failed,
+    isReady: source.isReady,
+    onPlaybackEnded,
     ...engine,
   })
   const { isPlaying, shownProgress, isCurrent, isUnread, togglePlayback } = playback

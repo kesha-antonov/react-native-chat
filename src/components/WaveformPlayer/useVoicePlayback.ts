@@ -7,20 +7,25 @@ import {
   claimPlayback,
   releasePlayback,
   usePlaybackRate,
-  usePlaylistEntry,
   useReportNowPlaying,
 } from '../mediaPlayback'
+import { useAutoPlay } from '../useAutoPlay'
+import { useVoicePlaybackEvents } from '../useVoicePlaybackEvents'
 import { getAudioContext, stopSourceNode } from './audio'
 
 /** How often a playing note checks the audio clock; the bars move on the UI thread between. */
 const PROGRESS_SYNC_MS = 250
 
 interface ViewOnceGate {
+  isSpent: boolean
   onStart: () => boolean
   onEnd: () => void
 }
 
 interface VoicePlaybackOptions {
+  autoPlay?: boolean
+  isReady: boolean
+  onPlaybackEnded?: () => void
   playerId: string
   messageId: string | number | undefined
   position: 'left' | 'right'
@@ -44,6 +49,9 @@ interface VoicePlaybackOptions {
  * and hands over to the next note when it ends.
  */
 export const useVoicePlayback = ({
+  autoPlay,
+  isReady,
+  onPlaybackEnded,
   playerId,
   messageId,
   position,
@@ -121,17 +129,15 @@ export const useVoicePlayback = ({
     }
   }, [stopRaf, isDragging, progress, setProgressValue, durationRef])
 
-  // Lets the chat start this note when the previous one ends. `playFrom` is
-  // declared below, so the entry reaches it through a ref.
-  const onEndedRef = usePlaylistEntry(messageId, () => playFromRef.current(0))
-  // Heard here already, before the app has updated `isMediaUnread`.
-  const [isHeard, setIsHeard] = useState(false)
-  const isIncoming = position === 'left'
-  const isUnread = isIncoming && !!isMediaUnread && !isHeard
+  const hasStarted = useRef(false)
+  const { isUnread, markStarted, notifyEnded } = useVoicePlaybackEvents(
+    messageId, position === 'left' && !!isMediaUnread, markReadRef, () => playFromRef.current(0), onPlaybackEnded
+  )
 
   const stopSource = useCallback(() => {
-    stopSourceNode(sourceRef.current)
+    const source = sourceRef.current
     sourceRef.current = null
+    stopSourceNode(source)
     stopRaf()
     setIsPlaying(false)
     setShownProgress(progressRef.current)
@@ -156,15 +162,16 @@ export const useVoicePlayback = ({
     if (!ctx || !buffer)
       return
     // A view-once note that has played does not play again.
-    if (!viewOnceRef.current.onStart())
+    if (viewOnceRef.current.isSpent)
       return
 
     const offset = fraction > 0 && fraction < 1 ? fraction * durationRef.current : 0
-    const shouldMarkRead = isIncoming && isMediaUnread
+    const isContextSuspended = ctx.state === 'suspended' || ctx.state === 'interrupted'
     try {
       // Replace any source already running (a seek mid-playback).
-      stopSourceNode(sourceRef.current)
+      const previous = sourceRef.current
       sourceRef.current = null
+      stopSourceNode(previous)
 
       const source = ctx.createBufferSource()
       source.buffer = buffer
@@ -187,32 +194,46 @@ export const useVoicePlayback = ({
         viewOnceRef.current.onEnd()
         // Reached the end on its own (a pause or seek replaced the source
         // above), so hand over to the next note.
-        onEndedRef.current()
+        notifyEnded()
       }
 
-      startedAtRef.current = ctx.currentTime - offset / rateRef.current
-      source.start(0, offset)
+      const start = () => {
+        if (sourceRef.current !== source)
+          return
+        startedAtRef.current = ctx.currentTime - offset / rateRef.current
+        source.start(0, offset)
+        viewOnceRef.current.onStart()
+        setIsPlaying(true)
+        stopRaf()
+        tick()
+        tickTimerRef.current = setInterval(tick, PROGRESS_SYNC_MS)
+        hasStarted.current = true
+        markStarted()
+      }
+
       sourceRef.current = source
-      setIsPlaying(true)
-      // Starting stops whatever else was playing.
       claimPlayback(playerId, onStop)
-      stopRaf()
-      tick()
-      tickTimerRef.current = setInterval(tick, PROGRESS_SYNC_MS)
-
-      // An incoming note is marked read the moment it starts playing.
-      if (shouldMarkRead) {
-        setIsHeard(true)
-        markReadRef.current()
-      }
+      if (isContextSuspended)
+        void Promise.resolve(ctx.resume()).then(start).catch(() => {
+          if (sourceRef.current === source) {
+            stopSource()
+            releasePlayback(playerId)
+          }
+        })
+      else
+        start()
     } catch {
+      stopSource()
+      releasePlayback(playerId)
       setFailed(true)
     }
-  }, [tick, stopRaf, playerId, onStop, onEndedRef, isIncoming, isMediaUnread, markReadRef, setProgressValue, bufferRef, durationRef, sourceRef, tickTimerRef, setFailed])
+  }, [tick, stopRaf, stopSource, playerId, onStop, notifyEnded, markStarted, setProgressValue, bufferRef, durationRef, sourceRef, tickTimerRef, setFailed])
 
   useLayoutEffect(() => {
     playFromRef.current = playFrom
   })
+
+  useAutoPlay(autoPlay, isReady, () => playFrom(0), hasStarted)
 
   // A paused note keeps its claim: it is still the current one, so a note
   // started later can reset it.
