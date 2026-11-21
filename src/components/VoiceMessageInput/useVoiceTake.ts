@@ -1,13 +1,15 @@
-import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useCallback, useContext, useLayoutEffect, useRef, useState } from 'react'
+import { AppState } from 'react-native'
 
 import { useLabels } from '../../hooks/useLabels'
 import { IMessage } from '../../Models'
+import { discardRecording } from '../discardRecording'
 import { stopAllPlayback } from '../mediaPlayback'
 import { RecordButtonPhase } from '../RecordButton'
 import { createRecordingMeter, RecordingMeterContext } from '../recordingMeter'
 import { clipsDuration, clipsLevels, createClip, isVoiceTrimAvailable, renderClips, VoiceClip } from '../voiceEditing'
 import { CANCEL_ARMED_PROGRESS, DEFAULT_MIN_DURATION_MS, IDLE_STATE, LEVEL_HISTORY, MIN_CLIP_MS } from './constants'
-import { expoAudio, normalizeMetering, releaseAudioSession, stopRecorderQuietly, viewOnceFields } from './recorder'
+import { acquireAudioSession, expoAudio, normalizeMetering, releaseAudioSession, releaseRecorder, stopRecorderQuietly, viewOnceFields } from './recorder'
 import { PendingFinish, VoiceMessageInputHandle, VoiceMessageInputProps, VoiceRecordingPreview } from './types'
 import { useLazyRecorder } from './useLazyRecorder'
 import { useStateReport } from './useStateReport'
@@ -68,8 +70,31 @@ export function useVoiceTake (
   // release the gesture before the recorder is live. These two refs let the
   // release be remembered and applied once `start` finishes, instead of being
   // dropped and leaving a recording nothing can stop.
-  const startTokenRef = useRef(0)
+  const startingRef = useRef(false)
   const pendingFinishRef = useRef<PendingFinish>(null)
+
+  const mountedRef = useRef(false)
+  const workRef = useRef<Promise<void> | null>(null)
+  const cancelledRef = useRef(false)
+  const statusListenerRef = useRef<{ remove: () => void } | null>(null)
+  const releaseSessionRef = useRef<(() => Promise<void>) | null>(null)
+  const filesRef = useRef(new Set<string>())
+  const onStateChangeRef = useRef(onStateChange)
+  useLayoutEffect(() => {
+    onStateChangeRef.current = onStateChange
+  })
+
+  const discardFiles = useCallback((keep: string[] = []) => {
+    for (const uri of filesRef.current)
+      if (!keep.includes(uri)) {
+        filesRef.current.delete(uri)
+        void discardRecording(uri, config?.onDiscardRecording)
+      }
+  }, [config?.onDiscardRecording])
+  const discardFilesRef = useRef(discardFiles)
+  useLayoutEffect(() => {
+    discardFilesRef.current = discardFiles
+  })
 
   const minDurationMs = config?.minDurationMs ?? DEFAULT_MIN_DURATION_MS
   const maxDurationMs = config?.maxDurationMs ?? 600000
@@ -99,41 +124,51 @@ export function useVoiceTake (
    * preview, or dropped (cancelled, or too short).
    */
   const stopTake = useCallback(async (outcome: 'send' | 'cancel' | 'preview') => {
+    if (outcome === 'cancel') {
+      cancelledRef.current = true
+      setPreview(null)
+    }
     if (!isRecordingRef.current) {
-      // A release that lands while `start` is still awaiting natives: remember
-      // it so `start` can apply it the moment the recorder is actually live.
-      if (startTokenRef.current > 0 && outcome !== 'preview')
-        pendingFinishRef.current = { cancelled: outcome === 'cancel' }
-
+      if (startingRef.current && outcome === 'send' && !cancelledRef.current)
+        pendingFinishRef.current = { cancelled: false }
+      if (!workRef.current && outcome === 'cancel') {
+        clipsRef.current = []
+        discardFiles()
+      }
       return
     }
 
     isRecordingRef.current = false
     const duration = Date.now() - startedAtRef.current
-
     clearTimer()
     setIsRecording(false)
     setCancelArmed(false)
-    if (outcome === 'preview')
-      setIsJoining(true)
-    else
-      setIsLocked(false)
+    setIsJoining(true)
 
-    // A promise chain rather than try/finally, which the compiler cannot lower: the cleanup
-    // still runs after every outcome, the early returns and a throwing `onError` included.
-    await (async () => {
+    let kept: string[] = []
+    const work = (async () => {
       const recorder = getRecorder()
-      await recorder.stop()
-      const uri = recorder.uri
-      const earlier = clipsRef.current
-
-      if (outcome === 'cancel' || !uri) {
-        clipsRef.current = []
+      const status = recorder.getStatus?.()
+      if (status?.mediaServicesDidReset || status?.isRecording === false)
+        cancelledRef.current = true
+      let recordedUri: string | null = null
+      await Promise.resolve().then(() => recorder.stop()).finally(() => {
+        statusListenerRef.current?.remove()
+        statusListenerRef.current = null
+        recordedUri = recorder.uri
+        if (recordedUri)
+          filesRef.current.add(recordedUri)
+        if (recorderRef.current === recorder) {
+          recorderRef.current = null
+          releaseRecorder(recorder)
+        }
+      })
+      const uri = recordedUri
+      if (cancelledRef.current || !mountedRef.current || !uri)
         return
-      }
 
-      // Pausing a take that is too short drops it too (`toggleRecordingPause`).
-      if (!earlier.length && duration <= minDurationMs) {
+      const earlier = clipsRef.current
+      if (!earlier.length && (duration <= minDurationMs || duration < MIN_CLIP_MS)) {
         config?.onTooShort?.()
         return
       }
@@ -141,32 +176,46 @@ export function useVoiceTake (
       const clips = duration >= MIN_CLIP_MS
         ? [...earlier, createClip(uri, duration, allLevelsRef.current)]
         : earlier
-      clipsRef.current = clips
-
-      // A paused take is joined into one file right away,
-      // so the preview plays exactly what would be sent.
       const joined = await renderClips(clips)
-      const durationMs = clipsDuration(clips)
+      filesRef.current.add(joined)
+      if (cancelledRef.current || !mountedRef.current)
+        return
 
+      const durationMs = clipsDuration(clips)
       if (outcome === 'preview') {
+        kept = [joined, ...clips.map(clip => clip.uri)]
+        clipsRef.current = clips
         trimRef.current = { start: 0, end: 1 }
         setPreview({ uri: joined, durationMs, levels: clipsLevels(clips), isTrimmable: isVoiceTrimAvailable() })
         return
       }
 
-      clipsRef.current = []
-      onSend?.({ audio: joined, duration: Math.round(durationMs / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
+      if (onSend) {
+        filesRef.current.delete(joined)
+        onSend({ audio: joined, duration: Math.round(durationMs / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
+      }
     })()
       .catch(error => {
-        clipsRef.current = []
-        config?.onError?.(error)
+        if (mountedRef.current && !cancelledRef.current)
+          config?.onError?.(error)
       })
-      .finally(() => {
-        setIsJoining(false)
-        setIsLocked(false)
-        releaseAudioSession()
+      .finally(async () => {
+        await releaseSessionRef.current?.()
+        releaseSessionRef.current = null
+        if (cancelledRef.current || !mountedRef.current)
+          kept = []
+        if (!kept.length)
+          clipsRef.current = []
+        discardFiles(kept)
+        if (mountedRef.current) {
+          setIsJoining(false)
+          setIsLocked(false)
+        }
+        workRef.current = null
       })
-  }, [getRecorder, minDurationMs, onSend, config, clearTimer])
+    workRef.current = work
+    await work.catch(() => {})
+  }, [getRecorder, minDurationMs, onSend, config, clearTimer, discardFiles, recorderRef])
 
   const stopTakeRef = useRef(stopTake)
   useLayoutEffect(() => {
@@ -175,14 +224,15 @@ export function useVoiceTake (
 
   /** Starts a take, or with `isResume` a new clip of the paused one. */
   const start = useCallback(async (isResume = false) => {
-    if (isRecordingRef.current || startTokenRef.current > 0)
+    if (!mountedRef.current || AppState.currentState === 'background' || isRecordingRef.current || workRef.current)
       return
 
-    const token = Date.now()
-    startTokenRef.current = token
+    startingRef.current = true
+    cancelledRef.current = false
     pendingFinishRef.current = null
     if (!isResume) {
       clipsRef.current = []
+      discardFiles()
       setIsViewOnce(false)
     }
     baseElapsedRef.current = clipsDuration(clipsRef.current)
@@ -193,24 +243,38 @@ export function useVoiceTake (
     stopAllPlayback()
 
     // A promise chain rather than try/finally, which the compiler cannot lower.
-    await (async () => {
+    const isCurrent = () => mountedRef.current && !cancelledRef.current
+    const work = (async () => {
       const permission = await expoAudio.AudioModule.requestRecordingPermissionsAsync()
+      if (!isCurrent())
+        return
       if (!permission?.granted) {
         config?.onPermissionDenied?.()
         return
       }
 
-      await expoAudio.setAudioModeAsync?.({ allowsRecording: true, playsInSilentMode: true })
-      // Passing the options makes iOS build a new recorder, and so a new file.
-      // Without them it reuses the last one and a resumed clip overwrites the
-      // clip before it (Android makes a new file either way).
+      releaseSessionRef.current = () => releaseAudioSession(config?.canReleaseAudioSession)
+      await acquireAudioSession()
+      if (!isCurrent())
+        return
       const recorder = getRecorder()
-      await recorder.prepareToRecordAsync(recorderOptions)
+      await Promise.resolve().then(() => recorder.prepareToRecordAsync(recorderOptions)).finally(() => {
+        if (recorder.uri)
+          filesRef.current.add(recorder.uri)
+      })
 
       // The component may have unmounted while we were awaiting natives.
-      if (startTokenRef.current !== token)
+      if (!isCurrent()) {
+        await stopRecorderQuietly(recorder)
+        if (recorder.uri)
+          filesRef.current.add(recorder.uri)
         return
+      }
 
+      statusListenerRef.current = recorder.addListener?.('recordingStatusUpdate', (status: { hasError?: boolean, mediaServicesDidReset?: boolean }) => {
+        if (status.hasError || status.mediaServicesDidReset)
+          void stopTakeRef.current('cancel')
+      }) ?? null
       recorder.record()
 
       startedAtRef.current = Date.now()
@@ -228,7 +292,12 @@ export function useVoiceTake (
         const ms = baseElapsedRef.current + Date.now() - startedAtRef.current
 
         // The halo tracks real loudness rather than pulsing on a fixed loop.
-        const next = normalizeMetering(recorder.getStatus?.()?.metering)
+        const status = recorder.getStatus?.()
+        if (status?.mediaServicesDidReset || status?.isRecording === false) {
+          void stopTakeRef.current('cancel')
+          return
+        }
+        const next = normalizeMetering(status?.metering)
         allLevelsRef.current.push(next)
         const previous = levelsRef.current
         const kept = previous.length >= LEVEL_HISTORY
@@ -243,44 +312,75 @@ export function useVoiceTake (
       }, 100)
     })()
       .catch(error => {
-        config?.onError?.(error)
-        isRecordingRef.current = false
-        clipsRef.current = []
-        setIsRecording(false)
-        setIsLocked(false)
-        clearTimer()
-        releaseAudioSession()
+        if (isCurrent())
+          config?.onError?.(error)
       })
-      .finally(() => {
-        setIsResuming(false)
-        if (startTokenRef.current === token) {
-          startTokenRef.current = 0
-
-          // Apply a release that arrived while we were starting up. Without this
-          // a quick tap leaves a live recording with no control to end it.
+      .finally(async () => {
+        if (!isRecordingRef.current) {
+          statusListenerRef.current?.remove()
+          statusListenerRef.current = null
+          const recorder = recorderRef.current
+          if (recorder) {
+            recorderRef.current = null
+            if (recorder.uri)
+              filesRef.current.add(recorder.uri)
+            releaseRecorder(recorder)
+          }
+          clipsRef.current = []
+          discardFiles()
+          await releaseSessionRef.current?.()
+          releaseSessionRef.current = null
+        }
+        startingRef.current = false
+        workRef.current = null
+        if (mountedRef.current) {
+          setIsResuming(false)
+          if (!isRecordingRef.current)
+            setIsLocked(false)
           const pending = takePendingFinish()
-          if (pending)
-            stopTakeRef.current(pending.cancelled ? 'cancel' : 'send')
+          if (pending && !cancelledRef.current)
+            void stopTakeRef.current('send')
         }
       })
-  }, [getRecorder, recorderOptions, config, clearTimer, maxDurationMs, takePendingFinish, meter])
+    workRef.current = work
+    await work.catch(() => {})
+  }, [getRecorder, recorderOptions, config, clearTimer, maxDurationMs, takePendingFinish, meter, discardFiles, recorderRef])
 
-  // Tear the recorder down with the component: without this the mic stays hot
-  // (and the iOS recording indicator lit) after navigating away mid-recording,
-  // and the toolbar is left showing a frozen recording bar.
-  useEffect(() => () => {
-    clearTimer()
-    startTokenRef.current = 0
-    pendingFinishRef.current = null
-
-    if (isRecordingRef.current) {
+  useLayoutEffect(() => {
+    mountedRef.current = true
+    const files = filesRef.current
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'background' && (isRecordingRef.current || workRef.current))
+        void stopTakeRef.current('cancel')
+    })
+    return () => {
+      subscription?.remove()
+      mountedRef.current = false
+      cancelledRef.current = true
+      clearTimer()
+      statusListenerRef.current?.remove()
+      statusListenerRef.current = null
+      const recorder = recorderRef.current
+      const wasRecording = isRecordingRef.current
+      const work = workRef.current
+      recorderRef.current = null
+      void Promise.resolve(work).finally(async () => {
+        if (recorder) {
+          if (wasRecording)
+            await stopRecorderQuietly(recorder)
+          if (recorder.uri && !work)
+            files.add(recorder.uri)
+          releaseRecorder(recorder)
+        }
+        const releaseSession = releaseSessionRef.current
+        releaseSessionRef.current = null
+        await releaseSession?.()
+        discardFilesRef.current()
+      }).catch(() => {})
       isRecordingRef.current = false
-      stopRecorderQuietly(recorderRef.current)
+      onStateChangeRef.current?.(IDLE_STATE)
     }
-
-    releaseAudioSession()
-    onStateChange?.(IDLE_STATE)
-  }, [clearTimer, onStateChange, recorderRef])
+  }, [clearTimer, recorderRef])
 
   const { sendPreview, resume } = useTakePreviewActions({
     ref,
@@ -297,6 +397,11 @@ export function useVoiceTake (
     isViewOnceRef,
     start,
     stopTake,
+    workRef,
+    mountedRef,
+    cancelledRef,
+    filesRef,
+    discardFiles,
   })
 
   const onSlideProgress = useCallback((progress: number) => {

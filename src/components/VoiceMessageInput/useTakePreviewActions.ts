@@ -22,6 +22,11 @@ interface UseTakePreviewActionsOptions {
   clipsRef: RefObject<VoiceClip[]>
   trimRef: RefObject<{ start: number, end: number }>
   isViewOnceRef: RefObject<boolean>
+  workRef: RefObject<Promise<void> | null>
+  mountedRef: RefObject<boolean>
+  cancelledRef: RefObject<boolean>
+  filesRef: RefObject<Set<string>>
+  discardFiles: (keep?: string[]) => void
   start: (isResume?: boolean) => Promise<void>
   stopTake: (outcome: 'send' | 'cancel' | 'preview') => Promise<void>
 }
@@ -45,16 +50,15 @@ export function useTakePreviewActions ({
   isViewOnceRef,
   start,
   stopTake,
+  workRef,
+  mountedRef,
+  cancelledRef,
+  filesRef,
+  discardFiles,
 }: UseTakePreviewActionsOptions) {
   const cancel = useCallback(() => {
-    if (preview) {
-      clipsRef.current = []
-      setPreview(null)
-      return
-    }
-
-    stopTake('cancel')
-  }, [preview, stopTake, clipsRef, setPreview])
+    void stopTake('cancel')
+  }, [stopTake])
 
   const trim = useCallback((startFraction: number, endFraction: number) => {
     trimRef.current = { start: startFraction, end: endFraction }
@@ -76,33 +80,37 @@ export function useTakePreviewActions ({
   const isTrimmed = useCallback(() => trimRef.current.start > 0 || trimRef.current.end < 1, [trimRef])
 
   const sendPreview = useCallback(async () => {
-    if (!preview)
+    if (!preview || workRef.current || cancelledRef.current || !mountedRef.current || !filesRef.current.has(preview.uri))
       return
 
     setPreview(null)
-
-    // Untrimmed, the preview's file is already the whole take.
-    if (!isTrimmed()) {
-      clipsRef.current = []
-      onSend?.({ audio: preview.uri, duration: Math.round(preview.durationMs / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
-      return
-    }
-
     const clips = trimmedClips()
     clipsRef.current = []
-    // A promise chain: the compiler cannot lower the optional calls inside a `try`.
-    await renderClips(clips)
+    const work = (isTrimmed() ? renderClips(clips) : Promise.resolve(preview.uri))
       .then(uri => {
-        onSend?.({ audio: uri, duration: Math.round(clipsDuration(clips) / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
+        filesRef.current.add(uri)
+        if (mountedRef.current && !cancelledRef.current && onSend) {
+          filesRef.current.delete(uri)
+          onSend({ audio: uri, duration: Math.round(clipsDuration(clips) / 1000), ...viewOnceFields(isViewOnceRef.current) } as Partial<IMessage>, false)
+        }
       })
       .catch(error => {
-        config?.onError?.(error)
+        if (mountedRef.current && !cancelledRef.current)
+          config?.onError?.(error)
       })
-  }, [preview, onSend, config, trimmedClips, clipsRef, isTrimmed, isViewOnceRef, setPreview])
+      .finally(() => {
+        discardFiles()
+        workRef.current = null
+      })
+    workRef.current = work
+    await work.catch(() => {})
+  }, [preview, onSend, config, trimmedClips, clipsRef, isTrimmed, isViewOnceRef, setPreview, workRef, mountedRef, cancelledRef, filesRef, discardFiles])
 
   // Resume: cut the take to the handles, then record onto its end.
   const resume = useCallback(() => {
     const go = () => {
+      if (!mountedRef.current || cancelledRef.current || workRef.current || !preview || !filesRef.current.has(preview.uri))
+        return
       clipsRef.current = trimmedClips()
       trimRef.current = { start: 0, end: 1 }
       meter.elapsed.set(clipsDuration(clipsRef.current))
@@ -127,7 +135,7 @@ export function useTakePreviewActions ({
     }
 
     go()
-  }, [labels, start, trimmedClips, meter, clipsRef, isTrimmed, setIsLocked, setIsResuming, trimRef])
+  }, [labels, start, trimmedClips, meter, clipsRef, isTrimmed, setIsLocked, setIsResuming, trimRef, mountedRef, cancelledRef, workRef, preview, filesRef])
 
   return { sendPreview, resume }
 }

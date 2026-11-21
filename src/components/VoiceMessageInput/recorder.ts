@@ -33,24 +33,33 @@ export const releaseRecorder = (recorder: any) => {
   }
 }
 
-export const stopRecorderQuietly = (recorder: any) => {
-  try {
-    const stopped = recorder?.stop() as unknown as Promise<void> | undefined
-    stopped?.catch?.(() => {})
-  } catch {
-    // already stopped
-  }
+let audioSessionUsers = 0
+let audioSessionWork = Promise.resolve()
+
+const setRecordingMode = (allowsRecording: boolean) => {
+  const work = audioSessionWork.then(async () => {
+    await expoAudio.setAudioModeAsync?.({ allowsRecording, playsInSilentMode: true })
+  })
+  audioSessionWork = work.catch(() => {})
+  return work
 }
 
-// Leaves the audio session as we found it. Recording puts iOS into
-// PlayAndRecord, which routes playback to the quiet receiver; not restoring it
-// makes every voice note played afterwards sound muffled.
-export const releaseAudioSession = () => {
-  try {
-    expoAudio.setAudioModeAsync?.({ allowsRecording: false, playsInSilentMode: true })
-  } catch {
-    // best-effort; the session is not worth failing a send over
-  }
+export const acquireAudioSession = () => {
+  audioSessionUsers++
+  return setRecordingMode(true)
+}
+
+export const releaseAudioSession = async (canRelease?: () => boolean) => {
+  audioSessionUsers--
+  if (audioSessionUsers === 0)
+    await Promise.resolve().then(async () => {
+      if (audioSessionUsers === 0 && canRelease?.() !== false)
+        await setRecordingMode(false)
+    }).catch(() => {})
+}
+
+export const stopRecorderQuietly = async (recorder: any) => {
+  await Promise.resolve().then(() => recorder.stop()).catch(() => {})
 }
 
 /**

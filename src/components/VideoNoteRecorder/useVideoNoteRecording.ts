@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { IMessage } from '../../Models'
+import { discardRecording } from '../discardRecording'
 import { stopAllPlayback } from '../mediaPlayback'
 import { VideoNoteRecorderController, createVideoNoteRecorder } from '../visionCamera'
 import { withFileScheme } from './constants'
@@ -36,22 +37,26 @@ export function useVideoNoteRecording<TMessage extends IMessage = IMessage> ({
   const startedAtRef = useRef(0)
   // Set once the user abandons the recorder, so a capture callback that lands
   // afterwards discards its file instead of posting the note they cancelled.
-  const abortedRef = useRef(false)
+  const takeRef = useRef<{ recorder: VideoNoteRecorderController, duration: number | null } | null>(null)
 
-  const finish = useCallback((uri: string | null) => {
-    const duration = startedAtRef.current > 0 ? Date.now() - startedAtRef.current : 0
-
-    if (uri && !abortedRef.current)
-      if (duration >= minDurationMs)
-        onSend?.({
+  const finish = useCallback((uri: string | null, duration: number | null) => {
+    takeRef.current = null
+    startedAtRef.current = 0
+    if (uri)
+      if (duration !== null && duration >= minDurationMs && onSend) {
+        onSend({
           video: uri,
           videoNote: true,
           duration: Math.round(duration / 1000),
         } as Partial<TMessage>, false)
-      else
-        config?.onTooShort?.()
+      } else {
+        void discardRecording(uri, config?.onDiscardRecording)
+        if (duration === null)
+          config?.onError?.(new Error('Recording interrupted'))
+        else if (duration < minDurationMs)
+          config?.onTooShort?.()
+      }
 
-    startedAtRef.current = 0
     onClose()
   }, [onSend, onClose, minDurationMs, config])
 
@@ -60,55 +65,63 @@ export function useVideoNoteRecording<TMessage extends IMessage = IMessage> ({
   const { elapsed, isRecording, begin, end, pause, resume } = useRecordingTimer(maxMs, () => stopRef.current())
 
   const stopRecording = useCallback(async () => {
+    const take = takeRef.current
+    if (!take || take.duration !== null)
+      return
+    take.duration = Date.now() - startedAtRef.current
     end()
-    try {
-      await cameraRef.current.stopRecording()
-    } catch (error) {
-      config?.onError?.(error)
-      finish(null)
-    }
+    await take.recorder.stopRecording().catch(error => {
+      if (take === takeRef.current) {
+        void take.recorder.cancelRecording().catch(() => {})
+        finish(null, null)
+        config?.onError?.(error)
+      }
+    })
   }, [end, config, finish])
   useLayoutEffect(() => {
     stopRef.current = stopRecording
   })
 
   const startRecording = useCallback(() => {
-    if (!canRecord)
+    if (!canRecord || takeRef.current)
       return
 
     // Pause whatever note is playing so it does not end up in the take.
     stopAllPlayback()
     begin()
     startedAtRef.current = Date.now()
-    try {
-      cameraRef.current.startRecording({
-        onRecordingFinished: (video: { path: string }) => finish(withFileScheme(video.path)),
-        onRecordingError: (error: unknown) => {
+    const take: { recorder: VideoNoteRecorderController, duration: number | null } = { recorder: cameraRef.current, duration: null }
+    takeRef.current = take
+    take.recorder.startRecording({
+      onRecordingFinished: (video: { path: string }) => {
+        const uri = withFileScheme(video.path)
+        if (take === takeRef.current)
+          finish(uri, take.duration)
+        else
+          void discardRecording(uri, config?.onDiscardRecording)
+      },
+      onRecordingError: (error: unknown) => {
+        if (take === takeRef.current) {
+          finish(null, null)
           config?.onError?.(error)
-          finish(null)
-        },
-      })
-    } catch (error) {
-      config?.onError?.(error)
-      finish(null)
-    }
+        }
+      },
+    })
   }, [begin, finish, config, canRecord])
 
-  // Abandoning the recorder must stop the capture: otherwise vision-camera keeps
-  // recording into an orphaned file and its completion callback posts the note.
-  const abort = useCallback(() => {
-    abortedRef.current = true
-    end()
-    cameraRef.current.stopRecording().catch(() => {})
-    onClose()
-  }, [end, onClose])
-
-  // Covers teardown routes that bypass the X button (Android hardware back,
-  // a parent closing the modal): mark aborted and stop the capture.
-  useEffect(() => () => {
-    abortedRef.current = true
-    cameraRef.current.stopRecording().catch(() => {})
+  const cancelCapture = useCallback(() => {
+    const take = takeRef.current
+    takeRef.current = null
+    void take?.recorder.cancelRecording().catch(() => {})
   }, [])
+
+  const abort = useCallback(() => {
+    cancelCapture()
+    end()
+    onClose()
+  }, [cancelCapture, end, onClose])
+
+  useLayoutEffect(() => cancelCapture, [cancelCapture, recorder])
 
   // Locking mirrors the voice recorder: slide up while holding the shutter and
   // recording continues hands-free until Send or the trash is pressed.
@@ -135,20 +148,25 @@ export function useVideoNoteRecording<TMessage extends IMessage = IMessage> ({
   }, [abort])
 
   const togglePause = useCallback(async () => {
-    try {
-      if (isPaused) {
-        await cameraRef.current.resumeRecording()
-        setIsPaused(false)
+    const take = takeRef.current
+    if (!take || take.duration !== null)
+      return
+    const operation = isPaused ? take.recorder.resumeRecording() : take.recorder.pauseRecording()
+    await operation.then(() => {
+      if (take !== takeRef.current || take.duration !== null)
+        return
+      setIsPaused(!isPaused)
+      if (isPaused)
         resume()
-      } else {
-        await cameraRef.current.pauseRecording()
-        setIsPaused(true)
+      else
         pause()
+    }).catch(error => {
+      if (take === takeRef.current) {
+        abort()
+        config?.onError?.(error)
       }
-    } catch (error) {
-      config?.onError?.(error)
-    }
-  }, [isPaused, config, pause, resume])
+    })
+  }, [isPaused, config, pause, resume, abort])
 
   return {
     elapsed,

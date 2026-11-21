@@ -76,50 +76,56 @@ export interface VideoNoteRecorderController {
  * stop that arrives first waits for the take to have actually started.
  */
 export function createVideoNoteRecorder (videoOutput: any): VideoNoteRecorderController {
-  let recorder: any = null
-  let starting: Promise<void> | null = null
+  let take: { cancelled: boolean, recorder: any, work: Promise<void> } | null = null
 
-  const whenStarted = async () => {
-    try {
-      await starting
-    } catch {
-      // the start failed and already reported it
-    }
-    return recorder
+  const control = (action: (recorder: any) => Promise<void>) => {
+    const current = take
+    if (!current)
+      return Promise.resolve()
+
+    const work = current.work.then(async () => {
+      if (current.recorder?.isRecording)
+        await action(current.recorder)
+    })
+    current.work = work.catch(() => {})
+    return work
   }
 
   return {
     startRecording ({ onRecordingFinished, onRecordingError }) {
-      recorder = null
-      starting = (async () => {
-        const next = await videoOutput.createRecorder({})
-        recorder = next
-        await next.startRecording(
+      const current = { cancelled: false, recorder: null, work: Promise.resolve() }
+      take = current
+      current.work = (async () => {
+        const recorder = await videoOutput.createRecorder({})
+        if (current.cancelled)
+          return
+
+        current.recorder = recorder
+        await recorder.startRecording(
           (filePath: string) => onRecordingFinished({ path: filePath }),
-          (error: unknown) => onRecordingError(error)
+          onRecordingError
         )
-      })()
-      starting.catch(onRecordingError)
+      })().catch(onRecordingError)
     },
-    async stopRecording () {
-      const current = await whenStarted()
-      if (current?.isRecording)
-        await current.stopRecording()
+    stopRecording () {
+      return control(recorder => recorder.stopRecording())
     },
-    async cancelRecording () {
-      const current = await whenStarted()
-      if (current?.isRecording)
-        await current.cancelRecording()
+    cancelRecording () {
+      if (take)
+        take.cancelled = true
+      return control(recorder => recorder.cancelRecording())
     },
-    async pauseRecording () {
-      const current = await whenStarted()
-      if (current?.isRecording && !current.isPaused)
-        await current.pauseRecording()
+    pauseRecording () {
+      return control(async recorder => {
+        if (!recorder.isPaused)
+          await recorder.pauseRecording()
+      })
     },
-    async resumeRecording () {
-      const current = await whenStarted()
-      if (current?.isRecording && current.isPaused)
-        await current.resumeRecording()
+    resumeRecording () {
+      return control(async recorder => {
+        if (recorder.isPaused)
+          await recorder.resumeRecording()
+      })
     },
   }
 }

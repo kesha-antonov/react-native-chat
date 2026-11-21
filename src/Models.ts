@@ -234,6 +234,8 @@ export interface MessageLocationProps<TMessage extends IMessage> {
  * `expo-audio` peer dependency; when it is absent the mic button is hidden.
  */
 export interface AudioRecordingProps {
+  onDiscardRecording?: (uri: string) => void | Promise<void>
+  canReleaseAudioSession?: () => boolean
   /**
    * Show the "view once" toggle above the lock while a take is locked.
    * A take sent with it on arrives in `onSend` with `isViewOnce: true`.
@@ -265,6 +267,7 @@ export interface AudioRecordingProps {
  * `expo-image-picker` peer dependency; when it is absent the button is hidden.
  */
 export interface VideoRecordingProps {
+  onDiscardRecording?: (uri: string) => void | Promise<void>
   /** As `audioRecording.isViewOnceEnabled`, for round video takes. */
   isViewOnceEnabled?: boolean
   /**

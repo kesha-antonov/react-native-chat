@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 
-import { expoAudio, platformRecordingOptions, releaseRecorder } from './recorder'
+import { expoAudio, platformRecordingOptions } from './recorder'
 
 /** The expo-audio recorder, built on first use and released with the component. */
 export function useLazyRecorder () {
@@ -18,10 +18,5 @@ export function useLazyRecorder () {
       recorderRef.current = new expoAudio.AudioModule.AudioRecorder(platformRecordingOptions(recorderOptions))
     return recorderRef.current
   }, [recorderOptions])
-  useEffect(() => () => {
-    releaseRecorder(recorderRef.current)
-    recorderRef.current = null
-  }, [])
-
   return { recorderOptions, recorderRef, getRecorder }
 }

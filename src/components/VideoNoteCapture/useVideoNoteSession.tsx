@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { AppState } from 'react-native'
 
 import { IMessage, VideoRecordingProps } from '../../Models'
 import { createStore, Store } from '../../store'
+import { discardRecording } from '../discardRecording'
 import { stopAllPlayback } from '../mediaPlayback'
 import { recordingHaptic } from '../recordingFeedback'
 import { expectSendFlight } from '../sendFlight'
@@ -77,20 +79,19 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   const durationRef = useRef(0)
   // The same take length, for rendering the paused take's preview.
   const [takeDurationMs, setTakeDurationMs] = useState(0)
-  // Set when a take is cancelled, so a capture callback that lands afterwards
-  // drops its file instead of posting the note.
-  const abortedRef = useRef(false)
+  const takeRef = useRef(0)
+  const recordingRef = useRef<VideoNoteRecorderController | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const finishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previewUriRef = useRef<string | null>(null)
   // Mirrors `elapsed` for `close`, which records it so the ring holds its last share.
   const elapsedRef = useRef(0)
+  const discardRef = useRef(config?.onDiscardRecording)
   const configRef = useRef(config)
   const onSendRef = useRef(onSend)
   useLayoutEffect(() => {
     isViewOnceRef.current = isViewOnce
-    previewUriRef.current = previewUri
     configRef.current = config
     onSendRef.current = onSend
   })
@@ -115,6 +116,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   }, [])
 
   const close = useCallback((isFlight = false) => {
+    takeRef.current++
     const was = phaseRef.current
     if (was !== 'idle') {
       const recordedMs = was === 'recording'
@@ -136,6 +138,11 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
       }, isFlight ? FLIGHT_CLOSE_MS : DIM_ANIMATION_MS)
     }
 
+    const uri = previewUriRef.current
+    previewUriRef.current = null
+    if (uri && !isFlight)
+      void discardRecording(uri, discardRef.current)
+    recordingRef.current = null
     clearTimers()
     startedAtRef.current = 0
     setPhase('idle')
@@ -145,9 +152,27 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     setPreviewUri(null)
   }, [clearTimers, setPhase])
 
+  const abort = useCallback(() => {
+    const recorder = recordingRef.current
+    close()
+    void recorder?.cancelRecording().catch(() => {})
+  }, [close])
+
+  const onCameraError = useCallback((error: unknown) => {
+    if (phaseRef.current === 'idle')
+      return
+    abort()
+    configRef.current?.onError?.(error)
+  }, [abort])
+
   const stopCapture = useCallback(() => {
-    cameraRef.current?.stopRecording().catch(() => {})
-  }, [])
+    const take = takeRef.current
+    finishTimeoutRef.current = setTimeout(abort, FINISH_TIMEOUT_MS)
+    void recordingRef.current?.stopRecording().catch(error => {
+      if (take === takeRef.current)
+        onCameraError(error)
+    })
+  }, [abort, onCameraError])
 
   const sendVideo = useCallback((uri: string) => {
     // Before `onSend`, which is what adds the note the circle flies into.
@@ -165,15 +190,14 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
    * written, then sends it; `preview` waits for the same file and plays it
    * back; `cancel` drops it at once.
    */
-  const stopTake = useCallback((outcome: 'send' | 'cancel' | 'preview') => {
+  const stopTake = useCallback((outcome: 'send' | 'preview') => {
     const current = phaseRef.current
 
     // Released before the camera was up: nothing was recorded, so this is a
     // take that was too short, the same as a quick tap on the button.
     if (current === 'preparing') {
       close()
-      if (outcome !== 'cancel')
-        configRef.current?.onTooShort?.()
+      configRef.current?.onTooShort?.()
       return
     }
 
@@ -183,13 +207,10 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     const duration = Date.now() - startedAtRef.current
     const isTooShort = duration < minDurationMs
 
-    if (outcome === 'cancel' || isTooShort) {
+    if (isTooShort) {
       // Cancel closes the camera.
-      abortedRef.current = true
-      stopCapture()
-      close()
-      if (outcome !== 'cancel')
-        configRef.current?.onTooShort?.()
+      abort()
+      configRef.current?.onTooShort?.()
       return
     }
 
@@ -199,8 +220,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     clearTimers()
     setPhase(outcome === 'preview' ? 'stopping' : 'finishing')
     stopCapture()
-    finishTimeoutRef.current = setTimeout(() => close(), FINISH_TIMEOUT_MS)
-  }, [close, clearTimers, setPhase, stopCapture, minDurationMs, elapsedStore])
+  }, [close, abort, clearTimers, setPhase, stopCapture, minDurationMs, elapsedStore])
 
   const stopTakeRef = useRef(stopTake)
   useLayoutEffect(() => {
@@ -208,7 +228,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   })
 
   const start = useCallback(() => {
-    if (phaseRef.current !== 'idle' || !isVisionCameraAvailable)
+    if (!configRef.current || AppState.currentState === 'background' || phaseRef.current !== 'idle' || !isVisionCameraAvailable)
       return
 
     // Recording takes the audio over: pause whatever note is
@@ -234,7 +254,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
       return
     }
 
-    abortedRef.current = false
+    takeRef.current++
     if (closingTimerRef.current) {
       clearTimeout(closingTimerRef.current)
       closingTimerRef.current = null
@@ -274,35 +294,40 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
       return
     }
 
-    try {
-      recorder.startRecording({
-        onRecordingFinished: (video: { path: string }) => {
-          if (abortedRef.current)
-            return
-
-          const uri = withFileScheme(video.path)
-          if (phaseRef.current === 'stopping') {
-            clearTimers()
-            setPreviewUri(uri)
-            setPhase('preview')
-            return
-          }
-
-          sendVideo(uri)
+    const take = takeRef.current
+    const discard = configRef.current?.onDiscardRecording
+    discardRef.current = discard
+    recordingRef.current = recorder
+    recorder.startRecording({
+      onRecordingFinished: (video: { path: string }) => {
+        const uri = withFileScheme(video.path)
+        if (take !== takeRef.current) {
+          void discardRecording(uri, discard)
+          return
+        }
+        if (phaseRef.current === 'stopping') {
+          clearTimers()
+          previewUriRef.current = uri
+          setPreviewUri(uri)
+          setPhase('preview')
+          return
+        }
+        if (phaseRef.current === 'finishing' && onSendRef.current) {
           close(true)
-        },
-        onRecordingError: (error: unknown) => {
-          if (!abortedRef.current)
-            configRef.current?.onError?.(error)
-
+          sendVideo(uri)
+          return
+        }
+        void discardRecording(uri, discard)
+        if (phaseRef.current === 'finishing')
           close()
-        },
-      })
-    } catch (error) {
-      configRef.current?.onError?.(error)
-      close()
-      return
-    }
+        else
+          onCameraError(new Error('Recording interrupted'))
+      },
+      onRecordingError: (error: unknown) => {
+        if (take === takeRef.current)
+          onCameraError(error)
+      },
+    })
 
     // Tick when the round take actually starts recording.
     recordingHaptic()
@@ -310,14 +335,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     elapsedStore.set(0)
     setIsPastPauseLead(false)
     startTicking(0)
-  }, [close, clearTimers, setPhase, sendVideo, elapsedStore, startTicking])
-
-  const onCameraError = useCallback((error: unknown) => {
-    abortedRef.current = true
-    configRef.current?.onError?.(error)
-    stopCapture()
-    close()
-  }, [close, stopCapture])
+  }, [close, clearTimers, setPhase, sendVideo, elapsedStore, startTicking, onCameraError])
 
   const lock = useCallback(() => {
     if (phaseRef.current === 'preparing' || phaseRef.current === 'recording')
@@ -325,31 +343,29 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   }, [])
 
   const finish = useCallback((cancelled: boolean) => {
-    // Paused with the recorder holding the file open: finish it, or drop it.
+    if (cancelled) {
+      abort()
+      return
+    }
     if (phaseRef.current === 'paused') {
-      if (cancelled) {
-        abortedRef.current = true
-        stopCapture()
-        close()
-        return
-      }
       setPhase('finishing')
       stopCapture()
-      finishTimeoutRef.current = setTimeout(() => close(), FINISH_TIMEOUT_MS)
       return
     }
 
     if (phaseRef.current === 'preview') {
-      const isSent = !cancelled && !!previewUri
-      if (isSent)
-        sendVideo(previewUri)
-
-      close(isSent)
+      const uri = previewUriRef.current
+      if (uri && onSendRef.current) {
+        close(true)
+        sendVideo(uri)
+      } else {
+        close()
+      }
       return
     }
 
-    stopTake(cancelled ? 'cancel' : 'send')
-  }, [stopTake, previewUri, sendVideo, close, setPhase, stopCapture])
+    stopTake('send')
+  }, [abort, stopTake, sendVideo, close, setPhase, stopCapture])
 
   const send = useCallback(() => finish(false), [finish])
 
@@ -365,8 +381,12 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     elapsedStore.set(duration)
     clearTimers()
     setPhase('paused')
-    cameraRef.current?.pauseRecording().catch(error => configRef.current?.onError?.(error))
-  }, [clearTimers, setPhase, elapsedStore])
+    const take = takeRef.current
+    void recordingRef.current?.pauseRecording().catch(error => {
+      if (take === takeRef.current)
+        onCameraError(error)
+    })
+  }, [clearTimers, setPhase, elapsedStore, onCameraError])
 
   const resume = useCallback(() => {
     if (phaseRef.current !== 'paused')
@@ -374,19 +394,38 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
     // The resume button plays its own tick.
     setIsLocked(true)
     startTicking(durationRef.current)
-    cameraRef.current?.resumeRecording().catch(error => configRef.current?.onError?.(error))
-  }, [startTicking])
+    const take = takeRef.current
+    void recordingRef.current?.resumeRecording().catch(error => {
+      if (take === takeRef.current)
+        onCameraError(error)
+    })
+  }, [startTicking, onCameraError])
 
   // Leaving the chat mid-take must not leave the camera recording into an
   // orphaned file.
-  useEffect(() => () => {
+  useLayoutEffect(() => {
+    if (!config && phaseRef.current !== 'idle')
+      abort()
+  }, [config, abort])
+
+  useLayoutEffect(() => {
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'background' && phaseRef.current !== 'idle' && phaseRef.current !== 'preview')
+        abort()
+    })
+    return () => subscription?.remove()
+  }, [abort])
+
+  useLayoutEffect(() => () => {
+    takeRef.current++
     clearTimers()
     if (closingTimerRef.current)
       clearTimeout(closingTimerRef.current)
-    if (phaseRef.current !== 'idle') {
-      abortedRef.current = true
-      cameraRef.current?.stopRecording().catch(() => {})
-    }
+    void recordingRef.current?.cancelRecording().catch(() => {})
+    const uri = previewUriRef.current
+    previewUriRef.current = null
+    if (uri)
+      void discardRecording(uri, discardRef.current)
   }, [clearTimers])
 
   const toggleViewOnce = useCallback(() => {
@@ -455,7 +494,7 @@ export function useVideoNoteSession<TMessage extends IMessage = IMessage> ({
   const canPause = isRecording && !isPastPauseLead
 
   return {
-    isActive: phase === 'preparing' || phase === 'recording' || phase === 'preview' || isPaused,
+    isActive: phase !== 'idle',
     isLocked,
     isCapturing: isRecording,
     buttonPhase,
