@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { BackHandler, ImageProps, NativeScrollEvent, NativeSyntheticEvent, StatusBar, StyleSheet, useWindowDimensions } from 'react-native'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { BackHandler, ImageProps, NativeScrollEvent, NativeSyntheticEvent, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { FlatList, GestureDetector, GestureHandlerRootView, usePanGesture } from 'react-native-gesture-handler'
 import { OverKeyboardView } from 'react-native-keyboard-controller'
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -8,7 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { IMessage } from '../../Models'
 import { DECELERATE, EASE_OUT_QUINT } from '../../motion'
 import { MediaViewerChrome } from './MediaViewerChrome'
-import { MediaViewerPage } from './MediaViewerPage'
+import { MediaViewerPage, MediaViewerPageProps } from './MediaViewerPage'
 
 // Telegram's viewer keeps 15dp between neighbouring photos, and a release past a third of the
 // screen or faster than 650dp/s turns the page (`PhotoViewer.onTouchEvent`); a native paging
@@ -19,12 +19,14 @@ const CLOSE = { duration: 200, easing: DECELERATE }
 // Dragged this share of the screen down (or flung), the photo is let go.
 const DISMISS_SHARE = 0.15
 const DISMISS_VELOCITY = 1000
+const pageKey = (item: IMessage) => JSON.stringify([item._id, item.image])
 
-export interface MediaViewerProps {
+export interface MediaViewerProps<TMessage extends IMessage = IMessage> {
   /** The photos to page through, oldest first. */
-  items: IMessage[]
+  items: readonly TMessage[]
   initialIndex: number
   imageProps?: Partial<ImageProps>
+  renderPage?: (props: MediaViewerPageProps<TMessage>) => React.ReactNode
   onClose: () => void
 }
 
@@ -33,13 +35,22 @@ export interface MediaViewerProps {
  * Telegram (left for newer, right for older), pinch and double tap to zoom, and a drag up or
  * down to put it away.
  */
-export function MediaViewer ({ items, initialIndex, imageProps, onClose }: MediaViewerProps) {
+export function MediaViewer<TMessage extends IMessage = IMessage> ({ items, initialIndex, imageProps, renderPage, onClose }: MediaViewerProps<TMessage>) {
   const { width, height } = useWindowDimensions()
   const pageWidth = width + PAGE_GAP
-  const listRef = useRef<React.ComponentRef<typeof FlatList<IMessage>>>(null)
-  const [index, setIndex] = useState(initialIndex)
-  const [zoomedIndex, setZoomedIndex] = useState<number | null>(null)
-  const isZoomed = zoomedIndex === index
+  const listRef = useRef<React.ComponentRef<typeof FlatList<TMessage>>>(null)
+  const [initialPage] = useState(() => Math.max(0, Math.min(items.length - 1, initialIndex)))
+  const [settledIndex, setIndex] = useState(initialPage)
+  const index = Math.min(settledIndex, Math.max(0, items.length - 1))
+  const [zoomedPage, setZoomedPage] = useState<string | null>(null)
+  const item = items[index]
+  const isZoomed = !!item && zoomedPage === pageKey(item)
+  const itemsRef = useRef(items)
+  const onCloseRef = useRef(onClose)
+  useLayoutEffect(() => {
+    itemsRef.current = items
+    onCloseRef.current = onClose
+  })
 
   const progress = useSharedValue(0)
   const dragY = useSharedValue(0)
@@ -49,15 +60,16 @@ export function MediaViewer ({ items, initialIndex, imageProps, onClose }: Media
     progress.set(withTiming(1, OPEN))
   }, [progress])
 
+  const notifyClose = useCallback(() => onCloseRef.current(), [])
   const close = useCallback(() => {
     if (isClosing)
       return
     setIsClosing(true)
     progress.set(withTiming(0, CLOSE, isFinished => {
       if (isFinished)
-        runOnJS(onClose)()
+        runOnJS(notifyClose)()
     }))
-  }, [isClosing, progress, onClose])
+  }, [isClosing, progress, notifyClose])
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -66,10 +78,6 @@ export function MediaViewer ({ items, initialIndex, imageProps, onClose }: Media
     })
     return () => subscription.remove()
   }, [close])
-
-  const onZoomStateChange = useCallback((pageIndex: number, isPageZoomed: boolean) => {
-    setZoomedIndex(current => (isPageZoomed ? pageIndex : current === pageIndex ? null : current))
-  }, [])
 
   // The counter and the bottom bar follow the page once it has settled, as Telegram's do.
   const onMomentumScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -107,18 +115,27 @@ export function MediaViewer ({ items, initialIndex, imageProps, onClose }: Media
     opacity: progress.get() * (dragY.get() === 0 ? 1 : 0),
   }))
 
-  const renderItem = useCallback(({ item, index: pageIndex }: { item: IMessage, index: number }) => (
-    <MediaViewerPage
-      message={item}
-      index={pageIndex}
-      width={width}
-      height={height}
-      pageWidth={pageWidth}
-      listRef={listRef}
-      imageProps={imageProps}
-      onZoomStateChange={onZoomStateChange}
-    />
-  ), [width, height, pageWidth, imageProps, onZoomStateChange])
+  const renderItem = useCallback(({ item, index: pageIndex }: { item: TMessage, index: number }) => {
+    const key = pageKey(item)
+    const page: MediaViewerPageProps<TMessage> = {
+      message: item,
+      index: pageIndex,
+      width,
+      height,
+      pageWidth,
+      listRef,
+      imageProps,
+      onZoomStateChange: (zoomIndex, isPageZoomed) => {
+        const currentItem = itemsRef.current[pageIndex]
+        if (zoomIndex !== pageIndex || !currentItem || pageKey(currentItem) !== key)
+          return
+        setZoomedPage(current => (isPageZoomed ? key : current === key ? null : current))
+      },
+    }
+    return renderPage
+      ? <View style={{ width: pageWidth, height }}>{renderPage(page)}</View>
+      : <MediaViewerPage {...page} />
+  }, [width, height, pageWidth, imageProps, renderPage])
 
   const getItemLayout = useCallback((_: unknown, itemIndex: number) => (
     { length: pageWidth, offset: pageWidth * itemIndex, index: itemIndex }
@@ -137,10 +154,10 @@ export function MediaViewer ({ items, initialIndex, imageProps, onClose }: Media
                 ref={listRef}
                 testID='media-viewer-pager'
                 data={items}
-                keyExtractor={item => String(item._id)}
+                keyExtractor={pageKey}
                 renderItem={renderItem}
                 getItemLayout={getItemLayout}
-                initialScrollIndex={initialIndex}
+                initialScrollIndex={items.length ? initialPage : undefined}
                 horizontal
                 pagingEnabled
                 scrollEnabled={!isZoomed}
@@ -154,7 +171,7 @@ export function MediaViewer ({ items, initialIndex, imageProps, onClose }: Media
             </Animated.View>
           </GestureDetector>
           <Animated.View style={[StyleSheet.absoluteFill, chromeStyle]} pointerEvents='box-none'>
-            <MediaViewerChrome message={items[index]} index={index} count={items.length} onClose={close} />
+            <MediaViewerChrome message={item} index={index} count={items.length} onClose={close} />
           </Animated.View>
         </GestureHandlerRootView>
       </SafeAreaProvider>

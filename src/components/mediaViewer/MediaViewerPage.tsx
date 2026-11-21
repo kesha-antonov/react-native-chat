@@ -1,33 +1,50 @@
-import React, { RefObject, useEffect, useState } from 'react'
-import { Image, ImageProps, StyleSheet, View } from 'react-native'
+import React, { RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Image, ImageProps, ImageSourcePropType, StyleSheet, View } from 'react-native'
 import Zoom from 'react-native-zoom-reanimated'
 
 import { IMessage } from '../../Models'
 
-// Sizes are read once per photo for the life of the app: paging back to a photo must not wait
-// on another round trip before it can lay out.
-const sizes = new Map<string, { width: number, height: number }>()
+const IMAGE_SIZE_CACHE_LIMIT = 96
+type ImageSize = { width: number, height: number }
+const sizes = new Map<string, ImageSize>()
 
 function useImageSize (uri: string | undefined) {
-  const [size, setSize] = useState(() => (uri ? sizes.get(uri) : undefined))
+  const [result, setResult] = useState<{ uri: string, size: ImageSize }>()
   useEffect(() => {
-    if (!uri || sizes.has(uri))
+    if (!uri)
       return
+    const cached = sizes.get(uri)
+    if (cached) {
+      setResult({ uri, size: cached })
+      return
+    }
+
     let isCurrent = true
     Image.getSize(uri, (width, height) => {
-      sizes.set(uri, { width, height })
+      if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0)
+        return
+
+      if (!sizes.has(uri) && sizes.size >= IMAGE_SIZE_CACHE_LIMIT) {
+        const oldest = sizes.keys().next().value
+        if (oldest !== undefined)
+          sizes.delete(oldest)
+      }
+      const size = { width, height }
+      sizes.set(uri, size)
       if (isCurrent)
-        setSize({ width, height })
+        setResult({ uri, size })
     }, () => {})
     return () => {
       isCurrent = false
     }
   }, [uri])
-  return uri ? size ?? sizes.get(uri) : undefined
+  if (!uri)
+    return undefined
+  return result?.uri === uri ? result.size : sizes.get(uri)
 }
 
-export interface MediaViewerPageProps {
-  message: IMessage
+export interface MediaViewerPageProps<TMessage extends IMessage = IMessage> {
+  message: TMessage
   index: number
   width: number
   height: number
@@ -42,9 +59,26 @@ export interface MediaViewerPageProps {
  * One photo in the viewer, fitted to the screen and zoomable. Panned to its edge while zoomed,
  * it hands the swipe on to the pager, as Telegram's viewer does.
  */
-export function MediaViewerPage ({ message, index, width, height, pageWidth, listRef, imageProps, onZoomStateChange }: MediaViewerPageProps) {
-  const uri = message.image
+export function MediaViewerPage<TMessage extends IMessage = IMessage> ({ message, index, width, height, pageWidth, listRef, imageProps, onZoomStateChange }: MediaViewerPageProps<TMessage>) {
+  const source: ImageSourcePropType = imageProps?.source ?? { uri: message.image }
+  const uri = Array.isArray(source) ? undefined : Image.resolveAssetSource(source)?.uri
   const size = useImageSize(uri)
+  const sourceKey = Array.isArray(source) ? JSON.stringify(source.map(candidate => candidate.uri)) : uri
+  const zoomSession = useMemo(() => ({ index, sourceKey }), [index, sourceKey])
+  const activeZoom = useRef<{ session: typeof zoomSession, isZoomed: boolean } | null>(null)
+  const onZoomRef = useRef(onZoomStateChange)
+  useLayoutEffect(() => {
+    onZoomRef.current = onZoomStateChange
+  })
+  useLayoutEffect(() => {
+    const zoom = { session: zoomSession, isZoomed: false }
+    activeZoom.current = zoom
+    return () => {
+      activeZoom.current = null
+      if (zoom.isZoomed)
+        onZoomRef.current(zoomSession.index, false)
+    }
+  }, [zoomSession])
   const scale = size ? Math.min(width / size.width, height / size.height) : 1
   const imageStyle = size
     ? { width: size.width * scale, height: size.height * scale }
@@ -54,13 +88,20 @@ export function MediaViewerPage ({ message, index, width, height, pageWidth, lis
     <View style={[styles.page, { width: pageWidth }]}>
       <View style={[styles.center, { width, height }]}>
         <Zoom
+          key={`${index}:${sourceKey ?? ''}`}
           enableGallerySwipe
           parentScrollRef={listRef}
           currentIndex={index}
           itemWidth={pageWidth}
-          onZoomStateChange={isZoomed => onZoomStateChange(index, isZoomed)}
+          onZoomStateChange={isZoomed => {
+            const zoom = activeZoom.current
+            if (zoom?.session === zoomSession) {
+              zoom.isZoomed = isZoomed
+              onZoomRef.current(index, isZoomed)
+            }
+          }}
         >
-          <Image source={{ uri }} style={imageStyle} resizeMode='contain' {...imageProps} />
+          <Image style={imageStyle} resizeMode='contain' {...imageProps} source={source} />
         </Zoom>
       </View>
     </View>
